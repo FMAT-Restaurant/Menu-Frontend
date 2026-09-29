@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart LR
-  PR[Pull request a main] --> Q[Lint, TypeScript, Jest/RTL y build]
+  PR[Pull request a dev o main] --> Q[Lint, TypeScript, Jest/RTL y build]
   Q --> E[Docker Compose y Playwright]
   E -->|push a main o tag v*| G[Publicación de imagen en GHCR]
 ```
@@ -23,13 +23,15 @@ Referencias del ejemplo: [`ci.yml`](https://github.com/zackspike/cicd-test/blob/
 
 ## Workflow implementado
 
-El archivo `.github/workflows/ci-cd.yml` ejecuta en pull requests a `main`, pushes a `main`, tags `v*` y manualmente:
+El archivo `.github/workflows/ci-cd.yml` ejecuta en pull requests y pushes a `dev` o `main`, tags `v*` y manualmente:
+
+GitHub requiere que el archivo ya esté en la rama predeterminada para ofrecer `workflow_dispatch`. El push a `dev` se dispara en cuanto la versión modificada del workflow está comprometida y subida a esa rama.
 
 1. **Quality and unit tests:** configura Node desde `.node-version`, usa npm 12.1.0, instala con `npm ci`, ejecuta ESLint, typecheck con TypeScript 7, Jest/RTL con cobertura y build Vite. Sube el reporte de cobertura incluso si falla el job.
 2. **Playwright E2E:** después del job de calidad instala Chromium, construye y levanta la imagen de producción con `docker compose up --wait`, ejecuta la suite sobre Chromium y conserva reportes, XML JUnit, trazas y capturas como artefacto. Baja Compose al terminar incluso ante errores.
 3. **Publish image to GHCR:** solo se activa para pushes a `main` o tags `v*`, y requiere que calidad y E2E pasen. El job tiene `packages: write`; autentica con `GITHUB_TOKEN` y publica `ghcr.io/<owner>/<repo>:<commit-sha>`.
 
-Las acciones externas están fijadas por SHA completo. `.github/dependabot.yml` propone actualizaciones semanales para Actions y npm. GitHub requiere configuración del repositorio fuera del workflow: proteger `main` y exigir los checks `Quality and unit tests` y `Playwright E2E` antes de merge.
+Las acciones externas están fijadas por SHA completo. `.github/dependabot.yml` propone actualizaciones semanales para Actions y npm. GitHub requiere configuración del repositorio fuera del workflow: proteger `dev` y `main` y exigir los checks `Quality and unit tests` y `Playwright E2E` antes de merge. La publicación de GHCR sigue limitada a `main` y tags `v*`.
 
 ## Imagen y Compose
 

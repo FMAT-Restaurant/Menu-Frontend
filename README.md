@@ -39,6 +39,6 @@ La aplicación queda en `http://localhost:4173`; `FRONTEND_PORT` cambia el puert
 
 ## CI/CD
 
-El workflow [ci-cd.yml](.github/workflows/ci-cd.yml) valida pull requests a `main`, pushes a `main` y tags `v*`, y permite ejecución manual. Publica la imagen en GHCR solo después de pasar calidad y E2E. Protege `main` y exige los checks `Quality and unit tests` y `Playwright E2E` para bloquear merges. Consulta el [diseño del pipeline](ci-cd/pipeline-design.md) para más detalles.
+El workflow [ci-cd.yml](.github/workflows/ci-cd.yml) valida pull requests y pushes a `dev` y `main`, además de tags `v*`; también permite ejecución manual cuando está en la rama predeterminada. Publica la imagen en GHCR solo desde `main` o tags `v*`, después de pasar calidad y E2E. Protege `dev` y `main`, y exige los checks `Quality and unit tests` y `Playwright E2E` para bloquear merges. Consulta el [diseño del pipeline](ci-cd/pipeline-design.md) para más detalles.
 
 La [documentación del producto](https://fmat-restaurant.github.io/Menu-Documentation/) contiene requisitos y contratos. La interfaz actual es una pantalla inicial; las vistas del menú y la integración con el backend están pendientes.
