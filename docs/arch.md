@@ -14,7 +14,11 @@ La aplicación es una **SPA web de administración y consulta de catálogo**. Me
 
 ## Decisión tecnológica
 
-Usar React, TypeScript, React Router, Axios y Vite conforme a [`docs/stack.md`](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/stack.md) y al plan [MVP1-T001](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/product/mvp-01-catalogo-publicable.md). Jest y React Testing Library cubren componentes y casos de uso; Playwright cubre recorridos en navegador. Node.js y npm son herramientas de desarrollo y build. El `package.json` de la rama base ya fija las versiones y declara TypeScript 7 en `@typescript/native` junto al alias de compatibilidad TypeScript 6. Los scripts actuales usan `tsc`; antes de afirmar que el build compila con TypeScript 7, se debe ajustar y verificar esa invocación.
+Usar React, TypeScript, React Router, Axios y Vite conforme a [`docs/stack.md`](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/stack.md) y al plan [MVP1-T001](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/product/mvp-01-catalogo-publicable.md). Jest y React Testing Library cubren componentes y casos de uso; Playwright cubre recorridos en navegador. Node.js y npm son herramientas de desarrollo y build. `package.json` fija las versiones y declara TypeScript 7.0.2 en `@typescript/native` junto al alias de compatibilidad TypeScript 6. `npm run typecheck` y `npm run build` invocan `tsc`, que resuelve a TypeScript 7.0.2; `tsc6` queda disponible para las herramientas que todavía necesitan la API anterior. La versión del compilador principal se verificó con `npm exec -- tsc --version`.
+
+## Límite del repositorio
+
+`Menu-Frontend` contiene la SPA web, sus pruebas, configuración de build, contenedor y documentación de implementación del cliente. `Menu-Backend` conserva el servicio HTTP, las invariantes y la persistencia. `Menu-Documentation` conserva el modelo conceptual, la ERS y el contrato OpenAPI aceptado. Los tipos de transporte del frontend deben seguir ese contrato; no se copian entidades JPA ni se crea aquí una segunda definición normativa de la API. Las integraciones con Inventario y Órdenes se agregan cuando existan sus contratos aprobados.
 
 El proyecto de la rama `dev` ya utiliza una **SPA web**, acorde con React Router/Vite y las pruebas E2E en navegador del plan. Un cliente móvil exigiría otra decisión y otra estrategia de navegación/build.
 
