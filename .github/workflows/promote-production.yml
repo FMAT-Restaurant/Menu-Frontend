@@ -1,0 +1,70 @@
+name: Promote frontend image to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full SHA of a verified commit on main (also allows rollback)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-production-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote-production:
+    name: Promote to production
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout main history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit on main
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]
+          git merge-base --is-ancestor "$SOURCE_SHA" HEAD
+
+      - name: Set up Buildx
+        run: docker buildx create --name "menu-${GITHUB_RUN_ID}" --driver docker-container --use
+
+      - name: Login to GitHub Container Registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Verify source and promote its digest
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          digest="$(docker buildx imagetools inspect "$image:$SOURCE_SHA" --format '{{.Manifest.Digest}}')"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker pull "$image@$digest"
+          revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image@$digest")"
+          test "$revision" = "$SOURCE_SHA"
+          docker buildx imagetools create --prefer-index=false --tag "$image:production" "$image@$digest"
+          promoted="$(docker buildx imagetools inspect "$image:production" --format '{{.Manifest.Digest}}')"
+          test "$promoted" = "$digest"
+          printf 'Production: %s@%s (commit %s)\n' "$image" "$digest" "$SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Logout from GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io

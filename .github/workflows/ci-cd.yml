@@ -106,14 +106,17 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   publish-ghcr:
-    name: Publish image to GHCR
+    name: Publish and verify image
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [quality, playwright]
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.publish.outputs.image }}
+      digest: ${{ steps.publish.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -126,16 +129,84 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
 
-      - name: Build and publish immutable image tag
+      - name: Build and publish commit image
+        id: publish
         shell: bash
         run: |
+          set -euo pipefail
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
           docker buildx build \
             --file Dockerfile \
+            --build-arg "VCS_REF=$GITHUB_SHA" \
             --tag "$image:$GITHUB_SHA" \
+            --metadata-file image-metadata.json \
             --push \
             .
-          echo "Published `$image:$GITHUB_SHA`" >> "$GITHUB_STEP_SUMMARY"
+          digest="$(jq -r '."containerimage.digest"' image-metadata.json)"
+          test "$digest" != null
+          test -n "$digest"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Verify published image by digest
+        shell: bash
+        env:
+          IMAGE: ${{ steps.publish.outputs.image }}
+          DIGEST: ${{ steps.publish.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker pull "$IMAGE@$DIGEST"
+          revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGE@$DIGEST")"
+          test "$revision" = "$GITHUB_SHA"
+          docker run --detach --name verify-front --env API_BASE_URL=https://example.org/api/v1 "$IMAGE@$DIGEST"
+          for attempt in {1..30}; do
+            health="$(docker inspect --format '{{.State.Health.Status}}' verify-front)"
+            if [ "$health" = healthy ]; then break; fi
+            if [ "$health" = unhealthy ]; then docker logs verify-front; exit 1; fi
+            sleep 2
+          done
+          test "$(docker inspect --format '{{.State.Health.Status}}' verify-front)" = healthy
+          test "$(docker exec verify-front wget -qO- http://127.0.0.1:8080/healthz)" = ok
+          docker exec verify-front wget -qO- http://127.0.0.1:8080/runtime-config.js | grep -F 'https://example.org/api/v1'
+          printf 'Verified %s@%s (revision %s)\n' "$IMAGE" "$DIGEST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop verification container
+        if: ${{ always() }}
+        run: docker rm --force verify-front 2>/dev/null || true
+
+      - name: Logout from GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io
+
+  promote-staging:
+    name: Promote to staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: publish-ghcr
+    environment: staging
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Set up Buildx
+        run: docker buildx create --name "menu-${GITHUB_RUN_ID}" --driver docker-container --use
+
+      - name: Login to GitHub Container Registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Promote verified digest
+        shell: bash
+        env:
+          IMAGE: ${{ needs.publish-ghcr.outputs.image }}
+          DIGEST: ${{ needs.publish-ghcr.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create --prefer-index=false --tag "$IMAGE:staging" "$IMAGE@$DIGEST"
+          promoted="$(docker buildx imagetools inspect "$IMAGE:staging" --format '{{.Manifest.Digest}}')"
+          test "$promoted" = "$DIGEST"
+          printf 'Staging: %s@%s (commit %s)\n' "$IMAGE" "$DIGEST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Logout from GHCR
         if: ${{ always() }}

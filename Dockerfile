@@ -8,12 +8,17 @@ RUN npm install --global npm@12.1.0 \
 
 COPY index.html vite.config.ts tsconfig.json ./
 COPY src ./src
+COPY public ./public
 RUN npm run build
 
 FROM nginx:1.29-alpine AS runtime
 
 COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY --chmod=755 docker/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
 COPY --from=build /app/dist /usr/share/nginx/html
+
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.revision=$VCS_REF
 
 EXPOSE 8080
 
