@@ -1,6 +1,8 @@
 services:
   frontend:
     image: menu-frontend:local
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-}
     build:
       context: .
       dockerfile: Dockerfile
