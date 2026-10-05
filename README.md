@@ -14,6 +14,10 @@ Este repositorio contiene solo el cliente web y sus herramientas. El servicio HT
 
 `package.json` fija React 19.3.0, React Router 7.18.4, Axios 1.20.0, Vite 8.3.1, ESLint 10.10.0, Jest 30.5.2, React Testing Library 16.3.3, Playwright 1.63.0 y TypeScript 7.0.2. TypeScript 6 queda como alias de compatibilidad para herramientas que requieren su API. `npm exec -- tsc --version` debe mostrar `7.0.2` después de instalar dependencias.
 
+## Mockups
+
+En la carpeta [Mockups](mockups/) se encuentran los prototipos visuales y medianamente funcionales de la aplicación. Estos archivos sirven como **punto de partida y guía de referencia para el desarrollo del frontend**, permitiendo visualizar la estructura, distribución de componentes y la experiencia de usuario antes de su integración definitiva con el sistema.
+
 ## Desarrollo
 
 ```sh

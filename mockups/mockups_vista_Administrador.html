@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototipo Frontend - Catálogo con Persistencia LocalStorage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfcfc; color: #111827; }
+        .wireframe-img { border: 1px dashed #d1d5db; background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 0.875rem; text-align: center; }
+        .hidden { display: none !important; }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.7); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        button { transition: all 0.1s ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen text-sm">
+
+    <!-- BARRA GLOBAL DE NAVEGACIÓN -->
+    <div id="global-nav" class="fixed top-0 left-0 w-full bg-white border-b border-gray-200 p-3 z-40 hidden flex items-center justify-between">
+        <button onclick="goBack()" class="flex items-center gap-2 text-gray-700 hover:text-black font-medium px-3 py-1 border border-gray-300 bg-gray-50 hover:bg-gray-100">
+            [ Volver atrás ]
+        </button>
+        <button onclick="resetDB()" class="text-xs text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded bg-red-50 hover:bg-red-100">
+            [ Resetear Datos a Fábrica ]
+        </button>
+    </div>
+    <div id="nav-spacer" class="h-14 hidden"></div>
+
+    <!-- SCREEN 1: CATÁLOGO PRINCIPAL -->
+    <div id="screen-main" class="screen p-6 max-w-6xl mx-auto mt-4">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-300">
+            <h1 class="text-xl font-bold uppercase tracking-wide">Catálogo del Menú</h1>
+            <div class="flex gap-3">
+                <button onclick="openModal('modal-category')" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">+ Crear Categoría</button>
+                <button onclick="openEntryForm()" class="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium">+ Nueva Entrada</button>
+            </div>
+        </div>
+
+        <div id="main-catalog-container" class="space-y-6">
+            <!-- Renderizado dinámico desde JS -->
+        </div>
+    </div>
+
+    <!-- SCREEN 2: FORMULARIO DE ENTRADA (CREAR/EDITAR) -->
+    <div id="screen-entry-form" class="screen hidden p-6 max-w-4xl mx-auto mt-4">
+        <h1 id="entry-form-title" class="text-xl font-bold mb-6 pb-2 border-b border-gray-300 uppercase tracking-wide">CREAR / EDITAR ENTRADA</h1>
+        
+        <div class="bg-white p-6 border border-gray-200 space-y-6">
+            <input type="hidden" id="entry-id-input">
+            <div>
+                <label class="block font-medium mb-1">Nombre Comercial (Agrupador de Ofertas):</label>
+                <input type="text" id="entry-name-input" placeholder="Ej. Hamburguesas Clásicas..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+            </div>
+            <div>
+                <label class="block font-medium mb-1">Descripción General:</label>
+                <textarea id="entry-desc-input" rows="3" placeholder="Descripción breve..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Dropdown Selección Múltiple -->
+                <div class="border border-gray-200 p-4 relative bg-gray-50">
+                    <label class="block font-medium mb-2">Categorías (Múltiple):</label>
+                    <div class="relative">
+                        <button type="button" onclick="document.getElementById('entry-cats-dropdown').classList.toggle('hidden')" class="w-full text-left border border-gray-300 p-2 flex justify-between items-center bg-white hover:bg-gray-50">
+                            <span class="text-gray-700">Seleccionar categorías...</span>
+                            <span class="text-xs">[ V ]</span>
+                        </button>
+                        <div id="entry-cats-dropdown" class="hidden absolute w-full bg-white border border-gray-300 mt-1 z-10 max-h-48 overflow-y-auto shadow-md">
+                            <!-- Checkboxes de categorías dinámicos -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border border-gray-200 p-4 bg-gray-50">
+                    <label class="block font-medium mb-2">Estado Inicial:</label>
+                    <div id="entry-status-container">
+                        <!-- Renderizado dinámico -->
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block font-medium mb-1">Imagen de Referencia de la Entrada:</label>
+                <div class="wireframe-img h-40 w-full hover:bg-gray-200 cursor-pointer">
+                    <div class="text-center">
+                        <span class="block text-sm mb-1 text-gray-500">[ Zona de Arrastre de Imagen ]</span>
+                        <span class="text-xs border border-gray-400 px-2 py-1 bg-white">Seleccionar archivo</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button onclick="goBack()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Cancelar</button>
+                <button onclick="saveEntry()" class="px-6 py-2 bg-gray-900 text-white hover:bg-black font-medium">Guardar Entrada</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: VISTA DE OFERTAS DE UNA ENTRADA -->
+    <div id="screen-offers" class="screen hidden p-6 max-w-6xl mx-auto mt-4">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-300">
+            <div>
+                <h1 id="offers-entry-title" class="text-xl font-bold uppercase tracking-wide">OFERTAS DE: [ENTRADA]</h1>
+                <p class="text-gray-500 text-sm mt-1">Variantes comerciales o platillos asociados a esta entrada</p>
+            </div>
+            <button onclick="openOfferForm(null)" class="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium">+ Nueva Oferta</button>
+        </div>
+        
+        <div id="offers-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Renderizado dinámico desde JS -->
+        </div>
+    </div>
+
+    <!-- SCREEN 4: CONFIGURACIÓN DE OFERTA -->
+    <div id="screen-offer-form" class="screen hidden p-6 max-w-6xl mx-auto mt-4">
+        <div class="mb-6 pb-4 border-b border-gray-300 flex justify-between items-end">
+            <div>
+                <h1 class="text-xl font-bold uppercase tracking-wide" id="offer-form-title">CONFIGURACIÓN DE OFERTA (PLATILLO)</h1>
+                <p id="offer-form-subtitle" class="text-gray-500 font-medium mt-1">Entrada Padre: [Entrada]</p>
+            </div>
+            <button onclick="goBack()" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Descartar Cambios</button>
+        </div>
+
+        <div class="bg-white p-6 border border-gray-200 mb-6">
+            <h2 class="font-bold text-lg mb-4 border-b border-gray-200 pb-2 uppercase tracking-wide">1. Información Comercial</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block font-medium mb-1">Nombre Comercial del Platillo / Oferta:</label>
+                        <input type="text" id="offer-tag-input" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Precio Base:</label>
+                        <div class="flex items-center">
+                            <span class="bg-gray-100 border border-gray-300 border-r-0 px-4 py-2 text-gray-500">$</span>
+                            <input type="number" id="offer-price-input" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Estado:</label>
+                        <div class="flex gap-6 mt-2 border border-gray-200 p-2 bg-gray-50 w-max" id="offer-status-radios">
+                            <label class="flex items-center gap-2 cursor-pointer font-medium"><input type="radio" name="offer-status" value="ACTIVE"> ACTIVE</label>
+                            <label class="flex items-center gap-2 cursor-pointer font-medium"><input type="radio" name="offer-status" value="INACTIVE"> INACTIVE</label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Imagen Específica (Opcional):</label>
+                    <div class="wireframe-img h-40 w-full hover:bg-gray-200 cursor-pointer transition">
+                        <div class="text-center">
+                            <span class="block text-sm mb-1 text-gray-500">[ Zona de Arrastre de Imagen ]</span>
+                            <span class="text-xs border border-gray-400 px-2 py-1 bg-white">Seleccionar archivo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPOSICIÓN (SLOTS HORIZONTALES) -->
+        <div class="bg-white p-6 border border-gray-200">
+            <h2 class="font-bold text-lg mb-4 border-b border-gray-200 pb-2 uppercase tracking-wide">2. Composición (Slots Horizontales)</h2>
+            <div id="slots-container" class="flex gap-4 overflow-x-auto pb-4 hide-scrollbar items-stretch min-h-[250px]">
+                <!-- Slots renderizados dinámicamente -->
+                
+                <!-- Nuevo Slot Botón -->
+                <div id="add-slot-btn" class="min-w-[200px] shrink-0 border border-dashed border-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition" onclick="openModal('modal-slot-step1')">
+                    <div class="text-center text-gray-500">
+                        <div class="text-2xl mb-2 font-light">+</div>
+                        <div class="font-medium">Nuevo Slot</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 pt-6">
+            <button onclick="goBack()" class="px-8 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Cancelar</button>
+            <button onclick="saveOffer()" class="px-8 py-2 bg-gray-900 text-white hover:bg-black font-medium">Guardar Oferta</button>
+        </div>
+    </div>
+
+
+    <!-- ================== MODALES ================== -->
+
+    <!-- Modal Categoría -->
+    <div id="modal-category" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50">
+        <div class="bg-white w-[500px] border border-gray-300 shadow-2xl overflow-hidden">
+            <div class="flex justify-between bg-gray-100 p-4 border-b border-gray-300 font-bold uppercase tracking-wide">
+                <span>Crear Categoría</span>
+                <button onclick="closeModal('modal-category')" class="text-gray-500 hover:text-black">[ X ]</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block font-medium mb-1">Nombre:</label>
+                    <input type="text" id="cat-name-input" placeholder="Ej. Postres" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Descripción:</label>
+                    <textarea id="cat-desc-input" rows="2" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500"></textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                <button onclick="closeModal('modal-category')" class="px-4 py-1.5 bg-white border border-gray-300 font-medium hover:bg-gray-100">Cancelar</button>
+                <button onclick="saveCategory()" class="px-4 py-1.5 bg-gray-900 text-white font-medium hover:bg-black">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Definir Slot (Paso 1) -->
+    <div id="modal-slot-step1" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50">
+        <div class="bg-white w-[500px] border border-gray-300 shadow-2xl overflow-hidden">
+            <div class="flex justify-between bg-gray-100 p-4 border-b border-gray-300 font-bold uppercase tracking-wide">
+                <span>Definir Nuevo Slot</span>
+                <button onclick="closeModal('modal-slot-step1')" class="text-gray-500 hover:text-black">[ X ]</button>
+            </div>
+            <div class="p-5 space-y-5">
+                <div>
+                    <label class="block font-medium mb-1">Nombre del Slot:</label>
+                    <input type="text" id="new-slot-name" placeholder="Ej. Guarnición..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                </div>
+                <div>
+                    <label class="block font-medium mb-2">Tipo de Slot:</label>
+                    <div class="space-y-2 text-gray-800">
+                        <label class="block p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer bg-white">
+                            <div class="font-medium flex items-center gap-2"><input type="radio" name="slottype" checked value="Receta"> Receta</div>
+                            <div class="text-xs text-gray-500 ml-6 mt-1">Busca y asigna una preparación culinaria de las recetas maestras.</div>
+                        </label>
+                        <label class="block p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer bg-white">
+                            <div class="font-medium flex items-center gap-2"><input type="radio" name="slottype" value="Item de Inventario"> Item de Inventario</div>
+                            <div class="text-xs text-gray-500 ml-6 mt-1">Busca y asigna un insumo directo de almacén con unidad de medida fija.</div>
+                        </label>
+                        <label class="block p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer bg-white">
+                            <div class="font-medium flex items-center gap-2"><input type="radio" name="slottype" value="Oferta"> Oferta</div>
+                            <div class="text-xs text-gray-500 ml-6 mt-1">Abre el catálogo para clonar múltiples slots pre-armados a esta oferta.</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                <button onclick="closeModal('modal-slot-step1')" class="px-6 py-2 bg-white border border-gray-300 font-medium hover:bg-gray-100">Cancelar</button>
+                <button onclick="handleSlotCreation()" class="px-6 py-2 bg-gray-900 text-white font-medium hover:bg-black">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Formulario de Receta -->
+    <div id="modal-recipe-form" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-[70]">
+        <div class="bg-white w-[800px] max-h-[90vh] flex flex-col border border-gray-300 shadow-2xl overflow-hidden">
+            <div class="flex justify-between bg-gray-900 text-white p-4 border-b border-gray-800 font-bold items-center uppercase tracking-wide">
+                <span id="recipe-modal-title">CREAR / EDITAR RECETA</span>
+                <button onclick="closeModal('modal-recipe-form')" class="text-gray-300 hover:text-white">[ X ]</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow bg-gray-50 space-y-4">
+                <input type="hidden" id="rec-id">
+                <div class="bg-white p-5 border border-gray-200 space-y-4">
+                    <div>
+                        <label class="block font-medium mb-1">Nombre:</label>
+                        <input type="text" id="rec-name" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Descripción:</label>
+                        <input type="text" id="rec-desc" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Instrucciones:</label>
+                        <textarea id="rec-inst" rows="3" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500"></textarea>
+                    </div>
+                </div>
+                <div class="bg-white p-5 border border-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="font-bold text-lg">Insumos del Inventario:</label>
+                        <button onclick="addIngredientRow()" type="button" class="px-3 py-1.5 bg-gray-100 border border-gray-300 font-medium text-sm hover:bg-gray-200">[ + ] Agregar Insumo</button>
+                    </div>
+                    <table class="w-full text-left border-collapse border border-gray-200 text-sm mb-2">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="border border-gray-200 p-2 font-medium">Insumo Seleccionado</th>
+                                <th class="border border-gray-200 p-2 w-24 text-center font-medium">Cantidad</th>
+                                <th class="border border-gray-200 p-2 w-28 text-center font-medium">U. Medida</th>
+                                <th class="border border-gray-200 p-2 w-20 text-center font-medium">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipe-ingredients-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-100 border-t border-gray-300 flex justify-end gap-3 shrink-0">
+                <button onclick="closeModal('modal-recipe-form')" class="px-6 py-2 bg-white border border-gray-300 font-medium hover:bg-gray-50">Cancelar</button>
+                <button onclick="saveRecipeMaster()" class="px-6 py-2 bg-gray-900 text-white font-medium hover:bg-black">Guardar Receta</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================== FULL SCREENS (PASO 2 SLOTS) ================== -->
+
+    <!-- FS RECETAS -->
+    <div id="fs-recipes" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
+        <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
+            <h2 class="text-lg font-bold tracking-wide uppercase">Catálogo de Recetas - Asignando al Slot</h2>
+            <button onclick="closeFullScreen('fs-recipes')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ X Cancelar ]</button>
+        </div>
+        <div class="flex-grow p-6 overflow-y-auto bg-gray-50 flex justify-center">
+            <div class="w-full max-w-5xl bg-white border border-gray-200 p-6 flex flex-col gap-6 shadow-sm">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+                    <input type="text" placeholder="Buscar receta..." class="w-2/3 border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    <button onclick="openRecipeForm(null)" class="px-6 py-2 bg-gray-100 border border-gray-300 font-medium hover:bg-gray-200">[ + ] Crear Receta</button>
+                </div>
+                <div id="fs-recipes-list" class="space-y-4">
+                    <!-- Render Dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FS INVENTARIO -->
+    <div id="fs-inventory" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
+        <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
+            <h2 class="text-lg font-bold tracking-wide uppercase">Catálogo de Inventario - Asignando al Slot</h2>
+            <button onclick="closeFullScreen('fs-inventory')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ X Cancelar ]</button>
+        </div>
+        <div class="flex-grow p-6 overflow-y-auto bg-gray-50 flex justify-center">
+            <div class="w-full max-w-5xl bg-white border border-gray-200 p-6 flex flex-col gap-6 shadow-sm">
+                <div class="pb-4 border-b border-gray-200">
+                    <input type="text" placeholder="Buscar insumo..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                </div>
+                <table class="w-full border-collapse border border-gray-200 text-left">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr><th class="p-3 border border-gray-200 font-medium">Ítem de Inventario</th><th class="p-3 border border-gray-200 w-32 text-center font-medium">Acción</th></tr>
+                    </thead>
+                    <tbody id="fs-inventory-list">
+                        <!-- Render Dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- FS IMPORTAR OFERTAS -->
+    <div id="fs-offers-import" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
+        <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
+            <h2 class="text-lg font-bold tracking-wide uppercase">Importar Oferta (Clonar Slots a la Actual)</h2>
+            <button onclick="closeFullScreen('fs-offers-import')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ X Cancelar ]</button>
+        </div>
+        <div class="flex-grow p-6 overflow-y-auto bg-gray-50 flex justify-center">
+            <div class="w-full max-w-4xl bg-white border border-gray-200 p-6 flex flex-col gap-6 shadow-sm">
+                <table class="w-full border-collapse border border-gray-200 text-left">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr><th class="p-3 border border-gray-200 font-medium">Oferta Comercial</th><th class="p-3 border border-gray-200 font-medium">Entrada Perteneciente</th><th class="p-3 border border-gray-200 font-medium">Precio</th><th class="p-3 border border-gray-200 w-40 text-center font-medium">Acción</th></tr>
+                    </thead>
+                    <tbody id="fs-import-list">
+                        <!-- Render Dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== SCRIPT JS: LOCALSTORAGE Y LOGICA ================== -->
+    <script>
+        // 1. DATA POR DEFECTO Y LOCALSTORAGE
+        const defaultDB = {
+            categories: [
+                { id: 'cat-001', name: 'Platos Fuertes', description: 'Cortes y platillos principales.' },
+                { id: 'cat-002', name: 'Bebidas', description: 'Bebidas frías y calientes.' },
+                { id: 'cat-003', name: 'Guarniciones', description: 'Acompañamientos extras.' },
+                { id: 'cat-004', name: 'Postres', description: 'Opciones dulces.' }
+            ],
+            entries: [
+                { id: 'entry-001', brandName: 'Hamburguesas', description: 'Hamburguesas artesanales de la casa.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-001'] },
+                { id: 'entry-002', brandName: 'Pizzas', description: 'Pizzas tradicionales en horno de leña.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-001'] },
+                { id: 'entry-003', brandName: 'Papas', description: 'Guarniciones a base de papa natural.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-003'] },
+                { id: 'entry-004', brandName: 'Snacks', description: 'Aperitivos rápidos.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-003'] },
+                { id: 'entry-005', brandName: 'Coctelería Tropical', description: 'Bebidas preparadas con frutas tropicales.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-002'] },
+                { id: 'entry-006', brandName: 'Postres Caseros', description: 'Recetas dulces y tradicionales.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-004'] }
+            ],
+            offers: [
+                { id: 'off-001', entryId: 'entry-001', presentationTag: 'Hamburguesa Hawaiana', basePrice: 180.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's1', name: 'Plato Principal', multiplier: 1, type: 'Receta', options: [{optionId: 'o1', recipeId: 'rec-001'}]}]}},
+                { id: 'off-002', entryId: 'entry-002', presentationTag: 'Pizza de Pepperoni', basePrice: 220.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's2', name: 'Plato Principal', multiplier: 1, type: 'Receta', options: [{optionId: 'o2', recipeId: 'rec-002'}]}]}},
+                { id: 'off-003', entryId: 'entry-003', presentationTag: 'Papas Cambray', basePrice: 75.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's3', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o3', recipeId: 'rec-003'}]}]}},
+                { id: 'off-004', entryId: 'entry-003', presentationTag: 'Papas a la Francesa', basePrice: 65.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's4', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o4', recipeId: 'rec-004'}]}]}},
+                { id: 'off-005', entryId: 'entry-003', presentationTag: 'Puré de Papa', basePrice: 60.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's5', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o5', recipeId: 'rec-005'}]}]}},
+                { id: 'off-006', entryId: 'entry-004', presentationTag: 'Aros de Cebolla', basePrice: 80.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's6', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o6', recipeId: 'rec-006'}]}]}},
+                { id: 'off-007', entryId: 'entry-005', presentationTag: 'Piña Colada', basePrice: 120.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's7', name: 'Bebida', multiplier: 1, type: 'Receta', options: [{optionId: 'o7', recipeId: 'rec-007'}]}]}},
+                { id: 'off-008', entryId: 'entry-006', presentationTag: 'Pan de Elote', basePrice: 70.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's8', name: 'Rebanada', multiplier: 1, type: 'Receta', options: [{optionId: 'o8', recipeId: 'rec-008'}]}]}},
+                { id: 'off-009', entryId: 'entry-006', presentationTag: 'Crème Brûlée', basePrice: 95.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's9', name: 'Plato', multiplier: 1, type: 'Receta', options: [{optionId: 'o9', recipeId: 'rec-009'}]}]}}
+            ],
+            recipes: [
+                { id: 'rec-001', name: 'Hamburguesa Hawaiana', description: 'Carne, jamón, queso y piña.', instructions: 'Asar carne, dorar jamón y piña. Montar en pan.', supplies: [{inventoryItemId: 'inv-01', quantity: 200}, {inventoryItemId: 'inv-02', quantity: 1}, {inventoryItemId: 'inv-03', quantity: 30}, {inventoryItemId: 'inv-04', quantity: 50}, {inventoryItemId: 'inv-05', quantity: 40}] },
+                { id: 'rec-002', name: 'Pizza de Pepperoni', description: 'Clásica con queso y pepperoni.', instructions: 'Estirar masa, agregar salsa, queso y pepperoni. Hornear.', supplies: [{inventoryItemId: 'inv-06', quantity: 250}, {inventoryItemId: 'inv-07', quantity: 80}, {inventoryItemId: 'inv-08', quantity: 120}, {inventoryItemId: 'inv-09', quantity: 50}] },
+                { id: 'rec-003', name: 'Papas Cambray', description: 'Salteadas con mantequilla y especias.', instructions: 'Hervir papas y luego saltear en sartén con mantequilla.', supplies: [{inventoryItemId: 'inv-10', quantity: 200}, {inventoryItemId: 'inv-12', quantity: 20}] },
+                { id: 'rec-004', name: 'Papas a la Francesa', description: 'Corte recto tradicionales.', instructions: 'Freír en aceite vegetal hasta dorar.', supplies: [{inventoryItemId: 'inv-11', quantity: 250}, {inventoryItemId: 'inv-24', quantity: 50}] },
+                { id: 'rec-005', name: 'Puré de Papa', description: 'Cremoso con mantequilla.', instructions: 'Hervir papas, machacar y mezclar con crema y mantequilla.', supplies: [{inventoryItemId: 'inv-11', quantity: 300}, {inventoryItemId: 'inv-12', quantity: 30}, {inventoryItemId: 'inv-13', quantity: 40}] },
+                { id: 'rec-006', name: 'Aros de Cebolla', description: 'Empanizados crujientes.', instructions: 'Cortar aros, pasar por huevo, empanizar y freír.', supplies: [{inventoryItemId: 'inv-14', quantity: 150}, {inventoryItemId: 'inv-20', quantity: 1}, {inventoryItemId: 'inv-25', quantity: 100}, {inventoryItemId: 'inv-24', quantity: 50}] },
+                { id: 'rec-007', name: 'Piña Colada', description: 'Coctel dulce con ron.', instructions: 'Licuar hielo, jugo de piña, crema de coco y ron blanco.', supplies: [{inventoryItemId: 'inv-15', quantity: 120}, {inventoryItemId: 'inv-16', quantity: 60}, {inventoryItemId: 'inv-17', quantity: 45}] },
+                { id: 'rec-008', name: 'Pan de Elote', description: 'Esponjoso y dulce.', instructions: 'Licuar elote, huevo, y leche condensada. Hornear 45 min.', supplies: [{inventoryItemId: 'inv-18', quantity: 300}, {inventoryItemId: 'inv-19', quantity: 150}, {inventoryItemId: 'inv-20', quantity: 3}] },
+                { id: 'rec-009', name: 'Crème Brûlée', description: 'Postre francés con costra de caramelo.', instructions: 'Mezclar crema, yema, vainilla. Hornear a baño maría y quemar azúcar arriba.', supplies: [{inventoryItemId: 'inv-13', quantity: 200}, {inventoryItemId: 'inv-20', quantity: 2}, {inventoryItemId: 'inv-21', quantity: 30}, {inventoryItemId: 'inv-22', quantity: 5}] }
+            ],
+            inventory: [
+                { id: 'inv-01', name: 'Carne Molida Res 80/20', sku: 'CRN-001', unit: 'g' },
+                { id: 'inv-02', name: 'Pan para Hamburguesa', sku: 'PAN-001', unit: 'pza' },
+                { id: 'inv-03', name: 'Queso Manchego', sku: 'LAC-001', unit: 'g' },
+                { id: 'inv-04', name: 'Piña en Almíbar', sku: 'FRU-001', unit: 'g' },
+                { id: 'inv-05', name: 'Jamón de Pierna', sku: 'CRN-002', unit: 'g' },
+                { id: 'inv-06', name: 'Masa para Pizza', sku: 'PAN-002', unit: 'g' },
+                { id: 'inv-07', name: 'Salsa de Tomate', sku: 'ABR-001', unit: 'ml' },
+                { id: 'inv-08', name: 'Queso Mozzarella', sku: 'LAC-002', unit: 'g' },
+                { id: 'inv-09', name: 'Pepperoni Rebanado', sku: 'CRN-003', unit: 'g' },
+                { id: 'inv-10', name: 'Papa Cambray', sku: 'VER-001', unit: 'g' },
+                { id: 'inv-11', name: 'Papa Blanca', sku: 'VER-002', unit: 'g' },
+                { id: 'inv-12', name: 'Mantequilla', sku: 'LAC-003', unit: 'g' },
+                { id: 'inv-13', name: 'Crema para Batir', sku: 'LAC-004', unit: 'ml' },
+                { id: 'inv-14', name: 'Cebolla Blanca', sku: 'VER-003', unit: 'g' },
+                { id: 'inv-15', name: 'Jugo de Piña', sku: 'BEB-003', unit: 'ml' },
+                { id: 'inv-16', name: 'Crema de Coco', sku: 'ABR-002', unit: 'ml' },
+                { id: 'inv-17', name: 'Ron Blanco', sku: 'LIC-001', unit: 'ml' },
+                { id: 'inv-18', name: 'Elote Desgranado', sku: 'VER-004', unit: 'g' },
+                { id: 'inv-19', name: 'Leche Condensada', sku: 'ABR-003', unit: 'ml' },
+                { id: 'inv-20', name: 'Huevo', sku: 'ABR-004', unit: 'pza' },
+                { id: 'inv-21', name: 'Azúcar Blanca', sku: 'ABR-005', unit: 'g' },
+                { id: 'inv-22', name: 'Extracto de Vainilla', sku: 'ABR-006', unit: 'ml' },
+                { id: 'inv-23', name: 'Refresco de Cola 355ml', sku: 'BEB-001', unit: 'pza' },
+                { id: 'inv-24', name: 'Aceite Vegetal', sku: 'ABR-007', unit: 'ml' },
+                { id: 'inv-25', name: 'Pan Molido', sku: 'ABR-008', unit: 'g' }
+            ]
+        };
+
+        // Cargar desde LocalStorage o usar por defecto
+        let db = JSON.parse(localStorage.getItem('menuCatalogDB')) || JSON.parse(JSON.stringify(defaultDB));
+
+        function saveDB() {
+            localStorage.setItem('menuCatalogDB', JSON.stringify(db));
+        }
+
+        function resetDB() {
+            if(confirm("¿Estás seguro de que quieres borrar todos los cambios y volver a los datos de fábrica?")) {
+                localStorage.removeItem('menuCatalogDB');
+                location.reload();
+            }
+        }
+
+        // Estado transitorio de la UI
+        let historyStack = ['screen-main'];
+        let activeEntryId = null;
+        let draftOffer = null; 
+        let activeSlotId = null; 
+
+        function genId(prefix) { return prefix + '-' + Math.floor(Math.random() * 10000); }
+
+        function updateGlobalNav() {
+            const nav = document.getElementById('global-nav');
+            const spacer = document.getElementById('nav-spacer');
+            if(historyStack.length > 1) {
+                nav.classList.remove('hidden'); spacer.classList.remove('hidden');
+            } else {
+                nav.classList.add('hidden'); spacer.classList.add('hidden');
+            }
+        }
+
+        function navigateTo(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+            if (historyStack[historyStack.length - 1] !== screenId) historyStack.push(screenId);
+            updateGlobalNav(); window.scrollTo(0,0);
+        }
+
+        function goBack() {
+            if (historyStack.length > 1) {
+                historyStack.pop();
+                const prevScreen = historyStack[historyStack.length - 1];
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById(prevScreen).classList.remove('hidden');
+                
+                if(prevScreen === 'screen-main') renderCatalog();
+                if(prevScreen === 'screen-offers' && activeEntryId) renderEntryOffers(activeEntryId);
+            }
+            updateGlobalNav(); window.scrollTo(0,0);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openFullScreen(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeFullScreen(id) { document.getElementById(id).classList.add('hidden'); activeSlotId = null; }
+
+        // --- RENDERIZADO CATÁLOGO PRINCIPAL ---
+        function renderCatalog() {
+            const container = document.getElementById('main-catalog-container');
+            container.innerHTML = '';
+
+            db.categories.forEach(cat => {
+                const catEntries = db.entries.filter(e => e.categoryIds.includes(cat.id));
+                const catIdHtml = 'cat-div-' + cat.id;
+
+                let html = `
+                <div class="bg-white border border-gray-200">
+                    <button onclick="document.getElementById('${catIdHtml}').classList.toggle('hidden')" class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 font-medium flex justify-between items-center border-b border-gray-200">
+                        <span class="text-gray-900">CATEGORÍA: ${cat.name} (${catEntries.length} entradas)</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-red-500 hover:text-red-700 font-bold" onclick="event.stopPropagation(); deleteCategory('${cat.id}')">[ Eliminar Categoría ]</span>
+                            <span class="text-xs text-gray-500">[ Desplegar ]</span>
+                        </div>
+                    </button>
+                    <div id="${catIdHtml}" class="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">`;
+                
+                if (catEntries.length === 0) {
+                    html += `<p class="text-gray-400 col-span-full italic">No hay entradas asignadas.</p>`;
+                } else {
+                    catEntries.forEach(entry => {
+                        const offerCount = db.offers.filter(o => o.entryId === entry.id).length;
+                        const statusColor = entry.status === 'ACTIVE' ? 'text-green-700' : 'text-yellow-700';
+                        
+                        html += `
+                        <div class="border border-gray-200 p-4 hover:shadow cursor-pointer flex flex-col bg-white group" onclick="openEntryOffers('${entry.id}')">
+                            <div class="flex-grow">
+                                <h2 class="text-base font-bold mb-2 text-gray-900">${entry.brandName}</h2>
+                                <div class="wireframe-img h-28 w-full mb-3">[ Imagen de ${entry.brandName} ]</div>
+                                <p class="text-gray-500 text-xs mb-3 h-8 overflow-hidden">${entry.description}</p>
+                                <div class="space-y-1 text-xs text-gray-700">
+                                    <p>Estado: <span class="${statusColor} font-medium">${entry.status}</span></p>
+                                    <p>Ofertas (Platillos): <span class="font-bold">${offerCount}</span></p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                                <button onclick="event.stopPropagation(); openEntryForm('${entry.id}')" class="flex-1 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">[ Editar ]</button>
+                                <button onclick="event.stopPropagation(); deleteEntry('${entry.id}')" class="flex-1 py-1 border border-gray-300 text-red-600 hover:bg-gray-50">[ Eliminar ]</button>
+                            </div>
+                        </div>`;
+                    });
+                }
+                html += `</div></div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        // --- FUNCIONES CATEGORÍAS ---
+        function saveCategory() {
+            const name = document.getElementById('cat-name-input').value || 'Sin nombre';
+            const desc = document.getElementById('cat-desc-input').value || '';
+            db.categories.push({ id: genId('cat'), name, description: desc });
+            saveDB();
+            closeModal('modal-category');
+            renderCatalog();
+        }
+
+        function deleteCategory(id) {
+            if(confirm('¿Eliminar esta categoría? Las entradas asociadas perderán esta etiqueta.')) {
+                db.categories = db.categories.filter(c => c.id !== id);
+                db.entries.forEach(e => {
+                    e.categoryIds = e.categoryIds.filter(cId => cId !== id);
+                });
+                saveDB();
+                renderCatalog();
+            }
+        }
+
+        // --- FUNCIONES ENTRADAS ---
+        function openEntryForm(entryId = null) {
+            const isEdit = !!entryId;
+            document.getElementById('entry-form-title').innerText = isEdit ? `EDITAR ENTRADA` : 'CREAR NUEVA ENTRADA';
+            document.getElementById('entry-id-input').value = entryId || '';
+            
+            let entry = isEdit ? db.entries.find(e => e.id === entryId) : { brandName: '', description: '', categoryIds: [], status: 'INACTIVE' };
+            
+            document.getElementById('entry-name-input').value = entry.brandName;
+            document.getElementById('entry-desc-input').value = entry.description;
+
+            const catContainer = document.getElementById('entry-cats-dropdown');
+            catContainer.innerHTML = '';
+            db.categories.forEach(cat => {
+                const checked = entry.categoryIds.includes(cat.id) ? 'checked' : '';
+                catContainer.innerHTML += `<label class="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100"><input type="checkbox" value="${cat.id}" class="cat-checkbox" ${checked}> ${cat.name}</label>`;
+            });
+
+            const statusContainer = document.getElementById('entry-status-container');
+            if (isEdit) {
+                const cAct = entry.status === 'ACTIVE' ? 'checked' : '';
+                const cIna = entry.status === 'INACTIVE' ? 'checked' : '';
+                statusContainer.innerHTML = `
+                    <div class="flex gap-4 mt-2">
+                        <label class="flex items-center gap-2 font-medium cursor-pointer text-green-700"><input type="radio" name="entry-status-rad" value="ACTIVE" ${cAct}> ACTIVE</label>
+                        <label class="flex items-center gap-2 font-medium cursor-pointer text-yellow-700"><input type="radio" name="entry-status-rad" value="INACTIVE" ${cIna}> INACTIVE</label>
+                    </div>`;
+            } else {
+                statusContainer.innerHTML = `<div class="font-medium tracking-wide">INACTIVE (Por defecto)</div>`;
+            }
+
+            navigateTo('screen-entry-form');
+        }
+
+        function saveEntry() {
+            const id = document.getElementById('entry-id-input').value;
+            const brandName = document.getElementById('entry-name-input').value || 'Sin nombre';
+            const description = document.getElementById('entry-desc-input').value;
+            const categoryIds = Array.from(document.querySelectorAll('.cat-checkbox:checked')).map(cb => cb.value);
+            
+            if (id) {
+                const entry = db.entries.find(e => e.id === id);
+                entry.brandName = brandName;
+                entry.description = description;
+                entry.categoryIds = categoryIds;
+                const statusRad = document.querySelector('input[name="entry-status-rad"]:checked');
+                if (statusRad) entry.status = statusRad.value;
+            } else {
+                db.entries.push({ id: genId('entry'), brandName, description, imageRef: '[ Imagen ]', status: 'INACTIVE', categoryIds });
+            }
+            saveDB();
+            goBack();
+        }
+
+        function deleteEntry(id) {
+            if(confirm('¿Eliminar esta entrada y TODAS sus ofertas/platillos asociados?')) {
+                db.entries = db.entries.filter(e => e.id !== id);
+                db.offers = db.offers.filter(o => o.entryId !== id);
+                saveDB();
+                renderCatalog();
+            }
+        }
+
+        // --- FUNCIONES OFERTAS ---
+        function openEntryOffers(entryId) {
+            activeEntryId = entryId;
+            renderEntryOffers(entryId);
+            navigateTo('screen-offers');
+        }
+
+        function renderEntryOffers(entryId) {
+            const entry = db.entries.find(e => e.id === entryId);
+            document.getElementById('offers-entry-title').innerText = `OFERTAS DE: ${entry.brandName}`;
+            
+            const offers = db.offers.filter(o => o.entryId === entryId);
+            const grid = document.getElementById('offers-grid');
+            grid.innerHTML = '';
+
+            if (offers.length === 0) {
+                grid.innerHTML = `<p class="col-span-full text-gray-500 italic">No hay ofertas configuradas.</p>`;
+                return;
+            }
+
+            offers.forEach(off => {
+                const statusColor = off.status === 'ACTIVE' ? 'text-green-700' : 'text-yellow-700';
+                grid.innerHTML += `
+                <div class="border border-gray-200 hover:shadow cursor-pointer flex flex-col bg-white" onclick="openOfferForm('${off.id}')">
+                    <div class="p-5 flex-grow">
+                        <h2 class="text-base font-bold text-center mb-3 text-gray-900">${off.presentationTag}</h2>
+                        <div class="wireframe-img h-28 w-full mb-4">[ Imagen Platillo ]</div>
+                        <div class="text-center font-medium text-lg mb-4 text-gray-800">$ ${off.basePrice}</div>
+                        <div class="space-y-1 text-xs text-gray-600 text-center border-t border-gray-100 pt-2">
+                            <p>Estado: <span class="${statusColor} font-medium">${off.status}</span></p>
+                            <p>Slots: ${off.composition.slots.length}</p>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-50 border-t border-gray-200">
+                        <button onclick="event.stopPropagation(); deleteOffer('${off.id}')" class="w-full py-1 border border-gray-300 text-red-600 hover:bg-white transition">[ Eliminar Oferta ]</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function deleteOffer(offerId) {
+            if(confirm('¿Eliminar definitivamente esta oferta?')) {
+                db.offers = db.offers.filter(o => o.id !== offerId);
+                saveDB();
+                renderEntryOffers(activeEntryId);
+            }
+        }
+
+        function openOfferForm(offerId = null) {
+            const entry = db.entries.find(e => e.id === activeEntryId);
+            document.getElementById('offer-form-subtitle').innerText = `Entrada Padre: ${entry.brandName}`;
+            
+            if (offerId) {
+                draftOffer = JSON.parse(JSON.stringify(db.offers.find(o => o.id === offerId)));
+                document.getElementById('offer-form-title').innerText = `EDITAR OFERTA`;
+            } else {
+                document.getElementById('offer-form-title').innerText = `NUEVA OFERTA`;
+                draftOffer = { id: null, entryId: activeEntryId, presentationTag: '', basePrice: 0, status: 'INACTIVE', composition: { slots: [] } };
+            }
+
+            document.getElementById('offer-tag-input').value = draftOffer.presentationTag;
+            document.getElementById('offer-price-input').value = draftOffer.basePrice;
+            document.querySelector(`input[name="offer-status"][value="${draftOffer.status}"]`).checked = true;
+
+            renderDraftSlots();
+            navigateTo('screen-offer-form');
+        }
+
+        // --- COMPOSICIÓN DE SLOTS ---
+        function renderDraftSlots() {
+            const container = document.getElementById('slots-container');
+            const addBtn = document.getElementById('add-slot-btn');
+            container.innerHTML = '';
+
+            draftOffer.composition.slots.forEach(slot => {
+                const fsTarget = slot.type === 'Receta' ? "'fs-recipes'" : "'fs-inventory'";
+                
+                let optionsHtml = '';
+                if(slot.options.length === 0) {
+                    optionsHtml = `<div class="text-center text-gray-400 text-xs my-auto py-4"><p>Lista vacía.</p></div>`;
+                } else {
+                    slot.options.forEach(opt => {
+                        let itemName = "Desconocido";
+                        if(slot.type === 'Receta') {
+                            const r = db.recipes.find(x => x.id === opt.recipeId);
+                            if(r) itemName = r.name;
+                        } else {
+                            const i = db.inventory.find(x => x.id === opt.inventoryItemId);
+                            if(i) itemName = i.name;
+                        }
+
+                        optionsHtml += `
+                        <div class="flex justify-between items-center p-2 bg-white border border-gray-200 text-sm">
+                            <span class="text-gray-800">- ${itemName}</span>
+                            <button onclick="removeOptionFromDraft('${slot.slotId}', '${opt.optionId}')" class="text-gray-400 hover:text-red-500 font-bold px-1">[ X ]</button>
+                        </div>`;
+                    });
+                }
+
+                const slotHTML = `
+                <div class="slot-container min-w-[280px] w-[280px] border border-gray-200 flex flex-col bg-white shrink-0">
+                    <div class="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                        <input type="text" value="${slot.name}" onchange="updateDraftSlotName('${slot.slotId}', this.value)" class="font-bold bg-transparent w-32 focus:outline-none focus:border-b border-gray-400 text-gray-900">
+                        <div class="flex items-center gap-1 text-xs text-gray-600">
+                            <button onclick="updateDraftSlotMult('${slot.slotId}', -1)" class="px-1.5 border border-gray-300 bg-white hover:bg-gray-100">-</button>
+                            <span class="w-4 text-center font-medium">${slot.multiplier}</span>
+                            <button onclick="updateDraftSlotMult('${slot.slotId}', 1)" class="px-1.5 border border-gray-300 bg-white hover:bg-gray-100">+</button>
+                            <button class="ml-2 text-gray-400 hover:text-red-500" onclick="removeSlotFromDraft('${slot.slotId}')">[ X ]</button>
+                        </div>
+                    </div>
+                    <div class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium uppercase border-b border-gray-200 text-center">TIPO: ${slot.type}</div>
+                    
+                    <div class="p-3 flex-grow space-y-2 flex flex-col max-h-48 overflow-y-auto hide-scrollbar bg-gray-50 border-b border-gray-100">
+                        ${optionsHtml}
+                    </div>
+                    
+                    <div class="p-3 bg-white mt-auto">
+                        <button onclick="activeSlotId='${slot.slotId}'; ${slot.type === 'Receta' ? 'renderRecipesFull();' : 'renderInventoryFull();'} openFullScreen(${fsTarget})" class="w-full py-1.5 border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">[ Agregar Opción ]</button>
+                    </div>
+                </div>`;
+                container.innerHTML += slotHTML;
+            });
+            container.appendChild(addBtn);
+        }
+
+        function updateDraftSlotName(slotId, val) {
+            const slot = draftOffer.composition.slots.find(s => s.slotId === slotId);
+            if(slot) slot.name = val;
+        }
+
+        function updateDraftSlotMult(slotId, delta) {
+            const slot = draftOffer.composition.slots.find(s => s.slotId === slotId);
+            if(slot) {
+                slot.multiplier += delta;
+                if(slot.multiplier < 1) slot.multiplier = 1;
+                renderDraftSlots();
+            }
+        }
+
+        function removeSlotFromDraft(slotId) {
+            draftOffer.composition.slots = draftOffer.composition.slots.filter(s => s.slotId !== slotId);
+            renderDraftSlots();
+        }
+
+        function removeOptionFromDraft(slotId, optionId) {
+            const slot = draftOffer.composition.slots.find(s => s.slotId === slotId);
+            if(slot) {
+                slot.options = slot.options.filter(o => o.optionId !== optionId);
+                renderDraftSlots();
+            }
+        }
+
+        function saveOffer() {
+            draftOffer.presentationTag = document.getElementById('offer-tag-input').value || 'Sin Etiqueta';
+            draftOffer.basePrice = parseFloat(document.getElementById('offer-price-input').value) || 0;
+            draftOffer.status = document.querySelector('input[name="offer-status"]:checked').value;
+            
+            if (draftOffer.id) {
+                const idx = db.offers.findIndex(o => o.id === draftOffer.id);
+                db.offers[idx] = draftOffer;
+            } else {
+                draftOffer.id = genId('off');
+                db.offers.push(draftOffer);
+            }
+            saveDB();
+            goBack();
+        }
+
+        function handleSlotCreation() {
+            const slotName = document.getElementById('new-slot-name').value || 'Nuevo Slot';
+            const selectedType = document.querySelector('input[name="slottype"]:checked').value;
+            closeModal('modal-slot-step1');
+            
+            if (selectedType === 'Oferta') {
+                renderImportFull();
+                openFullScreen('fs-offers-import');
+                return;
+            }
+
+            const newSlot = { slotId: genId('slot'), name: slotName, multiplier: 1, type: selectedType, options: [] };
+            draftOffer.composition.slots.push(newSlot);
+            renderDraftSlots();
+            
+            activeSlotId = newSlot.slotId;
+            if (selectedType === 'Receta') { renderRecipesFull(); openFullScreen('fs-recipes'); }
+            else { renderInventoryFull(); openFullScreen('fs-inventory'); }
+        }
+
+        // --- FS CATÁLOGOS ---
+        function renderRecipesFull() {
+            const list = document.getElementById('fs-recipes-list');
+            list.innerHTML = '';
+            db.recipes.forEach(rec => {
+                let insumosText = rec.supplies.map(s => {
+                    const inv = db.inventory.find(i => i.id === s.inventoryItemId);
+                    return inv ? `${inv.name} (${s.quantity}${inv.unit})` : '';
+                }).join(', ');
+
+                list.innerHTML += `
+                <div class="border border-gray-200 p-4 hover:shadow bg-white">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">${rec.name}</h3>
+                            <p class="text-sm text-gray-500">${rec.description}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openRecipeForm('${rec.id}')" class="px-3 py-1 border border-gray-300 hover:bg-gray-50 font-medium text-gray-700 text-sm">[ Editar ]</button>
+                            <button onclick="assignOptionToActiveSlot('Receta', '${rec.id}')" class="px-3 py-1 bg-gray-900 text-white hover:bg-black font-medium text-sm">[ Asignar ]</button>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-2 border border-gray-100 mt-3">
+                        <p class="text-xs text-gray-600"><span class="font-medium text-gray-800">Insumos:</span> ${insumosText || 'Ninguno'}</p>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderInventoryFull() {
+            const list = document.getElementById('fs-inventory-list');
+            list.innerHTML = '';
+            db.inventory.forEach(inv => {
+                list.innerHTML += `
+                <tr class="hover:bg-gray-50 border-b border-gray-100">
+                    <td class="p-3 text-gray-800">${inv.name} <span class="text-gray-400 text-xs">(${inv.unit})</span></td>
+                    <td class="p-3 text-center">
+                        <button onclick="assignOptionToActiveSlot('Item de Inventario', '${inv.id}')" class="px-3 py-1 bg-gray-900 text-white font-medium hover:bg-black text-sm w-full">[ Asignar ]</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function renderImportFull() {
+            const list = document.getElementById('fs-import-list');
+            list.innerHTML = '';
+            db.offers.forEach(off => {
+                if(draftOffer.id === off.id) return;
+                const ent = db.entries.find(e => e.id === off.entryId);
+                const entName = ent ? ent.brandName : 'Desconocida';
+                
+                list.innerHTML += `
+                <tr class="hover:bg-gray-50 border-b border-gray-100">
+                    <td class="p-3 font-medium text-gray-800">${off.presentationTag}</td>
+                    <td class="p-3 text-gray-500">${entName}</td>
+                    <td class="p-3 text-gray-800">$ ${off.basePrice}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="cloneSlotsFromOffer('${off.id}')" class="px-3 py-1 bg-white border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 text-sm w-full">[ Importar Slots ]</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function assignOptionToActiveSlot(type, targetId) {
+            if(!activeSlotId) return;
+            const slot = draftOffer.composition.slots.find(s => s.slotId === activeSlotId);
+            if(slot) {
+                if(type === 'Receta') slot.options.push({ optionId: genId('opt'), recipeId: targetId });
+                if(type === 'Item de Inventario') slot.options.push({ optionId: genId('opt'), inventoryItemId: targetId });
+            }
+            closeFullScreen('fs-recipes');
+            closeFullScreen('fs-inventory');
+            renderDraftSlots();
+        }
+
+        function cloneSlotsFromOffer(offerId) {
+            const sourceOffer = db.offers.find(o => o.id === offerId);
+            if(sourceOffer) {
+                const clonedSlots = JSON.parse(JSON.stringify(sourceOffer.composition.slots));
+                clonedSlots.forEach(cs => {
+                    cs.slotId = genId('slot');
+                    cs.options.forEach(o => o.optionId = genId('opt'));
+                    draftOffer.composition.slots.push(cs);
+                });
+                renderDraftSlots();
+            }
+            closeFullScreen('fs-offers-import');
+        }
+
+        // --- RECETAS MAESTRAS ---
+        function openRecipeForm(recipeId = null) {
+            const isEdit = !!recipeId;
+            document.getElementById('recipe-modal-title').innerText = isEdit ? `EDITAR RECETA` : 'NUEVA RECETA';
+            document.getElementById('rec-id').value = recipeId || '';
+            
+            let rec = isEdit ? db.recipes.find(r => r.id === recipeId) : { name: '', description: '', instructions: '', supplies: [] };
+            
+            document.getElementById('rec-name').value = rec.name;
+            document.getElementById('rec-desc').value = rec.description;
+            document.getElementById('rec-inst').value = rec.instructions;
+
+            const tbody = document.getElementById('recipe-ingredients-body');
+            tbody.innerHTML = '';
+            
+            if (rec.supplies.length > 0) {
+                rec.supplies.forEach(s => addIngredientRow(s.inventoryItemId, s.quantity));
+            } else {
+                addIngredientRow();
+            }
+
+            openModal('modal-recipe-form');
+        }
+
+        function addIngredientRow(selectedInvId = null, qty = 1) {
+            const tbody = document.getElementById('recipe-ingredients-body');
+            const tr = document.createElement('tr');
+            
+            let options = '<option value="">Seleccione insumo...</option>';
+            db.inventory.forEach(inv => {
+                const sel = inv.id === selectedInvId ? 'selected' : '';
+                options += `<option value="${inv.id}" data-unit="${inv.unit}" ${sel}>${inv.name}</option>`;
+            });
+
+            tr.innerHTML = `
+                <td class="border border-gray-200 p-2 bg-white">
+                    <select class="inv-select w-full bg-transparent outline-none cursor-pointer" onchange="updateRowUnit(this)">
+                        ${options}
+                    </select>
+                </td>
+                <td class="border border-gray-200 p-2 bg-white">
+                    <input type="number" value="${qty}" class="inv-qty w-full p-1 border border-gray-300 text-center focus:outline-none">
+                </td>
+                <td class="border border-gray-200 p-2 bg-gray-50 text-gray-500 text-center inv-unit">
+                    --
+                </td>
+                <td class="border border-gray-200 p-2 bg-white text-center">
+                    <button type="button" onclick="this.closest('tr').remove()" class="text-gray-400 hover:text-black font-bold px-2 py-1">[ X ]</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            const selEl = tr.querySelector('select');
+            updateRowUnit(selEl);
+        }
+
+        function updateRowUnit(selectEl) {
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            const unitCell = selectEl.closest('tr').querySelector('.inv-unit');
+            unitCell.innerText = selectedOpt.dataset.unit || '--';
+        }
+
+        function saveRecipeMaster() {
+            const id = document.getElementById('rec-id').value;
+            const name = document.getElementById('rec-name').value || 'Receta sin nombre';
+            const description = document.getElementById('rec-desc').value;
+            const instructions = document.getElementById('rec-inst').value;
+
+            const supplies = [];
+            const rows = document.querySelectorAll('#recipe-ingredients-body tr');
+            rows.forEach(tr => {
+                const invId = tr.querySelector('.inv-select').value;
+                const qty = parseFloat(tr.querySelector('.inv-qty').value);
+                if (invId && qty > 0) {
+                    supplies.push({ inventoryItemId: invId, quantity: qty });
+                }
+            });
+
+            if (id) {
+                const rec = db.recipes.find(r => r.id === id);
+                rec.name = name; rec.description = description; rec.instructions = instructions; rec.supplies = supplies;
+            } else {
+                db.recipes.push({ id: genId('rec'), name, description, instructions, supplies });
+            }
+
+            saveDB();
+            closeModal('modal-recipe-form');
+            renderRecipesFull();
+        }
+
+        // --- INICIALIZACIÓN ---
+        renderCatalog();
+        updateGlobalNav();
+
+    </script>
+</body>
+</html>
