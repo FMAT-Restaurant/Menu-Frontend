@@ -16,7 +16,7 @@ Este repositorio contiene solo el cliente web y sus herramientas. El servicio HT
 
 ## Mockups
 
-En la carpeta [Mockups/](mockups/) se encuentran los prototipos visuales y medianamente funcionales de la aplicación. Estos archivos sirven como **punto de partida y guía de referencia para el desarrollo del frontend**, permitiendo visualizar la estructura, distribución de componentes y la experiencia de usuario antes de su integración definitiva con el sistema.
+En la carpeta [Mockups](mockups/) se encuentran los prototipos visuales y medianamente funcionales de la aplicación. Estos archivos sirven como **punto de partida y guía de referencia para el desarrollo del frontend**, permitiendo visualizar la estructura, distribución de componentes y la experiencia de usuario antes de su integración definitiva con el sistema.
 
 ## Desarrollo
 
