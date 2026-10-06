@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prototipo Frontend - Catálogo con Persistencia LocalStorage</title>
+    <title>Prototipo Frontend - Catálogo y Composición Comercial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfcfc; color: #111827; }
@@ -32,15 +32,56 @@
     <div id="screen-main" class="screen p-6 max-w-6xl mx-auto mt-4">
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-300">
             <h1 class="text-xl font-bold uppercase tracking-wide">Catálogo del Menú</h1>
-            <div class="flex gap-3">
-                <button onclick="openModal('modal-category')" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">+ Crear Categoría</button>
+            <div class="flex flex-wrap justify-end gap-3">
+                <button onclick="openRecipeLibrary()" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Biblioteca de recetas</button>
+                <button onclick="openCategoryCatalog()" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Catálogo de categorías</button>
                 <button onclick="openEntryForm()" class="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium">+ Nueva Entrada</button>
             </div>
         </div>
 
-        <div id="main-catalog-container" class="space-y-6">
+        <div class="bg-white border border-gray-200 p-4 mb-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div class="lg:col-span-2">
+                    <label for="catalog-search-input" class="block font-medium mb-1">Buscar entradas</label>
+                    <input id="catalog-search-input" type="search" oninput="updateCatalogFilters()" placeholder="Buscar por nombre o descripción..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                </div>
+                <div>
+                    <label for="catalog-category-filter" class="block font-medium mb-1">Categoría</label>
+                    <select id="catalog-category-filter" onchange="updateCatalogFilters()" class="w-full border border-gray-300 p-2 bg-white">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="catalog-status-filter" class="block font-medium mb-1">Estado</label>
+                    <select id="catalog-status-filter" onchange="updateCatalogFilters()" class="w-full border border-gray-300 p-2 bg-white">
+                        <option value="">Todos los estados</option>
+                        <option value="ACTIVE">Activa</option>
+                        <option value="INACTIVE">Inactiva</option>
+                        <option value="ARCHIVED">Archivada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end mt-3">
+                <button onclick="clearCatalogFilters()" class="px-3 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">Limpiar filtros</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <p id="catalog-results-summary" class="text-sm text-gray-600" aria-live="polite"></p>
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+                Entradas por página
+                <select id="catalog-page-size" onchange="changeCatalogPageSize(this.value)" class="border border-gray-300 bg-white p-1">
+                    <option value="6">6</option>
+                    <option value="12">12</option>
+                    <option value="24">24</option>
+                </select>
+            </label>
+        </div>
+
+        <div id="main-catalog-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <!-- Renderizado dinámico desde JS -->
         </div>
+        <div id="catalog-pagination" class="mt-6 flex justify-center"></div>
     </div>
 
     <!-- SCREEN 2: FORMULARIO DE ENTRADA (CREAR/EDITAR) -->
@@ -50,8 +91,9 @@
         <div class="bg-white p-6 border border-gray-200 space-y-6">
             <input type="hidden" id="entry-id-input">
             <div>
-                <label class="block font-medium mb-1">Nombre Comercial (Agrupador de Ofertas):</label>
-                <input type="text" id="entry-name-input" placeholder="Ej. Hamburguesas Clásicas..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                <label class="block font-medium mb-1">Nombre comercial de la entrada:</label>
+                <input type="text" id="entry-name-input" placeholder="Ej. Hamburguesa Hawaiana..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                <p class="text-xs text-gray-500 mt-1">Identifica el producto; sus ofertas representan presentaciones vendibles, como Individual o Grande.</p>
             </div>
             <div>
                 <label class="block font-medium mb-1">Descripción General:</label>
@@ -74,7 +116,7 @@
                 </div>
                 
                 <div class="border border-gray-200 p-4 bg-gray-50">
-                    <label class="block font-medium mb-2">Estado Inicial:</label>
+                    <label class="block font-medium mb-2">Estado:</label>
                     <div id="entry-status-container">
                         <!-- Renderizado dinámico -->
                     </div>
@@ -103,7 +145,7 @@
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-300">
             <div>
                 <h1 id="offers-entry-title" class="text-xl font-bold uppercase tracking-wide">OFERTAS DE: [ENTRADA]</h1>
-                <p class="text-gray-500 text-sm mt-1">Variantes comerciales o platillos asociados a esta entrada</p>
+                <p class="text-gray-500 text-sm mt-1">Presentaciones vendibles de la misma identidad comercial</p>
             </div>
             <button onclick="openOfferForm(null)" class="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium">+ Nueva Oferta</button>
         </div>
@@ -117,8 +159,8 @@
     <div id="screen-offer-form" class="screen hidden p-6 max-w-6xl mx-auto mt-4">
         <div class="mb-6 pb-4 border-b border-gray-300 flex justify-between items-end">
             <div>
-                <h1 class="text-xl font-bold uppercase tracking-wide" id="offer-form-title">CONFIGURACIÓN DE OFERTA (PLATILLO)</h1>
-                <p id="offer-form-subtitle" class="text-gray-500 font-medium mt-1">Entrada Padre: [Entrada]</p>
+                <h1 class="text-xl font-bold uppercase tracking-wide" id="offer-form-title">CONFIGURACIÓN DE OFERTA</h1>
+                <p id="offer-form-subtitle" class="text-gray-500 font-medium mt-1">Entrada: [Identidad comercial]</p>
             </div>
             <button onclick="goBack()" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Descartar Cambios</button>
         </div>
@@ -128,8 +170,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                 <div class="space-y-6">
                     <div>
-                        <label class="block font-medium mb-1">Nombre Comercial del Platillo / Oferta:</label>
-                        <input type="text" id="offer-tag-input" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                        <label class="block font-medium mb-1">Etiqueta de presentación (opcional):</label>
+                        <input type="text" id="offer-tag-input" placeholder="Ej. Individual, Mediana o Combo" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                        <p class="text-xs text-gray-500 mt-1">La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.</p>
                     </div>
                     <div>
                         <label class="block font-medium mb-1">Precio Base:</label>
@@ -141,8 +184,8 @@
                     <div>
                         <label class="block font-medium mb-1">Estado:</label>
                         <div class="flex gap-6 mt-2 border border-gray-200 p-2 bg-gray-50 w-max" id="offer-status-radios">
-                            <label class="flex items-center gap-2 cursor-pointer font-medium"><input type="radio" name="offer-status" value="ACTIVE"> ACTIVE</label>
-                            <label class="flex items-center gap-2 cursor-pointer font-medium"><input type="radio" name="offer-status" value="INACTIVE"> INACTIVE</label>
+                            <label class="flex items-center gap-2 cursor-pointer font-medium"><input type="radio" name="offer-status" value="ACTIVE"> Activa</label>
+                            <label class="flex items-center gap-2 cursor-pointer font-medium"><input type="radio" name="offer-status" value="INACTIVE"> Inactiva</label>
                         </div>
                     </div>
                 </div>
@@ -158,17 +201,21 @@
             </div>
         </div>
 
-        <!-- COMPOSICIÓN (SLOTS HORIZONTALES) -->
+        <!-- COMPOSICIÓN (GRUPOS HORIZONTALES) -->
         <div class="bg-white p-6 border border-gray-200">
-            <h2 class="font-bold text-lg mb-4 border-b border-gray-200 pb-2 uppercase tracking-wide">2. Composición (Slots Horizontales)</h2>
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-2 border-b border-gray-200 pb-2">
+                <h2 class="font-bold text-lg uppercase tracking-wide">2. Composición</h2>
+                <button type="button" onclick="copyCompositionFromOffer()" class="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 font-medium">Copiar composición desde otra oferta</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Cada grupo define su participación y cantidad; cada opción elige su propia fuente de contenido.</p>
             <div id="slots-container" class="flex gap-4 overflow-x-auto pb-4 hide-scrollbar items-stretch min-h-[250px]">
                 <!-- Slots renderizados dinámicamente -->
                 
-                <!-- Nuevo Slot Botón -->
-                <div id="add-slot-btn" class="min-w-[200px] shrink-0 border border-dashed border-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition" onclick="openModal('modal-slot-step1')">
+                <!-- Botón para agregar grupo -->
+                <div id="add-slot-btn" class="min-w-[200px] shrink-0 border border-dashed border-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition" onclick="openSlotForm()">
                     <div class="text-center text-gray-500">
                         <div class="text-2xl mb-2 font-light">+</div>
-                        <div class="font-medium">Nuevo Slot</div>
+                        <div class="font-medium">Agregar grupo</div>
                     </div>
                 </div>
             </div>
@@ -184,13 +231,14 @@
     <!-- ================== MODALES ================== -->
 
     <!-- Modal Categoría -->
-    <div id="modal-category" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50">
+    <div id="modal-category" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-[70]">
         <div class="bg-white w-[500px] border border-gray-300 shadow-2xl overflow-hidden">
             <div class="flex justify-between bg-gray-100 p-4 border-b border-gray-300 font-bold uppercase tracking-wide">
-                <span>Crear Categoría</span>
+                <span id="category-modal-title">Crear categoría</span>
                 <button onclick="closeModal('modal-category')" class="text-gray-500 hover:text-black">[ X ]</button>
             </div>
             <div class="p-5 space-y-4">
+                <input type="hidden" id="cat-id-input">
                 <div>
                     <label class="block font-medium mb-1">Nombre:</label>
                     <input type="text" id="cat-name-input" placeholder="Ej. Postres" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
@@ -202,44 +250,81 @@
             </div>
             <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
                 <button onclick="closeModal('modal-category')" class="px-4 py-1.5 bg-white border border-gray-300 font-medium hover:bg-gray-100">Cancelar</button>
-                <button onclick="saveCategory()" class="px-4 py-1.5 bg-gray-900 text-white font-medium hover:bg-black">Guardar</button>
+                <button id="category-save-btn" onclick="saveCategory()" class="px-4 py-1.5 bg-gray-900 text-white font-medium hover:bg-black">Guardar categoría</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Definir Slot (Paso 1) -->
+    <!-- Modal Definir grupo de composición -->
     <div id="modal-slot-step1" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50">
-        <div class="bg-white w-[500px] border border-gray-300 shadow-2xl overflow-hidden">
+        <div class="bg-white w-[560px] max-w-[95vw] border border-gray-300 shadow-2xl overflow-hidden">
             <div class="flex justify-between bg-gray-100 p-4 border-b border-gray-300 font-bold uppercase tracking-wide">
-                <span>Definir Nuevo Slot</span>
+                <span id="slot-modal-title">Definir nuevo grupo</span>
                 <button onclick="closeModal('modal-slot-step1')" class="text-gray-500 hover:text-black">[ X ]</button>
             </div>
             <div class="p-5 space-y-5">
                 <div>
-                    <label class="block font-medium mb-1">Nombre del Slot:</label>
-                    <input type="text" id="new-slot-name" placeholder="Ej. Guarnición..." class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    <label class="block font-medium mb-1">Nombre del grupo:</label>
+                    <input type="text" id="new-slot-name" placeholder="Ej. Acompañamiento" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
                 </div>
-                <div>
-                    <label class="block font-medium mb-2">Tipo de Slot:</label>
-                    <div class="space-y-2 text-gray-800">
-                        <label class="block p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer bg-white">
-                            <div class="font-medium flex items-center gap-2"><input type="radio" name="slottype" checked value="Receta"> Receta</div>
-                            <div class="text-xs text-gray-500 ml-6 mt-1">Busca y asigna una preparación culinaria de las recetas maestras.</div>
-                        </label>
-                        <label class="block p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer bg-white">
-                            <div class="font-medium flex items-center gap-2"><input type="radio" name="slottype" value="Item de Inventario"> Item de Inventario</div>
-                            <div class="text-xs text-gray-500 ml-6 mt-1">Busca y asigna un insumo directo de almacén con unidad de medida fija.</div>
-                        </label>
-                        <label class="block p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer bg-white">
-                            <div class="font-medium flex items-center gap-2"><input type="radio" name="slottype" value="Oferta"> Oferta</div>
-                            <div class="text-xs text-gray-500 ml-6 mt-1">Abre el catálogo para clonar múltiples slots pre-armados a esta oferta.</div>
-                        </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-medium mb-1">Unidades incluidas en el grupo:</label>
+                        <input type="number" id="new-slot-quantity" min="1" step="1" value="1" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">Curso / tiempo sugerido (opcional):</label>
+                        <select id="new-slot-course" class="w-full border border-gray-300 p-2 bg-white focus:outline-none focus:border-gray-500">
+                            <option value="">Sin especificar</option>
+                            <option value="Entrada">Entrada</option>
+                            <option value="Plato fuerte">Plato fuerte</option>
+                            <option value="Postre">Postre</option>
+                            <option value="Bebida">Bebida</option>
+                        </select>
                     </div>
                 </div>
             </div>
             <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
                 <button onclick="closeModal('modal-slot-step1')" class="px-6 py-2 bg-white border border-gray-300 font-medium hover:bg-gray-100">Cancelar</button>
-                <button onclick="handleSlotCreation()" class="px-6 py-2 bg-gray-900 text-white font-medium hover:bg-black">Continuar</button>
+                <button onclick="handleSlotCreation()" class="px-6 py-2 bg-gray-900 text-white font-medium hover:bg-black">Guardar grupo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para configurar una opción individual del grupo -->
+    <div id="modal-option-editor" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50">
+        <div class="bg-white w-[560px] max-w-[95vw] border border-gray-300 shadow-2xl overflow-hidden">
+            <div class="flex justify-between bg-gray-100 p-4 border-b border-gray-300 font-bold uppercase tracking-wide">
+                <span id="option-modal-title">Agregar opción</span>
+                <button onclick="closeOptionEditor()" class="text-gray-500 hover:text-black">[ X ]</button>
+            </div>
+            <div class="p-5 space-y-5">
+                <div>
+                    <label class="block font-medium mb-1">Nombre mostrado (opcional):</label>
+                    <input type="text" id="option-display-name" placeholder="Ej. Coca-Cola" class="w-full border border-gray-300 p-2 focus:outline-none focus:border-gray-500">
+                    <p class="text-xs text-gray-500 mt-1">Puedes usar una etiqueta contextual distinta al nombre de la receta o del artículo.</p>
+                </div>
+                <div class="p-3 bg-gray-50 border border-gray-200">
+                    <p class="font-medium mb-1">Contenido actual</p>
+                    <p id="option-source-summary" class="text-sm text-gray-600">Elige una receta de la biblioteca o un artículo de inventario para esta opción.</p>
+                </div>
+                <div>
+                    <p class="block font-medium mb-2">Origen del contenido de esta opción:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" onclick="chooseOptionSource('RECIPE')" class="p-3 border border-gray-300 bg-white hover:bg-gray-50 text-left">
+                            <span class="block font-medium">Elegir receta</span>
+                            <span class="block text-xs text-gray-500 mt-1">Seleccionar una preparación de la biblioteca.</span>
+                        </button>
+                        <button type="button" onclick="chooseOptionSource('INVENTORY_ITEM')" class="p-3 border border-gray-300 bg-white hover:bg-gray-50 text-left">
+                            <span class="block font-medium">Elegir artículo de inventario</span>
+                            <span class="block text-xs text-gray-500 mt-1">Seleccionar un artículo directamente.</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                <button onclick="closeOptionEditor()" class="px-5 py-2 bg-white border border-gray-300 font-medium hover:bg-gray-100">Cancelar</button>
+                <button id="save-option-label-btn" onclick="saveOptionLabel()" class="hidden px-5 py-2 bg-gray-900 text-white font-medium hover:bg-black">Guardar etiqueta</button>
             </div>
         </div>
     </div>
@@ -295,11 +380,36 @@
 
     <!-- ================== FULL SCREENS (PASO 2 SLOTS) ================== -->
 
+    <!-- FS CATEGORÍAS -->
+    <div id="fs-categories" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
+        <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-bold tracking-wide uppercase">Catálogo de categorías</h2>
+                <p class="text-xs text-gray-300 mt-1">Organiza las entradas que se agrupan en el home.</p>
+            </div>
+            <button onclick="closeFullScreen('fs-categories')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ Volver al menú ]</button>
+        </div>
+        <div class="flex-grow p-6 overflow-y-auto bg-gray-50">
+            <div class="max-w-5xl mx-auto bg-white border border-gray-200 p-6 shadow-sm">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-4">
+                    <div>
+                        <h3 class="font-bold text-gray-900">Categorías del menú</h3>
+                        <p class="text-sm text-gray-500 mt-1">Cada categoría funciona como agrupador de entradas en la vista principal.</p>
+                    </div>
+                    <button onclick="openCategoryForm()" class="px-4 py-2 bg-gray-900 text-white hover:bg-black font-medium">+ Nueva categoría</button>
+                </div>
+                <div id="fs-categories-list" class="space-y-3">
+                    <!-- Renderizado dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- FS RECETAS -->
     <div id="fs-recipes" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
         <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
-            <h2 class="text-lg font-bold tracking-wide uppercase">Catálogo de Recetas - Asignando al Slot</h2>
-            <button onclick="closeFullScreen('fs-recipes')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ X Cancelar ]</button>
+            <h2 id="fs-recipes-title" class="text-lg font-bold tracking-wide uppercase">Biblioteca de recetas</h2>
+            <button id="fs-recipes-close" onclick="closeFullScreen('fs-recipes')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ Volver al catálogo ]</button>
         </div>
         <div class="flex-grow p-6 overflow-y-auto bg-gray-50 flex justify-center">
             <div class="w-full max-w-5xl bg-white border border-gray-200 p-6 flex flex-col gap-6 shadow-sm">
@@ -317,7 +427,7 @@
     <!-- FS INVENTARIO -->
     <div id="fs-inventory" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
         <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
-            <h2 class="text-lg font-bold tracking-wide uppercase">Catálogo de Inventario - Asignando al Slot</h2>
+            <h2 class="text-lg font-bold tracking-wide uppercase">Artículos de inventario — elegir opción</h2>
             <button onclick="closeFullScreen('fs-inventory')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ X Cancelar ]</button>
         </div>
         <div class="flex-grow p-6 overflow-y-auto bg-gray-50 flex justify-center">
@@ -340,14 +450,14 @@
     <!-- FS IMPORTAR OFERTAS -->
     <div id="fs-offers-import" class="fixed inset-0 bg-white z-[60] hidden flex flex-col">
         <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
-            <h2 class="text-lg font-bold tracking-wide uppercase">Importar Oferta (Clonar Slots a la Actual)</h2>
+            <h2 class="text-lg font-bold tracking-wide uppercase">Copiar composición desde otra oferta</h2>
             <button onclick="closeFullScreen('fs-offers-import')" class="px-3 py-1 border border-gray-600 text-sm hover:bg-gray-800">[ X Cancelar ]</button>
         </div>
         <div class="flex-grow p-6 overflow-y-auto bg-gray-50 flex justify-center">
             <div class="w-full max-w-4xl bg-white border border-gray-200 p-6 flex flex-col gap-6 shadow-sm">
                 <table class="w-full border-collapse border border-gray-200 text-left">
                     <thead class="bg-gray-100 text-gray-700">
-                        <tr><th class="p-3 border border-gray-200 font-medium">Oferta Comercial</th><th class="p-3 border border-gray-200 font-medium">Entrada Perteneciente</th><th class="p-3 border border-gray-200 font-medium">Precio</th><th class="p-3 border border-gray-200 w-40 text-center font-medium">Acción</th></tr>
+                        <tr><th class="p-3 border border-gray-200 font-medium">Entrada</th><th class="p-3 border border-gray-200 font-medium">Etiqueta de presentación</th><th class="p-3 border border-gray-200 font-medium">Precio</th><th class="p-3 border border-gray-200 w-40 text-center font-medium">Acción</th></tr>
                     </thead>
                     <tbody id="fs-import-list">
                         <!-- Render Dinámico -->
@@ -362,29 +472,31 @@
         // 1. DATA POR DEFECTO Y LOCALSTORAGE
         const defaultDB = {
             categories: [
-                { id: 'cat-001', name: 'Platos Fuertes', description: 'Cortes y platillos principales.' },
-                { id: 'cat-002', name: 'Bebidas', description: 'Bebidas frías y calientes.' },
-                { id: 'cat-003', name: 'Guarniciones', description: 'Acompañamientos extras.' },
-                { id: 'cat-004', name: 'Postres', description: 'Opciones dulces.' }
+                { id: 'cat-001', name: 'Hamburguesas', description: 'Hamburguesas preparadas al momento.' },
+                { id: 'cat-002', name: 'Pizzas', description: 'Pizzas tradicionales en horno de leña.' },
+                { id: 'cat-003', name: 'Guarniciones', description: 'Acompañamientos y porciones.' },
+                { id: 'cat-004', name: 'Bebidas', description: 'Bebidas frías y preparadas.' },
+                { id: 'cat-005', name: 'Postres', description: 'Opciones dulces.' }
             ],
             entries: [
-                { id: 'entry-001', brandName: 'Hamburguesas', description: 'Hamburguesas artesanales de la casa.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-001'] },
-                { id: 'entry-002', brandName: 'Pizzas', description: 'Pizzas tradicionales en horno de leña.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-001'] },
-                { id: 'entry-003', brandName: 'Papas', description: 'Guarniciones a base de papa natural.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-003'] },
-                { id: 'entry-004', brandName: 'Snacks', description: 'Aperitivos rápidos.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-003'] },
-                { id: 'entry-005', brandName: 'Coctelería Tropical', description: 'Bebidas preparadas con frutas tropicales.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-002'] },
-                { id: 'entry-006', brandName: 'Postres Caseros', description: 'Recetas dulces y tradicionales.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-004'] }
+                { id: 'entry-001', brandName: 'Hamburguesa Hawaiana', description: 'Carne, jamón, queso y piña en pan artesanal.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-001'] },
+                { id: 'entry-002', brandName: 'Pizza de Pepperoni', description: 'Pizza tradicional con queso mozzarella y pepperoni.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-002'] },
+                { id: 'entry-003', brandName: 'Papas a la Francesa', description: 'Papas cortadas y doradas al momento.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-003'] },
+                { id: 'entry-004', brandName: 'Aros de Cebolla', description: 'Aros empanizados crujientes.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-003'] },
+                { id: 'entry-005', brandName: 'Piña Colada', description: 'Coctel preparado con frutas tropicales.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-004'] },
+                { id: 'entry-006', brandName: 'Pan de Elote', description: 'Postre esponjoso de elote.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-005'] },
+                { id: 'entry-007', brandName: 'Crème Brûlée', description: 'Postre con crema y costra de caramelo.', imageRef: '[ Imagen ]', status: 'ACTIVE', categoryIds: ['cat-005'] }
             ],
             offers: [
-                { id: 'off-001', entryId: 'entry-001', presentationTag: 'Hamburguesa Hawaiana', basePrice: 180.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's1', name: 'Plato Principal', multiplier: 1, type: 'Receta', options: [{optionId: 'o1', recipeId: 'rec-001'}]}]}},
-                { id: 'off-002', entryId: 'entry-002', presentationTag: 'Pizza de Pepperoni', basePrice: 220.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's2', name: 'Plato Principal', multiplier: 1, type: 'Receta', options: [{optionId: 'o2', recipeId: 'rec-002'}]}]}},
-                { id: 'off-003', entryId: 'entry-003', presentationTag: 'Papas Cambray', basePrice: 75.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's3', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o3', recipeId: 'rec-003'}]}]}},
-                { id: 'off-004', entryId: 'entry-003', presentationTag: 'Papas a la Francesa', basePrice: 65.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's4', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o4', recipeId: 'rec-004'}]}]}},
-                { id: 'off-005', entryId: 'entry-003', presentationTag: 'Puré de Papa', basePrice: 60.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's5', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o5', recipeId: 'rec-005'}]}]}},
-                { id: 'off-006', entryId: 'entry-004', presentationTag: 'Aros de Cebolla', basePrice: 80.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's6', name: 'Porción', multiplier: 1, type: 'Receta', options: [{optionId: 'o6', recipeId: 'rec-006'}]}]}},
-                { id: 'off-007', entryId: 'entry-005', presentationTag: 'Piña Colada', basePrice: 120.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's7', name: 'Bebida', multiplier: 1, type: 'Receta', options: [{optionId: 'o7', recipeId: 'rec-007'}]}]}},
-                { id: 'off-008', entryId: 'entry-006', presentationTag: 'Pan de Elote', basePrice: 70.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's8', name: 'Rebanada', multiplier: 1, type: 'Receta', options: [{optionId: 'o8', recipeId: 'rec-008'}]}]}},
-                { id: 'off-009', entryId: 'entry-006', presentationTag: 'Crème Brûlée', basePrice: 95.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's9', name: 'Plato', multiplier: 1, type: 'Receta', options: [{optionId: 'o9', recipeId: 'rec-009'}]}]}}
+                { id: 'off-001', entryId: 'entry-001', presentationTag: 'Individual', basePrice: 180.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's1', name: 'Plato principal', required: true, quantity: 1, course: 'Plato fuerte', options: [{ optionId: 'o1', sourceType: 'RECIPE', recipeId: 'rec-001', displayName: 'Hamburguesa Hawaiana' }] }] } },
+                { id: 'off-002', entryId: 'entry-001', presentationTag: 'Con acompañamiento', basePrice: 225.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's10', name: 'Plato principal', required: true, quantity: 1, course: 'Plato fuerte', options: [{ optionId: 'o10', sourceType: 'RECIPE', recipeId: 'rec-001', displayName: 'Hamburguesa Hawaiana' }] }, { slotId: 's11', name: 'Acompañamiento', required: true, quantity: 1, course: '', options: [{ optionId: 'o11', sourceType: 'RECIPE', recipeId: 'rec-004', displayName: 'Papas a la francesa' }, { optionId: 'o12', sourceType: 'INVENTORY_ITEM', inventoryItemId: 'inv-26', displayName: 'Bolsa de chips' }] }, { slotId: 's13', name: 'Bebida adicional', required: true, quantity: 1, course: 'Bebida', options: [{ optionId: 'o14', sourceType: 'INVENTORY_ITEM', inventoryItemId: 'inv-23', displayName: 'Refresco de Cola' }] }] } },
+                { id: 'off-003', entryId: 'entry-002', presentationTag: 'Mediana', basePrice: 220.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's2', name: 'Pizza', required: true, quantity: 1, course: 'Plato fuerte', options: [{ optionId: 'o2', sourceType: 'RECIPE', recipeId: 'rec-002', displayName: 'Pizza de Pepperoni' }] }] } },
+                { id: 'off-004', entryId: 'entry-002', presentationTag: 'Grande', basePrice: 320.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's12', name: 'Pizza', required: true, quantity: 1, course: 'Plato fuerte', options: [{ optionId: 'o13', sourceType: 'RECIPE', recipeId: 'rec-002', displayName: 'Pizza de Pepperoni' }] }] } },
+                { id: 'off-005', entryId: 'entry-003', presentationTag: 'Porción individual', basePrice: 65.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's4', name: 'Porción', required: true, quantity: 1, course: '', options: [{ optionId: 'o4', sourceType: 'RECIPE', recipeId: 'rec-004', displayName: 'Papas a la francesa' }] }] } },
+                { id: 'off-006', entryId: 'entry-004', presentationTag: 'Porción individual', basePrice: 80.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's6', name: 'Porción', required: true, quantity: 1, course: '', options: [{ optionId: 'o6', sourceType: 'RECIPE', recipeId: 'rec-006', displayName: 'Aros de cebolla' }] }] } },
+                { id: 'off-007', entryId: 'entry-005', presentationTag: 'Vaso 355 ml', basePrice: 120.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's7', name: 'Bebida', required: true, quantity: 1, course: 'Bebida', options: [{ optionId: 'o7', sourceType: 'RECIPE', recipeId: 'rec-007', displayName: 'Piña Colada' }] }] } },
+                { id: 'off-008', entryId: 'entry-006', presentationTag: 'Rebanada', basePrice: 70.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's8', name: 'Rebanada', required: true, quantity: 1, course: 'Postre', options: [{ optionId: 'o8', sourceType: 'RECIPE', recipeId: 'rec-008', displayName: 'Pan de Elote' }] }] } },
+                { id: 'off-009', entryId: 'entry-007', presentationTag: 'Porción', basePrice: 95.00, status: 'ACTIVE', composition: { slots: [{ slotId: 's9', name: 'Porción', required: true, quantity: 1, course: 'Postre', options: [{ optionId: 'o9', sourceType: 'RECIPE', recipeId: 'rec-009', displayName: 'Crème Brûlée' }] }] } }
             ],
             recipes: [
                 { id: 'rec-001', name: 'Hamburguesa Hawaiana', description: 'Carne, jamón, queso y piña.', instructions: 'Asar carne, dorar jamón y piña. Montar en pan.', supplies: [{inventoryItemId: 'inv-01', quantity: 200}, {inventoryItemId: 'inv-02', quantity: 1}, {inventoryItemId: 'inv-03', quantity: 30}, {inventoryItemId: 'inv-04', quantity: 50}, {inventoryItemId: 'inv-05', quantity: 40}] },
@@ -422,20 +534,37 @@
                 { id: 'inv-22', name: 'Extracto de Vainilla', sku: 'ABR-006', unit: 'ml' },
                 { id: 'inv-23', name: 'Refresco de Cola 355ml', sku: 'BEB-001', unit: 'pza' },
                 { id: 'inv-24', name: 'Aceite Vegetal', sku: 'ABR-007', unit: 'ml' },
-                { id: 'inv-25', name: 'Pan Molido', sku: 'ABR-008', unit: 'g' }
+                { id: 'inv-25', name: 'Pan Molido', sku: 'ABR-008', unit: 'g' },
+                { id: 'inv-26', name: 'Bolsa de chips', sku: 'BOT-001', unit: 'pza' }
             ]
         };
 
         // Cargar desde LocalStorage o usar por defecto
-        let db = JSON.parse(localStorage.getItem('menuCatalogDB')) || JSON.parse(JSON.stringify(defaultDB));
+        const DB_STORAGE_KEY = 'menuCatalogDB_v2';
+        let db = JSON.parse(localStorage.getItem(DB_STORAGE_KEY)) || JSON.parse(JSON.stringify(defaultDB));
 
         function saveDB() {
-            localStorage.setItem('menuCatalogDB', JSON.stringify(db));
+            localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(db));
         }
+
+        function normalizeRequiredSlots() {
+            let changed = false;
+            (db.offers || []).forEach(offer => {
+                const slots = offer.composition && Array.isArray(offer.composition.slots) ? offer.composition.slots : [];
+                slots.forEach(slot => {
+                    if (slot.required !== true) {
+                        slot.required = true;
+                        changed = true;
+                    }
+                });
+            });
+            if (changed) saveDB();
+        }
+        normalizeRequiredSlots();
 
         function resetDB() {
             if(confirm("¿Estás seguro de que quieres borrar todos los cambios y volver a los datos de fábrica?")) {
-                localStorage.removeItem('menuCatalogDB');
+                localStorage.removeItem(DB_STORAGE_KEY);
                 location.reload();
             }
         }
@@ -445,8 +574,27 @@
         let activeEntryId = null;
         let draftOffer = null; 
         let activeSlotId = null; 
+        let activeOptionId = null;
+        let editingSlotId = null;
+        let recipeSelectionMode = false;
+        let catalogCurrentPage = 1;
+        let catalogPageSize = 6;
+        let catalogSearchTerm = '';
+        let catalogCategoryFilter = '';
+        let catalogStatusFilter = '';
 
         function genId(prefix) { return prefix + '-' + Math.floor(Math.random() * 10000); }
+
+        function statusLabel(status) {
+            const labels = { ACTIVE: 'Activa', INACTIVE: 'Inactiva', ARCHIVED: 'Archivada' };
+            return labels[status] || status;
+        }
+
+        function statusColor(status) {
+            if (status === 'ACTIVE') return 'text-green-700';
+            if (status === 'ARCHIVED') return 'text-gray-500';
+            return 'text-yellow-700';
+        }
 
         function updateGlobalNav() {
             const nav = document.getElementById('global-nav');
@@ -481,77 +629,211 @@
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openFullScreen(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeFullScreen(id) { document.getElementById(id).classList.add('hidden'); activeSlotId = null; }
+        function closeFullScreen(id) { document.getElementById(id).classList.add('hidden'); }
 
         // --- RENDERIZADO CATÁLOGO PRINCIPAL ---
-        function renderCatalog() {
-            const container = document.getElementById('main-catalog-container');
-            container.innerHTML = '';
-
-            db.categories.forEach(cat => {
-                const catEntries = db.entries.filter(e => e.categoryIds.includes(cat.id));
-                const catIdHtml = 'cat-div-' + cat.id;
-
-                let html = `
-                <div class="bg-white border border-gray-200">
-                    <button onclick="document.getElementById('${catIdHtml}').classList.toggle('hidden')" class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 font-medium flex justify-between items-center border-b border-gray-200">
-                        <span class="text-gray-900">CATEGORÍA: ${cat.name} (${catEntries.length} entradas)</span>
-                        <div class="flex items-center gap-4">
-                            <span class="text-xs text-red-500 hover:text-red-700 font-bold" onclick="event.stopPropagation(); deleteCategory('${cat.id}')">[ Eliminar Categoría ]</span>
-                            <span class="text-xs text-gray-500">[ Desplegar ]</span>
-                        </div>
-                    </button>
-                    <div id="${catIdHtml}" class="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">`;
-                
-                if (catEntries.length === 0) {
-                    html += `<p class="text-gray-400 col-span-full italic">No hay entradas asignadas.</p>`;
-                } else {
-                    catEntries.forEach(entry => {
-                        const offerCount = db.offers.filter(o => o.entryId === entry.id).length;
-                        const statusColor = entry.status === 'ACTIVE' ? 'text-green-700' : 'text-yellow-700';
-                        
-                        html += `
-                        <div class="border border-gray-200 p-4 hover:shadow cursor-pointer flex flex-col bg-white group" onclick="openEntryOffers('${entry.id}')">
-                            <div class="flex-grow">
-                                <h2 class="text-base font-bold mb-2 text-gray-900">${entry.brandName}</h2>
-                                <div class="wireframe-img h-28 w-full mb-3">[ Imagen de ${entry.brandName} ]</div>
-                                <p class="text-gray-500 text-xs mb-3 h-8 overflow-hidden">${entry.description}</p>
-                                <div class="space-y-1 text-xs text-gray-700">
-                                    <p>Estado: <span class="${statusColor} font-medium">${entry.status}</span></p>
-                                    <p>Ofertas (Platillos): <span class="font-bold">${offerCount}</span></p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2 mt-4 pt-3 border-t border-gray-100">
-                                <button onclick="event.stopPropagation(); openEntryForm('${entry.id}')" class="flex-1 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">[ Editar ]</button>
-                                <button onclick="event.stopPropagation(); deleteEntry('${entry.id}')" class="flex-1 py-1 border border-gray-300 text-red-600 hover:bg-gray-50">[ Eliminar ]</button>
-                            </div>
-                        </div>`;
-                    });
-                }
-                html += `</div></div>`;
-                container.innerHTML += html;
-            });
-        }
-
-        // --- FUNCIONES CATEGORÍAS ---
-        function saveCategory() {
-            const name = document.getElementById('cat-name-input').value || 'Sin nombre';
-            const desc = document.getElementById('cat-desc-input').value || '';
-            db.categories.push({ id: genId('cat'), name, description: desc });
-            saveDB();
-            closeModal('modal-category');
+        function updateCatalogFilters() {
+            catalogSearchTerm = document.getElementById('catalog-search-input').value.trim();
+            catalogCategoryFilter = document.getElementById('catalog-category-filter').value;
+            catalogStatusFilter = document.getElementById('catalog-status-filter').value;
+            catalogCurrentPage = 1;
             renderCatalog();
         }
 
-        function deleteCategory(id) {
-            if(confirm('¿Eliminar esta categoría? Las entradas asociadas perderán esta etiqueta.')) {
-                db.categories = db.categories.filter(c => c.id !== id);
-                db.entries.forEach(e => {
-                    e.categoryIds = e.categoryIds.filter(cId => cId !== id);
-                });
-                saveDB();
-                renderCatalog();
+        function clearCatalogFilters() {
+            catalogSearchTerm = '';
+            catalogCategoryFilter = '';
+            catalogStatusFilter = '';
+            catalogCurrentPage = 1;
+            renderCatalog();
+        }
+
+        function changeCatalogPage(page) {
+            catalogCurrentPage = page;
+            renderCatalog();
+        }
+
+        function changeCatalogPageSize(pageSize) {
+            catalogPageSize = Number(pageSize);
+            catalogCurrentPage = 1;
+            renderCatalog();
+        }
+
+        function renderCatalog() {
+            const container = document.getElementById('main-catalog-container');
+            const categorySelect = document.getElementById('catalog-category-filter');
+            const statusSelect = document.getElementById('catalog-status-filter');
+            const searchInput = document.getElementById('catalog-search-input');
+            const pageSizeSelect = document.getElementById('catalog-page-size');
+            const summary = document.getElementById('catalog-results-summary');
+            const pagination = document.getElementById('catalog-pagination');
+            if (!container || !categorySelect || !statusSelect || !searchInput || !pageSizeSelect || !summary || !pagination) return;
+
+            const validCategoryIds = new Set(db.categories.map(category => category.id));
+            if (catalogCategoryFilter && catalogCategoryFilter !== '__uncategorized__' && !validCategoryIds.has(catalogCategoryFilter)) {
+                catalogCategoryFilter = '';
             }
+
+            categorySelect.innerHTML = `<option value="">Todas las categorías</option><option value="__uncategorized__">Sin categoría</option>` +
+                db.categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
+            categorySelect.value = catalogCategoryFilter;
+            statusSelect.value = catalogStatusFilter;
+            searchInput.value = catalogSearchTerm;
+            pageSizeSelect.value = String(catalogPageSize);
+
+            const filteredEntries = db.entries.filter(entry => {
+                const assignedCategoryIds = Array.isArray(entry.categoryIds) ? entry.categoryIds : [];
+                const assignedCategories = db.categories.filter(category => assignedCategoryIds.includes(category.id));
+                const matchesCategory = catalogCategoryFilter === ''
+                    || (catalogCategoryFilter === '__uncategorized__' && assignedCategories.length === 0)
+                    || assignedCategories.some(category => category.id === catalogCategoryFilter);
+                const searchableText = [entry.brandName, entry.description, ...assignedCategories.map(category => category.name)]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLocaleLowerCase();
+                const matchesSearch = searchableText.includes(catalogSearchTerm.toLocaleLowerCase());
+                const matchesStatus = catalogStatusFilter === '' || (entry.status || 'INACTIVE') === catalogStatusFilter;
+                return matchesCategory && matchesSearch && matchesStatus;
+            });
+
+            const totalEntries = filteredEntries.length;
+            const totalPages = Math.max(1, Math.ceil(totalEntries / catalogPageSize));
+            catalogCurrentPage = Math.min(Math.max(catalogCurrentPage, 1), totalPages);
+            const firstIndex = (catalogCurrentPage - 1) * catalogPageSize;
+            const pageEntries = filteredEntries.slice(firstIndex, firstIndex + catalogPageSize);
+
+            summary.textContent = totalEntries === 0
+                ? 'No se encontraron entradas.'
+                : `Mostrando ${firstIndex + 1}–${Math.min(firstIndex + pageEntries.length, totalEntries)} de ${totalEntries} entradas`;
+
+            if (totalEntries === 0) {
+                container.innerHTML = `<div class="col-span-full bg-white border border-gray-200 p-8 text-center text-gray-500">No hay entradas que coincidan con la búsqueda y los filtros.</div>`;
+            } else {
+                container.innerHTML = pageEntries.map(entry => {
+                    const entryCategories = db.categories.filter(category => Array.isArray(entry.categoryIds) && entry.categoryIds.includes(category.id));
+                    const categoryBadges = entryCategories.length > 0
+                        ? entryCategories.map(category => `<span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded-full mr-1 mb-1">${category.name}</span>`).join('')
+                        : '<span class="inline-block px-2 py-1 bg-gray-100 text-gray-500 rounded-full">Sin categoría</span>';
+                    const offerCount = db.offers.filter(offer => offer.entryId === entry.id).length;
+                    const entryStatusColor = statusColor(entry.status);
+
+                    return `
+                    <div class="border border-gray-200 p-4 hover:shadow cursor-pointer flex flex-col bg-white group" onclick="openEntryOffers('${entry.id}')">
+                        <div class="flex-grow">
+                            <h2 class="text-base font-bold mb-2 text-gray-900">${entry.brandName}</h2>
+                            <div class="wireframe-img h-28 w-full mb-3">[ Imagen de ${entry.brandName} ]</div>
+                            <p class="text-gray-500 text-xs mb-3 h-8 overflow-hidden">${entry.description}</p>
+                            <div class="mb-3">${categoryBadges}</div>
+                            <div class="space-y-1 text-xs text-gray-700">
+                                <p>Estado: <span class="${entryStatusColor} font-medium">${statusLabel(entry.status)}</span></p>
+                                <p>Ofertas: <span class="font-bold">${offerCount}</span></p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                            <button onclick="event.stopPropagation(); openEntryForm('${entry.id}')" class="flex-1 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">[ Editar ]</button>
+                            <button onclick="event.stopPropagation(); deleteEntry('${entry.id}')" class="flex-1 py-1 border border-gray-300 text-red-600 hover:bg-gray-50">[ Eliminar ]</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            if (totalEntries <= catalogPageSize) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            const firstVisiblePage = Math.max(1, Math.min(catalogCurrentPage - 2, totalPages - 4));
+            const lastVisiblePage = Math.min(totalPages, firstVisiblePage + 4);
+            let pageButtons = '';
+            for (let page = firstVisiblePage; page <= lastVisiblePage; page++) {
+                const activeClasses = page === catalogCurrentPage
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
+                pageButtons += `<button onclick="changeCatalogPage(${page})" aria-current="${page === catalogCurrentPage ? 'page' : 'false'}" class="min-w-9 px-3 py-2 border ${activeClasses}">${page}</button>`;
+            }
+
+            pagination.innerHTML = `
+                <nav class="flex items-center gap-2" aria-label="Paginación de entradas">
+                    <button onclick="changeCatalogPage(${catalogCurrentPage - 1})" ${catalogCurrentPage === 1 ? 'disabled' : ''} class="px-3 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Anterior</button>
+                    ${pageButtons}
+                    <button onclick="changeCatalogPage(${catalogCurrentPage + 1})" ${catalogCurrentPage === totalPages ? 'disabled' : ''} class="px-3 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente</button>
+                </nav>`;
+        }
+
+        // --- CATÁLOGO Y FUNCIONES DE CATEGORÍAS ---
+        function openCategoryCatalog() {
+            renderCategoriesFull();
+            openFullScreen('fs-categories');
+        }
+
+        function renderCategoriesFull() {
+            const list = document.getElementById('fs-categories-list');
+            list.innerHTML = '';
+
+            if (db.categories.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 italic">Aún no hay categorías.</p>';
+                return;
+            }
+
+            db.categories.forEach(cat => {
+                const entryCount = db.entries.filter(entry => entry.categoryIds.includes(cat.id)).length;
+                list.innerHTML += `
+                    <div class="flex flex-wrap justify-between items-center gap-4 border border-gray-200 p-4 bg-white">
+                        <div class="min-w-[220px] flex-grow">
+                            <h3 class="font-bold text-gray-900">${cat.name}</h3>
+                            <p class="text-sm text-gray-500 mt-1">${cat.description || 'Sin descripción'}</p>
+                            <p class="text-xs text-gray-600 mt-2">Agrupa ${entryCount} ${entryCount === 1 ? 'entrada' : 'entradas'} en el home</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openCategoryForm('${cat.id}')" class="px-3 py-1.5 border border-gray-300 text-gray-700 hover:bg-gray-50">[ Editar ]</button>
+                            <button onclick="deleteCategory('${cat.id}')" class="px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50">[ Eliminar ]</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function openCategoryForm(categoryId = null) {
+            const category = categoryId ? db.categories.find(item => item.id === categoryId) : null;
+            document.getElementById('cat-id-input').value = category ? category.id : '';
+            document.getElementById('cat-name-input').value = category ? category.name : '';
+            document.getElementById('cat-desc-input').value = category ? (category.description || '') : '';
+            document.getElementById('category-modal-title').innerText = category ? 'Editar categoría' : 'Crear categoría';
+            document.getElementById('category-save-btn').innerText = category ? 'Guardar cambios' : 'Guardar categoría';
+            openModal('modal-category');
+        }
+
+        function saveCategory() {
+            const id = document.getElementById('cat-id-input').value;
+            const name = document.getElementById('cat-name-input').value || 'Sin nombre';
+            const description = document.getElementById('cat-desc-input').value || '';
+
+            if (id) {
+                const category = db.categories.find(item => item.id === id);
+                if (category) {
+                    category.name = name;
+                    category.description = description;
+                }
+            } else {
+                db.categories.push({ id: genId('cat'), name, description });
+            }
+
+            saveDB();
+            closeModal('modal-category');
+            renderCatalog();
+            renderCategoriesFull();
+        }
+
+        function deleteCategory(id) {
+            const category = db.categories.find(item => item.id === id);
+            if (!category || !confirm(`¿Eliminar la categoría "${category.name}"? Las entradas dejarán de aparecer dentro de esta agrupación.`)) return;
+
+            db.categories = db.categories.filter(item => item.id !== id);
+            db.entries.forEach(entry => {
+                entry.categoryIds = entry.categoryIds.filter(categoryId => categoryId !== id);
+            });
+            saveDB();
+            renderCatalog();
+            renderCategoriesFull();
         }
 
         // --- FUNCIONES ENTRADAS ---
@@ -573,17 +855,13 @@
             });
 
             const statusContainer = document.getElementById('entry-status-container');
-            if (isEdit) {
-                const cAct = entry.status === 'ACTIVE' ? 'checked' : '';
-                const cIna = entry.status === 'INACTIVE' ? 'checked' : '';
-                statusContainer.innerHTML = `
-                    <div class="flex gap-4 mt-2">
-                        <label class="flex items-center gap-2 font-medium cursor-pointer text-green-700"><input type="radio" name="entry-status-rad" value="ACTIVE" ${cAct}> ACTIVE</label>
-                        <label class="flex items-center gap-2 font-medium cursor-pointer text-yellow-700"><input type="radio" name="entry-status-rad" value="INACTIVE" ${cIna}> INACTIVE</label>
-                    </div>`;
-            } else {
-                statusContainer.innerHTML = `<div class="font-medium tracking-wide">INACTIVE (Por defecto)</div>`;
-            }
+            const currentStatus = entry.status || 'INACTIVE';
+            statusContainer.innerHTML = `
+                <div class="flex flex-wrap gap-4 mt-2">
+                    <label class="flex items-center gap-2 font-medium cursor-pointer text-green-700"><input type="radio" name="entry-status-rad" value="ACTIVE" ${currentStatus === 'ACTIVE' ? 'checked' : ''}> Activa</label>
+                    <label class="flex items-center gap-2 font-medium cursor-pointer text-yellow-700"><input type="radio" name="entry-status-rad" value="INACTIVE" ${currentStatus === 'INACTIVE' ? 'checked' : ''}> Inactiva</label>
+                    <label class="flex items-center gap-2 font-medium cursor-pointer text-gray-600"><input type="radio" name="entry-status-rad" value="ARCHIVED" ${currentStatus === 'ARCHIVED' ? 'checked' : ''}> Archivada</label>
+                </div>`;
 
             navigateTo('screen-entry-form');
         }
@@ -602,7 +880,8 @@
                 const statusRad = document.querySelector('input[name="entry-status-rad"]:checked');
                 if (statusRad) entry.status = statusRad.value;
             } else {
-                db.entries.push({ id: genId('entry'), brandName, description, imageRef: '[ Imagen ]', status: 'INACTIVE', categoryIds });
+                const statusRad = document.querySelector('input[name="entry-status-rad"]:checked');
+                db.entries.push({ id: genId('entry'), brandName, description, imageRef: '[ Imagen ]', status: statusRad ? statusRad.value : 'INACTIVE', categoryIds });
             }
             saveDB();
             goBack();
@@ -638,16 +917,17 @@
             }
 
             offers.forEach(off => {
-                const statusColor = off.status === 'ACTIVE' ? 'text-green-700' : 'text-yellow-700';
+                const offerStatusColor = statusColor(off.status);
                 grid.innerHTML += `
                 <div class="border border-gray-200 hover:shadow cursor-pointer flex flex-col bg-white" onclick="openOfferForm('${off.id}')">
                     <div class="p-5 flex-grow">
-                        <h2 class="text-base font-bold text-center mb-3 text-gray-900">${off.presentationTag}</h2>
-                        <div class="wireframe-img h-28 w-full mb-4">[ Imagen Platillo ]</div>
+                        <h2 class="text-base font-bold text-center mb-1 text-gray-900">${off.presentationTag || 'Oferta estándar'}</h2>
+                        <p class="text-center text-xs text-gray-500 mb-3">${entry.brandName}</p>
+                            <div class="wireframe-img h-28 w-full mb-4">[ Imagen de la oferta ]</div>
                         <div class="text-center font-medium text-lg mb-4 text-gray-800">$ ${off.basePrice}</div>
                         <div class="space-y-1 text-xs text-gray-600 text-center border-t border-gray-100 pt-2">
-                            <p>Estado: <span class="${statusColor} font-medium">${off.status}</span></p>
-                            <p>Slots: ${off.composition.slots.length}</p>
+                            <p>Estado: <span class="${offerStatusColor} font-medium">${statusLabel(off.status)}</span></p>
+                            <p>Grupos de composición: ${off.composition.slots.length}</p>
                         </div>
                     </div>
                     <div class="p-3 bg-gray-50 border-t border-gray-200">
@@ -667,7 +947,7 @@
 
         function openOfferForm(offerId = null) {
             const entry = db.entries.find(e => e.id === activeEntryId);
-            document.getElementById('offer-form-subtitle').innerText = `Entrada Padre: ${entry.brandName}`;
+            document.getElementById('offer-form-subtitle').innerText = `Entrada: ${entry.brandName}`;
             
             if (offerId) {
                 draftOffer = JSON.parse(JSON.stringify(db.offers.find(o => o.id === offerId)));
@@ -677,7 +957,7 @@
                 draftOffer = { id: null, entryId: activeEntryId, presentationTag: '', basePrice: 0, status: 'INACTIVE', composition: { slots: [] } };
             }
 
-            document.getElementById('offer-tag-input').value = draftOffer.presentationTag;
+            document.getElementById('offer-tag-input').value = draftOffer.presentationTag || '';
             document.getElementById('offer-price-input').value = draftOffer.basePrice;
             document.querySelector(`input[name="offer-status"][value="${draftOffer.status}"]`).checked = true;
 
@@ -685,94 +965,165 @@
             navigateTo('screen-offer-form');
         }
 
-        // --- COMPOSICIÓN DE SLOTS ---
+        // --- COMPOSICIÓN: GRUPOS Y OPCIONES ---
         function renderDraftSlots() {
             const container = document.getElementById('slots-container');
             const addBtn = document.getElementById('add-slot-btn');
             container.innerHTML = '';
 
             draftOffer.composition.slots.forEach(slot => {
-                const fsTarget = slot.type === 'Receta' ? "'fs-recipes'" : "'fs-inventory'";
-                
                 let optionsHtml = '';
-                if(slot.options.length === 0) {
-                    optionsHtml = `<div class="text-center text-gray-400 text-xs my-auto py-4"><p>Lista vacía.</p></div>`;
+                if (!slot.options.length) {
+                    optionsHtml = `<div class="text-center text-gray-400 text-xs my-auto py-4"><p>Aún no hay opciones en este grupo.</p></div>`;
                 } else {
                     slot.options.forEach(opt => {
-                        let itemName = "Desconocido";
-                        if(slot.type === 'Receta') {
-                            const r = db.recipes.find(x => x.id === opt.recipeId);
-                            if(r) itemName = r.name;
-                        } else {
-                            const i = db.inventory.find(x => x.id === opt.inventoryItemId);
-                            if(i) itemName = i.name;
-                        }
-
+                        const isRecipe = opt.sourceType === 'RECIPE' || Boolean(opt.recipeId);
+                        const source = isRecipe
+                            ? db.recipes.find(item => item.id === opt.recipeId)
+                            : db.inventory.find(item => item.id === opt.inventoryItemId);
+                        const sourceName = source ? source.name : 'Contenido sin identificar';
+                        const displayName = opt.displayName || sourceName;
+                        const sourceLabel = isRecipe ? 'Receta de la biblioteca' : 'Artículo de inventario';
                         optionsHtml += `
-                        <div class="flex justify-between items-center p-2 bg-white border border-gray-200 text-sm">
-                            <span class="text-gray-800">- ${itemName}</span>
-                            <button onclick="removeOptionFromDraft('${slot.slotId}', '${opt.optionId}')" class="text-gray-400 hover:text-red-500 font-bold px-1">[ X ]</button>
-                        </div>`;
+                            <div class="p-2 bg-white border border-gray-200">
+                                <div class="flex justify-between items-start gap-2">
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-900 break-words">${displayName}</p>
+                                        <p class="text-xs text-gray-500 mt-1">${sourceLabel}: ${sourceName}</p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button onclick="openOptionForm('${slot.slotId}', '${opt.optionId}')" class="text-xs px-2 py-1 border border-gray-300 hover:bg-gray-50">Editar opción</button>
+                                        <button onclick="removeOptionFromDraft('${slot.slotId}', '${opt.optionId}')" class="text-gray-400 hover:text-red-500 font-bold px-1" aria-label="Eliminar opción">[ X ]</button>
+                                    </div>
+                                </div>
+                            </div>`;
                     });
                 }
 
                 const slotHTML = `
-                <div class="slot-container min-w-[280px] w-[280px] border border-gray-200 flex flex-col bg-white shrink-0">
-                    <div class="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                        <input type="text" value="${slot.name}" onchange="updateDraftSlotName('${slot.slotId}', this.value)" class="font-bold bg-transparent w-32 focus:outline-none focus:border-b border-gray-400 text-gray-900">
-                        <div class="flex items-center gap-1 text-xs text-gray-600">
-                            <button onclick="updateDraftSlotMult('${slot.slotId}', -1)" class="px-1.5 border border-gray-300 bg-white hover:bg-gray-100">-</button>
-                            <span class="w-4 text-center font-medium">${slot.multiplier}</span>
-                            <button onclick="updateDraftSlotMult('${slot.slotId}', 1)" class="px-1.5 border border-gray-300 bg-white hover:bg-gray-100">+</button>
-                            <button class="ml-2 text-gray-400 hover:text-red-500" onclick="removeSlotFromDraft('${slot.slotId}')">[ X ]</button>
+                    <div class="slot-container min-w-[300px] w-[300px] border border-gray-200 flex flex-col bg-white shrink-0">
+                        <div class="p-3 border-b border-gray-200 bg-gray-50">
+                            <div class="flex justify-between items-start gap-2">
+                                <h3 class="font-bold text-gray-900">${slot.name}</h3>
+                                <button onclick="removeSlotFromDraft('${slot.slotId}')" class="text-gray-400 hover:text-red-500 font-bold" aria-label="Eliminar grupo">[ X ]</button>
+                            </div>
+                            ${slot.course ? `<div class="mt-2"><span class="px-2 py-1 text-xs bg-gray-100 text-gray-600">Curso: ${slot.course}</span></div>` : ''}
+                            <div class="flex justify-between items-center mt-3 text-xs text-gray-600">
+                                <span>Unidades incluidas</span>
+                                <span class="flex items-center gap-2">
+                                    <button onclick="updateDraftSlotQuantity('${slot.slotId}', -1)" class="px-2 py-1 border border-gray-300 bg-white hover:bg-gray-100" aria-label="Reducir unidades">−</button>
+                                    <strong class="w-5 text-center text-gray-900">${slot.quantity || 1}</strong>
+                                    <button onclick="updateDraftSlotQuantity('${slot.slotId}', 1)" class="px-2 py-1 border border-gray-300 bg-white hover:bg-gray-100" aria-label="Aumentar unidades">+</button>
+                                </span>
+                            </div>
+                            <button onclick="openSlotForm('${slot.slotId}')" class="mt-3 text-xs text-gray-600 underline hover:text-black">Editar grupo</button>
                         </div>
-                    </div>
-                    <div class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium uppercase border-b border-gray-200 text-center">TIPO: ${slot.type}</div>
-                    
-                    <div class="p-3 flex-grow space-y-2 flex flex-col max-h-48 overflow-y-auto hide-scrollbar bg-gray-50 border-b border-gray-100">
-                        ${optionsHtml}
-                    </div>
-                    
-                    <div class="p-3 bg-white mt-auto">
-                        <button onclick="activeSlotId='${slot.slotId}'; ${slot.type === 'Receta' ? 'renderRecipesFull();' : 'renderInventoryFull();'} openFullScreen(${fsTarget})" class="w-full py-1.5 border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">[ Agregar Opción ]</button>
-                    </div>
-                </div>`;
+                        <div class="p-3 flex-grow space-y-2 flex flex-col max-h-56 overflow-y-auto hide-scrollbar bg-gray-50 border-b border-gray-100">
+                            ${optionsHtml}
+                        </div>
+                        <div class="p-3 bg-white mt-auto">
+                            <button onclick="openOptionForm('${slot.slotId}')" class="w-full py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">+ Agregar opción</button>
+                        </div>
+                    </div>`;
                 container.innerHTML += slotHTML;
             });
             container.appendChild(addBtn);
         }
 
-        function updateDraftSlotName(slotId, val) {
-            const slot = draftOffer.composition.slots.find(s => s.slotId === slotId);
-            if(slot) slot.name = val;
+        function openSlotForm(slotId = null) {
+            editingSlotId = slotId;
+            const slot = slotId ? draftOffer.composition.slots.find(item => item.slotId === slotId) : null;
+            document.getElementById('slot-modal-title').innerText = slot ? 'Editar grupo' : 'Definir nuevo grupo';
+            document.getElementById('new-slot-name').value = slot ? slot.name : '';
+            document.getElementById('new-slot-quantity').value = slot ? (slot.quantity || 1) : 1;
+            document.getElementById('new-slot-course').value = slot ? (slot.course || '') : '';
+            openModal('modal-slot-step1');
         }
 
-        function updateDraftSlotMult(slotId, delta) {
-            const slot = draftOffer.composition.slots.find(s => s.slotId === slotId);
-            if(slot) {
-                slot.multiplier += delta;
-                if(slot.multiplier < 1) slot.multiplier = 1;
+        function updateDraftSlotQuantity(slotId, delta) {
+            const slot = draftOffer.composition.slots.find(item => item.slotId === slotId);
+            if (slot) {
+                slot.quantity = Math.max(1, (Number(slot.quantity) || 1) + delta);
                 renderDraftSlots();
             }
         }
 
         function removeSlotFromDraft(slotId) {
-            draftOffer.composition.slots = draftOffer.composition.slots.filter(s => s.slotId !== slotId);
+            draftOffer.composition.slots = draftOffer.composition.slots.filter(slot => slot.slotId !== slotId);
             renderDraftSlots();
         }
 
         function removeOptionFromDraft(slotId, optionId) {
-            const slot = draftOffer.composition.slots.find(s => s.slotId === slotId);
-            if(slot) {
-                slot.options = slot.options.filter(o => o.optionId !== optionId);
+            const slot = draftOffer.composition.slots.find(item => item.slotId === slotId);
+            if (slot) {
+                slot.options = slot.options.filter(option => option.optionId !== optionId);
                 renderDraftSlots();
             }
         }
 
+        function openOptionForm(slotId, optionId = null) {
+            activeSlotId = slotId;
+            activeOptionId = optionId;
+            const slot = draftOffer.composition.slots.find(item => item.slotId === slotId);
+            const option = optionId && slot ? slot.options.find(item => item.optionId === optionId) : null;
+            document.getElementById('option-modal-title').innerText = option ? 'Editar opción' : 'Agregar opción';
+            document.getElementById('option-display-name').value = option ? (option.displayName || '') : '';
+            document.getElementById('save-option-label-btn').classList.toggle('hidden', !option);
+
+            if (option) {
+                const isRecipe = option.sourceType === 'RECIPE' || Boolean(option.recipeId);
+                const source = isRecipe
+                    ? db.recipes.find(item => item.id === option.recipeId)
+                    : db.inventory.find(item => item.id === option.inventoryItemId);
+                const sourceType = isRecipe ? 'Receta de la biblioteca' : 'Artículo de inventario';
+                document.getElementById('option-source-summary').innerText = sourceType + ': ' + (source ? source.name : 'Contenido sin identificar');
+            } else {
+                document.getElementById('option-source-summary').innerText = 'Elige una receta de la biblioteca o un artículo de inventario para esta opción.';
+            }
+            openModal('modal-option-editor');
+        }
+
+        function closeOptionEditor() {
+            closeModal('modal-option-editor');
+            activeSlotId = null;
+            activeOptionId = null;
+        }
+
+        function saveOptionLabel() {
+            const slot = draftOffer.composition.slots.find(item => item.slotId === activeSlotId);
+            const option = slot && slot.options.find(item => item.optionId === activeOptionId);
+            if (option) option.displayName = document.getElementById('option-display-name').value.trim();
+            closeOptionEditor();
+            renderDraftSlots();
+        }
+
+        function chooseOptionSource(sourceType) {
+            if (sourceType === 'RECIPE') {
+                recipeSelectionMode = true;
+                renderRecipesFull();
+                openFullScreen('fs-recipes');
+            } else {
+                renderInventoryFull();
+                openFullScreen('fs-inventory');
+            }
+        }
+
+        function openRecipeLibrary() {
+            recipeSelectionMode = false;
+            renderRecipesFull();
+            openFullScreen('fs-recipes');
+        }
+
+        function copyCompositionFromOffer() {
+            renderImportFull();
+            openFullScreen('fs-offers-import');
+        }
+
         function saveOffer() {
-            draftOffer.presentationTag = document.getElementById('offer-tag-input').value || 'Sin Etiqueta';
+            draftOffer.presentationTag = document.getElementById('offer-tag-input').value.trim();
             draftOffer.basePrice = parseFloat(document.getElementById('offer-price-input').value) || 0;
             draftOffer.status = document.querySelector('input[name="offer-status"]:checked').value;
+            draftOffer.composition.slots.forEach(slot => { slot.required = true; });
             
             if (draftOffer.id) {
                 const idx = db.offers.findIndex(o => o.id === draftOffer.id);
@@ -786,34 +1137,46 @@
         }
 
         function handleSlotCreation() {
-            const slotName = document.getElementById('new-slot-name').value || 'Nuevo Slot';
-            const selectedType = document.querySelector('input[name="slottype"]:checked').value;
-            closeModal('modal-slot-step1');
-            
-            if (selectedType === 'Oferta') {
-                renderImportFull();
-                openFullScreen('fs-offers-import');
-                return;
+            const name = document.getElementById('new-slot-name').value.trim() || 'Nuevo grupo';
+            const quantity = Math.max(1, parseInt(document.getElementById('new-slot-quantity').value, 10) || 1);
+            const course = document.getElementById('new-slot-course').value;
+            const slot = editingSlotId
+                ? draftOffer.composition.slots.find(item => item.slotId === editingSlotId)
+                : { slotId: genId('slot'), required: true, options: [] };
+
+            if (slot) {
+                slot.name = name;
+                slot.required = true;
+                slot.quantity = quantity;
+                slot.course = course;
+                if (!slot.options) slot.options = [];
+                if (!editingSlotId) draftOffer.composition.slots.push(slot);
             }
 
-            const newSlot = { slotId: genId('slot'), name: slotName, multiplier: 1, type: selectedType, options: [] };
-            draftOffer.composition.slots.push(newSlot);
+            editingSlotId = null;
+            closeModal('modal-slot-step1');
             renderDraftSlots();
-            
-            activeSlotId = newSlot.slotId;
-            if (selectedType === 'Receta') { renderRecipesFull(); openFullScreen('fs-recipes'); }
-            else { renderInventoryFull(); openFullScreen('fs-inventory'); }
         }
 
         // --- FS CATÁLOGOS ---
         function renderRecipesFull() {
             const list = document.getElementById('fs-recipes-list');
+            document.getElementById('fs-recipes-title').innerText = recipeSelectionMode
+                ? 'Biblioteca de recetas — elegir opción'
+                : 'Biblioteca de recetas';
+            document.getElementById('fs-recipes-close').innerText = recipeSelectionMode
+                ? '[ X Cancelar ]'
+                : '[ Volver al catálogo ]';
             list.innerHTML = '';
             db.recipes.forEach(rec => {
                 let insumosText = rec.supplies.map(s => {
                     const inv = db.inventory.find(i => i.id === s.inventoryItemId);
                     return inv ? `${inv.name} (${s.quantity}${inv.unit})` : '';
                 }).join(', ');
+                const recipeActions = recipeSelectionMode
+                    ? `<button onclick="assignOptionToActiveSlot('RECIPE', '${rec.id}')" class="px-3 py-1 bg-gray-900 text-white hover:bg-black font-medium text-sm">[ Asignar ]</button>`
+                    : `<button onclick="openRecipeForm('${rec.id}')" class="px-3 py-1 border border-gray-300 hover:bg-gray-50 font-medium text-gray-700 text-sm">[ Editar ]</button>
+                       <button onclick="deleteRecipeMaster('${rec.id}')" class="px-3 py-1 border border-red-200 text-red-600 hover:bg-red-50 font-medium text-sm">[ Eliminar ]</button>`;
 
                 list.innerHTML += `
                 <div class="border border-gray-200 p-4 hover:shadow bg-white">
@@ -823,8 +1186,7 @@
                             <p class="text-sm text-gray-500">${rec.description}</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="openRecipeForm('${rec.id}')" class="px-3 py-1 border border-gray-300 hover:bg-gray-50 font-medium text-gray-700 text-sm">[ Editar ]</button>
-                            <button onclick="assignOptionToActiveSlot('Receta', '${rec.id}')" class="px-3 py-1 bg-gray-900 text-white hover:bg-black font-medium text-sm">[ Asignar ]</button>
+                            ${recipeActions}
                         </div>
                     </div>
                     <div class="bg-gray-50 p-2 border border-gray-100 mt-3">
@@ -842,7 +1204,7 @@
                 <tr class="hover:bg-gray-50 border-b border-gray-100">
                     <td class="p-3 text-gray-800">${inv.name} <span class="text-gray-400 text-xs">(${inv.unit})</span></td>
                     <td class="p-3 text-center">
-                        <button onclick="assignOptionToActiveSlot('Item de Inventario', '${inv.id}')" class="px-3 py-1 bg-gray-900 text-white font-medium hover:bg-black text-sm w-full">[ Asignar ]</button>
+                        <button onclick="assignOptionToActiveSlot('INVENTORY_ITEM', '${inv.id}')" class="px-3 py-1 bg-gray-900 text-white font-medium hover:bg-black text-sm w-full">[ Asignar ]</button>
                     </td>
                 </tr>`;
             });
@@ -858,25 +1220,38 @@
                 
                 list.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b border-gray-100">
-                    <td class="p-3 font-medium text-gray-800">${off.presentationTag}</td>
-                    <td class="p-3 text-gray-500">${entName}</td>
+                    <td class="p-3 font-medium text-gray-800">${entName}</td>
+                    <td class="p-3 text-gray-500">${off.presentationTag || 'Sin etiqueta'}</td>
                     <td class="p-3 text-gray-800">$ ${off.basePrice}</td>
                     <td class="p-3 text-center">
-                        <button onclick="cloneSlotsFromOffer('${off.id}')" class="px-3 py-1 bg-white border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 text-sm w-full">[ Importar Slots ]</button>
+                        <button onclick="cloneSlotsFromOffer('${off.id}')" class="px-3 py-1 bg-white border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 text-sm w-full">[ Copiar composición ]</button>
                     </td>
                 </tr>`;
             });
         }
 
-        function assignOptionToActiveSlot(type, targetId) {
-            if(!activeSlotId) return;
-            const slot = draftOffer.composition.slots.find(s => s.slotId === activeSlotId);
-            if(slot) {
-                if(type === 'Receta') slot.options.push({ optionId: genId('opt'), recipeId: targetId });
-                if(type === 'Item de Inventario') slot.options.push({ optionId: genId('opt'), inventoryItemId: targetId });
+        function assignOptionToActiveSlot(sourceType, targetId) {
+            if (!activeSlotId) return;
+            const slot = draftOffer.composition.slots.find(item => item.slotId === activeSlotId);
+            const option = slot && activeOptionId
+                ? slot.options.find(item => item.optionId === activeOptionId)
+                : null;
+
+            if (slot) {
+                const sourceKey = sourceType === 'RECIPE' ? 'recipeId' : 'inventoryItemId';
+                const displayName = document.getElementById('option-display-name').value.trim();
+                const target = option || { optionId: genId('opt') };
+                delete target.recipeId;
+                delete target.inventoryItemId;
+                target.sourceType = sourceType;
+                target[sourceKey] = targetId;
+                target.displayName = displayName;
+                if (!option) slot.options.push(target);
             }
+
             closeFullScreen('fs-recipes');
             closeFullScreen('fs-inventory');
+            closeOptionEditor();
             renderDraftSlots();
         }
 
@@ -980,6 +1355,15 @@
 
             saveDB();
             closeModal('modal-recipe-form');
+            renderRecipesFull();
+        }
+
+        function deleteRecipeMaster(recipeId) {
+            const recipe = db.recipes.find(item => item.id === recipeId);
+            if (!recipe || !confirm(`¿Eliminar "${recipe.name}" de la Biblioteca de recetas?`)) return;
+
+            db.recipes = db.recipes.filter(item => item.id !== recipeId);
+            saveDB();
             renderRecipesFull();
         }
 
