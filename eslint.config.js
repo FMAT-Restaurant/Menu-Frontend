@@ -8,6 +8,7 @@ export default tseslint.config(
       "coverage/**",
       "dist/**",
       "node_modules/**",
+      ".playwright-browsers/**",
       "playwright-report/**",
       "test-results/**",
     ],
