@@ -28,7 +28,7 @@
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.0",
-    "@babel/preset-typescript": "^7.27.0",
+    "@babel/preset-typescript": "^8.0.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
