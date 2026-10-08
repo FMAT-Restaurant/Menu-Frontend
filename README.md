@@ -12,7 +12,7 @@ Este repositorio contiene solo el cliente web y sus herramientas. El servicio HT
 - Node.js `24.21.0` (`.node-version`) y npm `12.1.0` (`package.json`).
 - Docker con Docker Compose v2 para ejecutar el contenedor y las pruebas E2E.
 
-`package.json` fija React 19.3.0, React Router 7.18.4, Axios 1.20.0, Vite 8.3.1, ESLint 10.10.0, Jest 30.5.2, React Testing Library 16.3.3, Playwright 1.63.0 y TypeScript 7.0.2. TypeScript 6 queda como alias de compatibilidad para herramientas que requieren su API. `npm exec -- tsc --version` debe mostrar `7.0.2` después de instalar dependencias.
+`package.json` fija React 19.3.0, React Router 7.18.4, Axios 1.20.0, Vite 8.3.2, ESLint 10.12.0, Jest 30.5.2, React Testing Library 16.3.3, Playwright 1.63.0 y TypeScript 7.0.2. TypeScript 6 queda como alias de compatibilidad para herramientas que requieren su API. `npm exec -- tsc --version` debe mostrar `7.0.2` después de instalar dependencias.
 
 ## Mockups
 
@@ -31,8 +31,31 @@ Abre `http://localhost:5173`. Comandos de calidad y pruebas:
 | --- | --- |
 | `npm run lint` | Analiza el código con ESLint. |
 | `npm run typecheck` | Comprueba tipos con TypeScript. |
-| `npm run test:unit` | Ejecuta Jest y React Testing Library. |
+| `npm run test:unit` | Ejecuta Jest y React Testing Library con cobertura LCOV y HTML. |
 | `npm run build` | Comprueba tipos y genera el build de producción. |
+
+## Cobertura y SonarQube
+
+`npm run test:unit` genera `coverage/lcov.info` para SonarQube, `coverage/lcov-report/index.html` para revisión local y un resumen en consola. `npm test` sigue ejecutando la misma suite sin cobertura. Los reportes se regeneran en cada ejecución y `coverage/` está excluido de Git.
+
+Se usa el proveedor `babel` (Istanbul) integrado en Jest, compatible con la transformación TypeScript/TSX mediante Babel y los tests de React Testing Library existentes. No hace falta instalar otro paquete de cobertura. Se conserva la línea estable Jest 30 del stack actual y sus versiones exactas, sin introducir versiones preliminares ni una migración de herramientas por la cobertura:
+
+| Dependencia | Versión fijada | Función |
+| --- | --- | --- |
+| `jest` | `30.5.2` | Ejecuta tests y coordina la cobertura integrada. |
+| `babel-jest` | `30.5.2` | Transforma TS/TSX e instrumenta el código con Istanbul. |
+| `jest-environment-jsdom` | `30.5.2` | Entorno DOM para los tests React. |
+| `@testing-library/react` | `16.3.3` | Mantiene los tests de componentes existentes. |
+
+Las tres dependencias de Jest están alineadas y admiten Node.js 24 según sus requisitos de instalación; se verificaron con Node.js `24.21.0` y npm `12.1.0`. `package-lock.json` fija las dependencias transitivas de instrumentación y reportes para `npm ci`.
+
+La cobertura incluye todos los archivos `.ts` y `.tsx` de `src`, aunque ningún test los importe, incluido `main.tsx`. Solo excluye tests, declaraciones `.d.ts` y `test-setup.ts`. Playwright mantiene su suite E2E independiente; su reporte no se mezcla con esta cobertura unitaria. No se establece un umbral arbitrario: el Quality Gate de SonarQube puede definir la política del equipo.
+
+[sonar-project.properties](sonar-project.properties) delimita fuentes/tests e indica `sonar.javascript.lcov.reportPaths=coverage/lcov.info`, válido para JavaScript y TypeScript. La clave del proyecto, URL del servidor, organización (si se usa Cloud) y token se proporcionan al scanner desde la configuración del entorno; no se guardan credenciales en el repo.
+
+Para conectar el análisis, ejecuta el SonarScanner desde la raíz **después de** `npm run test:unit`, en el mismo workspace. Si el scanner vive en otro job, descarga primero el artefacto `jest-coverage-<run_id>` en `coverage/`, conservando `coverage/lcov.info`. En SonarQube Cloud debe desactivarse Automatic Analysis y usarse análisis basado en CI. La generación del reporte queda integrada; la conexión del scanner requiere configurar el proyecto y sus credenciales en SonarQube.
+
+Referencias: [configuración de cobertura de Jest](https://jestjs.io/docs/configuration#collectcoveragefrom-array) y [cobertura JS/TS en SonarQube](https://docs.sonarsource.com/sonarqube-cloud/enriching/test-coverage/javascript-typescript-test-coverage).
 
 ## Docker y E2E
 
@@ -47,7 +70,7 @@ La aplicación queda en `http://localhost:4173`; `FRONTEND_PORT` cambia el puert
 
 ## CI/CD
 
-El workflow [ci-cd.yml](.github/workflows/ci-cd.yml) valida pull requests y pushes a `dev` y `main`, además de tags `v*`. Solo un push a `main` que pase calidad y E2E publica `ghcr.io/fmat-restaurant/menu-frontend:<SHA>`; después extrae el digest, descarga y comprueba la imagen publicada (revisión, healthcheck y configuración externa), y promociona ese mismo digest a `:staging`. El workflow [promote-production.yml](.github/workflows/promote-production.yml) permite promocionar manualmente a `:production` una imagen de un commit de `main` ya publicado, incluido uno anterior para revertir. En cada ejecución, el resumen de Actions registra imagen, digest y commit. `staging` y `production` son etiquetas de promoción en GHCR; el host de despliegue sigue pendiente de acuerdo.
+El workflow [ci-cd.yml](.github/workflows/ci-cd.yml) valida todos los pull requests y los pushes a `dev` y `main`, además de tags `v*`. Solo un push a `main` que pase calidad y E2E publica `ghcr.io/fmat-restaurant/menu-frontend:<SHA>`; después extrae el digest, descarga y comprueba la imagen publicada (revisión, healthcheck y configuración externa), y promociona ese mismo digest a `:staging`. El workflow [promote-production.yml](.github/workflows/promote-production.yml) permite promocionar manualmente a `:production` una imagen de un commit de `main` ya publicado, incluido uno anterior para revertir. En cada ejecución, el resumen de Actions registra imagen, digest y commit. `staging` y `production` son etiquetas de promoción en GHCR; el host de despliegue sigue pendiente de acuerdo.
 
 Para producción, crea los entornos de GitHub `staging` y `production`, restringe `production` a `main` y configura los revisores requeridos según la política del equipo. `GITHUB_TOKEN` con `packages: write` publica y promociona en GHCR; no hacen falta credenciales de registry adicionales. El repositorio debe permitir que Actions escriba en el paquete GHCR. Protege `main` y exige los checks `Quality and unit tests` y `Playwright E2E` antes del merge. Consulta el [diseño del pipeline](ci-cd/pipeline-design.md) para el procedimiento y las verificaciones.
 

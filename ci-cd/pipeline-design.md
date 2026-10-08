@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart LR
-  PR[Pull request a dev o main] --> Q[Lint, TypeScript, Jest/RTL y build]
+  PR[Pull request a cualquier rama] --> Q[Jest/RTL con LCOV, lint, TypeScript y build]
   Q --> E[Docker Compose y Playwright]
   E -->|push a main| G[Publicación SHA en GHCR]
   G --> V[Verificación por digest]
@@ -26,11 +26,11 @@ Referencias del ejemplo: [`ci.yml`](https://github.com/zackspike/cicd-test/blob/
 
 ## Workflow implementado
 
-El archivo `.github/workflows/ci-cd.yml` ejecuta en pull requests y pushes a `dev` o `main`, tags `v*` y manualmente:
+El archivo `.github/workflows/ci-cd.yml` ejecuta en todos los pull requests y en pushes a `dev` o `main`, tags `v*` y manualmente:
 
 GitHub requiere que el archivo ya esté en la rama predeterminada para ofrecer `workflow_dispatch`. El push a `dev` se dispara en cuanto la versión modificada del workflow está comprometida y subida a esa rama.
 
-1. **Quality and unit tests:** configura Node desde `.node-version`, usa npm 12.1.0, instala con `npm ci`, ejecuta ESLint, typecheck con TypeScript 7, Jest/RTL con cobertura y build Vite. Sube el reporte de cobertura incluso si falla el job.
+1. **Quality and unit tests:** configura Node desde `.node-version`, usa npm 12.1.0, instala con `npm ci`, ejecuta primero Jest/RTL con cobertura Babel/Istanbul, conserva `coverage/` como artefacto y comprueba que `coverage/lcov.info` no está vacío. Después ejecuta ESLint, typecheck con TypeScript 7 y build Vite. La subida del reporte se intenta incluso si fallan los tests, y un reporte ausente falla el paso. La generación de cobertura precede a lint/typecheck para conservar el reporte aunque estos fallen. `sonar-project.properties` indica la ruta LCOV al futuro scanner; la configuración del servidor y sus credenciales se describe en el README.
 2. **Playwright E2E:** después del job de calidad instala Chromium, construye y levanta la imagen de producción con `docker compose up --wait`, ejecuta la suite sobre Chromium y conserva reportes, XML JUnit, trazas y capturas como artefacto. Baja Compose al terminar incluso ante errores.
 3. **Publish and verify image:** solo se activa para pushes a `main` y requiere que calidad y E2E pasen. Publica `ghcr.io/<owner>/<repo>:<commit-sha>` con `GITHUB_TOKEN`, captura el digest y descarga la imagen por ese digest. Comprueba la etiqueta OCI de revisión, el healthcheck y la configuración externa servida por Nginx.
 4. **Promote to staging:** tras verificar, asigna `:staging` al digest publicado y comprueba que el digest resultante coincide. Usa el entorno GitHub `staging`.

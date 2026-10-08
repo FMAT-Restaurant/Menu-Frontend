@@ -2,7 +2,6 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches: [dev, main]
   push:
     branches: [dev, main]
     tags: ["v*"]
@@ -36,13 +35,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Jest and React Testing Library
+      - name: Jest and React Testing Library with LCOV coverage
         run: npm run test:unit
 
       - name: Upload Jest coverage report
@@ -51,8 +44,17 @@ jobs:
         with:
           name: jest-coverage-${{ github.run_id }}
           path: coverage/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
+
+      - name: Verify SonarQube LCOV report
+        run: test -s coverage/lcov.info
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Production build
         run: npm run build
