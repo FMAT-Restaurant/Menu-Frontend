@@ -4,6 +4,7 @@ node_modules/
 .eslintcache
 dist/
 coverage/
+.scannerwork/
 playwright-report/
 test-results/
 *.tsbuildinfo
