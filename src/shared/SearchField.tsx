@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 
 interface SearchFieldProps {
   value: string;
@@ -6,8 +6,8 @@ interface SearchFieldProps {
   onSearch(): void;
 }
 
-export function SearchField({ value, onChange, onSearch }: SearchFieldProps) {
-  function submit(event: FormEvent<HTMLFormElement>) {
+export function SearchField({ value, onChange, onSearch }: Readonly<SearchFieldProps>) {
+  function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     onSearch();
   }

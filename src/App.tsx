@@ -13,7 +13,7 @@ const repository = createMenuApi(axios.create({
   baseURL: window.MENU_CONFIG?.apiBaseUrl || "/api/v1",
 }));
 
-function UpcomingView({ title }: { title: string }) {
+function UpcomingView({ title }: Readonly<{ title: string }>) {
   return (
     <main className="upcoming-view">
       <Link to="/" className="back-link">← Volver a entradas</Link>

@@ -10,7 +10,7 @@ interface EntryCardProps {
   onDelete(entry: MenuEntry): void;
 }
 
-export function EntryCard({ entry, busy, onStatusChange, onDelete }: EntryCardProps) {
+export function EntryCard({ entry, busy, onStatusChange, onDelete }: Readonly<EntryCardProps>) {
   return (
     <article className="entry-card">
       <div className="entry-card__image">

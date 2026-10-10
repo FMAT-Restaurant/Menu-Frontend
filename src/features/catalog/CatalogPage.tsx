@@ -12,7 +12,7 @@ function positiveNumber(value: string | null, fallback: number) {
   return Number.isInteger(number) && number > 0 ? number : fallback;
 }
 
-export function CatalogPage({ repository }: { repository: MenuRepository }) {
+export function CatalogPage({ repository }: Readonly<{ repository: MenuRepository }>) {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") ?? "";
   const categoryId = searchParams.get("categoryId") ?? "";

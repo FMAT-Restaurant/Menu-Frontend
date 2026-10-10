@@ -26,19 +26,15 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     },
 
     async listCategories(signal?: AbortSignal): Promise<MenuCategory[]> {
-      const categories: MenuCategory[] = [];
-      let page = 1;
-      let totalPages: number;
-      do {
-        const response = await client.get<Page<MenuCategory>>("/menu/categories", {
-          params: { page, pageSize: 100 },
-          signal,
-        });
-        categories.push(...response.data.data);
-        totalPages = response.data.meta.totalPages;
-        page += 1;
-      } while (page <= totalPages);
-      return categories;
+      const getPage = (page: number) => client.get<Page<MenuCategory>>("/menu/categories", {
+        params: { page, pageSize: 100 },
+        signal,
+      });
+      const firstPage = await getPage(1);
+      const remainingPages = await Promise.all(
+        Array.from({ length: Math.max(0, firstPage.data.meta.totalPages - 1) }, (_, index) => getPage(index + 2)),
+      );
+      return [firstPage, ...remainingPages].flatMap((response) => response.data.data);
     },
 
     async setEntryStatus(id: string, status: EntryStatus): Promise<void> {
