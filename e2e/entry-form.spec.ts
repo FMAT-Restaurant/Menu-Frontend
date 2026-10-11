@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
-test("creates and edits an entry with the documented multipart contract", async ({ page }) => {
+test("creates and edits an entry with separate image upload and JSON writes", async ({ page }) => {
   const imageBytes = readFileSync(resolve(process.cwd(), "mockups/renders/V2-crear-editar-entrada.png"));
   const requests: { method: string; url: string; body: string }[] = [];
 
-  await page.route("**/api/v1/menus/1/categories?*", (route) => route.fulfill({
+  await page.route("**/api/v1/menu/categories?*", (route) => route.fulfill({
     json: {
-      items: [{ id: "category-1", menuId: "1", name: "Principales", description: "" }],
-      pagination: { page: 1, pageSize: 100, totalItems: 1, totalPages: 1 },
+      data: [{ id: "category-1", name: "Principales", description: "" }],
+      meta: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
     },
   }));
   await page.route("**/api/v1/menu/entries?*", (route) => route.fulfill({
@@ -21,33 +21,46 @@ test("creates and edits an entry with the documented multipart contract", async 
       meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
     },
   }));
-  await page.route("**/api/v1/menus/1/entries", async (route) => {
+  await page.route("**/api/v1/media/images", async (route) => {
+    const request = route.request();
+    requests.push({ method: request.method(), url: request.url(), body: request.postData() ?? "" });
+    await route.fulfill({ status: 201, json: { data: { id: "image-1" } } });
+  });
+  await page.route("**/api/v1/menu/entries", async (route) => {
     const request = route.request();
     requests.push({ method: request.method(), url: request.url(), body: request.postData() ?? "" });
     await route.fulfill({
       status: 201,
       json: {
-        id: "entry-1", menuId: "1", brandName: "Bowl de pollo", description: "Pollo con arroz.",
-        imageRef: "image-1", status: "INACTIVE", categoryIds: ["category-1"], offers: [],
+        data: {
+          id: "entry-1", brandName: "Bowl de pollo", description: "Pollo con arroz.",
+          image: { id: "image-1", url: "/image-1", thumbnailUrl: "/image-1" }, status: "INACTIVE", categoryIds: ["category-1"],
+        },
       },
     });
   });
-  await page.route("**/api/v1/menus/1/entries/entry-1", async (route) => {
+  await page.route("**/api/v1/menu/entries/entry-1", async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({
+        headers: { ETag: '"rev-3"' },
         json: {
-          id: "entry-1", menuId: "1", brandName: "Bowl de pollo", description: "Pollo con arroz.",
-          imageRef: "image-1", status: "INACTIVE", categoryIds: ["category-1"], offers: [],
+          data: {
+            id: "entry-1", brandName: "Bowl de pollo", description: "Pollo con arroz.",
+            image: { id: "image-1", url: "/image-1", thumbnailUrl: "/image-1" }, status: "INACTIVE", categoryIds: ["category-1"],
+          },
         },
       });
       return;
     }
     const request = route.request();
+    expect(request.headers()["if-match"]).toBe('"rev-3"');
     requests.push({ method: request.method(), url: request.url(), body: request.postData() ?? "" });
     await route.fulfill({
       json: {
-        id: "entry-1", menuId: "1", brandName: "Bowl especial", description: "Con vegetales.",
-        imageRef: "image-1", status: "INACTIVE", categoryIds: ["category-1"], offers: [],
+        data: {
+          id: "entry-1", brandName: "Bowl especial", description: "Con vegetales.",
+          image: { id: "image-1", url: "/image-1", thumbnailUrl: "/image-1" }, status: "INACTIVE", categoryIds: ["category-1"],
+        },
       },
     });
   });
@@ -67,20 +80,23 @@ test("creates and edits an entry with the documented multipart contract", async 
   await expect(page.getByRole("heading", { name: "Bowl de pollo" })).toBeVisible();
 
   expect(requests[0].method).toBe("POST");
-  expect(requests[0].url).toContain("/menus/1/entries");
-  expect(requests[0].body).toContain('name="entry"');
-  expect(requests[0].body).toContain('"brandName":"Bowl de pollo"');
-  expect(requests[0].body).toContain('name="image"');
+  expect(requests[0].url).toContain("/media/images");
+  expect(requests[0].body).toContain('name="file"');
   expect(requests[0].body).toContain("bowl.png");
+  expect(requests[1].url).toContain("/menu/entries");
+  expect(JSON.parse(requests[1].body)).toEqual({
+    brandName: "Bowl de pollo", description: "Pollo con arroz.", categoryIds: ["category-1"], imageId: "image-1",
+  });
 
   await page.getByRole("link", { name: "Editar Bowl de pollo" }).click();
-  await expect(page.getByText(/Imagen actual conservada/)).toBeVisible();
+  await expect(page.getByRole("img", { name: "Vista previa de la imagen de la entrada" })).toBeVisible();
+  await expect(page.getByText("Si no seleccionas otra imagen, se conservará la actual.")).toBeVisible();
   await page.getByLabel("Descripción").fill("Con vegetales.");
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page).toHaveURL(/\/?q=bowl&status=INACTIVE$/);
 
-  expect(requests[1]).toMatchObject({ method: "PATCH" });
-  expect(requests[1].body).toBe(JSON.stringify({
+  expect(requests[2]).toMatchObject({ method: "PATCH" });
+  expect(requests[2].body).toBe(JSON.stringify({
     brandName: "Bowl de pollo", description: "Con vegetales.", categoryIds: ["category-1"], status: "INACTIVE",
   }));
 });

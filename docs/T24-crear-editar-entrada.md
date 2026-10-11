@@ -4,12 +4,12 @@ Las rutas `/entries/new` y `/entries/:entryId/edit` muestran el formulario admin
 
 Las entradas nuevas se envían sin estado para que el servicio las cree `INACTIVE`. La edición conserva la imagen vigente cuando no se elige reemplazo y envía el estado junto con los cambios; desde `ARCHIVED` el único siguiente estado disponible es `INACTIVE`. La elegibilidad de publicación depende también de las ofertas y la decide el servicio.
 
-La imagen se valida en el navegador como JPEG, PNG o WebP, hasta 10 MiB y 4096 px por lado. La API debe volver a validar el archivo de forma autoritativa y guardar la entrada y la imagen atómicamente.
+La imagen se valida en el navegador como JPEG, PNG o WebP, hasta 10 MiB y 4096 px por lado. La API vuelve a validar el archivo de forma autoritativa. La subida de imagen es independiente; si falla el guardado posterior, la entrada conserva sus datos e imagen anteriores, aunque la imagen subida puede quedar sin asociar.
 
 ## Contrato y configuración
 
-La integración sigue el OpenAPI vigente: `GET /menus/{menuId}/categories`, `GET /menus/{menuId}/entries/{entryId}`, `POST /menus/{menuId}/entries` con partes multipart `entry` (JSON) e `image`, y `PATCH /menus/{menuId}/entries/{entryId}` como JSON o multipart al reemplazar la imagen. `MENU_ID` se inyecta desde la configuración de ejecución y usa `1` como valor local inicial. `API_BASE_URL` conserva su función de URL base.
+La integración sigue el [OpenAPI publicado](https://fmat-restaurant.github.io/Menu-Documentation/api/): `GET /menu/categories`, `GET /menu/entries/{entryId}`, `POST /media/images` con archivo en la parte `file`, `POST /menu/entries` con JSON que incluye `imageId`, y `PATCH /menu/entries/{entryId}` con JSON e `If-Match`. Si no se reemplaza la imagen, se omite `imageId`; al reemplazarla, se sube primero y se envía el nuevo identificador. `API_BASE_URL` conserva su función de URL base. El menú está provisionado en la instalación y no se envía `menuId`.
 
-El `Menu-Backend` consultado durante T24 aún implementa los endpoints singulares `/menu/entries` y `/menu/categories` y la subida separada `/media/images`. Por ello, el formulario requiere que Back implemente o adapte las rutas plurales documentadas antes de integrarse con ese despliegue. La UI no introduce rutas ni parámetros nuevos al contrato.
+El cliente obtiene un ETag vigente antes de cada edición y deja al Back la validación de categorías, transiciones y referencias de imagen. Los errores de carga o guardado mantienen el borrador en pantalla.
 
 Jest exige al menos 80% en sentencias, ramas, funciones y líneas para `EntryFormPage.tsx` y `entryImage.ts`; la suite incluye validación de archivos, creación/edición, errores, cancelación y transiciones.

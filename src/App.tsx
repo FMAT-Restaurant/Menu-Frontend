@@ -8,13 +8,13 @@ import type { MenuRepository } from "./application/catalog";
 
 declare global {
   interface Window {
-    MENU_CONFIG?: { apiBaseUrl: string; menuId?: string };
+    MENU_CONFIG?: { apiBaseUrl: string };
   }
 }
 
 const defaultRepository = createMenuApi(axios.create({
   baseURL: window.MENU_CONFIG?.apiBaseUrl || "/api/v1",
-}), window.MENU_CONFIG?.menuId || "1");
+}));
 
 function UpcomingView({ title }: Readonly<{ title: string }>) {
   return (

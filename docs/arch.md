@@ -7,7 +7,7 @@
 
 - [Configuración de la ERS](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/ers/configuration.md) establece la precedencia: modelo conceptual y ERS vigentes prevalecen sobre auditorías y propuestas históricas en `docs/other/md/`.
 - [Modelo conceptual](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/other/md/domain-model.md), [requisitos](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/ers/functional-requirements.md), [reglas](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/ers/business-rules.md), [cuestiones abiertas](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/ers/open.md) y [roadmap](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/product/README.md) definen el comportamiento y las entregas.
-- [OpenAPI](https://github.com/FMAT-Restaurant/Menu-Documentation/blob/main/docs/apis/menu/openapi.yaml) es la fuente de operaciones, rutas, cuerpos, respuestas y errores.
+- [OpenAPI publicado](https://fmat-restaurant.github.io/Menu-Documentation/api/) es la fuente de operaciones, rutas, cuerpos, respuestas y errores.
 - [Arquitectura del backend](https://github.com/FMAT-Restaurant/Menu-Backend/blob/main/docs/arch.md) define el servicio. El frontend separa vistas, puerto de aplicación y adaptador HTTP sin copiar detalles de Java, JPA ni repositorios.
 
 La aplicación es una **SPA web de administración y consulta de catálogo**. Menu conserva entradas, ofertas, composiciones, recetas y personalizaciones; Inventario conserva identidad y existencias de artículos; Órdenes conserva elecciones concretas y precio final. El frontend no calcula reglas autoritativas del dominio ni convierte una definición de catálogo en una orden.

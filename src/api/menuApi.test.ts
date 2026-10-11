@@ -86,8 +86,8 @@ test("loads every category page for the filter without inventing a new endpoint"
   expect(categories[100].name).toBe("Categoría 2-1");
   expect(categories[0]).not.toHaveProperty("etag");
   expect(requests).toEqual([
-    "/api/v1/menus/1/categories?page=1&pageSize=100",
-    "/api/v1/menus/1/categories?page=2&pageSize=100",
+    "/api/v1/menu/categories?page=1&pageSize=100",
+    "/api/v1/menu/categories?page=2&pageSize=100",
   ]);
 });
 
@@ -108,10 +108,10 @@ test("creates a category with the supplied draft", async () => {
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
   await expect(api.createCategory(draft)).resolves.toEqual(created);
-  expect(requests).toEqual([{ method: "post", url: "/menus/1/categories", body: draft }]);
+  expect(requests).toEqual([{ method: "post", url: "/menu/categories", body: draft }]);
 });
 
-test("updates an encoded category ID using the documented menu path", async () => {
+test("updates an encoded category ID with its current ETag", async () => {
   const draft = { name: "Bebidas", description: "Bebidas frías" };
   const updated = { id: "category /2", ...draft, entryCount: 1 };
   const requests: { method?: string; url?: string; body?: unknown; ifMatch?: string }[] = [];
@@ -119,13 +119,13 @@ test("updates an encoded category ID using the documented menu path", async () =
     requests.push({
       method: config.method,
       url: config.url,
-      body: JSON.parse(config.data as string),
+      body: config.data ? JSON.parse(config.data as string) : undefined,
       ifMatch: config.headers.get("If-Match")?.toString(),
     });
     return {
       config,
       data: { data: updated },
-      headers: {},
+      headers: { etag: '"rev-3"' },
       status: 200,
       statusText: "OK",
     };
@@ -133,23 +133,21 @@ test("updates an encoded category ID using the documented menu path", async () =
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
   await expect(api.updateCategory("category /2", draft)).resolves.toEqual(updated);
-  expect(requests).toEqual([{
-    method: "patch",
-    url: "/menus/1/categories/category%20%2F2",
-    body: draft,
-    ifMatch: undefined,
-  }]);
+  expect(requests).toEqual([
+    { method: "get", url: "/menu/categories/category%20%2F2", body: undefined, ifMatch: undefined },
+    { method: "patch", url: "/menu/categories/category%20%2F2", body: draft, ifMatch: '"rev-3"' },
+  ]);
 });
 
-test("updates a category without requiring an ETag", async () => {
+test("does not update a category when its ETag is unavailable", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config.method ?? "");
     return { config, data: { data: { id: "category-1", name: "Bebidas", entryCount: 0 } }, headers: {}, status: 200, statusText: "OK" };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
-  await expect(api.updateCategory("category-1", { name: "Bebidas", description: "" })).resolves.toMatchObject({ id: "category-1" });
-  expect(requests).toEqual(["patch"]);
+  await expect(api.updateCategory("category-1", { name: "Bebidas", description: "" })).rejects.toThrow("No se recibió la versión");
+  expect(requests).toEqual(["get"]);
 });
 test("reads a strong ETag before archiving and sends only the new status", async () => {
   const requests: { method?: string; url?: string; body?: unknown; ifMatch?: string }[] = [];
@@ -304,45 +302,26 @@ test("propagates network failures without translating them", async () => {
   await expect(api.listEntries({ page: 1, pageSize: 12 })).rejects.toBe(networkError);
 });
 
-test("reads category pages using the current OpenAPI items and pagination shape", async () => {
-  const requests: string[] = [];
+test("forwards cancellation when loading category pages", async () => {
+  const controller = new AbortController();
+  const signals: unknown[] = [];
   const adapter: AxiosAdapter = async (config) => {
-    const uri = axios.getUri(config);
-    requests.push(uri);
-    const page = uri.includes("page=2") ? 2 : 1;
+    signals.push(config.signal);
     return {
       config,
-      data: {
-        items: [{ id: `category-${page}`, menuId: "menu-current", name: `Category ${page}`, description: "" }],
-        pagination: { page, pageSize: 100, totalItems: 2, totalPages: 2 },
-      },
+      data: { data: [], meta: { page: 1, pageSize: 100, total: 0, totalPages: 0 } },
       headers: {},
       status: 200,
       statusText: "OK",
     };
   };
-  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }), "menu-current");
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.listCategories()).resolves.toEqual([
-    { id: "category-1", menuId: "menu-current", name: "Category 1", description: "" },
-    { id: "category-2", menuId: "menu-current", name: "Category 2", description: "" },
-  ]);
-  expect(requests).toEqual([
-    "/api/v1/menus/menu-current/categories?page=1&pageSize=100",
-    "/api/v1/menus/menu-current/categories?page=2&pageSize=100",
-  ]);
+  await expect(api.listCategories(controller.signal)).resolves.toEqual([]);
+  expect(signals).toEqual([controller.signal]);
 });
 
-function readBlob(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(blob);
-  });
-}
-
-test("gets an entry from the selected menu and maps its administrative details", async () => {
+test("gets an entry from the administrative menu route and maps its details", async () => {
   const requests: { url?: string; method?: string }[] = [];
   const detail = {
     id: "entry-1",
@@ -354,92 +333,10 @@ test("gets an entry from the selected menu and maps its administrative details",
   };
   const adapter: AxiosAdapter = async (config) => {
     requests.push({ url: config.url, method: config.method });
-    return { config, data: detail, headers: {}, status: 200, statusText: "OK" };
+    return { config, data: { data: detail }, headers: {}, status: 200, statusText: "OK" };
   };
-  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }), "menu-42");
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
   await expect(api.getEntry("entry /1")).resolves.toEqual(detail);
-  expect(requests).toEqual([{ method: "get", url: "/menus/menu-42/entries/entry%20%2F1" }]);
-});
-
-test("creates an inactive entry using the documented entry and image multipart parts", async () => {
-  let requestBody: unknown;
-  const adapter: AxiosAdapter = async (config) => {
-    requestBody = config.data;
-    return {
-      config,
-      data: { id: "entry-new", brandName: "Bowl de pollo", description: "Pollo con arroz.", imageRef: "img-1", status: "INACTIVE", categoryIds: [] },
-      headers: {},
-      status: 201,
-      statusText: "Created",
-    };
-  };
-  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }), "menu-42");
-  const image = new File(["image bytes"], "bowl.png", { type: "image/png" });
-
-  await expect(api.createEntry({ brandName: "Bowl de pollo", description: "Pollo con arroz.", categoryIds: [] }, image))
-    .resolves.toMatchObject({ id: "entry-new", status: "INACTIVE" });
-
-  expect(requestBody).toBeInstanceOf(FormData);
-  const multipart = requestBody as FormData;
-  const entryPart = multipart.get("entry");
-  expect(entryPart).toBeInstanceOf(Blob);
-  expect((entryPart as Blob).type).toBe("application/json");
-  expect(JSON.parse(await readBlob(entryPart as Blob))).toEqual({
-    brandName: "Bowl de pollo", description: "Pollo con arroz.", categoryIds: [],
-  });
-  expect(multipart.get("image")).toBe(image);
-});
-
-test("edits entry metadata as JSON without sending or clearing the current image", async () => {
-  let request: { url?: string; method?: string; data?: unknown } = {};
-  const adapter: AxiosAdapter = async (config) => {
-    request = { url: config.url, method: config.method, data: config.data ? JSON.parse(config.data as string) : undefined };
-    return {
-      config,
-      data: { id: "entry-1", brandName: "Bowl especial", description: "Con vegetales.", imageRef: "img-current", status: "ACTIVE", categoryIds: ["category-1"] },
-      headers: {},
-      status: 200,
-      statusText: "OK",
-    };
-  };
-  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }), "menu-42");
-
-  await api.updateEntry("entry-1", {
-    brandName: "Bowl especial", description: "Con vegetales.", categoryIds: ["category-1"], status: "ACTIVE",
-  });
-
-  expect(request).toEqual({
-    method: "patch",
-    url: "/menus/menu-42/entries/entry-1",
-    data: { brandName: "Bowl especial", description: "Con vegetales.", categoryIds: ["category-1"], status: "ACTIVE" },
-  });
-});
-
-test("edits entry metadata and replaces its image in one multipart request", async () => {
-  let request: { url?: string; method?: string; data?: unknown } = {};
-  const adapter: AxiosAdapter = async (config) => {
-    request = { url: config.url, method: config.method, data: config.data };
-    return {
-      config,
-      data: { id: "entry-1", brandName: "Bowl especial", description: "Con vegetales.", imageRef: "img-new", status: "INACTIVE", categoryIds: [] },
-      headers: {},
-      status: 200,
-      statusText: "OK",
-    };
-  };
-  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }), "menu-42");
-  const image = new File(["new image"], "new.png", { type: "image/png" });
-
-  await api.updateEntry("entry-1", {
-    brandName: "Bowl especial", description: "Con vegetales.", categoryIds: [], status: "INACTIVE",
-  }, image);
-
-  expect(request).toMatchObject({ method: "patch", url: "/menus/menu-42/entries/entry-1" });
-  expect(request.data).toBeInstanceOf(FormData);
-  const multipart = request.data as FormData;
-  expect(JSON.parse(await readBlob(multipart.get("entry") as Blob))).toEqual({
-    brandName: "Bowl especial", description: "Con vegetales.", categoryIds: [], status: "INACTIVE",
-  });
-  expect(multipart.get("image")).toBe(image);
+  expect(requests).toEqual([{ method: "get", url: "/menu/entries/entry%20%2F1" }]);
 });
