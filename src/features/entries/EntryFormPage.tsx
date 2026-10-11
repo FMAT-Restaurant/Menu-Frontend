@@ -25,23 +25,72 @@ function safeReturnPath(state: unknown) {
 
 function errorMessage(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
-  if (error && typeof error === "object" && "response" in error) {
-    const response = error.response;
-    if (response && typeof response === "object" && "data" in response) {
-      const data = response.data;
-      if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
-        const details = "details" in data && Array.isArray(data.details)
-          ? data.details.flatMap((detail) => detail && typeof detail === "object" && "message" in detail && typeof detail.message === "string" ? [detail.message] : [])
-          : [];
-        return [data.message, ...details].join(" ");
-      }
-    }
+  const response = isRecord(error) ? error.response : null;
+  const data = isRecord(response) ? response.data : null;
+  if (isRecord(data) && typeof data.message === "string") {
+    const details = Array.isArray(data.details) ? data.details.flatMap(errorDetailMessage) : [];
+    return [data.message, ...details].join(" ");
   }
   return "No se pudo guardar la entrada. Conservamos tus cambios; revisa e inténtalo de nuevo.";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
+function errorDetailMessage(detail: unknown): string[] {
+  return isRecord(detail) && typeof detail.message === "string" ? [detail.message] : [];
+}
+
 function imageReference(entry: MenuEntryDetail) {
   return entry.image?.thumbnailUrl || entry.image?.url || entry.imageRef;
+}
+
+function validationMessage(brandName: string, description: string, entryId: string | undefined, image: File | null, imageError: string, imageValidating: boolean) {
+  if (!brandName.trim()) return "Indica el nombre comercial de la entrada.";
+  if (!description.trim()) return "Indica una descripción para la entrada.";
+  if (!entryId && !image) return "Selecciona una imagen de referencia para la nueva entrada.";
+  if (imageError || imageValidating) return imageError || "Espera a que termine la validación de la imagen.";
+  return "";
+}
+
+async function persistEntry(repository: MenuRepository, entryId: string | undefined, draft: EntryCreateDraft, status: EntryStatus, image: File | null) {
+  if (entryId) {
+    const update: EntryUpdateDraft = { ...draft, status };
+    await repository.updateEntry(entryId, update, image ?? undefined);
+    return;
+  }
+  if (!image) throw new Error("Selecciona una imagen de referencia para la nueva entrada.");
+  await repository.createEntry(draft, image);
+}
+
+function statusHelpText(editing: boolean, archived: boolean, status: EntryStatus) {
+  if (!editing) return "Las entradas nuevas siempre comienzan inactivas.";
+  if (archived && status === "INACTIVE") return "Desarchivar deja la entrada inactiva; actívala después de forma expresa.";
+  return "Activa no significa publicada: se requiere al menos una oferta activa válida. Las ofertas conservan su propio estado.";
+}
+
+function formLabels(editing: boolean, selectedFile: File | null, saving: boolean) {
+  let imageActionLabel = "Seleccionar imagen";
+  let imageHelp = "La imagen es obligatoria para crear una entrada.";
+  let saveLabel = "Guardar entrada";
+  if (editing) {
+    imageActionLabel = "Reemplazar imagen";
+    imageHelp = "Si no seleccionas otra imagen, se conservará la actual.";
+    saveLabel = "Guardar cambios";
+  }
+  if (selectedFile) {
+    imageActionLabel = "Cambiar imagen";
+    imageHelp = selectedFile.name;
+  }
+  if (saving) saveLabel = "Guardando…";
+  return { imageActionLabel, imageHelp, saveLabel };
+}
+
+function EntryImagePreview({ source, currentImage }: Readonly<{ source: string | undefined; currentImage: string | undefined }>) {
+  if (source) return <img src={source} alt="Vista previa de la imagen de la entrada" />;
+  if (currentImage) return <span>Imagen actual conservada · referencia {currentImage}</span>;
+  return <span>Selecciona una imagen para mostrar una vista previa.</span>;
 }
 
 export function EntryFormPage({ repository }: Readonly<{ repository: MenuRepository }>) {
@@ -134,41 +183,23 @@ export function EntryFormPage({ repository }: Readonly<{ repository: MenuReposit
   async function save(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
-    if (!brandName.trim()) {
-      setFormError("Indica el nombre comercial de la entrada.");
+    const error = validationMessage(brandName, description, entryId, selectedFile, imageError, imageValidating);
+    if (error) {
+      setFormError(error);
       return;
     }
-    if (!description.trim()) {
-      setFormError("Indica una descripción para la entrada.");
-      return;
-    }
-    if (!editing && !selectedFile) {
-      setFormError("Selecciona una imagen de referencia para la nueva entrada.");
-      return;
-    }
-    if (imageError || imageValidating) {
-      setFormError(imageError || "Espera a que termine la validación de la imagen.");
-      return;
-    }
-    if (editing && !entryId) return;
 
     setSaving(true);
-    const common = {
+    const draft: EntryCreateDraft = {
       brandName: brandName.trim(),
       description: description.trim(),
       categoryIds: [...new Set(categoryIds)],
     };
     try {
-      if (editing && entryId) {
-        const draft: EntryUpdateDraft = { ...common, status };
-        await repository.updateEntry(entryId, draft, selectedFile ?? undefined);
-      } else {
-        const draft: EntryCreateDraft = common;
-        await repository.createEntry(draft, selectedFile as File);
-      }
-      navigate(returnTo, { replace: true });
-    } catch (error) {
-      setFormError(errorMessage(error));
+      await persistEntry(repository, entryId, draft, status, selectedFile);
+      await navigate(returnTo, { replace: true });
+    } catch (saveError) {
+      setFormError(errorMessage(saveError));
     } finally {
       setSaving(false);
     }
@@ -179,6 +210,9 @@ export function EntryFormPage({ repository }: Readonly<{ repository: MenuReposit
     ? ["ARCHIVED", "INACTIVE"]
     : ["ACTIVE", "INACTIVE", "ARCHIVED"];
   const currentImage = entry ? imageReference(entry) : undefined;
+  const previewSource = previewUrl || entry?.image?.thumbnailUrl || entry?.image?.url;
+  const statusHelp = statusHelpText(editing, entry?.status === "ARCHIVED", status);
+  const { imageActionLabel, imageHelp, saveLabel } = formLabels(editing, selectedFile, saving);
 
   return (
     <div className="app-shell">
@@ -245,11 +279,7 @@ export function EntryFormPage({ repository }: Readonly<{ repository: MenuReposit
                     <option value={option} key={option}>{statusLabels[option]}</option>
                   ))}
                 </select>
-                {!editing
-                  ? <p>Las entradas nuevas siempre comienzan inactivas.</p>
-                  : entry?.status === "ARCHIVED" && status === "INACTIVE"
-                    ? <p>Desarchivar deja la entrada inactiva; actívala después de forma expresa.</p>
-                    : <p>Activa no significa publicada: se requiere al menos una oferta activa válida. Las ofertas conservan su propio estado.</p>}
+                <p>{statusHelp}</p>
               </fieldset>
             </div>
 
@@ -259,13 +289,9 @@ export function EntryFormPage({ repository }: Readonly<{ repository: MenuReposit
                 <p>JPEG, PNG o WebP; máximo 10 MiB y 4096 × 4096 px.</p>
               </div>
               <div className="entry-image-field__preview">
-                {previewUrl || (entry?.image?.url || entry?.image?.thumbnailUrl)
-                  ? <img src={previewUrl || entry?.image?.thumbnailUrl || entry?.image?.url} alt="Vista previa de la imagen de la entrada" />
-                  : currentImage
-                    ? <span>Imagen actual conservada · referencia {currentImage}</span>
-                    : <span>Selecciona una imagen para mostrar una vista previa.</span>}
+                <EntryImagePreview source={previewSource} currentImage={currentImage} />
               </div>
-              <label className="button button--secondary entry-image-field__select" htmlFor="entry-image">{selectedFile ? "Cambiar imagen" : editing ? "Reemplazar imagen" : "Seleccionar imagen"}</label>
+              <label className="button button--secondary entry-image-field__select" htmlFor="entry-image">{imageActionLabel}</label>
               <input
                 className="entry-image-field__input"
                 id="entry-image"
@@ -275,16 +301,16 @@ export function EntryFormPage({ repository }: Readonly<{ repository: MenuReposit
                 disabled={saving}
                 aria-describedby="entry-image-help entry-image-error"
               />
-              <p id="entry-image-help" className="entry-form__muted">{selectedFile ? selectedFile.name : editing ? "Si no seleccionas otra imagen, se conservará la actual." : "La imagen es obligatoria para crear una entrada."}</p>
+              <p id="entry-image-help" className="entry-form__muted">{imageHelp}</p>
               {imageValidating && <output className="entry-image-field__validation">Validando archivo e imagen…</output>}
               <p id="entry-image-error" className="entry-form__error" role={imageError ? "alert" : undefined}>{imageError}</p>
             </section>
 
             {formError && <div className="feedback feedback--error" role="alert">{formError}</div>}
             <footer className="entry-form__actions">
-              <button className="button button--secondary" type="button" disabled={saving} onClick={() => navigate(returnTo)}>Cancelar</button>
+              <button className="button button--secondary" type="button" disabled={saving} onClick={() => { void navigate(returnTo); }}>Cancelar</button>
               <button className="button button--primary" type="submit" disabled={saving || loading || imageValidating || Boolean(imageError)}>
-                {saving ? "Guardando…" : editing ? "Guardar cambios" : "Guardar entrada"}
+                {saveLabel}
               </button>
             </footer>
           </form>
