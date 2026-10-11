@@ -38,7 +38,7 @@ export function EntryCard({ entry, busy, returnTo, onStatusChange, onDelete }: R
         </div>
         <div className="entry-card__actions">
           <Link className="button button--secondary" to={`/entries/${entry.id}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`}>Editar</Link>
-          <Link className="button button--secondary" to={`/entries/${entry.id}/offers`} aria-label={`Ver ofertas de ${entry.brandName}`}>Ver ofertas</Link>
+          <Link className="button button--secondary" to={`/entries/${entry.id}/offers`} state={{ returnTo }} aria-label={`Ver ofertas de ${entry.brandName}`}>Ver ofertas</Link>
         </div>
         <div className="entry-card__lifecycle">
           {entry.status === "INACTIVE" && <button className="button button--quiet" type="button" disabled aria-label={`Activar ${entry.brandName}`}>Activar</button>}

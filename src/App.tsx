@@ -1,9 +1,10 @@
 import axios from "axios";
-import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { createMenuApi } from "./api/menuApi";
 import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CategoryPage } from "./features/categories/CategoryPage";
 import { EntryFormPage } from "./features/entries/EntryFormPage";
+import { OffersPage } from "./features/offers/OffersPage";
 import type { MenuRepository } from "./application/catalog";
 
 declare global {
@@ -27,6 +28,18 @@ function UpcomingView({ title }: Readonly<{ title: string }>) {
   );
 }
 
+function UpcomingOfferForm() {
+  const { entryId } = useParams();
+  return (
+    <main className="upcoming-view">
+      <Link to={`/entries/${encodeURIComponent(entryId ?? "")}/offers`} className="back-link">← Volver a ofertas</Link>
+      <p className="eyebrow">Administración / Menú / Ofertas</p>
+      <h1>Formulario de oferta</h1>
+      <p>La creación y edición de ofertas se implementará en V4.</p>
+    </main>
+  );
+}
+
 export function App({ repository = defaultRepository }: Readonly<{ repository?: MenuRepository }> = {}) {
   return (
     <BrowserRouter>
@@ -35,7 +48,9 @@ export function App({ repository = defaultRepository }: Readonly<{ repository?: 
         <Route path="/menu" element={<Navigate to="/" replace />} />
         <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
         <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
-        <Route path="/entries/:entryId/offers" element={<UpcomingView title="Ofertas de entrada" />} />
+        <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
+        <Route path="/entries/:entryId/offers/new" element={<UpcomingOfferForm />} />
+        <Route path="/entries/:entryId/offers/:offerId/edit" element={<UpcomingOfferForm />} />
         <Route path="/categories" element={<CategoryPage repository={repository} />} />
         <Route path="/recipes" element={<UpcomingView title="Biblioteca de recetas" />} />
       </Routes>

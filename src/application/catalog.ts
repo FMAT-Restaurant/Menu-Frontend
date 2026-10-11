@@ -33,6 +33,19 @@ export interface MenuEntryDetail {
   image?: MenuImage | null;
 }
 
+export type OfferStatus = "ACTIVE" | "INACTIVE";
+
+export interface MenuOffer {
+  id: string;
+  entryId: string;
+  entryName: string;
+  presentationTag?: string | null;
+  basePrice: number;
+  status: OfferStatus;
+  image: MenuImage | null;
+  slotCount: number;
+}
+
 export interface EntryCreateDraft {
   brandName: string;
   description: string;
@@ -71,4 +84,7 @@ export interface MenuRepository {
   getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail>;
   createEntry(draft: EntryCreateDraft, image: File): Promise<MenuEntryDetail>;
   updateEntry(id: string, draft: EntryUpdateDraft, image?: File): Promise<MenuEntryDetail>;
+  listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
+  setOfferStatus(id: string, status: OfferStatus): Promise<void>;
+  deleteInactiveOffer(id: string): Promise<void>;
 }

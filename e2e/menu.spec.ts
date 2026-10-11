@@ -20,6 +20,12 @@ test("searches the administrative entries and opens their management routes", as
     }];
     return route.fulfill({ json: { data, meta: { page: 1, pageSize: 12, total: data.length, totalPages: data.length ? 1 : 0 } } });
   });
+  await page.route("**/api/v1/menu/entries/entry-1", (route) => route.fulfill({
+    json: { data: { id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Carne, queso y piña", status: "ARCHIVED", categoryIds: [] } },
+  }));
+  await page.route("**/api/v1/menu/offers?*", (route) => route.fulfill({
+    json: { data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } },
+  }));
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Entradas del menú" })).toBeVisible();
@@ -41,5 +47,5 @@ test("searches the administrative entries and opens their management routes", as
 
   await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" }).click();
   await expect(page).toHaveURL(/\/entries\/entry-1\/offers$/);
-  await expect(page.getByRole("heading", { name: "Ofertas de entrada" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
 });

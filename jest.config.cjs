@@ -17,5 +17,7 @@ module.exports = {
   coverageThreshold: {
     "./src/features/entries/EntryFormPage.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/entries/entryImage.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/offers/OffersPage.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/offers/OfferCard.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
   },
 };

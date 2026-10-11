@@ -1,6 +1,65 @@
 import axios, { type AxiosAdapter } from "axios";
 import { createMenuApi } from "./menuApi";
 
+test("lists only offers of the selected entry with server pagination", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(axios.getUri(config));
+    return { config, data: { data: [], meta: { page: 2, pageSize: 12, total: 13, totalPages: 2 } }, headers: {}, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const page = await api.listOffers("entry-1", 2, 12);
+  expect(page.meta.total).toBe(13);
+  expect(requests).toEqual(["/api/v1/menu/offers?entryId=entry-1&page=2&pageSize=12"]);
+});
+
+test("reads a strong offer ETag before changing only its status", async () => {
+  const requests: { method?: string; url?: string; body?: unknown; ifMatch?: string }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({ method: config.method, url: config.url, body: config.data ? JSON.parse(config.data as string) : undefined, ifMatch: config.headers?.get("If-Match") as string | undefined });
+    return { config, data: { data: { status: "INACTIVE" } }, headers: { etag: '"offer-rev-2"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  await api.setOfferStatus("offer-1", "ACTIVE");
+  expect(requests).toEqual([
+    { method: "get", url: "/menu/offers/offer-1", body: undefined, ifMatch: undefined },
+    { method: "patch", url: "/menu/offers/offer-1", body: { status: "ACTIVE" }, ifMatch: '"offer-rev-2"' },
+  ]);
+});
+
+test("rejects a weak or missing ETag before mutating an offer", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(config.method ?? "");
+    return { config, data: { data: { status: "INACTIVE" } }, headers: { etag: 'W/"offer-rev-2"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.setOfferStatus("offer-1", "ACTIVE")).rejects.toThrow("versión fuerte");
+  expect(requests).toEqual(["get"]);
+});
+
+test("deletes only an inactive offer using its current ETag", async () => {
+  const requests: { method?: string; ifMatch?: string }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({ method: config.method, ifMatch: config.headers?.get("If-Match") as string | undefined });
+    return { config, data: { data: { status: "INACTIVE" } }, headers: { etag: '"offer-rev-4"' }, status: config.method === "delete" ? 204 : 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await api.deleteInactiveOffer("offer-1");
+  expect(requests).toEqual([{ method: "get", ifMatch: undefined }, { method: "delete", ifMatch: '"offer-rev-4"' }]);
+});
+
+test("does not send DELETE for an active offer", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(config.method ?? "");
+    return { config, data: { data: { status: "ACTIVE" } }, headers: { etag: '"offer-rev-1"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.deleteInactiveOffer("offer-1")).rejects.toThrow("inactiva");
+  expect(requests).toEqual(["get"]);
+});
+
 const entry = {
   id: "entry-1",
   brandName: "Hamburguesa Hawaiana",
