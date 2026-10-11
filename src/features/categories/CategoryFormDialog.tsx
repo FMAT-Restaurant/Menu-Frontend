@@ -44,6 +44,10 @@ export function CategoryFormDialog({ category, onClose, onSubmit }: Readonly<Cat
     }
   }
 
+  let saveLabel = "Guardar categoría";
+  if (category) saveLabel = "Guardar cambios";
+  if (busy) saveLabel = "Guardando…";
+
   return (
     <dialog
       ref={dialogRef}
@@ -72,7 +76,7 @@ export function CategoryFormDialog({ category, onClose, onSubmit }: Readonly<Cat
         </div>
         <div className="category-form-dialog__actions">
           <button className="button button--secondary" type="button" disabled={busy} onClick={onClose}>Cancelar</button>
-          <button className="button button--primary" type="submit" disabled={busy}>{busy ? "Guardando…" : category ? "Guardar cambios" : "Guardar categoría"}</button>
+          <button className="button button--primary" type="submit" disabled={busy}>{saveLabel}</button>
         </div>
       </form>
     </dialog>
