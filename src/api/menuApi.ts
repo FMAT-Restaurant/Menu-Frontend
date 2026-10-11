@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import type { EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../application/catalog";
+import type { CategoryDraft, EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../application/catalog";
 
 export function createMenuApi(client: AxiosInstance): MenuRepository {
   async function currentEntry(id: string) {
@@ -34,7 +34,23 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       const remainingPages = await Promise.all(
         Array.from({ length: Math.max(0, firstPage.data.meta.totalPages - 1) }, (_, index) => getPage(index + 2)),
       );
-      return [firstPage, ...remainingPages].flatMap((response) => response.data.data);
+      return [firstPage, ...remainingPages].flatMap((response) => {
+        const etag = response.headers.etag as string | undefined;
+        return response.data.data.map((category) => etag ? { ...category, etag } : category);
+      });
+    },
+
+    async createCategory(draft: CategoryDraft): Promise<MenuCategory> {
+      const response = await client.post<{ data: MenuCategory }>("/menu/categories", draft);
+      return response.data.data;
+    },
+
+    async updateCategory(id: string, draft: CategoryDraft, etag: string): Promise<MenuCategory> {
+      if (!etag) throw new Error("No se recibió la versión de la categoría. Recarga la lista e inténtalo de nuevo.");
+      const response = await client.patch<{ data: MenuCategory }>(`/menu/categories/${encodeURIComponent(id)}`, draft, {
+        headers: { "If-Match": etag },
+      });
+      return response.data.data;
     },
 
     async setEntryStatus(id: string, status: EntryStatus): Promise<void> {

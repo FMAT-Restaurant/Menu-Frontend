@@ -2,6 +2,7 @@ import axios from "axios";
 import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 import { createMenuApi } from "./api/menuApi";
 import { CatalogPage } from "./features/catalog/CatalogPage";
+import { CategoryPage } from "./features/categories/CategoryPage";
 
 declare global {
   interface Window {
@@ -33,7 +34,7 @@ export function App() {
         <Route path="/entries/new" element={<UpcomingView title="Nueva entrada" />} />
         <Route path="/entries/:entryId/edit" element={<UpcomingView title="Editar entrada" />} />
         <Route path="/entries/:entryId/offers" element={<UpcomingView title="Ofertas de entrada" />} />
-        <Route path="/categories" element={<UpcomingView title="Categorías" />} />
+        <Route path="/categories" element={<CategoryPage repository={repository} />} />
         <Route path="/recipes" element={<UpcomingView title="Biblioteca de recetas" />} />
       </Routes>
     </BrowserRouter>

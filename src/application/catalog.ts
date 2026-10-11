@@ -13,8 +13,14 @@ export interface MenuEntry {
 export interface MenuCategory {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   entryCount: number;
+  etag?: string;
+}
+
+export interface CategoryDraft {
+  name: string;
+  description: string;
 }
 
 export interface Page<T> {
@@ -33,6 +39,8 @@ export interface EntryQuery {
 export interface MenuRepository {
   listEntries(query: EntryQuery, signal?: AbortSignal): Promise<Page<MenuEntry>>;
   listCategories(signal?: AbortSignal): Promise<MenuCategory[]>;
+  createCategory(draft: CategoryDraft): Promise<MenuCategory>;
+  updateCategory(id: string, draft: CategoryDraft, etag: string): Promise<MenuCategory>;
   setEntryStatus(id: string, status: EntryStatus): Promise<void>;
   deleteArchivedEntry(id: string): Promise<void>;
 }

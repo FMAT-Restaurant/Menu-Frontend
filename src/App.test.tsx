@@ -12,7 +12,6 @@ test.each([
   ["/entries/new", "Nueva entrada"],
   ["/entries/entry-1/edit", "Editar entrada"],
   ["/entries/entry-1/offers", "Ofertas de entrada"],
-  ["/categories", "Categorías"],
   ["/recipes", "Biblioteca de recetas"],
 ])("opens the destination %s for its later task", (path, title) => {
   window.history.pushState({}, "", path);
@@ -20,5 +19,14 @@ test.each([
 
   expect(screen.getByRole("heading", { name: title, level: 1 })).toBeVisible();
   expect(screen.getByRole("link", { name: /Volver a entradas/ })).toHaveAttribute("href", "/");
+  window.history.replaceState({}, "", "/");
+});
+
+test("opens category administration from its V5 route", () => {
+  window.history.pushState({}, "", "/categories");
+  render(<App />);
+
+  expect(screen.getByRole("heading", { name: "Catálogo de categorías", level: 1 })).toBeVisible();
+  expect(screen.getByRole("link", { name: /Volver al menú/ })).toHaveAttribute("href", "/");
   window.history.replaceState({}, "", "/");
 });
