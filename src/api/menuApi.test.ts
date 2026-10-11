@@ -149,3 +149,44 @@ test("rejects a mutation without the resource ETag required for If-Match", async
 
   await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("No se recibió la versión de la entrada");
 });
+
+test("keeps the list ETag with each category for conditional editing", async () => {
+  const adapter: AxiosAdapter = async (config) => ({
+    config,
+    data: { data: [{ id: "category-1", name: "Bebidas", entryCount: 3 }], meta: { page: 1, pageSize: 100, total: 1, totalPages: 1 } },
+    headers: { etag: 'W/"categories-4"' },
+    status: 200,
+    statusText: "OK",
+  });
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(api.listCategories()).resolves.toEqual([
+    { id: "category-1", name: "Bebidas", entryCount: 3, etag: 'W/"categories-4"' },
+  ]);
+});
+
+test("creates and edits categories with only the documented fields and If-Match", async () => {
+  const requests: { method?: string; url?: string; body?: object; ifMatch?: string }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({ method: config.method, url: config.url, body: JSON.parse(config.data), ifMatch: config.headers.get("If-Match")?.toString() });
+    return { config, data: { data: { id: "category-1", name: "Bebidas", description: "Frías", entryCount: 0 } }, headers: {}, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const draft = { name: "Bebidas", description: "Frías" };
+
+  await api.createCategory(draft);
+  await api.updateCategory("category-1", draft, 'W/"categories-4"');
+
+  expect(requests).toEqual([
+    { method: "post", url: "/menu/categories", body: draft, ifMatch: undefined },
+    { method: "patch", url: "/menu/categories/category-1", body: draft, ifMatch: 'W/"categories-4"' },
+  ]);
+});
+
+test("refuses to overwrite a category when no ETag was supplied", async () => {
+  const adapter: AxiosAdapter = jest.fn();
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(api.updateCategory("category-1", { name: "Bebidas", description: "" }, "")).rejects.toThrow("No se recibió la versión");
+  expect(adapter).not.toHaveBeenCalled();
+});

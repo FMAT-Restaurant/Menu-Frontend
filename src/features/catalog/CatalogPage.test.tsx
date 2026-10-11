@@ -22,6 +22,8 @@ function repository(total = 1): jest.Mocked<MenuRepository> {
     listCategories: jest.fn().mockResolvedValue([
       { id: "category-1", name: "Hamburguesas", description: "", entryCount: 1 },
     ]),
+    createCategory: jest.fn(),
+    updateCategory: jest.fn(),
     setEntryStatus: jest.fn().mockResolvedValue(undefined),
     deleteArchivedEntry: jest.fn().mockResolvedValue(undefined),
   };
