@@ -83,9 +83,8 @@ test("loads every category page for the filter without inventing a new endpoint"
 
   expect(categories).toHaveLength(101);
   expect(categories[0].name).toBe("Categoría 1-1");
-  expect(categories[0].etag).toBe('"category-rev-1"');
   expect(categories[100].name).toBe("Categoría 2-1");
-  expect(categories[100].etag).toBeUndefined();
+  expect(categories[0]).not.toHaveProperty("etag");
   expect(requests).toEqual([
     "/api/v1/menu/categories?page=1&pageSize=100",
     "/api/v1/menu/categories?page=2&pageSize=100",
@@ -112,7 +111,7 @@ test("creates a category with the supplied draft", async () => {
   expect(requests).toEqual([{ method: "post", url: "/menu/categories", body: draft }]);
 });
 
-test("updates an encoded category ID conditionally with its ETag", async () => {
+test("updates an encoded category ID with its current ETag", async () => {
   const draft = { name: "Bebidas", description: "Bebidas frías" };
   const updated = { id: "category /2", ...draft, entryCount: 1 };
   const requests: { method?: string; url?: string; body?: unknown; ifMatch?: string }[] = [];
@@ -120,47 +119,36 @@ test("updates an encoded category ID conditionally with its ETag", async () => {
     requests.push({
       method: config.method,
       url: config.url,
-      body: JSON.parse(config.data as string),
+      body: config.data ? JSON.parse(config.data as string) : undefined,
       ifMatch: config.headers.get("If-Match")?.toString(),
     });
     return {
       config,
       data: { data: updated },
-      headers: {},
+      headers: { etag: '"rev-3"' },
       status: 200,
       statusText: "OK",
     };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.updateCategory("category /2", draft, '"category-rev-2"')).resolves.toEqual(updated);
-  expect(requests).toEqual([{
-    method: "patch",
-    url: "/menu/categories/category%20%2F2",
-    body: draft,
-    ifMatch: '"category-rev-2"',
-  }]);
+  await expect(api.updateCategory("category /2", draft)).resolves.toEqual(updated);
+  expect(requests).toEqual([
+    { method: "get", url: "/menu/categories/category%20%2F2", body: undefined, ifMatch: undefined },
+    { method: "patch", url: "/menu/categories/category%20%2F2", body: draft, ifMatch: '"rev-3"' },
+  ]);
 });
 
-test("rejects a category update without an ETag before making a request", async () => {
+test("does not update a category when its ETag is unavailable", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config.method ?? "");
-    return {
-      config,
-      data: { data: { id: "category-1", name: "Bebidas", entryCount: 0 } },
-      headers: {},
-      status: 200,
-      statusText: "OK",
-    };
+    return { config, data: { data: { id: "category-1", name: "Bebidas", entryCount: 0 } }, headers: {}, status: 200, statusText: "OK" };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
-
-  await expect(api.updateCategory("category-1", { name: "Bebidas", description: "" }, ""))
-    .rejects.toThrow("No se recibió la versión de la categoría");
-  expect(requests).toEqual([]);
+  await expect(api.updateCategory("category-1", { name: "Bebidas", description: "" })).rejects.toThrow("No se recibió la versión");
+  expect(requests).toEqual(["get"]);
 });
-
 test("reads a strong ETag before archiving and sends only the new status", async () => {
   const requests: { method?: string; url?: string; body?: unknown; ifMatch?: string }[] = [];
   const adapter: AxiosAdapter = async (config) => {
@@ -312,4 +300,43 @@ test("propagates network failures without translating them", async () => {
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
   await expect(api.listEntries({ page: 1, pageSize: 12 })).rejects.toBe(networkError);
+});
+
+test("forwards cancellation when loading category pages", async () => {
+  const controller = new AbortController();
+  const signals: unknown[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    signals.push(config.signal);
+    return {
+      config,
+      data: { data: [], meta: { page: 1, pageSize: 100, total: 0, totalPages: 0 } },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(api.listCategories(controller.signal)).resolves.toEqual([]);
+  expect(signals).toEqual([controller.signal]);
+});
+
+test("gets an entry from the administrative menu route and maps its details", async () => {
+  const requests: { url?: string; method?: string }[] = [];
+  const detail = {
+    id: "entry-1",
+    brandName: "Bowl de pollo",
+    description: "Pollo con arroz.",
+    imageRef: "img-1",
+    status: "INACTIVE",
+    categoryIds: ["category-1"],
+  };
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({ url: config.url, method: config.method });
+    return { config, data: { data: detail }, headers: {}, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(api.getEntry("entry /1")).resolves.toEqual(detail);
+  expect(requests).toEqual([{ method: "get", url: "/menu/entries/entry%20%2F1" }]);
 });

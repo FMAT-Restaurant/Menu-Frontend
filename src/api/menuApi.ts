@@ -1,9 +1,27 @@
 import type { AxiosInstance } from "axios";
-import type { CategoryDraft, EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../application/catalog";
+import type { CategoryDraft, EntryCreateDraft, EntryQuery, EntryStatus, EntryUpdateDraft, MenuCategory, MenuEntry, MenuEntryDetail, MenuRepository, Page } from "../application/catalog";
+
+function entryPath(entryId?: string) {
+  const base = "/menu/entries";
+  return entryId ? `${base}/${encodeURIComponent(entryId)}` : base;
+}
+
+function imageMultipart(image: File) {
+  const form = new FormData();
+  form.append("file", image);
+  return form;
+}
 
 export function createMenuApi(client: AxiosInstance): MenuRepository {
+  async function uploadImage(image: File): Promise<string> {
+    const response = await client.post<{ data: { id: string } }>("/media/images", imageMultipart(image));
+    const id = response.data?.data?.id;
+    if (typeof id !== "string" || !id) throw new Error("No se recibió el identificador de la imagen. La entrada no se guardó.");
+    return id;
+  }
+
   async function currentEntry(id: string) {
-    const path = `/menu/entries/${encodeURIComponent(id)}`;
+    const path = entryPath(id);
     const response = await client.get<{ data: { status: EntryStatus } }>(path);
     const etag = response.headers.etag as string | undefined;
     if (!etag) throw new Error("No se recibió la versión de la entrada. Recarga e inténtalo de nuevo.");
@@ -34,10 +52,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       const remainingPages = await Promise.all(
         Array.from({ length: Math.max(0, firstPage.data.meta.totalPages - 1) }, (_, index) => getPage(index + 2)),
       );
-      return [firstPage, ...remainingPages].flatMap((response) => {
-        const etag = response.headers.etag as string | undefined;
-        return response.data.data.map((category) => etag ? { ...category, etag } : category);
-      });
+      return [firstPage, ...remainingPages].flatMap((response) => response.data.data);
     },
 
     async createCategory(draft: CategoryDraft): Promise<MenuCategory> {
@@ -45,11 +60,12 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       return response.data.data;
     },
 
-    async updateCategory(id: string, draft: CategoryDraft, etag: string): Promise<MenuCategory> {
-      if (!etag) throw new Error("No se recibió la versión de la categoría. Recarga la lista e inténtalo de nuevo.");
-      const response = await client.patch<{ data: MenuCategory }>(`/menu/categories/${encodeURIComponent(id)}`, draft, {
-        headers: { "If-Match": etag },
-      });
+    async updateCategory(id: string, draft: CategoryDraft): Promise<MenuCategory> {
+      const path = `/menu/categories/${encodeURIComponent(id)}`;
+      const current = await client.get(path);
+      const etag = current.headers.etag as string | undefined;
+      if (!etag) throw new Error("No se recibió la versión de la categoría. Recarga e inténtalo de nuevo.");
+      const response = await client.patch<{ data: MenuCategory }>(path, draft, { headers: { "If-Match": etag } });
       return response.data.data;
     },
 
@@ -65,6 +81,25 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       const current = await currentEntry(id);
       if (current.status !== "ARCHIVED") throw new Error("Solo se puede eliminar una entrada archivada.");
       await client.delete(current.path, { headers: { "If-Match": current.etag } });
+    },
+
+    async getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail> {
+      const response = await client.get<{ data: MenuEntryDetail }>(entryPath(id), { signal });
+      return response.data.data;
+    },
+
+    async createEntry(draft: EntryCreateDraft, image: File): Promise<MenuEntryDetail> {
+      const imageId = await uploadImage(image);
+      const response = await client.post<{ data: MenuEntryDetail }>(entryPath(), { ...draft, imageId });
+      return response.data.data;
+    },
+
+    async updateEntry(id: string, draft: EntryUpdateDraft, image?: File): Promise<MenuEntryDetail> {
+      const imageId = image ? await uploadImage(image) : undefined;
+      const current = await currentEntry(id);
+      const body = imageId ? { ...draft, imageId } : draft;
+      const response = await client.patch<{ data: MenuEntryDetail }>(current.path, body, { headers: { "If-Match": current.etag } });
+      return response.data.data;
     },
   };
 }

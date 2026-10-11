@@ -6,11 +6,12 @@ const statusLabel = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archiva
 interface EntryCardProps {
   entry: MenuEntry;
   busy: boolean;
+  returnTo: string;
   onStatusChange(entry: MenuEntry, status: EntryStatus): void;
   onDelete(entry: MenuEntry): void;
 }
 
-export function EntryCard({ entry, busy, onStatusChange, onDelete }: Readonly<EntryCardProps>) {
+export function EntryCard({ entry, busy, returnTo, onStatusChange, onDelete }: Readonly<EntryCardProps>) {
   return (
     <article className="entry-card">
       <div className="entry-card__image">
@@ -36,7 +37,7 @@ export function EntryCard({ entry, busy, onStatusChange, onDelete }: Readonly<En
           <span>Estado administrativo</span>
         </div>
         <div className="entry-card__actions">
-          <Link className="button button--secondary" to={`/entries/${entry.id}/edit`} aria-label={`Editar ${entry.brandName}`}>Editar</Link>
+          <Link className="button button--secondary" to={`/entries/${entry.id}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`}>Editar</Link>
           <Link className="button button--secondary" to={`/entries/${entry.id}/offers`} aria-label={`Ver ofertas de ${entry.brandName}`}>Ver ofertas</Link>
         </div>
         <div className="entry-card__lifecycle">

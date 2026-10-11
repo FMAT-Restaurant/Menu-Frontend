@@ -19,8 +19,11 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
     return route.fulfill({ status: 201, json: { data: created } });
   });
   await page.route("**/api/v1/menu/categories/category-1", (route) => {
+    if (route.request().method() === "GET") {
+      return route.fulfill({ headers: { ETag: '"rev-3"' }, json: { data: categories[0] } });
+    }
     mutations.push("PATCH");
-    expect(route.request().headers()["if-match"]).toBe('W/"categories-4"');
+    expect(route.request().headers()["if-match"]).toBe('"rev-3"');
     Object.assign(categories[0], route.request().postDataJSON());
     return route.fulfill({ json: { data: categories[0] } });
   });
