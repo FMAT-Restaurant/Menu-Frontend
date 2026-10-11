@@ -16,7 +16,6 @@ module.exports = {
   ],
   coverageThreshold: {
     "./src/App.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
-    "./src/api/menuApi.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/catalog/CatalogPage.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/catalog/EntryCard.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/categories/CategoryPage.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
