@@ -13,7 +13,7 @@ test("searches the administrative entries and opens their management routes", as
       id: "entry-1",
       brandName: "Hamburguesa Hawaiana",
       description: "Carne, queso y piña",
-      status: "ACTIVE",
+      status: "ARCHIVED",
       image: null,
       categories: [{ id: "category-1", name: "Hamburguesas" }],
       offerCount: 2,
@@ -31,6 +31,13 @@ test("searches the administrative entries and opens their management routes", as
   await expect(page.getByText("No hay coincidencias para esta consulta.")).toBeVisible();
   await page.getByRole("button", { name: "Limpiar filtros" }).last().click();
   await expect(page.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" }).click();
+  const dialog = page.getByRole("dialog", { name: "Eliminar entrada archivada" });
+  await expect(dialog).toBeVisible();
+  expect(await dialog.evaluate((element) => element.matches(":modal"))).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
 
   await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" }).click();
   await expect(page).toHaveURL(/\/entries\/entry-1\/offers$/);

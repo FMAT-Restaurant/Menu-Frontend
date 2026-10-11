@@ -32,12 +32,16 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
   const [entryToDelete, setEntryToDelete] = useState<MenuEntry | null>(null);
   const [notice, setNotice] = useState("");
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => setDraftSearch(q), [q]);
 
   useEffect(() => {
     if (!entryToDelete) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const dialog = deleteDialogRef.current;
+    if (typeof dialog?.showModal === "function") dialog.showModal();
+    else dialog?.setAttribute("open", "");
     cancelDeleteRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setEntryToDelete(null);
@@ -45,6 +49,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      if (dialog?.open && typeof dialog.close === "function") dialog.close();
       previouslyFocused?.focus();
     };
   }, [entryToDelete]);
@@ -155,21 +160,23 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
 
         <section className="filters" aria-label="Filtros de entradas">
           <SearchField value={draftSearch} onChange={setDraftSearch} onSearch={() => updateFilter("q", draftSearch.trim())} />
-          <label className="select-field">Categoría
-            <select value={categoryId} onChange={(event) => updateFilter("categoryId", event.target.value)}>
+          <div className="select-field">
+            <label htmlFor="category-filter">Categoría</label>
+            <select id="category-filter" value={categoryId} onChange={(event) => updateFilter("categoryId", event.target.value)}>
               <option value="">Todas las categorías</option>
               <option value="__uncategorized__">Sin categoría</option>
               {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
-          </label>
-          <label className="select-field">Estado administrativo
-            <select value={status ?? ""} onChange={(event) => updateFilter("status", event.target.value)}>
+          </div>
+          <div className="select-field">
+            <label htmlFor="status-filter">Estado administrativo</label>
+            <select id="status-filter" value={status ?? ""} onChange={(event) => updateFilter("status", event.target.value)}>
               <option value="">Todos los estados</option>
               <option value="ACTIVE">Activa</option>
               <option value="INACTIVE">Inactiva</option>
               <option value="ARCHIVED">Archivada</option>
             </select>
-          </label>
+          </div>
           <button className="button button--quiet filters__clear" type="button" onClick={() => setSearchParams(new URLSearchParams())} disabled={!hasFilters}>Limpiar filtros</button>
         </section>
 
@@ -178,18 +185,19 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
             <p className="catalog-toolbar__count" aria-live="polite">Mostrando {first}–{last} de {total} entradas</p>
             <p className="catalog-toolbar__note">El estado administrativo no confirma publicación. Se requiere una oferta activa válida.</p>
           </div>
-          <label className="select-field select-field--inline">Entradas por página
-            <select value={pageSize} onChange={(event) => updateFilter("pageSize", event.target.value)}>
+          <div className="select-field select-field--inline">
+            <label htmlFor="page-size">Entradas por página</label>
+            <select id="page-size" value={pageSize} onChange={(event) => updateFilter("pageSize", event.target.value)}>
               {pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}
             </select>
-          </label>
+          </div>
         </div>
 
         {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
         {categoryError && <div className="feedback feedback--error" role="alert">{categoryError} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
         {actionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
-        {notice && <div className="feedback feedback--success" role="status">{notice}</div>}
-        {loading && <div className="feedback" role="status">Cargando entradas…</div>}
+        {notice && <output className="feedback feedback--success">{notice}</output>}
+        {loading && <output className="feedback">Cargando entradas…</output>}
         {!loading && !error && count > 0 && <section className="entry-grid" aria-label="Entradas administrativas">{result?.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={busyId === entry.id} onStatusChange={changeStatus} onDelete={setEntryToDelete} />)}</section>}
         {!loading && !error && count === 0 && (
           <section className="empty-state">
@@ -209,14 +217,14 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
         )}
         {entryToDelete && (
           <div className="dialog-backdrop">
-            <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description">
+            <dialog ref={deleteDialogRef} className="confirm-dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={(event) => { event.preventDefault(); setEntryToDelete(null); }}>
               <h2 id="delete-title">Eliminar entrada archivada</h2>
               <p id="delete-description">Se eliminará definitivamente “{entryToDelete.brandName}”. Confirma solo si deseas retirar esta entrada.</p>
               <div className="confirm-dialog__actions">
                 <button ref={cancelDeleteRef} className="button button--secondary" type="button" disabled={busyId === entryToDelete.id} onClick={() => setEntryToDelete(null)} aria-label="Cancelar eliminación">Cancelar</button>
                 <button className="button button--danger" type="button" disabled={busyId === entryToDelete.id} onClick={confirmDelete} aria-label="Confirmar eliminación">Eliminar entrada</button>
               </div>
-            </div>
+            </dialog>
           </div>
         )}
       </main>
