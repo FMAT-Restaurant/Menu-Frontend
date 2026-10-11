@@ -31,6 +31,17 @@ test("lists category identity and informative counts without deletion", async ()
   expect(api.listCategories).toHaveBeenCalledWith(expect.any(AbortSignal));
 });
 
+test("returns to the exact V1 query supplied by the catalog", async () => {
+  const api = repository([]);
+  render(
+    <MemoryRouter initialEntries={[{ pathname: "/categories", state: { returnTo: "/?q=postres&status=ACTIVE" } }]}>
+      <CategoryPage repository={api} />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("link", { name: /Volver al menú/ })).toHaveAttribute("href", "/?q=postres&status=ACTIVE");
+});
+
 test("empty state opens creation and cancel discards the draft", async () => {
   const api = repository([]);
   renderPage(api);

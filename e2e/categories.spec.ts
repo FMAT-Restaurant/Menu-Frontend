@@ -25,7 +25,7 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
     return route.fulfill({ json: { data: categories[0] } });
   });
 
-  await page.goto("/");
+  await page.goto("/?status=ARCHIVED");
   await page.getByRole("link", { name: "Categorías" }).click();
   await expect(page).toHaveURL(/\/categories$/);
   await expect(page.getByRole("heading", { name: "Bebidas" })).toBeVisible();
@@ -53,4 +53,7 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await createDialog.getByRole("button", { name: "Guardar categoría" }).click();
   await expect(page.getByRole("heading", { name: "Postres" })).toBeVisible();
   expect(mutations).toEqual(["PATCH", "POST"]);
+
+  await page.getByRole("link", { name: /Volver al menú/ }).click();
+  await expect(page).toHaveURL(/\/\?status=ARCHIVED$/);
 });

@@ -1,6 +1,6 @@
 # T23 — administración de categorías V5
 
-La ruta `/categories` abre la vista superpuesta desde V1 y ofrece C19, C20, C21, C07, C22 y C12. Consulta todas las páginas de `GET /api/v1/menu/categories` y muestra nombre, descripción y conteo informativo de entradas. La lista no ofrece eliminación. El formulario modal permite crear (`POST`) y editar (`PATCH`) nombre y descripción; cancelar descarta el borrador. Una operación exitosa vuelve a consultar la lista.
+La ruta `/categories` abre la vista superpuesta desde V1 y ofrece C19, C20, C21, C07, C22 y C12. El botón para volver respeta la búsqueda y los filtros de V1 recibidos en el estado de navegación; si se abre V5 directamente, vuelve a `/`. Consulta todas las páginas de `GET /api/v1/menu/categories` y muestra nombre, descripción y conteo informativo de entradas. La lista no ofrece eliminación. El formulario modal permite crear (`POST`) y editar (`PATCH`) nombre y descripción; cancelar descarta el borrador. Una operación exitosa vuelve a consultar la lista.
 
 La misma entrada puede pertenecer a varias categorías del mismo menú. La relación se edita desde el selector múltiple previsto para V2, no desde este formulario. V5 usa las categorías del menú recibidas por la API y no crea rutas ni parámetros nuevos para la clasificación.
 

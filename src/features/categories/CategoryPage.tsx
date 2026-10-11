@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { CategoryDraft, MenuCategory, MenuRepository } from "../../application/catalog";
 import { CategoryFormDialog } from "./CategoryFormDialog";
 
 type CategoryRepository = Pick<MenuRepository, "listCategories" | "createCategory" | "updateCategory">;
 
 export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepository }>) {
+  const location = useLocation();
+  const returnTo = typeof location.state?.returnTo === "string" && /^\/(?:\?.*)?$/.test(location.state.returnTo)
+    ? location.state.returnTo
+    : "/";
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,7 +48,7 @@ export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepo
           <h1>Catálogo de categorías</h1>
           <p>Organiza las entradas del menú por categorías.</p>
         </div>
-        <Link className="button category-screen__back" to="/">← Volver al menú</Link>
+        <Link className="button category-screen__back" to={returnTo}>← Volver al menú</Link>
       </header>
 
       <main className="category-screen__main">
