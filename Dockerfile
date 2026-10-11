@@ -16,6 +16,7 @@ FROM nginx:1.29-alpine AS runtime
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY --chmod=755 docker/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
 COPY --from=build /app/dist /usr/share/nginx/html
+RUN rm -f /etc/nginx/conf.d/default.conf
 
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.revision=$VCS_REF
