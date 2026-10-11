@@ -1,35 +1,25 @@
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import axios from "axios";
+import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { createMenuApi } from "./api/menuApi";
+import { CatalogPage } from "./features/catalog/CatalogPage";
 
-function MenuHome() {
-  return (
-    <main className="page-shell">
-      <header className="brand-row">
-        <span className="brand-mark" aria-hidden="true">F</span>
-        <span>FMAT Restaurant</span>
-      </header>
-      <section className="welcome-card" aria-labelledby="page-title">
-        <p className="eyebrow">Servicio de menú</p>
-        <h1 id="page-title">Menú</h1>
-        <p className="intro-copy">
-          El menú del restaurante estará disponible aquí.
-        </p>
-        <Link className="menu-link" to="/menu">Ver menú</Link>
-      </section>
-    </main>
-  );
+declare global {
+  interface Window {
+    MENU_CONFIG?: { apiBaseUrl: string };
+  }
 }
 
-function MenuRoute() {
+const repository = createMenuApi(axios.create({
+  baseURL: window.MENU_CONFIG?.apiBaseUrl || "/api/v1",
+}));
+
+function UpcomingView({ title }: Readonly<{ title: string }>) {
   return (
-    <main className="page-shell">
-      <Link className="back-link" to="/">Volver al inicio</Link>
-      <section className="welcome-card" aria-labelledby="page-title">
-        <p className="eyebrow">Servicio de menú</p>
-        <h1 id="page-title">Menú</h1>
-        <p className="intro-copy">
-          La carta se conectará al catálogo del restaurante.
-        </p>
-      </section>
+    <main className="upcoming-view">
+      <Link to="/" className="back-link">← Volver a entradas</Link>
+      <p className="eyebrow">Administración / Menú</p>
+      <h1>{title}</h1>
+      <p>Esta vista se implementará en su tarea correspondiente.</p>
     </main>
   );
 }
@@ -38,8 +28,13 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MenuHome />} />
-        <Route path="/menu" element={<MenuRoute />} />
+        <Route path="/" element={<CatalogPage repository={repository} />} />
+        <Route path="/menu" element={<Navigate to="/" replace />} />
+        <Route path="/entries/new" element={<UpcomingView title="Nueva entrada" />} />
+        <Route path="/entries/:entryId/edit" element={<UpcomingView title="Editar entrada" />} />
+        <Route path="/entries/:entryId/offers" element={<UpcomingView title="Ofertas de entrada" />} />
+        <Route path="/categories" element={<UpcomingView title="Categorías" />} />
+        <Route path="/recipes" element={<UpcomingView title="Biblioteca de recetas" />} />
       </Routes>
     </BrowserRouter>
   );
