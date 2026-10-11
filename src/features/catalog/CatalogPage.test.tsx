@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MenuRepository } from "../../application/catalog";
 import { CatalogPage } from "./CatalogPage";
 
@@ -161,4 +161,25 @@ test("keeps the entry list usable if the category filter fails to load", async (
   expect(await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
   await waitFor(() => expect(api.listCategories).toHaveBeenCalledTimes(2));
+});
+
+test("opens V5 with the current V1 search and filters available for return navigation", async () => {
+  const api = repository();
+  function CategoryDestination() {
+    const location = useLocation();
+    return <p>{(location.state as { returnTo: string }).returnTo}</p>;
+  }
+  render(
+    <MemoryRouter initialEntries={["/?q=pizza&status=ACTIVE"]}>
+      <Routes>
+        <Route path="/" element={<CatalogPage repository={api} />} />
+        <Route path="/categories" element={<CategoryDestination />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
+
+  fireEvent.click(screen.getByRole("link", { name: "Categorías" }));
+
+  expect(screen.getByText("/?q=pizza&status=ACTIVE")).toBeVisible();
 });

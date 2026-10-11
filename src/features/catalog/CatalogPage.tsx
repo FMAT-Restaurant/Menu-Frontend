@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../../application/catalog";
 import { SearchField } from "../../shared/SearchField";
 import { EntryCard } from "./EntryCard";
@@ -13,6 +13,7 @@ function positiveNumber(value: string | null, fallback: number) {
 }
 
 export function CatalogPage({ repository }: Readonly<{ repository: MenuRepository }>) {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") ?? "";
   const categoryId = searchParams.get("categoryId") ?? "";
@@ -153,7 +154,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
           </div>
           <div className="catalog-header__actions">
             <Link className="button button--secondary" to="/recipes">Biblioteca de recetas</Link>
-            <Link className="button button--secondary" to="/categories">Categorías</Link>
+            <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
             <Link className="button button--primary" to="/entries/new">Nueva entrada</Link>
           </div>
         </header>
