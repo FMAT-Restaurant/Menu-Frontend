@@ -9,6 +9,7 @@ test("opens the administrative catalog at the application root", async () => {
 });
 
 test.each([
+  ["/entries/entry-1/offers", "Ofertas de entrada"],
   ["/recipes", "Biblioteca de recetas"],
 ])("opens the destination %s for its later task", (path, title) => {
   window.history.pushState({}, "", path);
