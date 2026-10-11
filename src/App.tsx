@@ -3,16 +3,18 @@ import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 import { createMenuApi } from "./api/menuApi";
 import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CategoryPage } from "./features/categories/CategoryPage";
+import { EntryFormPage } from "./features/entries/EntryFormPage";
+import type { MenuRepository } from "./application/catalog";
 
 declare global {
   interface Window {
-    MENU_CONFIG?: { apiBaseUrl: string };
+    MENU_CONFIG?: { apiBaseUrl: string; menuId?: string };
   }
 }
 
-const repository = createMenuApi(axios.create({
+const defaultRepository = createMenuApi(axios.create({
   baseURL: window.MENU_CONFIG?.apiBaseUrl || "/api/v1",
-}));
+}), window.MENU_CONFIG?.menuId || "1");
 
 function UpcomingView({ title }: Readonly<{ title: string }>) {
   return (
@@ -25,14 +27,14 @@ function UpcomingView({ title }: Readonly<{ title: string }>) {
   );
 }
 
-export function App() {
+export function App({ repository = defaultRepository }: Readonly<{ repository?: MenuRepository }> = {}) {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<CatalogPage repository={repository} />} />
         <Route path="/menu" element={<Navigate to="/" replace />} />
-        <Route path="/entries/new" element={<UpcomingView title="Nueva entrada" />} />
-        <Route path="/entries/:entryId/edit" element={<UpcomingView title="Editar entrada" />} />
+        <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
+        <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
         <Route path="/entries/:entryId/offers" element={<UpcomingView title="Ofertas de entrada" />} />
         <Route path="/categories" element={<CategoryPage repository={repository} />} />
         <Route path="/recipes" element={<UpcomingView title="Biblioteca de recetas" />} />

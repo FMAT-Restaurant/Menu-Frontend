@@ -9,8 +9,6 @@ test("opens the administrative catalog at the application root", async () => {
 });
 
 test.each([
-  ["/entries/new", "Nueva entrada"],
-  ["/entries/entry-1/edit", "Editar entrada"],
   ["/entries/entry-1/offers", "Ofertas de entrada"],
   ["/recipes", "Biblioteca de recetas"],
 ])("opens the destination %s for its later task", (path, title) => {
@@ -19,6 +17,31 @@ test.each([
 
   expect(screen.getByRole("heading", { name: title, level: 1 })).toBeVisible();
   expect(screen.getByRole("link", { name: /Volver a entradas/ })).toHaveAttribute("href", "/");
+  window.history.replaceState({}, "", "/");
+});
+
+test("opens the T24 entry form routes", async () => {
+  const repository = {
+    listEntries: jest.fn(),
+    listCategories: jest.fn().mockResolvedValue([]),
+    createCategory: jest.fn(),
+    updateCategory: jest.fn(),
+    setEntryStatus: jest.fn(),
+    deleteArchivedEntry: jest.fn(),
+    getEntry: jest.fn().mockResolvedValue({
+      id: "entry-1", brandName: "Bowl", description: "Con arroz", status: "INACTIVE", categoryIds: [],
+    }),
+    createEntry: jest.fn(),
+    updateEntry: jest.fn(),
+  };
+
+  for (const [path, title] of [["/entries/new", "Nueva entrada"], ["/entries/entry-1/edit", "Editar entrada"]]) {
+    window.history.pushState({}, "", path);
+    const { unmount } = render(<App repository={repository} />);
+    expect(await screen.findByRole("heading", { name: title, level: 1 })).toBeVisible();
+    await screen.findByRole("button", { name: "Cancelar" });
+    unmount();
+  }
   window.history.replaceState({}, "", "/");
 });
 

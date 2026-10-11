@@ -3,6 +3,7 @@ services:
     image: menu-frontend:local
     environment:
       API_BASE_URL: ${API_BASE_URL:-}
+      MENU_ID: ${MENU_ID:-1}
     build:
       context: .
       dockerfile: Dockerfile

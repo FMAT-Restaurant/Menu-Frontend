@@ -34,7 +34,7 @@ export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepo
   async function saveCategory(draft: CategoryDraft) {
     if (!formCategory) return;
     if (formCategory === "new") await repository.createCategory(draft);
-    else await repository.updateCategory(formCategory.id, draft, formCategory.etag ?? "");
+    else await repository.updateCategory(formCategory.id, draft);
     setNotice(formCategory === "new" ? "Categoría creada." : "Categoría actualizada.");
     setFormCategory(null);
     setRetry((current) => current + 1);

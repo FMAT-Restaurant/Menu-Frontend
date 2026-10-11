@@ -26,6 +26,9 @@ function repository(total = 1): jest.Mocked<MenuRepository> {
     updateCategory: jest.fn(),
     setEntryStatus: jest.fn().mockResolvedValue(undefined),
     deleteArchivedEntry: jest.fn().mockResolvedValue(undefined),
+    getEntry: jest.fn(),
+    createEntry: jest.fn(),
+    updateEntry: jest.fn(),
   };
 }
 

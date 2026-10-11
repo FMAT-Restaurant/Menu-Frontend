@@ -14,4 +14,8 @@ module.exports = {
     "!src/**/*.d.ts",
     "!src/test-setup.ts",
   ],
+  coverageThreshold: {
+    "./src/features/entries/EntryFormPage.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/entries/entryImage.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
+  },
 };

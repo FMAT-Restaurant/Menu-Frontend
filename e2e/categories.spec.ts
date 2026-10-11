@@ -7,20 +7,20 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await page.route("**/api/v1/menu/entries?*", (route) => route.fulfill({
     json: { data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } },
   }));
-  await page.route("**/api/v1/menu/categories?*", (route) => route.fulfill({
+  await page.route("**/api/v1/menus/1/categories?*", (route) => route.fulfill({
     headers: { ETag: 'W/"categories-4"' },
     json: { data: categories, meta: { page: 1, pageSize: 100, total: categories.length, totalPages: 1 } },
   }));
-  await page.route("**/api/v1/menu/categories", (route) => {
+  await page.route("**/api/v1/menus/1/categories", (route) => {
     mutations.push("POST");
     const draft = route.request().postDataJSON();
     const created = { id: "category-2", ...draft, entryCount: 0 };
     categories.push(created);
     return route.fulfill({ status: 201, json: { data: created } });
   });
-  await page.route("**/api/v1/menu/categories/category-1", (route) => {
+  await page.route("**/api/v1/menus/1/categories/category-1", (route) => {
     mutations.push("PATCH");
-    expect(route.request().headers()["if-match"]).toBe('W/"categories-4"');
+    expect(route.request().headers()["if-match"]).toBeUndefined();
     Object.assign(categories[0], route.request().postDataJSON());
     return route.fulfill({ json: { data: categories[0] } });
   });

@@ -155,7 +155,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
           <div className="catalog-header__actions">
             <Link className="button button--secondary" to="/recipes">Biblioteca de recetas</Link>
             <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
-            <Link className="button button--primary" to="/entries/new">Nueva entrada</Link>
+            <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
           </div>
         </header>
 
@@ -199,13 +199,13 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
         {actionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
         {notice && <output className="feedback feedback--success">{notice}</output>}
         {loading && <output className="feedback">Cargando entradas…</output>}
-        {!loading && !error && count > 0 && <section className="entry-grid" aria-label="Entradas administrativas">{result?.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={busyId === entry.id} onStatusChange={changeStatus} onDelete={setEntryToDelete} />)}</section>}
+        {!loading && !error && count > 0 && <section className="entry-grid" aria-label="Entradas administrativas">{result?.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={busyId === entry.id} returnTo={location.pathname + location.search} onStatusChange={changeStatus} onDelete={setEntryToDelete} />)}</section>}
         {!loading && !error && count === 0 && (
           <section className="empty-state">
             <span className="empty-state__icon" aria-hidden="true">⌕</span>
             <h2>{hasFilters ? "No hay coincidencias para esta consulta." : "Aún no hay entradas."}</h2>
             <p>{hasFilters ? "Prueba otra búsqueda o limpia los filtros para recuperar la lista." : "Crea la primera entrada para comenzar a administrar el menú."}</p>
-            {hasFilters ? <button className="button button--primary" type="button" onClick={() => setSearchParams(new URLSearchParams())}>Limpiar filtros</button> : <Link className="button button--primary" to="/entries/new">Nueva entrada</Link>}
+            {hasFilters ? <button className="button button--primary" type="button" onClick={() => setSearchParams(new URLSearchParams())}>Limpiar filtros</button> : <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>}
           </section>
         )}
 

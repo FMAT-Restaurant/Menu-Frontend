@@ -5,7 +5,7 @@ import { CategoryPage } from "./CategoryPage";
 
 type CategoryRepository = Pick<MenuRepository, "listCategories" | "createCategory" | "updateCategory">;
 
-const category = { id: "category-1", name: "Bebidas", description: "Frías y preparadas", entryCount: 2, etag: 'W/"categories-4"' };
+const category = { id: "category-1", name: "Bebidas", description: "Frías y preparadas", entryCount: 2 };
 
 function repository(items = [category]): jest.Mocked<CategoryRepository> {
   return {
@@ -74,7 +74,7 @@ test("creates a category with name and description and reloads the list", async 
   expect(screen.getByText("Categoría creada.")).toBeVisible();
 });
 
-test("edits a category with its list ETag and preserves the existing values until save", async () => {
+test("edits a category and preserves the existing values until save", async () => {
   const api = repository();
   renderPage(api);
   await screen.findByRole("heading", { name: "Bebidas" });
@@ -88,7 +88,7 @@ test("edits a category with its list ETag and preserves the existing values unti
 
   await waitFor(() => expect(api.updateCategory).toHaveBeenCalledWith("category-1", {
     name: "Bebidas", description: "Bebidas frías",
-  }, 'W/"categories-4"'));
+  }));
   expect(await screen.findByText("Categoría actualizada.")).toBeVisible();
 });
 
