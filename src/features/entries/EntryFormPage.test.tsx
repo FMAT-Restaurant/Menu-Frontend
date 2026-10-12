@@ -28,6 +28,9 @@ function repository(): jest.Mocked<MenuRepository> {
     getEntry: jest.fn().mockResolvedValue(entry),
     createEntry: jest.fn().mockResolvedValue(entry),
     updateEntry: jest.fn().mockResolvedValue(entry),
+    listOffers: jest.fn(),
+    setOfferStatus: jest.fn(),
+    deleteInactiveOffer: jest.fn(),
   };
 }
 

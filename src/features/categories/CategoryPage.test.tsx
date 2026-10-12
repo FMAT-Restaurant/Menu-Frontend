@@ -39,6 +39,7 @@ test("returns to the exact V1 query supplied by the catalog", async () => {
     </MemoryRouter>,
   );
 
+  expect(await screen.findByText("Aún no hay categorías.")).toBeVisible();
   expect(screen.getByRole("link", { name: /Volver al menú/ })).toHaveAttribute("href", "/?q=postres&status=ACTIVE");
 });
 

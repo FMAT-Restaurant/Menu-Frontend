@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import type { CategoryDraft, EntryCreateDraft, EntryQuery, EntryStatus, EntryUpdateDraft, MenuCategory, MenuEntry, MenuEntryDetail, MenuRepository, Page } from "../application/catalog";
+import type { CategoryDraft, EntryCreateDraft, EntryQuery, EntryStatus, EntryUpdateDraft, MenuCategory, MenuEntry, MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, Page } from "../application/catalog";
 
 function entryPath(entryId?: string) {
   const base = "/menu/entries";
@@ -25,6 +25,14 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     const response = await client.get<{ data: { status: EntryStatus } }>(path);
     const etag = response.headers.etag as string | undefined;
     if (!etag) throw new Error("No se recibió la versión de la entrada. Recarga e inténtalo de nuevo.");
+    return { path, status: response.data.data.status, etag };
+  }
+
+  async function currentOffer(id: string) {
+    const path = `/menu/offers/${encodeURIComponent(id)}`;
+    const response = await client.get<{ data: { status: OfferStatus } }>(path);
+    const etag = response.headers.etag as string | undefined;
+    if (!etag || etag.startsWith("W/")) throw new Error("No se recibió una versión fuerte de la oferta. Recarga e inténtalo de nuevo.");
     return { path, status: response.data.data.status, etag };
   }
 
@@ -100,6 +108,26 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       const body = imageId ? { ...draft, imageId } : draft;
       const response = await client.patch<{ data: MenuEntryDetail }>(current.path, body, { headers: { "If-Match": current.etag } });
       return response.data.data;
+    },
+
+    async listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>> {
+      const response = await client.get<Page<MenuOffer>>("/menu/offers", {
+        params: { entryId, page, pageSize },
+        signal,
+      });
+      return response.data;
+    },
+
+    async setOfferStatus(id: string, status: OfferStatus): Promise<void> {
+      const current = await currentOffer(id);
+      if (current.status === status) return;
+      await client.patch(current.path, { status }, { headers: { "If-Match": current.etag } });
+    },
+
+    async deleteInactiveOffer(id: string): Promise<void> {
+      const current = await currentOffer(id);
+      if (current.status !== "INACTIVE") throw new Error("Solo se puede eliminar una oferta inactiva.");
+      await client.delete(current.path, { headers: { "If-Match": current.etag } });
     },
   };
 }
