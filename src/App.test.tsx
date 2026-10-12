@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { App } from "./App";
+import type { MenuRepository } from "./application/catalog";
 
 test("opens the administrative catalog at the application root", async () => {
   render(<App />);
@@ -9,13 +10,39 @@ test("opens the administrative catalog at the application root", async () => {
 });
 
 test.each([
-  ["/entries/entry-1/offers", "Ofertas de entrada"],
   ["/recipes", "Biblioteca de recetas"],
 ])("opens the destination %s for its later task", (path, title) => {
   window.history.pushState({}, "", path);
   render(<App />);
 
   expect(screen.getByRole("heading", { name: title, level: 1 })).toBeVisible();
+  expect(screen.getByRole("link", { name: /Volver a entradas/ })).toHaveAttribute("href", "/");
+  window.history.replaceState({}, "", "/");
+});
+
+test("opens the implemented offers page for an entry", async () => {
+  const repository: MenuRepository = {
+    listEntries: jest.fn(),
+    listCategories: jest.fn(),
+    createCategory: jest.fn(),
+    updateCategory: jest.fn(),
+    setEntryStatus: jest.fn(),
+    deleteArchivedEntry: jest.fn(),
+    getEntry: jest.fn().mockResolvedValue({
+      id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Con piña", status: "ACTIVE", categoryIds: [],
+    }),
+    createEntry: jest.fn(),
+    updateEntry: jest.fn(),
+    listOffers: jest.fn().mockResolvedValue({
+      data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 },
+    }),
+    setOfferStatus: jest.fn(),
+    deleteInactiveOffer: jest.fn(),
+  };
+  window.history.pushState({}, "", "/entries/entry-1/offers");
+  render(<App repository={repository} />);
+
+  expect(await screen.findByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana", level: 1 })).toBeVisible();
   expect(screen.getByRole("link", { name: /Volver a entradas/ })).toHaveAttribute("href", "/");
   window.history.replaceState({}, "", "/");
 });

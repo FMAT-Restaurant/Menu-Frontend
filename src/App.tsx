@@ -51,7 +51,6 @@ export function App({ repository = defaultRepository }: Readonly<{ repository?: 
         <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
         <Route path="/entries/:entryId/offers/new" element={<UpcomingOfferForm />} />
         <Route path="/entries/:entryId/offers/:offerId/edit" element={<UpcomingOfferForm />} />
-        <Route path="/entries/:entryId/offers" element={<UpcomingView title="Ofertas de entrada" />} />
         <Route path="/categories" element={<CategoryPage repository={repository} />} />
         <Route path="/recipes" element={<UpcomingView title="Biblioteca de recetas" />} />
       </Routes>
