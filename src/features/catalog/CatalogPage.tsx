@@ -6,7 +6,7 @@ import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
 
-const pageSizes = [6, 12, 24];
+const pageSizes = new Set([6, 12, 24]);
 const statuses: EntryStatus[] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
 
 interface Feedback { kind: CatalogErrorKind; message: string }
@@ -29,9 +29,10 @@ function actionNotice(action: "change" | "delete", nextStatus?: EntryStatus) {
 }
 
 function queryFromUrl(searchParams: URLSearchParams): EntryQuery {
+  const requestedPageSize = Number(searchParams.get("pageSize"));
   const query: EntryQuery = {
     page: positiveNumber(searchParams.get("page"), 1),
-    pageSize: pageSizes.includes(Number(searchParams.get("pageSize"))) ? Number(searchParams.get("pageSize")) : 12,
+    pageSize: pageSizes.has(requestedPageSize) ? requestedPageSize : 12,
   };
   const q = searchParams.get("q")?.trim();
   const categoryId = searchParams.get("categoryId");

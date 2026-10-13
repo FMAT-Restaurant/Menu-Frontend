@@ -13,13 +13,14 @@ function imageMultipart(image: File) {
   return form;
 }
 
+async function categoryPages(getPage: (page: number) => Promise<Page<MenuCategory>>, from: number, to: number): Promise<MenuCategory[]> {
+  if (from > to) return [];
+  const batch = await Promise.all(Array.from({ length: Math.min(4, to - from + 1) }, (_, index) => getPage(from + index)));
+  const rest = await categoryPages(getPage, from + batch.length, to);
+  return [...batch.flatMap((result) => result.data), ...rest];
+}
+
 export function createMenuApi(client: AxiosInstance): MenuRepository {
-  async function categoryPages(getPage: (page: number) => Promise<Page<MenuCategory>>, from: number, to: number): Promise<MenuCategory[]> {
-    if (from > to) return [];
-    const batch = await Promise.all(Array.from({ length: Math.min(4, to - from + 1) }, (_, index) => getPage(from + index)));
-    const rest = await categoryPages(getPage, from + batch.length, to);
-    return [...batch.flatMap((result) => result.data), ...rest];
-  }
   async function uploadImage(image: File): Promise<string> {
     const response = await client.post<{ data: { id: string } }>("/media/images", imageMultipart(image));
     const id = response.data?.data?.id;
