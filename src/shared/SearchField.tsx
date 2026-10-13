@@ -24,7 +24,7 @@ export function SearchField({ value, onChange, onSearch }: Readonly<SearchFieldP
           onChange={(event) => onChange(event.target.value)}
           placeholder="Nombre, descripción o categoría"
         />
-        <button type="submit" className="button button--secondary">Buscar</button>
+        <button type="submit" className="button button--secondary" aria-label="Buscar ahora">Buscar</button>
       </div>
     </form>
   );

@@ -47,14 +47,14 @@ test("shows administrative identity, classification and navigation without claim
   const card = within(screen.getByRole("article"));
   expect(screen.getByText("Carne, queso y piña")).toBeVisible();
   expect(card.getByText("Hamburguesas")).toBeVisible();
-  expect(card.getByText("2 ofertas")).toBeVisible();
-  expect(card.getByText("Activa", { exact: true })).toBeVisible();
+  expect(card.getByText("Ofertas:")).toHaveTextContent("Ofertas: 2");
+  expect(card.getAllByText("Activa", { exact: true })).toHaveLength(2);
   expect(screen.queryByText(/publicada/i)).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
   expect(screen.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/offers");
   expect(screen.getByRole("link", { name: "Nueva entrada" })).toHaveAttribute("href", "/entries/new");
   expect(screen.getByRole("link", { name: "Categorías" })).toHaveAttribute("href", "/categories");
-  expect(screen.getByRole("link", { name: "Biblioteca de recetas" })).toHaveAttribute("href", "/recipes");
+  expect(screen.getByRole("link", { name: /Biblioteca de recetas/ })).toHaveAttribute("href", "/recipes");
 });
 
 test("sends search and filters to the administrative API and resets the page", async () => {
@@ -134,7 +134,7 @@ test("offers explicit unarchive to INACTIVE and deletion only for archived entri
   await waitFor(() => expect(api.deleteArchivedEntry).toHaveBeenCalledWith("entry-1"));
 });
 
-test("keeps activation unavailable until Back validates active offers", async () => {
+test("keeps activation unavailable until active offers can be verified", async () => {
   const api = repository();
   api.listEntries.mockResolvedValue({
     data: [{ ...entries[0], status: "INACTIVE" }],
@@ -144,19 +144,19 @@ test("keeps activation unavailable until Back validates active offers", async ()
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
   expect(screen.getByRole("button", { name: "Activar Hamburguesa Hawaiana" })).toBeDisabled();
-  expect(screen.getByText("Activación pendiente de validación de ofertas en Back.")).toBeVisible();
+  expect(screen.getByText(/La activación estará disponible/)).toBeVisible();
   expect(api.setEntryStatus).not.toHaveBeenCalled();
 });
 
 test("keeps the entries visible when a status update fails", async () => {
   const api = repository();
-  api.setEntryStatus.mockRejectedValue(new Error("Conflict"));
+  api.setEntryStatus.mockRejectedValue({ response: { status: 412 } });
   renderPage(api);
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
   fireEvent.click(screen.getByRole("button", { name: "Inactivar Hamburguesa Hawaiana" }));
 
-  expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cambiar el estado");
+  expect(await screen.findByRole("alert")).toHaveTextContent("La entrada cambió desde que la abriste");
   expect(screen.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
 });
 
@@ -167,7 +167,7 @@ test("keeps the entry list usable if the category filter fails to load", async (
 
   expect(await screen.findByRole("alert")).toHaveTextContent("No se pudieron cargar las categorías");
   expect(await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reintentar categorías" }));
   await waitFor(() => expect(api.listCategories).toHaveBeenCalledTimes(2));
 });
 

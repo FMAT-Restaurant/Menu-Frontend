@@ -134,6 +134,6 @@ test("does not patch an entry if its current ETag is missing", async () => {
 
   await expect(api.updateEntry(entry.id, {
     brandName: "Bowl especial", description: "Con arroz", categoryIds: [], status: "INACTIVE",
-  })).rejects.toThrow("No se recibió la versión de la entrada");
+  })).rejects.toThrow("No se recibió una versión fuerte de la entrada");
   expect(requests).toEqual(["get /menu/entries/entry-1"]);
 });

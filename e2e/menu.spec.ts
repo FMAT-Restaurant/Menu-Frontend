@@ -30,10 +30,9 @@ test("searches the administrative entries and opens their management routes", as
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Entradas del menú" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
-  await expect(page.getByText(/El estado administrativo no confirma publicación/)).toBeVisible();
+  await expect(page.getByText("Estado: Archivada")).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Buscar entradas" }).fill("sin resultados");
-  await page.getByRole("button", { name: "Buscar", exact: true }).click();
   await expect(page.getByText("No hay coincidencias para esta consulta.")).toBeVisible();
   await page.getByRole("button", { name: "Limpiar filtros" }).last().click();
   await expect(page.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();

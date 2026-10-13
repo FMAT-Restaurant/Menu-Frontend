@@ -1,6 +1,37 @@
 import axios, { type AxiosAdapter } from "axios";
 import { createMenuApi } from "./menuApi";
 
+test("rejects an incomplete entry list before the UI consumes it", async () => {
+  const adapter: AxiosAdapter = async (config) => ({
+    config, data: { data: [{ id: "entry-1", brandName: "Bowl" }], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } },
+    headers: {}, status: 200, statusText: "OK",
+  });
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.listEntries({ page: 1, pageSize: 12 })).rejects.toThrow("Respuesta de entradas inválida");
+});
+
+test("rejects an invalid entry status before a mutation", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(config.method ?? "");
+    return { config, data: { data: { status: "UNKNOWN" } }, headers: { etag: '"rev-2"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("Respuesta de entrada inválida");
+  expect(requests).toEqual(["get"]);
+});
+
+test("rejects a weak entry ETag before sending If-Match", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(config.method ?? "");
+    return { config, data: { data: { status: "INACTIVE" } }, headers: { etag: 'W/"rev-2"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("versión fuerte");
+  expect(requests).toEqual(["get"]);
+});
+
 test("lists only offers of the selected entry with server pagination", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
@@ -323,7 +354,7 @@ test("rejects a mutation without the resource ETag required for If-Match", async
   });
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("No se recibió la versión de la entrada");
+  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("No se recibió una versión fuerte de la entrada");
 });
 
 test.each([401, 403])("propagates HTTP %i errors from the transport", async (status) => {
