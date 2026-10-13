@@ -18,16 +18,6 @@ const defaultRepository = createMenuApi(axios.create({
   baseURL: window.MENU_CONFIG?.apiBaseUrl || "/api/v1",
 }));
 
-function UpcomingView({ title }: Readonly<{ title: string }>) {
-  return (
-    <main className="upcoming-view">
-      <Link to="/" className="back-link">← Volver a entradas</Link>
-      <p className="eyebrow">Administración / Menú</p>
-      <h1>{title}</h1>
-      <p>Esta vista se implementará en su tarea correspondiente.</p>
-    </main>
-  );
-}
 function UpcomingOfferForm() {
   const { entryId } = useParams();
   const location = useLocation();
