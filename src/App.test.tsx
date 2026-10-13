@@ -86,6 +86,15 @@ test("opens the T24 entry form routes", async () => {
   window.history.replaceState({}, "", "/");
 });
 
+test("returns from the V4 offer placeholder to the originating offer page", () => {
+  const returnTo = "/entries/entry-1/offers?page=3";
+  window.history.pushState({ usr: { returnTo }, key: "return-context", idx: 1 }, "", "/entries/entry-1/offers/offer-1/edit");
+  render(<App />);
+
+  expect(screen.getByRole("link", { name: /Volver a ofertas/ })).toHaveAttribute("href", returnTo);
+  window.history.replaceState({}, "", "/");
+});
+
 test("opens category administration from its V5 route", () => {
   window.history.pushState({}, "", "/categories");
   render(<App />);

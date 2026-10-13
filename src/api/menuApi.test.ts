@@ -44,6 +44,25 @@ test("lists only offers of the selected entry with server pagination", async () 
   expect(requests).toEqual(["/api/v1/menu/offers?entryId=entry-1&page=2&pageSize=12"]);
 });
 
+test("bounds entry, offer list, and offer mutation requests with a timeout", async () => {
+  const timeouts: number[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    timeouts.push(config.timeout ?? 0);
+    const isOfferDetail = config.url?.includes("/menu/offers/");
+    const data = config.url === "/menu/offers"
+      ? { data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }
+      : isOfferDetail ? { data: { status: "INACTIVE" } } : { data: { id: "entry-1" } };
+    return { config, data, headers: isOfferDetail ? { etag: '"offer-rev-1"' } : {}, status: config.method === "delete" ? 204 : 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  await api.getEntry("entry-1");
+  await api.listOffers("entry-1", 1, 12);
+  await api.setOfferStatus("offer-1", "ACTIVE");
+  await api.deleteInactiveOffer("offer-1");
+
+  expect(timeouts).toEqual([12000, 12000, 12000, 12000, 12000, 12000]);
+});
+
 test("reads a strong offer ETag before changing only its status", async () => {
   const requests: { method?: string; url?: string; body?: unknown; ifMatch?: string }[] = [];
   const adapter: AxiosAdapter = async (config) => {

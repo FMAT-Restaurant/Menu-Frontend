@@ -33,6 +33,8 @@ function recipePath(recipeId: string) {
   return `/menu/recipes/${sanitizeIdentifier(recipeId)}`;
 }
 
+const offersRequestTimeoutMs = 12000;
+
 function entryPath(entryId?: string) {
   const base = "/menu/entries";
   return entryId ? `${base}/${encodeURIComponent(entryId)}` : base;
@@ -71,7 +73,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
 
   async function currentOffer(id: string) {
     const path = `/menu/offers/${encodeURIComponent(id)}`;
-    const response = await client.get<{ data: { status: OfferStatus } }>(path);
+    const response = await client.get<{ data: { status: OfferStatus } }>(path, { timeout: offersRequestTimeoutMs });
     const etag = response.headers.etag as string | undefined;
     if (!etag || etag.startsWith("W/")) throw new Error("No se recibió una versión fuerte de la oferta. Recarga e inténtalo de nuevo.");
     const status = response.data?.data?.status;
@@ -141,7 +143,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     },
 
     async getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail> {
-      const response = await client.get<{ data: MenuEntryDetail }>(entryPath(id), { signal });
+      const response = await client.get<{ data: MenuEntryDetail }>(entryPath(id), { signal, timeout: offersRequestTimeoutMs });
       return response.data.data;
     },
 
@@ -163,6 +165,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       const response = await client.get<Page<MenuOffer>>("/menu/offers", {
         params: { entryId, page, pageSize },
         signal,
+        timeout: offersRequestTimeoutMs,
       });
       return response.data;
     },
@@ -170,13 +173,13 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async setOfferStatus(id: string, status: OfferStatus): Promise<void> {
       const current = await currentOffer(id);
       if (current.status === status) return;
-      await client.patch(current.path, { status }, { headers: { "If-Match": current.etag } });
+      await client.patch(current.path, { status }, { headers: { "If-Match": current.etag }, timeout: offersRequestTimeoutMs });
     },
 
     async deleteInactiveOffer(id: string): Promise<void> {
       const current = await currentOffer(id);
       if (current.status !== "INACTIVE") throw new Error("Solo se puede eliminar una oferta inactiva.");
-      await client.delete(current.path, { headers: { "If-Match": current.etag } });
+      await client.delete(current.path, { headers: { "If-Match": current.etag }, timeout: offersRequestTimeoutMs });
     },
 
     async listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>> {

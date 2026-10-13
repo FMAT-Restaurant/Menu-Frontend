@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BrowserRouter, Link, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { createMenuApi } from "./api/menuApi";
 import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CategoryPage } from "./features/categories/CategoryPage";
@@ -20,9 +20,19 @@ const defaultRepository = createMenuApi(axios.create({
 
 function UpcomingOfferForm() {
   const { entryId } = useParams();
+  const location = useLocation();
+  const offersPath = `/entries/${encodeURIComponent(entryId ?? "")}/offers`;
+  const requestedReturn = location.state && typeof location.state === "object" && "returnTo" in location.state && typeof location.state.returnTo === "string"
+    ? location.state.returnTo
+    : offersPath;
+  const returnTo = requestedReturn === offersPath || requestedReturn.startsWith(`${offersPath}?`) ? requestedReturn : offersPath;
+  const requestedCatalogReturn = location.state && typeof location.state === "object" && "catalogReturnTo" in location.state && typeof location.state.catalogReturnTo === "string"
+    ? location.state.catalogReturnTo
+    : "/";
+  const catalogReturnTo = requestedCatalogReturn.startsWith("/") && !requestedCatalogReturn.startsWith("//") ? requestedCatalogReturn : "/";
   return (
     <main className="upcoming-view">
-      <Link to={`/entries/${encodeURIComponent(entryId ?? "")}/offers`} className="back-link">← Volver a ofertas</Link>
+      <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">← Volver a ofertas</Link>
       <p className="eyebrow">Administración / Menú / Ofertas</p>
       <h1>Formulario de oferta</h1>
       <p>La creación y edición de ofertas se implementará en V4.</p>
