@@ -13,9 +13,12 @@ function selectedPage(value: string | null) {
 
 function returnPath(state: unknown) {
   if (!state || typeof state !== "object") return "/";
-  const path = "catalogReturnTo" in state && typeof state.catalogReturnTo === "string"
-    ? state.catalogReturnTo
-    : "returnTo" in state && typeof state.returnTo === "string" ? state.returnTo : "/";
+  let path = "/";
+  if ("catalogReturnTo" in state && typeof state.catalogReturnTo === "string") {
+    path = state.catalogReturnTo;
+  } else if ("returnTo" in state && typeof state.returnTo === "string") {
+    path = state.returnTo;
+  }
   if (!path.startsWith("/") || path.startsWith("//")) return "/";
   try {
     const url = new URL(path, window.location.origin);
@@ -57,6 +60,129 @@ function failureMessage(error: unknown, scope: ErrorScope) {
 
 type Repository = Pick<MenuRepository, "getEntry" | "listOffers" | "setOfferStatus" | "deleteInactiveOffer">;
 type LoadError = "entry" | "offers" | null;
+
+function statusNotice(status: OfferStatus, refreshFailed: boolean) {
+  let action = "inactivada";
+  if (status === "ACTIVE") action = "activada";
+  if (refreshFailed) return `Oferta ${action}, pero no se pudo actualizar la lista.`;
+  return `Oferta ${action}.`;
+}
+
+function deleteNotice(refreshFailed: boolean) {
+  if (refreshFailed) return "Oferta eliminada, pero no se pudo actualizar la lista.";
+  return "Oferta eliminada.";
+}
+
+function loadErrorForView(entryError: boolean, entry: MenuEntryDetail | null, offersError: boolean): LoadError {
+  if (entryError && !entry) return "entry";
+  if (offersError) return "offers";
+  return null;
+}
+
+function errorMessageForLoad(error: LoadError, entryMessage: string, offersMessage: string) {
+  if (error === "entry") return entryMessage;
+  return `${offersMessage} La información anterior se conserva.`;
+}
+
+function retryLabelForLoad(error: LoadError) {
+  if (error === "entry") return "entrada";
+  return "ofertas";
+}
+
+interface OffersFeedbackProps {
+  loadError: LoadError;
+  entryErrorMessage: string;
+  offersErrorMessage: string;
+  actionError: string;
+  notice: string;
+  onRetryEntry(): void;
+  onRetryOffers(): void;
+}
+
+function OffersFeedback({ loadError, entryErrorMessage, offersErrorMessage, actionError, notice, onRetryEntry, onRetryOffers }: Readonly<OffersFeedbackProps>) {
+  const message = errorMessageForLoad(loadError, entryErrorMessage, offersErrorMessage);
+  const retryLabel = retryLabelForLoad(loadError);
+  const onRetry = loadError === "entry" ? onRetryEntry : onRetryOffers;
+
+  return <>
+    {loadError && <div className="feedback feedback--error" role="alert">
+      {message}
+      <button type="button" onClick={onRetry}>Reintentar {retryLabel}</button>
+    </div>}
+    {actionError && <div className="feedback feedback--error" role="alert">{actionError} <button type="button" onClick={onRetryOffers}>Actualizar datos</button></div>}
+    {notice && <output className="feedback feedback--success">{notice}</output>}
+  </>;
+}
+
+interface OffersCollectionProps {
+  isEmpty: boolean;
+  offers: MenuOffer[];
+  updatingOffers: boolean;
+  busy: boolean;
+  offerPath: string;
+  returnTo: string;
+  catalogReturnTo: string;
+  onStatusChange(offer: MenuOffer, status: OfferStatus): void;
+  onDelete(offer: MenuOffer): void;
+  onReload(): void;
+}
+
+function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
+  if (isEmpty) {
+    return <section className="empty-state offers-empty">
+      <h2>No hay ofertas configuradas.</h2>
+      <p>La creación de ofertas estará disponible en V4.</p>
+      <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>
+    </section>;
+  }
+
+  if (offers.length === 0) {
+    return <div className="feedback feedback--error" role="alert">La respuesta no contiene ofertas para la página solicitada. <button type="button" onClick={onReload}>Actualizar lista</button></div>;
+  }
+
+  return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label="Ofertas de la entrada" aria-busy={updatingOffers}>
+    {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={busy} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
+  </section>;
+}
+
+interface OffersPaginationProps {
+  totalPages: number;
+  isEmpty: boolean;
+  page: number;
+  displayedPage: number;
+  offersLoading: boolean;
+  onPageChange(nextPage: number): void;
+}
+
+function OffersPagination({ totalPages, isEmpty, page, displayedPage, offersLoading, onPageChange }: Readonly<OffersPaginationProps>) {
+  if (totalPages <= 1 || isEmpty) return null;
+
+  return <nav className="pagination" aria-label="Páginas de ofertas">
+    <button className="button button--secondary" type="button" disabled={page <= 1 || offersLoading} onClick={() => onPageChange(page - 1)}>Anterior</button>
+    <span className="offers-page__page">Página {displayedPage} de {totalPages}</span>
+    <button className="button button--secondary" type="button" disabled={page >= totalPages || offersLoading} onClick={() => onPageChange(page + 1)}>Siguiente</button>
+  </nav>;
+}
+
+interface OffersResultsProps extends OffersCollectionProps, OffersPaginationProps {
+  initialLoading: boolean;
+  result: Page<MenuOffer> | null;
+  offersLoading: boolean;
+  first: number;
+  last: number;
+}
+
+function OffersResults({ initialLoading, result, offersLoading, first, last, ...collectionProps }: Readonly<OffersResultsProps>) {
+  if (initialLoading) return <output className="feedback">Cargando ofertas…</output>;
+  if (!result) return null;
+
+  return <>
+    {offersLoading && <output className="feedback" aria-live="polite">Actualizando ofertas…</output>}
+    {!collectionProps.isEmpty && <p className="offers-page__count">Mostrando {first}–{last} de {result.meta.total} ofertas</p>}
+    <OffersCollection {...collectionProps} />
+    <OffersPagination totalPages={collectionProps.totalPages} isEmpty={collectionProps.isEmpty} page={collectionProps.page} displayedPage={collectionProps.displayedPage} offersLoading={offersLoading} onPageChange={collectionProps.onPageChange} />
+  </>;
+}
 
 export function OffersPage({ repository }: Readonly<{ repository: Repository }>) {
   const { entryId } = useParams();
@@ -232,9 +358,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       if (currentContextRef.current !== expectedContext) return;
       const updated = await reconcileOffers(new AbortController().signal, expectedContext);
       if (updated === "stale") return;
-      setNotice(updated === "failed"
-        ? `Oferta ${status === "ACTIVE" ? "activada" : "inactivada"}, pero no se pudo actualizar la lista.`
-        : status === "ACTIVE" ? "Oferta activada." : "Oferta inactivada.");
+      setNotice(statusNotice(status, updated === "failed"));
     } catch (error: unknown) {
       if (currentContextRef.current !== expectedContext) return;
       setActionError(failureMessage(error, "status"));
@@ -261,7 +385,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       if (updated === "stale") return;
       deleteTriggerRef.current = null;
       setOfferToDelete(null);
-      setNotice(updated === "failed" ? "Oferta eliminada, pero no se pudo actualizar la lista." : "Oferta eliminada.");
+      setNotice(deleteNotice(updated === "failed"));
       setPendingAction("");
     } catch (error: unknown) {
       if (currentContextRef.current !== expectedContext) return;
@@ -289,7 +413,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const initialLoading = (entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
   const currentEntryError = entryError && entryErrorId === entryId;
   const currentOffersError = offersError && offersErrorContext === currentContext;
-  const loadError: LoadError = currentEntryError && !visibleEntry ? "entry" : currentOffersError ? "offers" : null;
+  const loadError = loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
   const isEmpty = !initialLoading && !loadError && visibleResult?.meta.total === 0;
 
   return (
@@ -309,35 +433,8 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta · V4</Link>}
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
-        {loadError && <div className="feedback feedback--error" role="alert">
-          {loadError === "entry" ? entryErrorMessage : `${offersErrorMessage} La información anterior se conserva.`}
-          <button type="button" onClick={() => loadError === "entry" ? setEntryRetry((current) => current + 1) : setOffersRetry((current) => current + 1)}>Reintentar {loadError === "entry" ? "entrada" : "ofertas"}</button>
-        </div>}
-        {actionError && <div className="feedback feedback--error" role="alert">{actionError} <button type="button" onClick={() => setOffersRetry((current) => current + 1)}>Actualizar datos</button></div>}
-        {notice && <output className="feedback feedback--success">{notice}</output>}
-        {initialLoading && <output className="feedback">Cargando ofertas…</output>}
-        {!initialLoading && visibleResult && (
-          <>
-            {offersLoading && <output className="feedback" aria-live="polite">Actualizando ofertas…</output>}
-            {!isEmpty && <p className="offers-page__count">Mostrando {first}–{last} de {visibleResult.meta.total} ofertas</p>}
-            {isEmpty ? (
-              <section className="empty-state offers-empty">
-                <h2>No hay ofertas configuradas.</h2>
-                <p>La creación de ofertas estará disponible en V4.</p>
-                <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Crear primera oferta</Link>
-              </section>
-            ) : offers.length > 0 ? (
-              <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label="Ofertas de la entrada" aria-busy={updatingOffers}>
-                {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={Boolean(busyId)} returnTo={location.pathname + location.search} catalogReturnTo={backTo} onStatusChange={changeStatus} onDelete={(selected) => { deleteTriggerRef.current = document.activeElement as HTMLElement; setOfferToDelete(selected); }} />)}
-              </section>
-            ) : <div className="feedback feedback--error" role="alert">La respuesta no contiene ofertas para la página solicitada. <button type="button" onClick={() => setOffersRetry((current) => current + 1)}>Actualizar lista</button></div>}
-            {totalPages > 1 && !isEmpty && <nav className="pagination" aria-label="Páginas de ofertas">
-              <button className="button button--secondary" type="button" disabled={page <= 1 || offersLoading} onClick={() => goToPage(page - 1)}>Anterior</button>
-              <span className="offers-page__page">Página {displayedPage} de {totalPages}</span>
-              <button className="button button--secondary" type="button" disabled={page >= totalPages || offersLoading} onClick={() => goToPage(page + 1)}>Siguiente</button>
-            </nav>}
-          </>
-        )}
+        <OffersFeedback loadError={loadError} entryErrorMessage={entryErrorMessage} offersErrorMessage={offersErrorMessage} actionError={actionError} notice={notice} onRetryEntry={() => setEntryRetry((current) => current + 1)} onRetryOffers={() => setOffersRetry((current) => current + 1)} />
+        <OffersResults initialLoading={initialLoading} result={visibleResult} offersLoading={offersLoading} first={first} last={last} isEmpty={isEmpty} offers={offers} updatingOffers={updatingOffers} busy={Boolean(busyId)} offerPath={offerPath} returnTo={location.pathname + location.search} catalogReturnTo={backTo} onStatusChange={changeStatus} onDelete={(selected) => { deleteTriggerRef.current = document.activeElement as HTMLElement; setOfferToDelete(selected); }} onReload={() => setOffersRetry((current) => current + 1)} totalPages={totalPages} page={page} displayedPage={displayedPage} onPageChange={goToPage} />
         {offerToDelete && <div className="dialog-backdrop">
           <dialog ref={dialogRef} className="confirm-dialog" aria-modal="true" aria-labelledby="offer-delete-title" aria-describedby="offer-delete-description" onCancel={(event) => { event.preventDefault(); if (busyId !== offerToDelete.id) setOfferToDelete(null); }}>
             <h2 id="offer-delete-title">Eliminar oferta inactiva</h2>
