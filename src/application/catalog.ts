@@ -74,6 +74,53 @@ export interface EntryQuery {
   pageSize: number;
 }
 
+export interface InventoryItem {
+  id: string;
+  name: string;
+  unit: string;
+}
+
+export interface RecipeSupply {
+  inventoryItemId: string;
+  quantity: number;
+  inventoryItem?: InventoryItem;
+}
+
+export interface RecipeSummary {
+  id: string;
+  name: string;
+  description: string;
+  supplies: RecipeSupply[];
+}
+
+export interface RecipeDetail extends RecipeSummary {
+  instructions: string;
+}
+
+export interface RecipeSupplyInput {
+  inventoryItemId: string;
+  quantity: number;
+}
+
+export interface RecipeDraft {
+  name: string;
+  description: string;
+  instructions: string;
+  supplies: RecipeSupplyInput[];
+}
+
+export interface RecipeQuery {
+  q?: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface InventoryQuery {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export interface MenuRepository {
   listEntries(query: EntryQuery, signal?: AbortSignal): Promise<Page<MenuEntry>>;
   listCategories(signal?: AbortSignal): Promise<MenuCategory[]>;
@@ -87,4 +134,11 @@ export interface MenuRepository {
   listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
   setOfferStatus(id: string, status: OfferStatus): Promise<void>;
   deleteInactiveOffer(id: string): Promise<void>;
+  listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>>;
+  getRecipe(id: string, signal?: AbortSignal): Promise<RecipeDetail>;
+  createRecipe(draft: RecipeDraft): Promise<RecipeDetail>;
+  updateRecipe(id: string, draft: RecipeDraft): Promise<RecipeDetail>;
+  deleteRecipe(id: string): Promise<void>;
+  listInventoryItems(query?: InventoryQuery, signal?: AbortSignal): Promise<Page<InventoryItem>>;
 }
+

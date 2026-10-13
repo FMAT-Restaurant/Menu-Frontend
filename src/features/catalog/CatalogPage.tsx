@@ -153,7 +153,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
             <p className="catalog-header__intro">Gestiona la identidad y el estado administrativo de cada entrada.</p>
           </div>
           <div className="catalog-header__actions">
-            <Link className="button button--secondary" to="/recipes">Biblioteca de recetas</Link>
+            <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
             <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
             <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
           </div>
