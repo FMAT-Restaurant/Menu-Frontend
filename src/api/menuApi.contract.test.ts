@@ -137,3 +137,42 @@ test("does not patch an entry if its current ETag is missing", async () => {
   })).rejects.toThrow("No se recibió una versión fuerte de la entrada");
   expect(requests).toEqual(["get /menu/entries/entry-1"]);
 });
+
+test("does not patch a recipe if its current ETag is missing", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(`${config.method} ${config.url}`);
+    return {
+      config,
+      data: { data: { id: "recipe-1", name: "Receta", description: "Desc", instructions: "Inst", supplies: [] } },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(api.updateRecipe("recipe-1", {
+    name: "Receta 2", description: "Desc 2", instructions: "Inst 2", supplies: [],
+  })).rejects.toThrow("No se recibió la versión de la receta");
+  expect(requests).toEqual(["get /menu/recipes/recipe-1"]);
+});
+
+test("does not delete a recipe if its current ETag is missing", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(`${config.method} ${config.url}`);
+    return {
+      config,
+      data: { data: { id: "recipe-1", name: "Receta", description: "Desc", instructions: "Inst", supplies: [] } },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(api.deleteRecipe("recipe-1")).rejects.toThrow("No se recibió la versión de la receta");
+  expect(requests).toEqual(["get /menu/recipes/recipe-1"]);
+});
+

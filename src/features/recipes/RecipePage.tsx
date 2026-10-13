@@ -1,0 +1,347 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import type {
+  InventoryItem,
+  MenuRepository,
+  Page,
+  RecipeDetail,
+  RecipeDraft,
+  RecipeSummary,
+} from "../../application/catalog";
+import { SearchField } from "../../shared/SearchField";
+import { RecipeCard } from "./RecipeCard";
+import { RecipeFormDialog } from "./RecipeFormDialog";
+
+export type RecipeRepository = Pick<
+  MenuRepository,
+  "listRecipes" | "getRecipe" | "createRecipe" | "updateRecipe" | "deleteRecipe" | "listInventoryItems"
+>;
+
+export interface RecipePageProps {
+  repository: RecipeRepository;
+  mode?: "management" | "selection";
+  onSelectRecipe?: (recipe: RecipeSummary) => void;
+  onClose?: () => void;
+}
+
+export function RecipePage({
+  repository,
+  mode: propMode,
+  onSelectRecipe,
+  onClose,
+}: Readonly<RecipePageProps>) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const mode = propMode ?? (searchParams.get("mode") === "selection" ? "selection" : "management");
+
+  const returnTo =
+    typeof location.state?.returnTo === "string" && /^\/(?:\?.*)?$/.test(location.state.returnTo)
+      ? location.state.returnTo
+      : "/";
+
+  const urlQ = searchParams.get("q") ?? "";
+  const [draftSearch, setDraftSearch] = useState(urlQ);
+  const [queryText, setQueryText] = useState(urlQ);
+
+  const [recipesResult, setRecipesResult] = useState<Page<RecipeSummary> | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [retry, setRetry] = useState(0);
+
+  const [editingRecipe, setEditingRecipe] = useState<RecipeDetail | RecipeSummary | "new" | null>(null);
+  const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const deleteDialogRef = useRef<HTMLDialogElement>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setDraftSearch(urlQ);
+    setQueryText(urlQ);
+  }, [urlQ]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    repository
+      .listInventoryItems({ page: 1, pageSize: 100 }, controller.signal)
+      .then((res) => {
+        if (!controller.signal.aborted) {
+          setInventoryItems(res.data);
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [repository]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+
+    repository
+      .listRecipes({ q: queryText, page: 1, pageSize: 50 }, controller.signal)
+      .then((items) => {
+        if (!controller.signal.aborted) {
+          setRecipesResult(items);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError("No se pudieron cargar las recetas.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [repository, queryText, retry]);
+
+  useEffect(() => {
+    if (!recipeToDelete) return;
+    const dialog = deleteDialogRef.current;
+    if (typeof dialog?.showModal === "function") dialog.showModal();
+    else dialog?.setAttribute("open", "");
+    cancelDeleteRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setRecipeToDelete(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (dialog?.open && typeof dialog.close === "function") dialog.close();
+    };
+  }, [recipeToDelete]);
+
+  function handleSearchSubmit() {
+    setQueryText(draftSearch);
+    if (!propMode) {
+      const nextParams = new URLSearchParams(searchParams);
+      if (draftSearch) nextParams.set("q", draftSearch);
+      else nextParams.delete("q");
+      setSearchParams(nextParams);
+    }
+  }
+
+  async function handleOpenEdit(recipe: RecipeSummary) {
+    try {
+      const detail = await repository.getRecipe(recipe.id);
+      setEditingRecipe(detail);
+    } catch {
+      setEditingRecipe(recipe);
+    }
+  }
+
+  async function handleSaveRecipe(draft: RecipeDraft) {
+    if (!editingRecipe) return;
+
+    if (editingRecipe === "new") {
+      const created = await repository.createRecipe(draft);
+      setNotice("Receta creada exitosamente.");
+      setEditingRecipe(null);
+      setRetry((r) => r + 1);
+
+      if (mode === "selection") {
+        if (onSelectRecipe) {
+          onSelectRecipe(created);
+        } else {
+          await navigate(returnTo, { state: { selectedRecipe: created } });
+        }
+      }
+    } else {
+      await repository.updateRecipe(editingRecipe.id, draft);
+      setNotice("Receta actualizada exitosamente.");
+      setEditingRecipe(null);
+      setRetry((r) => r + 1);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!recipeToDelete) return;
+    setIsDeleting(true);
+    setActionError("");
+
+    try {
+      await repository.deleteRecipe(recipeToDelete.id);
+      setNotice(`Receta "${recipeToDelete.name}" eliminada.`);
+      setRecipeToDelete(null);
+      setRetry((r) => r + 1);
+    } catch {
+      setActionError("No se puede eliminar la receta porque está referenciada por una oferta vigente.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  function handleSelect(recipe: RecipeSummary) {
+    if (onSelectRecipe) {
+      onSelectRecipe(recipe);
+    } else {
+      void navigate(returnTo, { state: { selectedRecipe: recipe } });
+    }
+  }
+
+  const recipes = recipesResult?.data ?? [];
+  const title = mode === "selection" ? "Biblioteca de recetas — elegir opción" : "Biblioteca de recetas";
+  const subtitle =
+    mode === "selection"
+      ? "Selecciona una receta para asignarla a la opción de la oferta."
+      : "Consulta y administra las recetas base y sus insumos.";
+
+  return (
+    <div className="category-screen recipe-screen">
+      <header className="category-screen__header">
+        <div>
+          <p className="eyebrow">Administración del menú</p>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+        </div>
+        {onClose ? (
+          <button
+            type="button"
+            className="button category-screen__back"
+            onClick={onClose}
+          >
+            {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
+          </button>
+        ) : (
+          <Link className="button category-screen__back" to={returnTo}>
+            {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
+          </Link>
+        )}
+      </header>
+
+      <main className="category-screen__main">
+        <section className="category-panel" aria-labelledby="recipe-list-heading">
+          <div className="category-panel__heading">
+            <div>
+              <h2 id="recipe-list-heading">
+                {mode === "selection" ? "Recetas disponibles" : "Recetas de la biblioteca"}
+              </h2>
+              <p>Las recetas definen los insumos de inventario y preparación.</p>
+            </div>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={() => setEditingRecipe("new")}
+            >
+              + Nueva receta
+            </button>
+          </div>
+
+          <div className="recipe-toolbar">
+            <SearchField
+              id="recipe-search"
+              label="Buscar recetas"
+              placeholder="Buscar por nombre o descripción…"
+              value={draftSearch}
+              onChange={setDraftSearch}
+              onSearch={handleSearchSubmit}
+            />
+          </div>
+
+          {notice && <output className="feedback feedback--success">{notice}</output>}
+          {!recipeToDelete && actionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
+          {error && (
+            <div className="feedback feedback--error" role="alert">
+              {error} <button type="button" onClick={() => setRetry((r) => r + 1)}>Reintentar</button>
+            </div>
+          )}
+
+          {loading && <output className="feedback">Cargando recetas…</output>}
+
+          {!loading && !error && recipes.length === 0 && (
+            <div className="empty-state category-empty">
+              <span className="empty-state__icon" aria-hidden="true">⌕</span>
+              <h3>Aún no hay recetas registradas.</h3>
+              <p>
+                {queryText
+                  ? "No se encontraron recetas con el término buscado."
+                  : "Crea una receta para asociar insumos y pasos de preparación."}
+              </p>
+              <button
+                className="button button--primary"
+                type="button"
+                onClick={() => setEditingRecipe("new")}
+              >
+                Crear receta
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && recipes.length > 0 && (
+            <ul className="recipe-list">
+              {recipes.map((recipe) => (
+                <li key={recipe.id} className="recipe-list__item">
+                  <RecipeCard
+                    recipe={recipe}
+                    mode={mode}
+                    onEdit={(rec) => { void handleOpenEdit(rec); }}
+                    onDelete={(rec) => {
+                      setActionError("");
+                      setRecipeToDelete(rec);
+                    }}
+                    onSelect={handleSelect}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </main>
+
+      {editingRecipe && (
+        <RecipeFormDialog
+          key={editingRecipe === "new" ? "new" : editingRecipe.id}
+          recipe={editingRecipe === "new" ? undefined : editingRecipe}
+          inventoryItems={inventoryItems}
+          onClose={() => setEditingRecipe(null)}
+          onSubmit={handleSaveRecipe}
+        />
+      )}
+
+      {recipeToDelete && (
+        <div className="dialog-backdrop">
+          <dialog
+            ref={deleteDialogRef}
+            className="confirm-dialog"
+            aria-labelledby="confirm-delete-title"
+          >
+            <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
+            <p>
+              ¿Estás seguro de que deseas eliminar la receta &quot;{recipeToDelete.name}&quot;? Esta acción no se puede deshacer.
+            </p>
+            {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
+            <div className="confirm-dialog__actions">
+              <button
+                ref={cancelDeleteRef}
+                type="button"
+                className="button button--secondary"
+                disabled={isDeleting}
+                onClick={() => setRecipeToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="button button--danger"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+              >
+                {isDeleting ? "Eliminando…" : "Eliminar receta"}
+              </button>
+            </div>
+          </dialog>
+        </div>
+      )}
+    </div>
+  );
+}

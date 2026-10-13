@@ -9,16 +9,15 @@ test("opens the administrative catalog at the application root", async () => {
   expect(screen.getByRole("searchbox", { name: "Buscar entradas" })).toBeVisible();
 });
 
-test.each([
-  ["/recipes", "Biblioteca de recetas"],
-])("opens the destination %s for its later task", (path, title) => {
-  window.history.pushState({}, "", path);
+test("opens recipe library from its V6 route", async () => {
+  window.history.pushState({}, "", "/recipes");
   render(<App />);
 
-  expect(screen.getByRole("heading", { name: title, level: 1 })).toBeVisible();
-  expect(screen.getByRole("link", { name: /Volver a entradas/ })).toHaveAttribute("href", "/");
+  expect(await screen.findByRole("heading", { name: "Biblioteca de recetas", level: 1 })).toBeVisible();
+  expect(screen.getByRole("link", { name: /Volver al menú/ })).toHaveAttribute("href", "/");
   window.history.replaceState({}, "", "/");
 });
+
 
 test("opens the implemented offers page for an entry", async () => {
   const repository: MenuRepository = {
@@ -38,6 +37,12 @@ test("opens the implemented offers page for an entry", async () => {
     }),
     setOfferStatus: jest.fn(),
     deleteInactiveOffer: jest.fn(),
+    listRecipes: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
+    getRecipe: jest.fn(),
+    createRecipe: jest.fn(),
+    updateRecipe: jest.fn(),
+    deleteRecipe: jest.fn(),
+    listInventoryItems: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
   };
   window.history.pushState({}, "", "/entries/entry-1/offers");
   render(<App repository={repository} />);
@@ -63,6 +68,12 @@ test("opens the T24 entry form routes", async () => {
     listOffers: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
     setOfferStatus: jest.fn(),
     deleteInactiveOffer: jest.fn(),
+    listRecipes: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
+    getRecipe: jest.fn(),
+    createRecipe: jest.fn(),
+    updateRecipe: jest.fn(),
+    deleteRecipe: jest.fn(),
+    listInventoryItems: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
   };
 
   for (const [path, title] of [["/entries/new", "Nueva entrada"], ["/entries/entry-1/edit", "Editar entrada"]]) {

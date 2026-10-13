@@ -19,6 +19,8 @@ function api(): jest.Mocked<MenuRepository> {
     createCategory: jest.fn(), updateCategory: jest.fn(), setEntryStatus: jest.fn().mockResolvedValue(undefined),
     deleteArchivedEntry: jest.fn().mockResolvedValue(undefined), getEntry: jest.fn(), createEntry: jest.fn(), updateEntry: jest.fn(),
     listOffers: jest.fn(), setOfferStatus: jest.fn(), deleteInactiveOffer: jest.fn(),
+    listRecipes: jest.fn(), getRecipe: jest.fn(), createRecipe: jest.fn(), updateRecipe: jest.fn(),
+    deleteRecipe: jest.fn(), listInventoryItems: jest.fn(),
   };
 }
 

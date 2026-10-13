@@ -274,9 +274,9 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
             <h1>Entradas del menú</h1>
           </div>
           <div className="catalog-header__actions">
-            <Link className="button button--secondary catalog-header__later" to="/recipes">Biblioteca de recetas <small>Próximamente</small></Link>
-            <Link className="button button--secondary" to="/categories" state={{ returnTo }}>Categorías</Link>
-            <Link className="button button--primary" to="/entries/new" state={{ returnTo }}>Nueva entrada</Link>
+            <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
+            <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
+            <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
           </div>
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedOpen={advancedOpen} onToggleAdvanced={() => setAdvancedOpen((value) => !value)} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={() => setSearchParams(new URLSearchParams())} />
