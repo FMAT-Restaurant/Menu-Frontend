@@ -21,7 +21,8 @@ test("opens an entry's offers and changes an offer state without losing the cata
   });
 
   await page.goto("/?q=hawai");
-  await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" }).click();
+  const card = await page.getByRole("article").boundingBox();
+  await page.mouse.click(card!.x + 24, card!.y + 24);
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Combo" })).toBeVisible();
   await expect(page.getByText(/solo se publica si la entrada está activa/)).toBeVisible();

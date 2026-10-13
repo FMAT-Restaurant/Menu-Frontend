@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import type { CategoryDraft, EntryCreateDraft, EntryQuery, EntryStatus, EntryUpdateDraft, MenuCategory, MenuEntry, MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, Page } from "../application/catalog";
+import { categoryPage, entryPage } from "./catalogResponse";
 
 function entryPath(entryId?: string) {
   const base = "/menu/entries";
@@ -10,6 +11,13 @@ function imageMultipart(image: File) {
   const form = new FormData();
   form.append("file", image);
   return form;
+}
+
+async function categoryPages(getPage: (page: number) => Promise<Page<MenuCategory>>, from: number, to: number): Promise<MenuCategory[]> {
+  if (from > to) return [];
+  const batch = await Promise.all(Array.from({ length: Math.min(4, to - from + 1) }, (_, index) => getPage(from + index)));
+  const rest = await categoryPages(getPage, from + batch.length, to);
+  return [...batch.flatMap((result) => result.data), ...rest];
 }
 
 export function createMenuApi(client: AxiosInstance): MenuRepository {
@@ -24,8 +32,10 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     const path = entryPath(id);
     const response = await client.get<{ data: { status: EntryStatus } }>(path);
     const etag = response.headers.etag as string | undefined;
-    if (!etag) throw new Error("No se recibió la versión de la entrada. Recarga e inténtalo de nuevo.");
-    return { path, status: response.data.data.status, etag };
+    if (!etag || etag.startsWith("W/")) throw new Error("No se recibió una versión fuerte de la entrada. Recarga e inténtalo de nuevo.");
+    const status = response.data?.data?.status;
+    if (status !== "ACTIVE" && status !== "INACTIVE" && status !== "ARCHIVED") throw new Error("Respuesta de entrada inválida.");
+    return { path, status, etag };
   }
 
   async function currentOffer(id: string) {
@@ -33,7 +43,9 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     const response = await client.get<{ data: { status: OfferStatus } }>(path);
     const etag = response.headers.etag as string | undefined;
     if (!etag || etag.startsWith("W/")) throw new Error("No se recibió una versión fuerte de la oferta. Recarga e inténtalo de nuevo.");
-    return { path, status: response.data.data.status, etag };
+    const status = response.data?.data?.status;
+    if (status !== "ACTIVE" && status !== "INACTIVE" && status !== "ARCHIVED") throw new Error("Respuesta de oferta inválida.");
+    return { path, status, etag };
   }
 
   return {
@@ -48,19 +60,17 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
         },
         signal,
       });
-      return response.data;
+      return entryPage(response.data);
     },
 
     async listCategories(signal?: AbortSignal): Promise<MenuCategory[]> {
-      const getPage = (page: number) => client.get<Page<MenuCategory>>("/menu/categories", {
-        params: { page, pageSize: 100 },
-        signal,
-      });
+      const getPage = async (page: number) => {
+        const response = await client.get<unknown>("/menu/categories", { params: { page, pageSize: 100 }, signal });
+        return categoryPage(response.data);
+      };
       const firstPage = await getPage(1);
-      const remainingPages = await Promise.all(
-        Array.from({ length: Math.max(0, firstPage.data.meta.totalPages - 1) }, (_, index) => getPage(index + 2)),
-      );
-      return [firstPage, ...remainingPages].flatMap((response) => response.data.data);
+      const rest = await categoryPages(getPage, 2, firstPage.meta.totalPages);
+      return [...firstPage.data, ...rest];
     },
 
     async createCategory(draft: CategoryDraft): Promise<MenuCategory> {

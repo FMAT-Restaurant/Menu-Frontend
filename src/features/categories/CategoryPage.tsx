@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { CategoryDraft, MenuCategory, MenuRepository } from "../../application/catalog";
+import { invalidateCatalogCategories, invalidateCatalogEntries } from "../../application/catalogCache";
 import { CategoryFormDialog } from "./CategoryFormDialog";
 
 type CategoryRepository = Pick<MenuRepository, "listCategories" | "createCategory" | "updateCategory">;
@@ -35,6 +36,8 @@ export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepo
     if (!formCategory) return;
     if (formCategory === "new") await repository.createCategory(draft);
     else await repository.updateCategory(formCategory.id, draft);
+    invalidateCatalogCategories(repository);
+    invalidateCatalogEntries(repository);
     setNotice(formCategory === "new" ? "Categoría creada." : "Categoría actualizada.");
     setFormCategory(null);
     setRetry((current) => current + 1);
