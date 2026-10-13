@@ -34,7 +34,7 @@ export function SearchField({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
         />
-        <button type="submit" className="button button--secondary">Buscar</button>
+        <button type="submit" className="button button--secondary" aria-label="Buscar ahora">Buscar</button>
       </div>
     </form>
   );

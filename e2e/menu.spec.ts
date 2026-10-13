@@ -30,10 +30,11 @@ test("searches the administrative entries and opens their management routes", as
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Entradas del menú" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
-  await expect(page.getByText(/El estado administrativo no confirma publicación/)).toBeVisible();
+  await expect(page.getByText("Estado: Archivada")).toBeVisible();
+  await expect(page.getByRole("article").getByRole("button")).toHaveCount(1);
+  await expect(page.getByRole("article").getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Buscar entradas" }).fill("sin resultados");
-  await page.getByRole("button", { name: "Buscar", exact: true }).click();
   await expect(page.getByText("No hay coincidencias para esta consulta.")).toBeVisible();
   await page.getByRole("button", { name: "Limpiar filtros" }).last().click();
   await expect(page.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
@@ -45,7 +46,8 @@ test("searches the administrative entries and opens their management routes", as
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
 
-  await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" }).click();
+  const card = await page.getByRole("article").boundingBox();
+  await page.mouse.click(card!.x + 24, card!.y + 24);
   await expect(page).toHaveURL(/\/entries\/entry-1\/offers$/);
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
 });
