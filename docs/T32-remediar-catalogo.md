@@ -8,7 +8,7 @@ Las consultas anteriores permanecen visibles mientras llega la nueva página, ac
 
 Las páginas y categorías se guardan por instancia de repositorio durante 30 segundos. Guardar una entrada invalida las páginas del catálogo; crear o editar una categoría invalida categorías y entradas; eliminar una entrada invalida las páginas y categorías. Las acciones administrativas se serializan y conservan su estado pendiente hasta consultar la lista actualizada. Si un cambio terminó pero falló esa consulta, la vista lo comunica y bloquea nuevas acciones hasta actualizar la lista. PATCH y DELETE siguen obteniendo el ETag fuerte actual para `If-Match`.
 
-La activación de entradas sigue deshabilitada mientras el servicio no verifique la oferta activa válida. La biblioteca de recetas se indica como pendiente; los formularios de ofertas pertenecen a V4. Esta tarea no implementa esas vistas.
+La tarjeta abre las ofertas al pulsar su superficie; solo presenta las acciones Editar y Eliminar. El estado administrativo se cambia desde el formulario de edición. Eliminar permanece deshabilitado hasta que la entrada esté archivada. La biblioteca de recetas se indica como pendiente; los formularios de ofertas pertenecen a V4. Esta tarea no implementa esas vistas.
 
 ## Verificación
 

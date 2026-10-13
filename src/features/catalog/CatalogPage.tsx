@@ -22,12 +22,6 @@ function validPage(result: Page<MenuEntry>, requested: number): number {
   return Math.min(requested, last);
 }
 
-function actionNotice(action: "change" | "delete", nextStatus?: EntryStatus) {
-  if (action === "delete") return "Entrada eliminada.";
-  if (nextStatus === "ARCHIVED") return "Entrada archivada.";
-  return "Estado administrativo actualizado.";
-}
-
 function queryFromUrl(searchParams: URLSearchParams): EntryQuery {
   const requestedPageSize = Number(searchParams.get("pageSize"));
   const query: EntryQuery = {
@@ -215,17 +209,16 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
     setCategoryRetry((current) => current + 1);
   }
 
-  async function runAction(entry: MenuEntry, action: "change" | "delete", nextStatus?: EntryStatus) {
+  async function deleteEntry(entry: MenuEntry) {
     if (actionInProgress.current || needsReconcile) return;
     actionInProgress.current = true;
     setBusyId(entry.id);
     setActionError(null);
     setNotice("");
     try {
-      if (action === "delete") await repository.deleteArchivedEntry(entry.id);
-      else if (nextStatus) await repository.setEntryStatus(entry.id, nextStatus);
+      await repository.deleteArchivedEntry(entry.id);
       invalidateCatalogEntries(repository);
-      if (action === "delete") invalidateCatalogCategories(repository);
+      invalidateCatalogCategories(repository);
       const { key: latestKey, query: latestQuery } = currentQuery.current;
       try {
         const updated = await repository.listEntries(latestQuery);
@@ -244,9 +237,9 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
         }
         setNeedsReconcile(false);
         if (latestKey === currentQuery.current.key) {
-          setNotice(actionNotice(action, nextStatus));
+          setNotice("Entrada eliminada.");
         }
-        if (action === "delete") setEntryToDelete(null);
+        setEntryToDelete(null);
       } catch {
         setNeedsReconcile(true);
         setActionError({ kind: "temporary", message: "El cambio se aplicó, pero no se pudo actualizar la lista. Actualízala antes de continuar." });
@@ -254,7 +247,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
     } catch (error) {
       const kind = catalogErrorKind(error);
       setNeedsReconcile(kind === "network" || kind === "conflict");
-      setActionError({ kind, message: catalogErrorMessage(kind, action) });
+      setActionError({ kind, message: catalogErrorMessage(kind, "delete") });
     } finally {
       actionInProgress.current = false;
       setBusyId(null);
@@ -288,8 +281,8 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedOpen={advancedOpen} onToggleAdvanced={() => setAdvancedOpen((value) => !value)} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={() => setSearchParams(new URLSearchParams())} />
         <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} notice={notice} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
-        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={() => setSearchParams(new URLSearchParams())} onStatusChange={(item, status) => { void runAction(item, "change", status); }} onDelete={setEntryToDelete} />
-        {entryToDelete && <div className="dialog-backdrop"><dialog ref={deleteDialogRef} className="confirm-dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={(event) => { event.preventDefault(); if (!actionInProgress.current) setEntryToDelete(null); }}><h2 id="delete-title">Eliminar entrada archivada</h2><p id="delete-description">Se eliminará definitivamente “{entryToDelete.brandName}”. Confirma solo si deseas retirar esta entrada.</p><div className="confirm-dialog__actions"><button ref={cancelDeleteRef} className="button button--secondary" type="button" disabled={Boolean(busyId)} onClick={() => setEntryToDelete(null)} aria-label="Cancelar eliminación">Cancelar</button><button className="button button--danger" type="button" disabled={Boolean(busyId)} onClick={() => { void runAction(entryToDelete, "delete"); }} aria-label="Confirmar eliminación">Eliminar entrada</button></div></dialog></div>}
+        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={() => setSearchParams(new URLSearchParams())} onDelete={setEntryToDelete} />
+        {entryToDelete && <div className="dialog-backdrop"><dialog ref={deleteDialogRef} className="confirm-dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={(event) => { event.preventDefault(); if (!actionInProgress.current) setEntryToDelete(null); }}><h2 id="delete-title">Eliminar entrada archivada</h2><p id="delete-description">Se eliminará definitivamente “{entryToDelete.brandName}”. Confirma solo si deseas retirar esta entrada.</p><div className="confirm-dialog__actions"><button ref={cancelDeleteRef} className="button button--secondary" type="button" disabled={Boolean(busyId)} onClick={() => setEntryToDelete(null)} aria-label="Cancelar eliminación">Cancelar</button><button className="button button--danger" type="button" disabled={Boolean(busyId)} onClick={() => { void deleteEntry(entryToDelete); }} aria-label="Confirmar eliminación">Eliminar entrada</button></div></dialog></div>}
       </main>
     </div>
   );

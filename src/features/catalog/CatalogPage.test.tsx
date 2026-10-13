@@ -52,6 +52,9 @@ test("shows administrative identity, classification and navigation without claim
   expect(screen.queryByText(/publicada/i)).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
   expect(screen.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/offers");
+  expect(card.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
+  expect(card.getAllByRole("button")).toHaveLength(1);
+  expect(card.queryByText("Ver ofertas")).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Nueva entrada" })).toHaveAttribute("href", "/entries/new");
   expect(screen.getByRole("link", { name: "Categorías" })).toHaveAttribute("href", "/categories");
   expect(screen.getByRole("link", { name: /Biblioteca de recetas/ })).toHaveAttribute("href", "/recipes");
@@ -96,20 +99,19 @@ test("uses the page metadata returned by the server for pagination", async () =>
   await waitFor(() => expect(api.listEntries).toHaveBeenLastCalledWith({ page: 2, pageSize: 6 }, expect.any(AbortSignal)));
 });
 
-test("archives an active entry and asks the server to refresh the administrative list", async () => {
+test("shows only edit and delete actions without changing status from the catalog", async () => {
   const api = repository();
   renderPage(api);
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
-  fireEvent.click(screen.getByRole("button", { name: "Archivar Hamburguesa Hawaiana" }));
-
-  await waitFor(() => expect(api.setEntryStatus).toHaveBeenCalledWith("entry-1", "ARCHIVED"));
-  await waitFor(() => expect(api.listEntries).toHaveBeenCalledTimes(2));
+  expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
+  expect(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: /Archivar|Inactivar|Desarchivar|Activar/ })).not.toBeInTheDocument();
+  expect(api.setEntryStatus).not.toHaveBeenCalled();
   expect(api.deleteArchivedEntry).not.toHaveBeenCalled();
-  expect(screen.queryByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).not.toBeInTheDocument();
 });
 
-test("offers explicit unarchive to INACTIVE and deletion only for archived entries", async () => {
+test("confirms deletion only for archived entries", async () => {
   const api = repository();
   api.listEntries.mockResolvedValue({
     data: [{ ...entries[0], status: "ARCHIVED" }],
@@ -117,9 +119,6 @@ test("offers explicit unarchive to INACTIVE and deletion only for archived entri
   });
   renderPage(api, "/?status=ARCHIVED");
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
-
-  fireEvent.click(screen.getByRole("button", { name: "Desarchivar Hamburguesa Hawaiana" }));
-  await waitFor(() => expect(api.setEntryStatus).toHaveBeenCalledWith("entry-1", "INACTIVE"));
 
   fireEvent.click(await screen.findByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" }));
   expect(screen.getByRole("dialog", { name: "Eliminar entrada archivada" })).toBeVisible();
@@ -134,7 +133,7 @@ test("offers explicit unarchive to INACTIVE and deletion only for archived entri
   await waitFor(() => expect(api.deleteArchivedEntry).toHaveBeenCalledWith("entry-1"));
 });
 
-test("keeps activation unavailable until active offers can be verified", async () => {
+test("directs status changes to the edit form for inactive entries", async () => {
   const api = repository();
   api.listEntries.mockResolvedValue({
     data: [{ ...entries[0], status: "INACTIVE" }],
@@ -143,18 +142,21 @@ test("keeps activation unavailable until active offers can be verified", async (
   renderPage(api);
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
-  expect(screen.getByRole("button", { name: "Activar Hamburguesa Hawaiana" })).toBeDisabled();
-  expect(screen.getByText(/La activación estará disponible/)).toBeVisible();
+  expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
+  expect(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Activar Hamburguesa Hawaiana" })).not.toBeInTheDocument();
   expect(api.setEntryStatus).not.toHaveBeenCalled();
 });
 
-test("keeps the entries visible when a status update fails", async () => {
+test("keeps the entries visible when deletion fails", async () => {
   const api = repository();
-  api.setEntryStatus.mockRejectedValue({ response: { status: 412 } });
+  api.listEntries.mockResolvedValue({ data: [{ ...entries[0], status: "ARCHIVED" }], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } });
+  api.deleteArchivedEntry.mockRejectedValue({ response: { status: 412 } });
   renderPage(api);
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
-  fireEvent.click(screen.getByRole("button", { name: "Inactivar Hamburguesa Hawaiana" }));
+  fireEvent.click(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar eliminación" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("La entrada cambió desde que la abriste");
   expect(screen.getByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { EntryQuery, EntryStatus, MenuEntry, Page } from "../../application/catalog";
+import type { EntryQuery, MenuEntry, Page } from "../../application/catalog";
 import { EntryCard } from "./EntryCard";
 
 export interface DisplayedPage { key: string; query: EntryQuery; result: Page<MenuEntry> }
@@ -15,7 +15,6 @@ interface ResultsProps {
   onPageSize(size: string): void;
   onPage(page: number): void;
   onClear(): void;
-  onStatusChange(entry: MenuEntry, status: EntryStatus): void;
   onDelete(entry: MenuEntry): void;
 }
 
@@ -42,8 +41,8 @@ function EntryPagination({ page, totalPages, disabled, onPage }: Readonly<{ page
   </nav>;
 }
 
-function EntryGrid(props: Readonly<Pick<ResultsProps, "displayed" | "busy" | "returnTo" | "onStatusChange" | "onDelete">>) {
-  return <div className="entry-grid" aria-label="Entradas administrativas">{props.displayed?.result.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={props.busy} returnTo={props.returnTo} onStatusChange={props.onStatusChange} onDelete={props.onDelete} />)}</div>;
+function EntryGrid(props: Readonly<Pick<ResultsProps, "displayed" | "busy" | "returnTo" | "onDelete">>) {
+  return <div className="entry-grid" aria-label="Entradas administrativas">{props.displayed?.result.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={props.busy} returnTo={props.returnTo} onDelete={props.onDelete} />)}</div>;
 }
 
 function showEmpty(props: Pick<ResultsProps, "displayed" | "olderResults" | "fetching">, count: number) {

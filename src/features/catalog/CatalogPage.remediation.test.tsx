@@ -70,7 +70,7 @@ test("keeps cards and their summary visible while a new query loads, then handle
   fireEvent.change(screen.getByRole("combobox", { name: "Estado administrativo" }), { target: { value: "ACTIVE" } });
   expect(screen.getByRole("heading", { name: "Bowl de pollo" })).toBeVisible();
   expect(screen.getByText(/Mostrando resultados anteriores/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Archivar Bowl de pollo" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Eliminar definitivamente Bowl de pollo" })).toBeDisabled();
   const edit = screen.getByRole("link", { name: "Editar Bowl de pollo" });
   expect(edit).toHaveAttribute("aria-disabled", "true");
   fireEvent.click(edit);
@@ -110,24 +110,27 @@ test("caches the same query on return and invalidates only affected resources", 
   expect(repository.listCategories).toHaveBeenCalledTimes(1);
 });
 
-test("serializes actions and keeps controls pending until the list is reconciled", async () => {
+test("keeps deletion pending until the list is reconciled", async () => {
   const repository = api();
   const mutation = deferred<void>();
   const refreshed = deferred<Page<MenuEntry>>();
-  repository.listEntries.mockResolvedValueOnce(listed()).mockImplementationOnce(() => refreshed.promise);
-  repository.setEntryStatus.mockReturnValueOnce(mutation.promise);
+  const archived = { ...entry, status: "ARCHIVED" as const };
+  repository.listEntries.mockResolvedValueOnce(listed([archived])).mockImplementationOnce(() => refreshed.promise);
+  repository.deleteArchivedEntry.mockReturnValueOnce(mutation.promise);
   page(repository);
   await screen.findByRole("heading", { name: "Bowl de pollo" });
-  const archive = screen.getByRole("button", { name: "Archivar Bowl de pollo" });
-  fireEvent.click(archive);
-  expect(archive).toBeDisabled();
-  fireEvent.click(archive);
-  expect(repository.setEntryStatus).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "Eliminar definitivamente Bowl de pollo" }));
+  const confirm = screen.getByRole("button", { name: "Confirmar eliminación" });
+  fireEvent.click(confirm);
+  expect(confirm).toBeDisabled();
+  fireEvent.click(confirm);
+  expect(repository.deleteArchivedEntry).toHaveBeenCalledTimes(1);
   mutation.resolve();
   await waitFor(() => expect(repository.listEntries).toHaveBeenCalledTimes(2));
-  expect(archive).toBeDisabled();
-  refreshed.resolve(listed([{ ...entry, status: "ARCHIVED" }]));
-  expect(await screen.findByRole("button", { name: "Desarchivar Bowl de pollo" })).toBeEnabled();
+  expect(confirm).toBeDisabled();
+  refreshed.resolve(listed([]));
+  expect(await screen.findByText("Aún no hay entradas.")).toBeVisible();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(repository.listCategories).toHaveBeenCalledTimes(1);
 });
 
@@ -162,16 +165,18 @@ test("recovers a direct URL whose page exceeds the server's total", async () => 
 
 test("distinguishes a completed mutation from a failed list refresh", async () => {
   const repository = api();
-  repository.listEntries.mockResolvedValueOnce(listed()).mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(listed([{ ...entry, status: "ARCHIVED" }]));
+  const archived = { ...entry, status: "ARCHIVED" as const };
+  repository.listEntries.mockResolvedValueOnce(listed([archived])).mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(listed([]));
   page(repository);
   await screen.findByRole("heading", { name: "Bowl de pollo" });
-  fireEvent.click(screen.getByRole("button", { name: "Archivar Bowl de pollo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Eliminar definitivamente Bowl de pollo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar eliminación" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("El cambio se aplicó, pero no se pudo actualizar");
-  expect(screen.getByRole("button", { name: "Archivar Bowl de pollo" })).toBeDisabled();
-  expect(screen.queryByText("Entrada archivada.")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Eliminar definitivamente Bowl de pollo" })).toBeDisabled();
+  expect(screen.queryByText("Entrada eliminada.")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Actualizar lista" }));
-  expect(await screen.findByRole("button", { name: "Desarchivar Bowl de pollo" })).toBeEnabled();
-  expect(repository.setEntryStatus).toHaveBeenCalledTimes(1);
+  expect(await screen.findByText("Aún no hay entradas.")).toBeVisible();
+  expect(repository.deleteArchivedEntry).toHaveBeenCalledTimes(1);
 });
 
 test("replaces a broken image without changing the card dimensions or controls", async () => {
