@@ -14,4 +14,13 @@ module.exports = {
     "!src/**/*.d.ts",
     "!src/test-setup.ts",
   ],
+  coverageThreshold: {
+    "./src/features/catalog/CatalogFilters.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/catalog/CatalogResults.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/catalog/CatalogPage.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/catalog/EntryCard.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/features/catalog/catalogError.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/api/catalogResponse.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/application/catalogCache.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
+  },
 };

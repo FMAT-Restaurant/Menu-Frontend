@@ -1,5 +1,37 @@
 import type { AxiosInstance } from "axios";
-import type { CategoryDraft, EntryCreateDraft, EntryQuery, EntryStatus, EntryUpdateDraft, MenuCategory, MenuEntry, MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, Page } from "../application/catalog";
+import type {
+  CategoryDraft,
+  EntryCreateDraft,
+  EntryQuery,
+  EntryStatus,
+  EntryUpdateDraft,
+  InventoryItem,
+  InventoryQuery,
+  MenuCategory,
+  MenuEntry,
+  MenuEntryDetail,
+  MenuOffer,
+  MenuRepository,
+  OfferStatus,
+  Page,
+  RecipeDetail,
+  RecipeDraft,
+  RecipeQuery,
+  RecipeSummary,
+} from "../application/catalog";
+import { entryPage, categoryPage } from "./catalogResponse";
+
+function sanitizeIdentifier(id: string): string {
+  const cleanId = id.trim();
+  if (!/^[a-zA-Z0-9_-]+$/.test(cleanId)) {
+    throw new Error("Identificador inválido.");
+  }
+  return encodeURIComponent(cleanId);
+}
+
+function recipePath(recipeId: string) {
+  return `/menu/recipes/${sanitizeIdentifier(recipeId)}`;
+}
 
 const offersRequestTimeoutMs = 12000;
 
@@ -14,6 +46,13 @@ function imageMultipart(image: File) {
   return form;
 }
 
+async function categoryPages(getPage: (page: number) => Promise<Page<MenuCategory>>, from: number, to: number): Promise<MenuCategory[]> {
+  if (from > to) return [];
+  const batch = await Promise.all(Array.from({ length: Math.min(4, to - from + 1) }, (_, index) => getPage(from + index)));
+  const rest = await categoryPages(getPage, from + batch.length, to);
+  return [...batch.flatMap((result) => result.data), ...rest];
+}
+
 export function createMenuApi(client: AxiosInstance): MenuRepository {
   async function uploadImage(image: File): Promise<string> {
     const response = await client.post<{ data: { id: string } }>("/media/images", imageMultipart(image));
@@ -26,8 +65,10 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     const path = entryPath(id);
     const response = await client.get<{ data: { status: EntryStatus } }>(path);
     const etag = response.headers.etag as string | undefined;
-    if (!etag) throw new Error("No se recibió la versión de la entrada. Recarga e inténtalo de nuevo.");
-    return { path, status: response.data.data.status, etag };
+    if (!etag || etag.startsWith("W/")) throw new Error("No se recibió una versión fuerte de la entrada. Recarga e inténtalo de nuevo.");
+    const status = response.data?.data?.status;
+    if (status !== "ACTIVE" && status !== "INACTIVE" && status !== "ARCHIVED") throw new Error("Respuesta de entrada inválida.");
+    return { path, status, etag };
   }
 
   async function currentOffer(id: string) {
@@ -35,7 +76,17 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     const response = await client.get<{ data: { status: OfferStatus } }>(path, { timeout: offersRequestTimeoutMs });
     const etag = response.headers.etag as string | undefined;
     if (!etag || etag.startsWith("W/")) throw new Error("No se recibió una versión fuerte de la oferta. Recarga e inténtalo de nuevo.");
-    return { path, status: response.data.data.status, etag };
+    const status = response.data?.data?.status;
+    if (status !== "ACTIVE" && status !== "INACTIVE" && status !== "ARCHIVED") throw new Error("Respuesta de oferta inválida.");
+    return { path, status, etag };
+  }
+
+  async function currentRecipe(id: string) {
+    const path = recipePath(id);
+    const response = await client.get<{ data: RecipeDetail }>(path);
+    const etag = response.headers.etag as string | undefined;
+    if (!etag) throw new Error("No se recibió la versión de la receta. Recarga e inténtalo de nuevo.");
+    return { path, data: response.data.data, etag };
   }
 
   return {
@@ -50,19 +101,17 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
         },
         signal,
       });
-      return response.data;
+      return entryPage(response.data);
     },
 
     async listCategories(signal?: AbortSignal): Promise<MenuCategory[]> {
-      const getPage = (page: number) => client.get<Page<MenuCategory>>("/menu/categories", {
-        params: { page, pageSize: 100 },
-        signal,
-      });
+      const getPage = async (page: number) => {
+        const response = await client.get<unknown>("/menu/categories", { params: { page, pageSize: 100 }, signal });
+        return categoryPage(response.data);
+      };
       const firstPage = await getPage(1);
-      const remainingPages = await Promise.all(
-        Array.from({ length: Math.max(0, firstPage.data.meta.totalPages - 1) }, (_, index) => getPage(index + 2)),
-      );
-      return [firstPage, ...remainingPages].flatMap((response) => response.data.data);
+      const rest = await categoryPages(getPage, 2, firstPage.meta.totalPages);
+      return [...firstPage.data, ...rest];
     },
 
     async createCategory(draft: CategoryDraft): Promise<MenuCategory> {
@@ -131,6 +180,51 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       const current = await currentOffer(id);
       if (current.status !== "INACTIVE") throw new Error("Solo se puede eliminar una oferta inactiva.");
       await client.delete(current.path, { headers: { "If-Match": current.etag }, timeout: offersRequestTimeoutMs });
+    },
+
+    async listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>> {
+      const response = await client.get<Page<RecipeSummary>>("/menu/recipes", {
+        params: {
+          ...(query.q ? { q: query.q } : {}),
+          page: query.page,
+          pageSize: query.pageSize,
+        },
+        signal,
+      });
+      return response.data;
+    },
+
+    async getRecipe(id: string, signal?: AbortSignal): Promise<RecipeDetail> {
+      const response = await client.get<{ data: RecipeDetail }>(recipePath(id), { signal });
+      return response.data.data;
+    },
+
+    async createRecipe(draft: RecipeDraft): Promise<RecipeDetail> {
+      const response = await client.post<{ data: RecipeDetail }>("/menu/recipes", draft);
+      return response.data.data;
+    },
+
+    async updateRecipe(id: string, draft: RecipeDraft): Promise<RecipeDetail> {
+      const current = await currentRecipe(id);
+      const response = await client.patch<{ data: RecipeDetail }>(current.path, draft, { headers: { "If-Match": current.etag } });
+      return response.data.data;
+    },
+
+    async deleteRecipe(id: string): Promise<void> {
+      const current = await currentRecipe(id);
+      await client.delete(current.path, { headers: { "If-Match": current.etag } });
+    },
+
+    async listInventoryItems(query?: InventoryQuery, signal?: AbortSignal): Promise<Page<InventoryItem>> {
+      const response = await client.get<Page<InventoryItem>>("/inventory/items", {
+        params: {
+          ...(query?.q ? { q: query.q } : {}),
+          page: query?.page ?? 1,
+          pageSize: query?.pageSize ?? 50,
+        },
+        signal,
+      });
+      return response.data;
     },
   };
 }

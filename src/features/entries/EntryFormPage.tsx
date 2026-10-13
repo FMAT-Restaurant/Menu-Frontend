@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { EntryCreateDraft, EntryStatus, EntryUpdateDraft, MenuCategory, MenuEntryDetail, MenuRepository } from "../../application/catalog";
+import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { validateEntryImage } from "./entryImage";
 
 const statusLabels: Record<EntryStatus, string> = {
@@ -197,6 +198,7 @@ export function EntryFormPage({ repository }: Readonly<{ repository: MenuReposit
     };
     try {
       await persistEntry(repository, entryId, draft, status, selectedFile);
+      invalidateCatalogEntries(repository);
       await navigate(returnTo, { replace: true });
     } catch (saveError) {
       setFormError(errorMessage(saveError));

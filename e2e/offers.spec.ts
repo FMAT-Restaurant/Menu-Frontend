@@ -13,7 +13,8 @@ test("opens an entry's offers and returns to the catalog without losing the quer
   await page.route("**/api/v1/menu/offers?*", (route) => route.fulfill({ json: { data: [offer()], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } } }));
 
   await page.goto("/?q=hawai");
-  await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" }).click();
+  const card = await page.getByRole("article").boundingBox();
+  await page.mouse.click(card!.x + 24, card!.y + 24);
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Combo" })).toBeVisible();
   await expect(page.getByText(/solo se publica si la entrada está activa/)).toBeVisible();

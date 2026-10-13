@@ -5,6 +5,7 @@ import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CategoryPage } from "./features/categories/CategoryPage";
 import { EntryFormPage } from "./features/entries/EntryFormPage";
 import { OffersPage } from "./features/offers/OffersPage";
+import { RecipePage } from "./features/recipes/RecipePage";
 import type { MenuRepository } from "./application/catalog";
 
 declare global {
@@ -61,7 +62,7 @@ export function App({ repository = defaultRepository }: Readonly<{ repository?: 
         <Route path="/entries/:entryId/offers/new" element={<UpcomingOfferForm />} />
         <Route path="/entries/:entryId/offers/:offerId/edit" element={<UpcomingOfferForm />} />
         <Route path="/categories" element={<CategoryPage repository={repository} />} />
-        <Route path="/recipes" element={<UpcomingView title="Biblioteca de recetas" />} />
+        <Route path="/recipes" element={<RecipePage repository={repository} />} />
       </Routes>
     </BrowserRouter>
   );

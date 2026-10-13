@@ -1,6 +1,37 @@
 import axios, { type AxiosAdapter } from "axios";
 import { createMenuApi } from "./menuApi";
 
+test("rejects an incomplete entry list before the UI consumes it", async () => {
+  const adapter: AxiosAdapter = async (config) => ({
+    config, data: { data: [{ id: "entry-1", brandName: "Bowl" }], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } },
+    headers: {}, status: 200, statusText: "OK",
+  });
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.listEntries({ page: 1, pageSize: 12 })).rejects.toThrow("Respuesta de entradas inválida");
+});
+
+test("rejects an invalid entry status before a mutation", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(config.method ?? "");
+    return { config, data: { data: { status: "UNKNOWN" } }, headers: { etag: '"rev-2"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("Respuesta de entrada inválida");
+  expect(requests).toEqual(["get"]);
+});
+
+test("rejects a weak entry ETag before sending If-Match", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(config.method ?? "");
+    return { config, data: { data: { status: "INACTIVE" } }, headers: { etag: 'W/"rev-2"' }, status: 200, statusText: "OK" };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("versión fuerte");
+  expect(requests).toEqual(["get"]);
+});
+
 test("lists only offers of the selected entry with server pagination", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
@@ -342,7 +373,7 @@ test("rejects a mutation without the resource ETag required for If-Match", async
   });
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("No se recibió la versión de la entrada");
+  await expect(api.setEntryStatus("entry-1", "ARCHIVED")).rejects.toThrow("No se recibió una versión fuerte de la entrada");
 });
 
 test.each([401, 403])("propagates HTTP %i errors from the transport", async (status) => {
@@ -418,3 +449,153 @@ test("gets an entry from the administrative menu route and maps its details", as
   await expect(api.getEntry("entry /1")).resolves.toEqual(detail);
   expect(requests).toEqual([{ method: "get", url: "/menu/entries/entry%20%2F1" }]);
 });
+
+test("lists recipes with query parameters and server pagination", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(axios.getUri(config));
+    return {
+      config,
+      data: {
+        data: [{ id: "recipe-1", name: "Hamburguesa", description: "Clásica", supplies: [] }],
+        meta: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
+      },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const result = await api.listRecipes({ q: "Hamb", page: 1, pageSize: 20 });
+
+  expect(result.data).toHaveLength(1);
+  expect(result.data[0].name).toBe("Hamburguesa");
+  expect(requests).toEqual(["/api/v1/menu/recipes?q=Hamb&page=1&pageSize=20"]);
+});
+
+test("gets recipe details by id", async () => {
+  const recipeDetail = {
+    id: "recipe-1",
+    name: "Hamburguesa",
+    description: "Clásica",
+    instructions: "Cocinar carne",
+    supplies: [{ inventoryItemId: "item-1", quantity: 150, inventoryItem: { id: "item-1", name: "Carne", unit: "g" } }],
+  };
+  const adapter: AxiosAdapter = async (config) => ({
+    config,
+    data: { data: recipeDetail },
+    headers: { etag: '"rec-1"' },
+    status: 200,
+    statusText: "OK",
+  });
+  const api = createMenuApi(axios.create({ adapter }));
+  const result = await api.getRecipe("recipe-1");
+
+  expect(result).toEqual(recipeDetail);
+});
+
+test("creates a recipe with JSON body", async () => {
+  const requests: { method?: string; url?: string; data?: unknown }[] = [];
+  const draft = {
+    name: "Salsa especial",
+    description: "Casera",
+    instructions: "Mezclar todo",
+    supplies: [{ inventoryItemId: "item-2", quantity: 50 }],
+  };
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({ method: config.method, url: config.url, data: JSON.parse(config.data as string) });
+    return {
+      config,
+      data: { data: { id: "recipe-new", ...draft, supplies: [] } },
+      headers: { etag: '"rec-new"' },
+      status: 201,
+      statusText: "Created",
+    };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  const created = await api.createRecipe(draft);
+
+  expect(created.id).toBe("recipe-new");
+  expect(requests).toEqual([{ method: "post", url: "/menu/recipes", data: draft }]);
+});
+
+test("updates a recipe using If-Match from current recipe ETag", async () => {
+  const requests: { method?: string; url?: string; data?: unknown; ifMatch?: string }[] = [];
+  const draft = {
+    name: "Salsa actualizada",
+    description: "Casera v2",
+    instructions: "Mezclar bien",
+    supplies: [{ inventoryItemId: "item-2", quantity: 60 }],
+  };
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      data: config.data ? JSON.parse(config.data as string) : undefined,
+      ifMatch: config.headers?.get("If-Match") as string | undefined,
+    });
+    return {
+      config,
+      data: { data: { id: "recipe-1", ...draft, supplies: [] } },
+      headers: { etag: '"rec-etag-1"' },
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await api.updateRecipe("recipe-1", draft);
+
+  expect(requests).toEqual([
+    { method: "get", url: "/menu/recipes/recipe-1", data: undefined, ifMatch: undefined },
+    { method: "patch", url: "/menu/recipes/recipe-1", data: draft, ifMatch: '"rec-etag-1"' },
+  ]);
+});
+
+test("deletes a recipe using If-Match from current recipe ETag", async () => {
+  const requests: { method?: string; url?: string; ifMatch?: string }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      ifMatch: config.headers?.get("If-Match") as string | undefined,
+    });
+    return {
+      config,
+      data: { data: { id: "recipe-1" } },
+      headers: { etag: '"rec-etag-2"' },
+      status: config.method === "delete" ? 204 : 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await api.deleteRecipe("recipe-1");
+
+  expect(requests).toEqual([
+    { method: "get", url: "/menu/recipes/recipe-1", ifMatch: undefined },
+    { method: "delete", url: "/menu/recipes/recipe-1", ifMatch: '"rec-etag-2"' },
+  ]);
+});
+
+test("lists inventory items with search and pagination", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(axios.getUri(config));
+    return {
+      config,
+      data: {
+        data: [{ id: "item-1", name: "Carne Molida", unit: "g" }],
+        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+      },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const result = await api.listInventoryItems({ q: "carne", page: 1, pageSize: 50 });
+
+  expect(result.data).toHaveLength(1);
+  expect(result.data[0].unit).toBe("g");
+  expect(requests).toEqual(["/api/v1/inventory/items?q=carne&page=1&pageSize=50"]);
+});
+
