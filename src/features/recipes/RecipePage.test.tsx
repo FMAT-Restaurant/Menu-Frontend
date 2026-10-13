@@ -257,7 +257,7 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
     await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
     const searchbox = screen.getByRole("searchbox", { name: "Buscar recetas" });
     fireEvent.change(searchbox, { target: { value: "Pollo" } });
-    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
 
     await waitFor(() => {
       expect(repository.listRecipes).toHaveBeenCalledWith(
