@@ -20,6 +20,18 @@ import type {
   RecipeSummary,
 } from "../application/catalog";
 
+function sanitizeIdentifier(id: string): string {
+  const cleanId = id.trim();
+  if (!/^[a-zA-Z0-9_-]+$/.test(cleanId)) {
+    throw new Error("Identificador inválido.");
+  }
+  return encodeURIComponent(cleanId);
+}
+
+function recipePath(recipeId: string) {
+  return `/menu/recipes/${sanitizeIdentifier(recipeId)}`;
+}
+
 function entryPath(entryId?: string) {
   const base = "/menu/entries";
   return entryId ? `${base}/${encodeURIComponent(entryId)}` : base;
@@ -56,7 +68,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
   }
 
   async function currentRecipe(id: string) {
-    const path = `/menu/recipes/${encodeURIComponent(id)}`;
+    const path = recipePath(id);
     const response = await client.get<{ data: RecipeDetail }>(path);
     const etag = response.headers.etag as string | undefined;
     if (!etag) throw new Error("No se recibió la versión de la receta. Recarga e inténtalo de nuevo.");
@@ -170,7 +182,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     },
 
     async getRecipe(id: string, signal?: AbortSignal): Promise<RecipeDetail> {
-      const response = await client.get<{ data: RecipeDetail }>(`/menu/recipes/${encodeURIComponent(id)}`, { signal });
+      const response = await client.get<{ data: RecipeDetail }>(recipePath(id), { signal });
       return response.data.data;
     },
 

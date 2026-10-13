@@ -8,7 +8,14 @@ interface RecipeFormDialogProps {
   onSubmit(draft: RecipeDraft): Promise<void>;
 }
 
+let rowSeed = 0;
+function nextRowKey(): string {
+  rowSeed += 1;
+  return `supply-row-${rowSeed}`;
+}
+
 interface SupplyRow {
+  key: string;
   inventoryItemId: string;
   quantity: string | number;
 }
@@ -27,11 +34,12 @@ export function RecipeFormDialog({
   const [supplies, setSupplies] = useState<SupplyRow[]>(() => {
     if (recipe?.supplies && recipe.supplies.length > 0) {
       return recipe.supplies.map((s) => ({
+        key: nextRowKey(),
         inventoryItemId: s.inventoryItemId,
         quantity: s.quantity,
       }));
     }
-    return [{ inventoryItemId: "", quantity: 1 }];
+    return [{ key: nextRowKey(), inventoryItemId: "", quantity: 1 }];
   });
 
   const [busy, setBusy] = useState(false);
@@ -50,7 +58,7 @@ export function RecipeFormDialog({
   }, []);
 
   function handleAddSupply() {
-    setSupplies((current) => [...current, { inventoryItemId: "", quantity: 1 }]);
+    setSupplies((current) => [...current, { key: nextRowKey(), inventoryItemId: "", quantity: 1 }]);
   }
 
   function handleRemoveSupply(index: number) {
@@ -224,7 +232,7 @@ export function RecipeFormDialog({
                 {supplies.map((supply, index) => {
                   const unit = getUnitForItem(supply.inventoryItemId);
                   return (
-                    <tr key={index}>
+                    <tr key={supply.key}>
                       <td>
                         <select
                           aria-label={`Insumo ${index + 1}`}

@@ -153,7 +153,7 @@ export function RecipePage({
         if (onSelectRecipe) {
           onSelectRecipe(created);
         } else {
-          navigate(returnTo, { state: { selectedRecipe: created } });
+          await navigate(returnTo, { state: { selectedRecipe: created } });
         }
       }
     } else {
@@ -185,7 +185,7 @@ export function RecipePage({
     if (onSelectRecipe) {
       onSelectRecipe(recipe);
     } else {
-      navigate(returnTo, { state: { selectedRecipe: recipe } });
+      void navigate(returnTo, { state: { selectedRecipe: recipe } });
     }
   }
 
@@ -278,21 +278,22 @@ export function RecipePage({
           )}
 
           {!loading && !error && recipes.length > 0 && (
-            <div className="recipe-list" role="list">
+            <ul className="recipe-list">
               {recipes.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  mode={mode}
-                  onEdit={handleOpenEdit}
-                  onDelete={(rec) => {
-                    setActionError("");
-                    setRecipeToDelete(rec);
-                  }}
-                  onSelect={handleSelect}
-                />
+                <li key={recipe.id} className="recipe-list__item">
+                  <RecipeCard
+                    recipe={recipe}
+                    mode={mode}
+                    onEdit={(rec) => { void handleOpenEdit(rec); }}
+                    onDelete={(rec) => {
+                      setActionError("");
+                      setRecipeToDelete(rec);
+                    }}
+                    onSelect={handleSelect}
+                  />
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
       </main>
