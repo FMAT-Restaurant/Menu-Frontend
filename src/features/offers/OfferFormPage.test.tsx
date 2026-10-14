@@ -576,4 +576,190 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cerrar modal de opción" }));
     expect(screen.queryByRole("heading", { name: "Agregar opción · Plato principal" })).not.toBeInTheDocument();
   });
+
+  test("handles safeReturnPath and catalogReturnTo from navigation state", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new", {
+      returnTo: "/custom/return",
+      catalogReturnTo: "/?q=custom",
+    });
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+    const backLink = screen.getByRole("link", { name: /Volver a ofertas/i });
+    expect(backLink).toHaveAttribute("href", "/custom/return");
+
+    const cancelLink = screen.getByRole("link", { name: "Cancelar" });
+    expect(cancelLink).toHaveAttribute("href", "/custom/return");
+  });
+
+  test("rejects unsafe returnTo and catalogReturnTo paths", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new", {
+      returnTo: "//malicious.com",
+      catalogReturnTo: "http://malicious.com",
+    });
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+    const backLink = screen.getByRole("link", { name: /Volver a ofertas/i });
+    expect(backLink).toHaveAttribute("href", "/entries/entry-1/offers");
+
+    const cancelLink = screen.getByRole("link", { name: "Cancelar" });
+    expect(cancelLink).toHaveAttribute("href", "/entries/entry-1/offers");
+  });
+
+  test("loads and updates an offer with an INVENTORY_ITEM option", async () => {
+    const inventoryOffer: MenuOfferDetail = {
+      ...mockOffer,
+      composition: {
+        slots: [
+          {
+            slotId: "slot-inv",
+            name: "Bebida",
+            quantity: 1,
+            course: null,
+            options: [
+              {
+                optionId: "opt-inv",
+                displayName: "Refresco 500ml",
+                status: "ACTIVE",
+                sourceType: "INVENTORY_ITEM",
+                inventoryItemId: "item-refresco",
+                quantity: 1,
+                unit: "botella",
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const repository = createMockRepository();
+    repository.getOffer.mockResolvedValueOnce(inventoryOffer);
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    expect(screen.getByText("Refresco 500ml")).toBeVisible();
+
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    });
+
+    expect(repository.updateOffer).toHaveBeenCalledWith(
+      "offer-1",
+      expect.objectContaining({
+        composition: {
+          slots: [
+            expect.objectContaining({
+              options: [
+                expect.objectContaining({
+                  sourceType: "INVENTORY_ITEM",
+                  inventoryItemId: "item-refresco",
+                  displayName: "Refresco 500ml",
+                }),
+              ],
+            }),
+          ],
+        },
+      }),
+      undefined
+    );
+  });
+
+  test("validates when a slot has no options", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Fill valid base price
+    fireEvent.change(screen.getByLabelText(/Precio base/), {
+      target: { value: "150" },
+    });
+
+    // Upload valid image
+    const validImage = new File(["dummy"], "offer.png", { type: "image/png" });
+    const fileInput = document.getElementById("offer-image-input") as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [validImage] } });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Validando imagen…")).not.toBeInTheDocument();
+    });
+
+    // Add a slot without adding any options
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    const slotInput = await screen.findByLabelText("Nombre del grupo");
+    fireEvent.change(slotInput, { target: { value: "Grupo Vacío" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+
+    // Now submit
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    expect(
+      await screen.findByText('El grupo "Grupo Vacío" debe incluir al menos una opción.')
+    ).toBeVisible();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+  });
+
+  test("validates when image has an error before saving", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Fill valid base price
+    fireEvent.change(screen.getByLabelText(/Precio base/), {
+      target: { value: "150" },
+    });
+
+    // Upload an invalid image to cause an image error
+    const invalidImage = new File(["dummy"], "bad.pdf", { type: "application/pdf" });
+    const fileInput = document.getElementById("offer-image-input") as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [invalidImage] } });
+
+    expect(await screen.findByText("Selecciona una imagen JPEG, PNG o WebP.")).toBeVisible();
+
+    // Now submit
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    expect(
+      await screen.findByText("Corrige el error de la imagen antes de guardar.")
+    ).toBeVisible();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+  });
+
+  test("handles non-Error objects gracefully when save fails", async () => {
+    const repository = createMockRepository();
+    repository.updateOffer.mockRejectedValueOnce("Error de servidor en texto plano");
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    fireEvent.click(saveButton);
+
+    expect(
+      await screen.findByText("Ocurrió un error al guardar la oferta.")
+    ).toBeVisible();
+  });
+
+  test("handles dialog cancel event on recipe picker modal", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Open option modal
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
+    // Open recipe picker
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    const dialog = screen.getByRole("dialog", { name: "Biblioteca de recetas" });
+    expect(dialog).toBeInTheDocument();
+
+    // Fire native cancel event
+    fireEvent(dialog, new Event("cancel"));
+
+    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+  });
 });

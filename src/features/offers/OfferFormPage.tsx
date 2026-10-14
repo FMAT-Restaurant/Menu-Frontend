@@ -27,6 +27,15 @@ function safeReturnPath(state: unknown, fallback: string): string {
   return fallback;
 }
 
+function resolveCatalogReturnPath(state: unknown): string {
+  if (!state || typeof state !== "object") return "/";
+  if ("catalogReturnTo" in state && typeof state.catalogReturnTo === "string") {
+    const path = state.catalogReturnTo;
+    if (path.startsWith("/") && !path.startsWith("//")) return path;
+  }
+  return "/";
+}
+
 function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
   if (!offer.composition?.slots) return [];
   return offer.composition.slots.map((s) => ({
@@ -60,11 +69,11 @@ function validateOfferForm(
   if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
     return "El precio base debe ser un número positivo.";
   }
-  if (!isEditing && !selectedFile) {
-    return "La imagen de la oferta es obligatoria al crear.";
-  }
   if (imageError) {
     return "Corrige el error de la imagen antes de guardar.";
+  }
+  if (!isEditing && !selectedFile) {
+    return "La imagen de la oferta es obligatoria al crear.";
   }
   if (slots.length === 0) {
     return "La composición debe incluir al menos un grupo (slot).";
@@ -179,6 +188,7 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
 
   const defaultReturnTo = `/entries/${encodeURIComponent(entryId)}/offers`;
   const returnTo = safeReturnPath(location.state, defaultReturnTo);
+  const catalogReturnTo = resolveCatalogReturnPath(location.state);
 
   const [entry, setEntry] = useState<MenuEntryDetail | null>(null);
 
@@ -457,7 +467,7 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
         await repository.updateOffer(offerId!, updateDraft, selectedFile || undefined);
       }
 
-      await navigate(returnTo, { replace: true });
+      await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
     } catch (err) {
       setFormError(extractErrorMessage(err));
     } finally {
@@ -480,7 +490,7 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
   return (
     <div className="app-shell offer-form-view">
       <nav className="global-nav" aria-label="Navegación principal">
-        <Link className="brand" to={returnTo}>
+        <Link className="brand" to={returnTo} state={{ returnTo: catalogReturnTo }}>
           <span className="brand__mark" aria-hidden="true">F</span>
           <span>FMAT <strong>Restaurant</strong></span>
         </Link>
@@ -489,7 +499,7 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
 
       <main className="offer-form-page">
         <header className="offer-form-page__heading">
-          <Link to={returnTo} className="back-link">
+          <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
             ← Volver a ofertas
           </Link>
           <p className="eyebrow">Administración / Menú / Ofertas</p>
@@ -553,7 +563,7 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
             />
 
             <div className="offer-form__actions">
-              <Link to={returnTo} className="button button--secondary">
+              <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="button button--secondary">
                 Cancelar
               </Link>
               <button
