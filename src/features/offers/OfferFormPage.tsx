@@ -209,8 +209,26 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
   const [currentOptionDraft, setCurrentOptionDraft] = useState<OptionDraft | null>(null);
 
   const [recipePickerOpen, setRecipePickerOpen] = useState(false);
+  const recipeDialogRef = useRef<HTMLDialogElement>(null);
 
   const imageValidationId = useRef(0);
+
+  useEffect(() => {
+    if (!recipePickerOpen) return;
+    const dialog = recipeDialogRef.current;
+    if (typeof dialog?.showModal === "function") {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      dialog?.setAttribute("open", "");
+    }
+    return () => {
+      if (dialog?.open && typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog?.removeAttribute("open");
+      }
+    };
+  }, [recipePickerOpen]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -412,11 +430,10 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
     slot.options.some((opt) => opt.status === "ACTIVE")
   );
 
-  const effectiveStatus: OfferStatus = isEditing
-    ? desiredStatus === "ACTIVE" && hasActiveSlot
-      ? "ACTIVE"
-      : "INACTIVE"
-    : "INACTIVE";
+  let effectiveStatus: OfferStatus = "INACTIVE";
+  if (isEditing && desiredStatus === "ACTIVE" && hasActiveSlot) {
+    effectiveStatus = "ACTIVE";
+  }
 
   async function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -567,14 +584,22 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
         />
 
         {recipePickerOpen && (
-          <div className="recipe-picker-modal" role="dialog" aria-modal="true">
+          <dialog
+            ref={recipeDialogRef}
+            className="recipe-picker-modal"
+            aria-label="Biblioteca de recetas"
+            onCancel={(event) => {
+              event.preventDefault();
+              setRecipePickerOpen(false);
+            }}
+          >
             <RecipePage
               repository={repository}
               mode="selection"
               onSelectRecipe={handleSelectRecipe}
               onClose={() => setRecipePickerOpen(false)}
             />
-          </div>
+          </dialog>
         )}
       </main>
     </div>

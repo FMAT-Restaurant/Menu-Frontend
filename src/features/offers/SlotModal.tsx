@@ -143,7 +143,7 @@ export function SlotModal({
                 min="1"
                 step="1"
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value, 10) || 1))}
+                onChange={(e) => setQuantity(Number.parseInt(e.target.value, 10) || 0)}
                 required
               />
             </div>

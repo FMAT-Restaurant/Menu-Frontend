@@ -438,4 +438,142 @@ describe("OfferFormPage (V4)", () => {
     expect(await screen.findByText("Error al consultar la entrada")).toBeVisible();
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeVisible();
   });
+
+  test("retries loading entry and offer when Reintentar button is clicked", async () => {
+    const repository = createMockRepository();
+    repository.getEntry.mockRejectedValueOnce(new Error("Error al consultar la entrada"));
+
+    renderComponent(repository);
+    expect(await screen.findByText("Error al consultar la entrada")).toBeVisible();
+
+    const retryBtn = screen.getByRole("button", { name: "Reintentar" });
+    fireEvent.click(retryBtn);
+
+    expect(await screen.findByRole("heading", { name: "Nueva oferta" })).toBeVisible();
+  });
+
+  test("allows editing and deleting an existing slot in the offer", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Edit slot
+    fireEvent.click(screen.getByRole("button", { name: "Editar grupo Plato principal" }));
+    const slotInput = screen.getByLabelText("Nombre del grupo");
+    fireEvent.change(slotInput, { target: { value: "Plato Fuerte Modificado" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+    expect(screen.getByText("Plato Fuerte Modificado")).toBeVisible();
+
+    // Delete slot
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar grupo Plato Fuerte Modificado" }));
+    expect(screen.queryByText("Plato Fuerte Modificado")).not.toBeInTheDocument();
+  });
+
+  test("allows editing, deleting, and toggling options in the offer", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Toggle option status to inactive
+    const toggleBtn = screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Doble" });
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn).toHaveTextContent("Inactiva");
+
+    // Edit option
+    fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
+    const nameInput = screen.getByLabelText(/Nombre mostrado/);
+    fireEvent.change(nameInput, { target: { value: "Hamburguesa Triple" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    expect(screen.getByText("Hamburguesa Triple")).toBeVisible();
+
+    // Delete option
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar opción Hamburguesa Triple" }));
+    expect(screen.queryByText("Hamburguesa Triple")).not.toBeInTheDocument();
+  });
+
+  test("opens recipe picker modal and closes it on cancel", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Open option modal
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
+    // Open recipe picker
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    expect(await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).toBeVisible();
+
+    // Close recipe picker
+    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    expect(screen.queryByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).not.toBeInTheDocument();
+  });
+
+  test("handles image drop with format validation", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    const dropzone = screen.getByRole("button", {
+      name: "Seleccionar o arrastrar imagen de la oferta",
+    });
+
+    // Drop valid image
+    const validFile = new File(["valid"], "offer.jpg", { type: "image/jpeg" });
+    fireEvent.drop(dropzone, {
+      dataTransfer: { files: [validFile] },
+    });
+
+    // Drop invalid format (text/plain)
+    const invalidFile = new File(["not image"], "notes.txt", { type: "text/plain" });
+    fireEvent.drop(dropzone, {
+      dataTransfer: { files: [invalidFile] },
+    });
+
+    expect(await screen.findByText("Selecciona una imagen JPEG, PNG o WebP.")).toBeVisible();
+  });
+
+  test("saves update offer as INACTIVE when all options are inactive", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    // Toggle option to inactive
+    fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Doble" }));
+    // Submit
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    });
+
+    expect(repository.updateOffer).toHaveBeenCalledWith(
+      "offer-1",
+      expect.objectContaining({
+        status: "INACTIVE",
+      }),
+      undefined
+    );
+  });
+
+  test("closes slot modal and option modal when clicking cancel", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Open SlotModal and cancel
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    expect(screen.getByRole("heading", { name: "Definir nuevo grupo" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar modal de grupo" }));
+    expect(screen.queryByRole("heading", { name: "Definir nuevo grupo" })).not.toBeInTheDocument();
+
+    // Open OptionModal and cancel
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
+    expect(screen.getByRole("heading", { name: "Agregar opción · Plato principal" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar modal de opción" }));
+    expect(screen.queryByRole("heading", { name: "Agregar opción · Plato principal" })).not.toBeInTheDocument();
+  });
 });
