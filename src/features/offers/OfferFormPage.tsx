@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type {
   MenuEntryDetail,
@@ -48,6 +48,122 @@ function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
       unit: o.unit,
     })),
   }));
+}
+function validateOfferForm(
+  basePrice: string,
+  isEditing: boolean,
+  selectedFile: File | null,
+  imageError: string,
+  slots: SlotDraft[]
+): string | null {
+  const priceNumber = Number(basePrice);
+  if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
+    return "El precio base debe ser un número positivo.";
+  }
+  if (!isEditing && !selectedFile) {
+    return "La imagen de la oferta es obligatoria al crear.";
+  }
+  if (imageError) {
+    return "Corrige el error de la imagen antes de guardar.";
+  }
+  if (slots.length === 0) {
+    return "La composición debe incluir al menos un grupo (slot).";
+  }
+  for (const slot of slots) {
+    if (slot.options.length === 0) {
+      return `El grupo "${slot.name}" debe incluir al menos una opción.`;
+    }
+    for (const opt of slot.options) {
+      if (!opt.sourceType) {
+        return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" debe tener un origen seleccionado.`;
+      }
+    }
+  }
+  return null;
+}
+
+function mapOptionCreate(o: OptionDraft) {
+  if (o.sourceType === "RECIPE") {
+    return {
+      sourceType: "RECIPE" as const,
+      recipeId: o.recipeId!,
+      recipeRevision: o.recipeRevision ?? 1,
+      displayName: o.displayName || o.recipeName || "Receta",
+    };
+  }
+  return {
+    sourceType: "INVENTORY_ITEM" as const,
+    inventoryItemId: o.inventoryItemId!,
+    quantity: o.quantity ?? 1,
+    unit: o.unit || "u",
+    displayName: o.displayName || o.inventoryItemName || "Insumo",
+  };
+}
+
+function mapOptionUpdate(o: OptionDraft) {
+  if (o.sourceType === "RECIPE") {
+    return {
+      optionId: o.optionId,
+      displayName: o.displayName || o.recipeName || "Receta",
+      status: o.status,
+      sourceType: "RECIPE" as const,
+      recipeId: o.recipeId!,
+      recipeRevision: o.recipeRevision ?? 1,
+    };
+  }
+  return {
+    optionId: o.optionId,
+    displayName: o.displayName || o.inventoryItemName || "Insumo",
+    status: o.status,
+    sourceType: "INVENTORY_ITEM" as const,
+    inventoryItemId: o.inventoryItemId!,
+    quantity: o.quantity ?? 1,
+    unit: o.unit || "u",
+  };
+}
+
+function buildCreateDraft(presentationTag: string, basePrice: number, slots: SlotDraft[]): OfferCreateDraft {
+  return {
+    presentationTag: presentationTag.trim(),
+    basePrice,
+    composition: {
+      slots: slots.map((s) => ({
+        name: s.name,
+        quantity: s.quantity,
+        course: s.course,
+        options: s.options.map(mapOptionCreate),
+      })),
+    },
+  };
+}
+
+function buildUpdateDraft(
+  presentationTag: string,
+  basePrice: number,
+  status: OfferStatus,
+  slots: SlotDraft[]
+): OfferUpdateDraft {
+  return {
+    presentationTag: presentationTag.trim(),
+    basePrice,
+    status,
+    composition: {
+      slots: slots.map((s) => ({
+        slotId: s.slotId,
+        name: s.name,
+        quantity: s.quantity,
+        course: s.course,
+        options: s.options.map(mapOptionUpdate),
+      })),
+    },
+  };
+}
+
+function extractErrorMessage(err: unknown): string {
+  if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
+    return err.message;
+  }
+  return "Ocurrió un error al guardar la oferta.";
 }
 
 export interface OfferFormPageProps {
@@ -302,126 +418,31 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
       : "INACTIVE"
     : "INACTIVE";
 
-  async function handleSaveOffer(event: React.FormEvent) {
+  async function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
 
-    const priceNumber = Number(basePrice);
-    if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
-      setFormError("El precio base debe ser un número positivo.");
+    const error = validateOfferForm(basePrice, isEditing, selectedFile, imageError, slots);
+    if (error) {
+      setFormError(error);
       return;
-    }
-
-    if (!isEditing && !selectedFile) {
-      setFormError("La imagen de la oferta es obligatoria al crear.");
-      return;
-    }
-
-    if (imageError) {
-      setFormError("Corrige el error de la imagen antes de guardar.");
-      return;
-    }
-
-    if (slots.length === 0) {
-      setFormError("La composición debe incluir al menos un grupo (slot).");
-      return;
-    }
-
-    for (let i = 0; i < slots.length; i += 1) {
-      const slot = slots[i];
-      if (slot.options.length === 0) {
-        setFormError(`El grupo "${slot.name}" debe incluir al menos una opción.`);
-        return;
-      }
-      for (let j = 0; j < slot.options.length; j += 1) {
-        const opt = slot.options[j];
-        if (!opt.sourceType) {
-          setFormError(`La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" debe tener un origen seleccionado.`);
-          return;
-        }
-      }
     }
 
     setSaving(true);
+    const priceNumber = Number(basePrice);
 
     try {
       if (!isEditing) {
-        const createDraft: OfferCreateDraft = {
-          presentationTag: presentationTag.trim(),
-          basePrice: priceNumber,
-          composition: {
-            slots: slots.map((s) => ({
-              name: s.name,
-              quantity: s.quantity,
-              course: s.course,
-              options: s.options.map((o) => {
-                if (o.sourceType === "RECIPE") {
-                  return {
-                    sourceType: "RECIPE" as const,
-                    recipeId: o.recipeId!,
-                    recipeRevision: o.recipeRevision ?? 1,
-                    displayName: o.displayName || o.recipeName || "Receta",
-                  };
-                }
-                return {
-                  sourceType: "INVENTORY_ITEM" as const,
-                  inventoryItemId: o.inventoryItemId!,
-                  quantity: o.quantity ?? 1,
-                  unit: o.unit || "u",
-                  displayName: o.displayName || o.inventoryItemName || "Insumo",
-                };
-              }),
-            })),
-          },
-        };
-
+        const createDraft = buildCreateDraft(presentationTag, priceNumber, slots);
         await repository.createOffer(entryId, createDraft, selectedFile!);
       } else {
-        const updateDraft: OfferUpdateDraft = {
-          presentationTag: presentationTag.trim(),
-          basePrice: priceNumber,
-          status: effectiveStatus,
-          composition: {
-            slots: slots.map((s) => ({
-              slotId: s.slotId,
-              name: s.name,
-              quantity: s.quantity,
-              course: s.course,
-              options: s.options.map((o) => {
-                if (o.sourceType === "RECIPE") {
-                  return {
-                    optionId: o.optionId,
-                    displayName: o.displayName || o.recipeName || "Receta",
-                    status: o.status,
-                    sourceType: "RECIPE" as const,
-                    recipeId: o.recipeId!,
-                    recipeRevision: o.recipeRevision ?? 1,
-                  };
-                }
-                return {
-                  optionId: o.optionId,
-                  displayName: o.displayName || o.inventoryItemName || "Insumo",
-                  status: o.status,
-                  sourceType: "INVENTORY_ITEM" as const,
-                  inventoryItemId: o.inventoryItemId!,
-                  quantity: o.quantity ?? 1,
-                  unit: o.unit || "u",
-                };
-              }),
-            })),
-          },
-        };
-
+        const updateDraft = buildUpdateDraft(presentationTag, priceNumber, effectiveStatus, slots);
         await repository.updateOffer(offerId!, updateDraft, selectedFile || undefined);
       }
 
       await navigate(returnTo, { replace: true });
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "message" in err && typeof err.message === "string"
-          ? err.message
-          : "Ocurrió un error al guardar la oferta.";
-      setFormError(message);
+      setFormError(extractErrorMessage(err));
     } finally {
       setSaving(false);
     }

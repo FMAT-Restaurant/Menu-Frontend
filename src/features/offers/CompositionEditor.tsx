@@ -53,9 +53,9 @@ export function CompositionEditor({
       </div>
 
       {copyNotice && (
-        <p className="feedback feedback--info" role="status">
+        <output className="feedback feedback--info" aria-live="polite">
           {copyNotice}
-        </p>
+        </output>
       )}
 
       {slots.length === 0 && (

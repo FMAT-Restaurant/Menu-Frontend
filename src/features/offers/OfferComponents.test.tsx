@@ -135,7 +135,7 @@ describe("OfferCommercialInfo Component", () => {
 });
 
 describe("SlotModal Component", () => {
-  test("closes on Escape key and backdrop click", () => {
+  test("closes on Escape key and close button click", () => {
     const handleClose = jest.fn();
     render(
       <SlotModal isOpen={true} initialData={null} onSave={jest.fn()} onClose={handleClose} />
@@ -144,8 +144,8 @@ describe("SlotModal Component", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(handleClose).toHaveBeenCalledTimes(1);
 
-    const backdrop = screen.getByRole("dialog");
-    fireEvent.click(backdrop);
+    const closeBtn = screen.getByRole("button", { name: "Cerrar modal de grupo" });
+    fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(2);
   });
 
@@ -204,7 +204,7 @@ describe("SlotModal Component", () => {
 });
 
 describe("OptionModal Component", () => {
-  test("closes on Escape key and backdrop click", () => {
+  test("closes on Escape key and close button click", () => {
     const handleClose = jest.fn();
     render(
       <OptionModal
@@ -220,8 +220,8 @@ describe("OptionModal Component", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(handleClose).toHaveBeenCalledTimes(1);
 
-    const backdrop = screen.getByRole("dialog");
-    fireEvent.click(backdrop);
+    const closeBtn = screen.getByRole("button", { name: "Cerrar modal de opción" });
+    fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(2);
   });
 

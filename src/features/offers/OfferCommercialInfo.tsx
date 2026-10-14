@@ -19,6 +19,10 @@ export interface OfferCommercialInfoProps {
   disabled?: boolean;
 }
 
+function handleDragOver(e: DragEvent) {
+  e.preventDefault();
+}
+
 export function OfferCommercialInfo({
   presentationTag,
   onPresentationTagChange,
@@ -37,10 +41,6 @@ export function OfferCommercialInfo({
   disabled = false,
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  function handleDragOver(e: DragEvent) {
-    e.preventDefault();
-  }
 
   function handleDrop(e: DragEvent) {
     e.preventDefault();
@@ -99,7 +99,7 @@ export function OfferCommercialInfo({
           </div>
 
           <div className="form-field">
-            <label className="field-label">Estado de la oferta</label>
+            <span className="field-label" id="offer-status-label">Estado de la oferta</span>
             {!isEditing ? (
               <div className="status-fixed-box">
                 <span className="badge badge--inactive">Inactiva</span>
@@ -112,7 +112,7 @@ export function OfferCommercialInfo({
                 <div
                   className="radio-group"
                   role="radiogroup"
-                  aria-label="Estado de la oferta"
+                  aria-labelledby="offer-status-label"
                 >
                   <label className="radio-label">
                     <input
@@ -168,18 +168,12 @@ export function OfferCommercialInfo({
               disabled={disabled || imageValidating}
             />
 
-            <div
+            <button
+              type="button"
               className={`image-dropzone ${effectivePreview ? "image-dropzone--has-preview" : ""}`}
               onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  fileInputRef.current?.click();
-                }
-              }}
               aria-label="Seleccionar o arrastrar imagen de la oferta"
             >
               {effectivePreview ? (
@@ -198,7 +192,7 @@ export function OfferCommercialInfo({
                   </span>
                 </div>
               )}
-            </div>
+            </button>
 
             {imageValidating && (
               <p className="feedback feedback--info">Validando imagen…</p>

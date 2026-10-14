@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
 export interface OptionDraft {
@@ -45,6 +45,7 @@ export function OptionModal({
 
   const [validationError, setValidationError] = useState("");
   const [featureNotice, setFeatureNotice] = useState("");
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -76,6 +77,23 @@ export function OptionModal({
 
   useEffect(() => {
     if (!isOpen) return;
+    const dialog = dialogRef.current;
+    if (typeof dialog?.showModal === "function") {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      dialog?.setAttribute("open", "");
+    }
+    return () => {
+      if (dialog?.open && typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog?.removeAttribute("open");
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -87,7 +105,7 @@ export function OptionModal({
 
   if (!isOpen) return null;
 
-  function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sourceType) {
       setValidationError("Debes seleccionar un origen de contenido (receta o artículo de inventario).");
@@ -135,134 +153,132 @@ export function OptionModal({
   }
 
   return (
-    <div
-      className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      className="option-modal-dialog"
       aria-labelledby="option-modal-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
       }}
     >
-      <div className="modal-content option-modal-content">
-        <header className="modal-header">
-          <h2 id="option-modal-title">{title}</h2>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Cerrar modal de opción"
-          >
-            ✕
-          </button>
-        </header>
+      <header className="modal-header">
+        <h2 id="option-modal-title">{title}</h2>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Cerrar modal de opción"
+        >
+          ✕
+        </button>
+      </header>
 
-        <form onSubmit={handleSubmit} className="option-form" noValidate>
-          <div className="modal-body">
-            {validationError && (
-              <p className="feedback feedback--error" role="alert">
-                {validationError}
-              </p>
-            )}
-            {featureNotice && (
-              <p className="feedback feedback--info" role="status">
-                {featureNotice}
-              </p>
-            )}
+      <form onSubmit={handleSubmit} className="option-form" noValidate>
+        <div className="modal-body">
+          {validationError && (
+            <p className="feedback feedback--error" role="alert">
+              {validationError}
+            </p>
+          )}
+          {featureNotice && (
+            <output className="feedback feedback--info" aria-live="polite">
+              {featureNotice}
+            </output>
+          )}
 
-            <div className="form-field">
-              <label htmlFor="option-display-name">Nombre mostrado (opcional)</label>
-              <input
-                id="option-display-name"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Ej. Coca-Cola o Papas a la francesa"
-              />
-              <p className="field-hint">
-                Puedes usar una etiqueta contextual distinta al nombre de la receta o del artículo.
-              </p>
-            </div>
+          <div className="form-field">
+            <label htmlFor="option-display-name">Nombre mostrado (opcional)</label>
+            <input
+              id="option-display-name"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Ej. Coca-Cola o Papas a la francesa"
+            />
+            <p className="field-hint">
+              Puedes usar una etiqueta contextual distinta al nombre de la receta o del artículo.
+            </p>
+          </div>
 
-            <div className="option-source-box">
-              <span className="option-source-box__title">Contenido actual:</span>
-              <p className="option-source-box__summary">{sourceSummary}</p>
-            </div>
+          <div className="option-source-box">
+            <span className="option-source-box__title">Contenido actual:</span>
+            <p className="option-source-box__summary">{sourceSummary}</p>
+          </div>
 
-            <div className="form-field">
-              <label className="field-label">Origen del contenido de esta opción</label>
-              <div className="source-picker-buttons">
-                <button
-                  type="button"
-                  className="source-btn"
-                  onClick={onOpenRecipePicker}
-                >
-                  <span className="source-btn__title">Elegir receta</span>
-                  <span className="source-btn__desc">
-                    Seleccionar una preparación de la biblioteca (V6).
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="source-btn"
-                  onClick={handleInventoryClick}
-                >
-                  <span className="source-btn__title">Elegir artículo de inventario</span>
-                  <span className="source-btn__desc">
-                    Seleccionar un artículo directamente de stock (V7).
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">Estado de la opción</label>
-              <div className="radio-group" role="radiogroup" aria-label="Estado de la opción">
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="option-status"
-                    value="ACTIVE"
-                    checked={status === "ACTIVE"}
-                    onChange={() => setStatus("ACTIVE")}
-                  />
-                  <span>Activa</span>
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="option-status"
-                    value="INACTIVE"
-                    checked={status === "INACTIVE"}
-                    onChange={() => setStatus("INACTIVE")}
-                  />
-                  <span>Inactiva</span>
-                </label>
-              </div>
-              <p className="field-hint">
-                Una opción inactiva no se ofrece para nuevas selecciones. Si todas las opciones de un grupo están inactivas, el grupo pasa a estar inactivo.
-              </p>
+          <div className="form-field">
+            <span className="field-label">Origen del contenido de esta opción</span>
+            <div className="source-picker-buttons">
+              <button
+                type="button"
+                className="source-btn"
+                onClick={onOpenRecipePicker}
+              >
+                <span className="source-btn__title">Elegir receta</span>
+                <span className="source-btn__desc">
+                  Seleccionar una preparación de la biblioteca (V6).
+                </span>
+              </button>
+              <button
+                type="button"
+                className="source-btn"
+                onClick={handleInventoryClick}
+              >
+                <span className="source-btn__title">Elegir artículo de inventario</span>
+                <span className="source-btn__desc">
+                  Seleccionar un artículo directamente de stock (V7).
+                </span>
+              </button>
             </div>
           </div>
 
-          <footer className="modal-footer">
-            <button
-              type="button"
-              className="button button--secondary"
-              onClick={onClose}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="button button--primary"
-              disabled={!sourceType}
-            >
-              Guardar opción
-            </button>
-          </footer>
-        </form>
-      </div>
-    </div>
+          <div className="form-field">
+            <span className="field-label" id="option-status-label">Estado de la opción</span>
+            <div className="radio-group" role="radiogroup" aria-labelledby="option-status-label">
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="option-status"
+                  value="ACTIVE"
+                  checked={status === "ACTIVE"}
+                  onChange={() => setStatus("ACTIVE")}
+                />
+                <span>Activa</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="option-status"
+                  value="INACTIVE"
+                  checked={status === "INACTIVE"}
+                  onChange={() => setStatus("INACTIVE")}
+                />
+                <span>Inactiva</span>
+              </label>
+            </div>
+            <p className="field-hint">
+              Una opción inactiva no se ofrece para nuevas selecciones. Si todas las opciones de un grupo están inactivas, el grupo pasa a estar inactivo.
+            </p>
+          </div>
+        </div>
+
+        <footer className="modal-footer">
+          <button
+            type="button"
+            className="button button--secondary"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="button button--primary"
+            disabled={!sourceType}
+          >
+            Guardar opción
+          </button>
+        </footer>
+      </form>
+    </dialog>
   );
 }
