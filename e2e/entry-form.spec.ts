@@ -5,6 +5,8 @@ import { expect, test } from "@playwright/test";
 test("creates and edits an entry with separate image upload and JSON writes", async ({ page }) => {
   const imageBytes = readFileSync(resolve(process.cwd(), "mockups/renders/V2-crear-editar-entrada.png"));
   const requests: { method: string; url: string; body: string }[] = [];
+  let detailReads = 0;
+  await page.route("**/image-1", (route) => route.fulfill({ contentType: "image/png", body: imageBytes }));
 
   await page.route("**/api/v1/menu/categories?*", (route) => route.fulfill({
     json: {
@@ -41,6 +43,7 @@ test("creates and edits an entry with separate image upload and JSON writes", as
   });
   await page.route("**/api/v1/menu/entries/entry-1", async (route) => {
     if (route.request().method() === "GET") {
+      detailReads += 1;
       await route.fulfill({
         headers: { ETag: '"rev-3"' },
         json: {
@@ -70,8 +73,9 @@ test("creates and edits an entry with separate image upload and JSON writes", as
   await expect(page).toHaveURL(/\/entries\/new$/);
   await page.getByLabel("Nombre comercial").fill("Bowl de pollo");
   await page.getByLabel("Descripción").fill("Pollo con arroz.");
+  await page.getByRole("button", { name: "Seleccionar categorías" }).click();
   await page.getByRole("checkbox", { name: "Principales" }).check();
-  await page.getByLabel("Seleccionar imagen").setInputFiles({
+  await page.getByLabel("Archivo de imagen").setInputFiles({
     name: "bowl.png", mimeType: "image/png", buffer: imageBytes,
   });
   await expect(page.getByRole("button", { name: "Guardar entrada" })).toBeEnabled();
@@ -92,10 +96,12 @@ test("creates and edits an entry with separate image upload and JSON writes", as
   await expect(page.getByRole("img", { name: "Vista previa de la imagen de la entrada" })).toBeVisible();
   await expect(page.getByText("Si no seleccionas otra imagen, se conservará la actual.")).toBeVisible();
   await page.getByLabel("Descripción").fill("Con vegetales.");
+  const readsBeforeSave = detailReads;
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page).toHaveURL(/\/?q=bowl&status=INACTIVE$/);
 
   expect(requests[2]).toMatchObject({ method: "PATCH" });
+  expect(detailReads).toBe(readsBeforeSave);
   expect(requests[2].body).toBe(JSON.stringify({
     brandName: "Bowl de pollo", description: "Con vegetales.", categoryIds: ["category-1"], status: "INACTIVE",
   }));
