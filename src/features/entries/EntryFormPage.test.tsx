@@ -89,7 +89,7 @@ test("creates an entry inactive with one image and multiple optional categories"
   fireEvent.click(screen.getByRole("button", { name: "Seleccionar categorías" }));
   fireEvent.click(await screen.findByLabelText("Principales"));
   fireEvent.click(screen.getByLabelText("Especialidades"));
-  expect(screen.getByText(/Estado inicial:/)).toHaveTextContent("Inactiva");
+  expect(screen.queryByText(/Estado inicial:/)).not.toBeInTheDocument();
   expect(screen.queryByRole("combobox", { name: "Estado administrativo" })).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));

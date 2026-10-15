@@ -257,8 +257,6 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .entry-category-selector__error p { margin: 0 0 6px; }
 .entry-category-selector__error button { margin-right: 8px; padding: 4px 0; border: 0; background: transparent; color: inherit; font-weight: 600; text-decoration: underline; }
 .entry-status-selector select { margin-top: 8px; }
-.entry-status-selector__initial { margin: 0; color: #92400e; font-size: 14px; line-height: 20px; }
-.entry-status-selector__initial span { margin-right: 4px; }
 .entry-image-field { min-width: 0; }
 .entry-image-field__zone { display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 12px; align-items: center; padding: 12px; border: 1px dashed #9ca3af; border-radius: 8px; background: var(--canvas); color: var(--text); }
 .entry-image-field__zone:hover:not(:disabled) { border-color: var(--brand); background: var(--soft-brand); }

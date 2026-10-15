@@ -11,4 +11,4 @@
 - [x] Layout V2, regreso con contexto y barra de acciones sticky.
 - [x] Pruebas ≥80 % en todos los ejes exigidos; E2E/QA en seis viewports y zoom 200 %.
 - [x] Documentación de T33 y preview para revisión personal.
-- [ ] Publicación de rama y PR con el formato acordado, después de validar el preview.
+- [x] Preview validado y publicación de rama/PR autorizada por el usuario.

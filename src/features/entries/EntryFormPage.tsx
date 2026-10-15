@@ -32,11 +32,7 @@ function revealFocusedControl(control: HTMLElement, footer: HTMLElement | null) 
   if (offset > 0) window.scrollBy({ top: Math.min(offset, bounds.top - 12), behavior: "instant" });
 }
 
-function EntryStatusField({ model, editing, busy }: Readonly<{ model: Model; editing: boolean; busy: boolean }>) {
-  if (!editing) return <section className="entry-status-selector entry-status-selector--initial">
-    <p className="entry-status-selector__initial"><span aria-hidden="true">●</span> Estado inicial: <strong>Inactiva</strong></p>
-    <p className="entry-form__muted">Podrás activarla después. Su publicación requiere una oferta activa válida.</p>
-  </section>;
+function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolean }>) {
   const archived = model.entry?.status === "ARCHIVED";
   const statuses: EntryStatus[] = archived ? ["ARCHIVED", "INACTIVE"] : ["ACTIVE", "INACTIVE", "ARCHIVED"];
   let help = "Activar la entrada no cambia sus ofertas ni garantiza su publicación.";
@@ -107,7 +103,7 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
           </div>
           <aside className="entry-form__secondary">
             <EntryImageField file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
-            <EntryStatusField model={model} editing={editing} busy={busy} />
+            {editing && <EntryStatusField model={model} busy={busy} />}
           </aside>
         </div>
         <footer ref={actions} className="entry-form__actions">

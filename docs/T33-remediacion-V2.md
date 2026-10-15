@@ -10,7 +10,7 @@ Implementa [issue #49](https://github.com/FMAT-Restaurant/Menu-Frontend/issues/4
 | Layout | Navegación y contenido alineados; identidad/categorías e imagen/estado en dos columnas de escritorio, una en móvil. Descripción redimensionable, preview de hasta 176 px (se reduce en viewport bajo) y acciones sticky. El foco de teclado desplaza campos tapados por las acciones; conserva el inicio de bloques mayores que el área disponible. |
 | Categorías | Componente separado con apertura por teclado, Escape, búsqueda local, lista de altura máxima 192 px y chips retirables. Mantiene selecciones ocultas y categorías asignadas ausentes; diferencia vacío, sin coincidencias, carga y fallo. |
 | Imagen | Toda la zona abre el mismo selector mediante clic, Enter o Espacio. Cancelar conserva la elección; valida JPEG/PNG/WebP, 10 MiB y 4096 px por lado. Libera object URLs, ignora validaciones antiguas y muestra fallback sin cambiar la caja si una imagen falla. |
-| Estado | Creación muestra «Estado inicial: Inactiva» y no envía `status`. Edición mantiene las transiciones; desarchivar deja inactiva. El estado administrativo no garantiza publicación. |
+| Estado | A petición del usuario, creación omite el bloque de estado inicial y no envía `status`; el servicio sigue creando la entrada inactiva. Edición mantiene el selector y las transiciones; desarchivar deja inactiva. El estado administrativo no garantiza publicación. |
 | Errores | Prioriza mensajes/detalles válidos del servidor frente al mensaje técnico de Axios. Identifica campos, enlaza errores accesibles, enfoca el resumen y conserva el borrador. Diferencia validación, acceso, inexistencia, conflicto, indisponibilidad, red y timeout. |
 | Concurrencia de edición | Conserva el ETag fuerte de la cabecera HTTP de apertura y lo manda en `If-Match`; guardar no hace GET para renovarlo. Un 412 o una versión inicial ausente/débil bloquea el guardado hasta consultar los datos actuales y elegir explícitamente qué conservar. No se pueden aceptar datos mientras otra revisión está pendiente ni sustituir la cabecera por un `etag` del cuerpo JSON. |
 | Cargas | Detalle y categorías tienen cargas, errores y reintentos independientes. Se puede escribir identidad durante la carga de categorías. Un fallo permite continuar explícitamente sin añadir categorías, conservando las asignaciones existentes. Un reintento no reemplaza el borrador; se ignoran respuestas de rutas abandonadas. |
@@ -41,7 +41,7 @@ La validación autoritativa de imágenes, categorías, estados y elegibilidad de
 
 ## Validación
 
-- Controles finales tras la segunda revisión: `lint` y `build` (incluye typecheck) pasan; **218 pruebas unitarias en 16 suites** y **5 E2E de V2** pasan. La suite completa de 12 E2E pasó en la implementación inicial. Cada módulo V2 cumple los cuatro umbrales exigidos.
+- Controles finales tras los retoques visuales aprobados: `lint` y `build` (incluye typecheck) pasan; **218 pruebas unitarias en 16 suites** y la suite completa de **12 E2E** pasan. Cada módulo V2 cumple los cuatro umbrales exigidos.
 - Jest impone **80 % mínimo de sentencias, ramas, funciones y líneas por módulo de V2**, incluidos los componentes extraídos, hooks, validación de imágenes, normalización de errores, caché y validación de ETag. No se rebajan umbrales anteriores.
 - Pruebas con `AxiosError` real: campos, foco, 404/412/422/5xx, acceso, red y timeout; carga parcial, reintentos, respuestas tardías, StrictMode y cancelación.
 - Transporte simulado: ETag de apertura sin GET previo al PATCH, timeouts separados y 701 categorías en ocho páginas con concurrencia máxima cuatro.
@@ -68,7 +68,7 @@ Se volvió a consultar issue #49 y se contrastaron sus **11 bloques de implement
 | 7. Vacío, sin coincidencias, carga/error distintos y nombres largos | Estados del selector comprobados en unitarias y E2E. |
 | 8. Zona completa seleccionable, teclado y cancelación conservadora | Pruebas del input único, Enter/Espacio y cancelación del file chooser. |
 | 9. Validación local y bloqueo de guardado | `entryImage.test.ts` y pruebas de reemplazo inválido/validación pendiente/respuesta antigua. |
-| 10. Creación inactiva y reglas de edición | Payload sin `status`, estado inicial simple y transición ARCHIVED→INACTIVE comprobados. |
+| 10. Creación inactiva y reglas de edición | Payload sin `status` y transición ARCHIVED→INACTIVE comprobados. Tras revisión visual, el usuario pidió ocultar el bloque informativo de estado inicial; ese ajuste sustituye su presentación anterior. |
 | 11. AxiosError 422, campos y borrador conservado | AxiosError real en unitarias; E2E confirma mensaje, foco y `aria-invalid`. |
 | 12. Cargas independientes y reintentos sin borrar borrador | Pruebas de cargas parciales/lentas, reintentos individuales y cambio de ruta. |
 | 13. Sin GET al escribir, caché/deduplicación y concurrencia acotada | Unitarias de TTL/StrictMode/cancelación; E2E cuenta lecturas; cliente carga 701 categorías en ocho páginas con máximo cuatro en paralelo. |
@@ -77,4 +77,6 @@ Se volvió a consultar issue #49 y se contrastaron sus **11 bloques de implement
 | 16. Consulta recuperable e imagen rota con caja estable | Timeouts de lectura/subida/escritura y fallback comprobados; borrador conservado y nueva acción explícita. |
 | 17. Datos válidos arbitrarios sin depender de registros de una sesión | Fixtures independientes: 0/3/100 categorías, 701 paginadas, nombres largos, imágenes con distintas proporciones y errores/demoras. No hay datos de demo en código del producto. |
 
-No quedan cambios funcionales identificados pendientes en el alcance de Front de T33. Quedan diferenciadas las verificaciones externas: aprobación visual del usuario, teclado virtual en dispositivo real y CI/SonarCloud al publicar el PR. La idempotencia y limpieza de imágenes son límites del contrato documentados, no operaciones inventadas por el Front.
+No quedan cambios funcionales identificados pendientes en el alcance de Front de T33. El usuario aprobó la revisión visual y autorizó publicar el PR. Quedan diferenciadas las verificaciones externas: teclado virtual en dispositivo real y CI/SonarCloud al publicar el PR. La idempotencia y limpieza de imágenes son límites del contrato documentados, no operaciones inventadas por el Front.
+
+La ayuda de imagen y su error de tamaño usan MB para facilitar su lectura: «aprox. 10,49 MB». El límite exacto permanece en 10 MiB = 10 485 760 bytes, conforme al contrato; no se cambia la validación.
