@@ -148,7 +148,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail> {
       const response = await client.get<{ data: MenuEntryDetail }>(entryPath(id), { signal, timeout: offersRequestTimeoutMs });
       const etag = response.headers.etag;
-      return { ...response.data.data, ...(typeof etag === "string" ? { etag } : {}) };
+      return { ...response.data.data, etag: typeof etag === "string" ? etag : undefined };
     },
 
     uploadEntryImage: uploadImage,

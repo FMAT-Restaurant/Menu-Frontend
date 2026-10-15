@@ -516,15 +516,24 @@ test("a pending review cannot replace the draft with a previously reviewed versi
   expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Segunda consulta");
 });
 
-test("a missing version can be retried without replacing an already edited draft", async () => {
+test.each([undefined, 'W/"rev-1"'])("an invalid opening version %p requires explicit review before adopting another ETag", async (etag) => {
   const api = repository();
-  api.getEntry.mockResolvedValueOnce({ ...entry, etag: undefined }).mockResolvedValueOnce(entry);
+  api.getEntry.mockResolvedValueOnce({ ...entry, etag }).mockResolvedValueOnce({ ...entry, brandName: "Cambio concurrente", etag: '"entry-rev-2"' });
   renderPage(api, "/entries/entry-1/edit"); await screen.findByDisplayValue(entry.brandName);
   fillIdentity();
   expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Reintentar entrada" }));
-  await waitFor(() => expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeEnabled());
+  expect(api.getEntry).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "Revisar entrada actual" }));
+  await screen.findByText("Cambio concurrente");
+  expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
+  fireEvent.submit(document.querySelector("form")!);
+  expect(api.updateEntry).not.toHaveBeenCalled();
   expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
+  fireEvent.click(screen.getByRole("button", { name: "Continuar con mi borrador y versión revisada" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  await screen.findByRole("heading", { name: "Catálogo restaurado" });
+  expect(api.updateEntry).toHaveBeenCalledWith(entry.id, expect.objectContaining({ brandName: "Bowl" }), '"entry-rev-2"');
+  expect(api.getEntry).toHaveBeenCalledTimes(2);
   expect(api.listCategories).toHaveBeenCalledTimes(1);
 });
 
@@ -544,6 +553,31 @@ test("the entire image zone activates the single file input", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Seleccionar imagen" }));
   expect(click).toHaveBeenCalledTimes(1);
   await waitFor(() => expect(screen.queryByText("Cargando categorías…")).not.toBeInTheDocument());
+});
+
+test("keyboard focus reveals a field obscured by sticky actions without scrolling visible fields or actions", async () => {
+  const api = repository();
+  renderPage(api);
+  await waitFor(() => expect(screen.queryByText("Cargando categorías…")).not.toBeInTheDocument());
+  const frame = jest.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => { callback(0); return 0; });
+  const scroll = jest.spyOn(window, "scrollBy").mockImplementation(() => {});
+  const footer = document.querySelector<HTMLElement>(".entry-form__actions")!;
+  jest.spyOn(footer, "getBoundingClientRect").mockReturnValue({ top: 251, height: 69 } as DOMRect);
+  const name = screen.getByLabelText("Nombre comercial");
+  const description = screen.getByLabelText("Descripción");
+  jest.spyOn(name, "getBoundingClientRect").mockReturnValue({ bottom: 137 } as DOMRect);
+  const descriptionBounds = jest.spyOn(description, "getBoundingClientRect").mockReturnValue({ top: 174, bottom: 256 } as DOMRect);
+  act(() => name.focus());
+  expect(scroll).not.toHaveBeenCalled();
+  act(() => description.focus());
+  expect(scroll).toHaveBeenLastCalledWith({ top: 17, behavior: "instant" });
+  scroll.mockClear();
+  act(() => screen.getByRole("button", { name: "Cancelar" }).focus());
+  expect(scroll).not.toHaveBeenCalled();
+  descriptionBounds.mockReturnValue({ top: 100, bottom: 500 } as DOMRect);
+  act(() => description.focus());
+  expect(scroll).toHaveBeenLastCalledWith({ top: 88, behavior: "instant" });
+  frame.mockRestore(); scroll.mockRestore();
 });
 
 test("duplicate submits cannot overlap upload or persistence, and navigation is blocked while saving", async () => {

@@ -84,19 +84,24 @@ test("V2 aligns navigation, keeps actions reachable and bounds 100 categories ac
   await noHorizontalOverflow(page);
   await expect(page.getByRole("button", { name: "Guardar entrada" })).toBeInViewport();
   await page.getByLabel("Descripción").focus();
-  await page.getByLabel("Descripción").scrollIntoViewIfNeeded();
-  const field = await page.getByLabel("Descripción").boundingBox();
-  const actions = await page.locator(".entry-form__actions").boundingBox();
-  expect(field!.y + field!.height).toBeLessThanOrEqual(actions!.y);
+  await expect.poll(async () => {
+    const field = await page.getByLabel("Descripción").boundingBox();
+    const actions = await page.locator(".entry-form__actions").boundingBox();
+    return field!.y >= 0 && field!.y + field!.height <= actions!.y;
+  }).toBe(true);
   await page.screenshot({ path: "test-results/t33-zoom-200.png" });
   await page.evaluate(() => { document.documentElement.style.zoom = "1"; });
   await page.setViewportSize({ width: 390, height: 320 });
   const name = page.getByLabel("Nombre comercial");
   await name.focus();
-  await name.evaluate((element) => element.scrollIntoView({ block: "center" }));
-  const focused = await name.boundingBox();
-  const lowActions = await page.locator(".entry-form__actions").boundingBox();
-  expect(focused!.y + focused!.height).toBeLessThanOrEqual(lowActions!.y);
+  for (let index = 0; index < 4; index += 1) {
+    await expect.poll(async () => {
+      const focused = await page.locator(":focus").boundingBox();
+      const actions = await page.locator(".entry-form__actions").boundingBox();
+      return focused!.y >= 0 && focused!.y + focused!.height <= actions!.y;
+    }).toBe(true);
+    await page.keyboard.press("Tab");
+  }
   await expect(page.getByRole("button", { name: "Guardar entrada" })).toBeInViewport({ ratio: 1 });
   await noHorizontalOverflow(page);
   expect(consoleErrors).toEqual([]);
@@ -124,6 +129,11 @@ test("category search and image zone work with keyboard without per-keystroke qu
   const [cancelPicker] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Cambiar imagen" }).press("Space")]);
   await cancelPicker.setFiles([]);
   await expect(page.getByText("vertical.png")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const longFilename = `${"nombredeimagen".repeat(20)}.png`;
+  await page.getByLabel("Archivo de imagen").setInputFiles({ name: longFilename, mimeType: "image/png", buffer: vertical });
+  await expect(page.getByText(longFilename)).toBeVisible();
+  await noHorizontalOverflow(page);
   await page.getByLabel("Nombre comercial").fill("Identidad independiente");
   await page.getByLabel("Descripción").fill("Texto que no dispara consultas");
   expect(api.reads().categories).toBe(1);

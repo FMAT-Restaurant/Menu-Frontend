@@ -91,7 +91,7 @@ export function useEntryForm(repository: MenuRepository, entryId: string | undef
     const invalid = validateDraft(draft, Boolean(entryId), file, imageError, validationPending.current);
     if (invalid) return invalid;
     if (!resources.categoriesReady) return localFieldFailure("categoryIds", "Espera a que carguen las categorías o decide continuar sin añadirlas.");
-    if (entryId && !isStrongEntryVersion(resources.entry?.etag)) return entryFailure(new Error("No se recibió una versión fuerte de la entrada. Reintenta su consulta antes de guardar."));
+    if (entryId && !isStrongEntryVersion(resources.entry?.etag)) return entryFailure(new Error("No se recibió una versión fuerte de la entrada. Revisa los datos actuales antes de guardar."));
     return null;
   }
 

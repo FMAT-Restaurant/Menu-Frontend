@@ -30,6 +30,15 @@ test.each(["", 'W/"rev-1"', "unquoted", "*"])("does not issue PATCH with an inva
   expect(adapter).not.toHaveBeenCalled();
 });
 
+test("an unexpected body ETag cannot substitute the missing HTTP version header", async () => {
+  const adapter: AxiosAdapter = jest.fn(async (config) => ({ config, data: { data: { ...entry, etag: '"body-version"' } }, headers: {}, status: 200, statusText: "OK" }));
+  const api = createMenuApi(axios.create({ adapter }));
+  const opened = await api.getEntry("entry-1");
+  expect(opened.etag).toBeUndefined();
+  await expect(api.updateEntry("entry-1", draft, opened.etag ?? "")).rejects.toThrow("versión fuerte");
+  expect(adapter).toHaveBeenCalledTimes(1);
+});
+
 test("bounds reads, upload and persistence separately and lets the caller reuse an uploaded id", async () => {
   const requests: { method?: string; url?: string; timeout?: number }[] = [];
   const adapter: AxiosAdapter = async (config) => {

@@ -22,6 +22,16 @@ function safeReturnPath(state: unknown) {
 
 type Model = ReturnType<typeof useEntryForm>;
 
+function revealFocusedControl(control: HTMLElement, footer: HTMLElement | null) {
+  if (!footer || footer.contains(control)) return;
+  const actions = footer.getBoundingClientRect();
+  if (!actions.height) return;
+  const bounds = control.getBoundingClientRect();
+  const offset = bounds.bottom - actions.top + 12;
+  // A resized textarea or long summary may exceed the available height: keep its start readable.
+  if (offset > 0) window.scrollBy({ top: Math.min(offset, bounds.top - 12), behavior: "instant" });
+}
+
 function EntryStatusField({ model, editing, busy }: Readonly<{ model: Model; editing: boolean; busy: boolean }>) {
   if (!editing) return <section className="entry-status-selector entry-status-selector--initial">
     <p className="entry-status-selector__initial"><span aria-hidden="true">●</span> Estado inicial: <strong>Inactiva</strong></p>
@@ -64,6 +74,7 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
   const onSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
   const model = useEntryForm(repository, entryId, onSaved);
   const summary = useRef<HTMLDivElement>(null);
+  const actions = useRef<HTMLElement>(null);
   const busy = model.stage !== "idle";
   const disabled = busy || !model.editingReady;
   const conflict = editing && model.failure?.kind === "conflict";
@@ -81,11 +92,14 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
     <main className="entry-form-page">
       <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) event.preventDefault(); }}>← Volver a entradas</Link>
       <header className="entry-form-page__heading"><p className="eyebrow">Administración / Menú</p><h1>{editing ? "Editar entrada" : "Nueva entrada"}</h1><p>Nombre, descripción, categorías e imagen de referencia.</p></header>
-      <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy}>
+      <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
+        const control = event.target;
+        requestAnimationFrame(() => { if (document.activeElement === control) revealFocusedControl(control, actions.current); });
+      }}>
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
         {model.entryLoading && <output className="feedback" aria-live="polite">Cargando la entrada…</output>}
         {model.entryError && <div className="feedback feedback--error" role="alert">{model.entryError} <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
-        {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No se recibió una versión fuerte de la entrada. <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
+        {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No se recibió una versión fuerte de la entrada. Revisa los datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
         <div className="entry-form__layout">
           <div className="entry-form__primary">
             <EntryIdentity model={model} disabled={disabled} />
@@ -96,7 +110,7 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
             <EntryStatusField model={model} editing={editing} busy={busy} />
           </aside>
         </div>
-        <footer className="entry-form__actions">
+        <footer ref={actions} className="entry-form__actions">
           <button className="button button--secondary" type="button" disabled={busy} onClick={() => { void navigate(returnTo); }}>Cancelar</button>
           <button className="button button--primary" type="submit" disabled={saveDisabled}>{saveLabel}</button>
         </footer>

@@ -237,7 +237,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .entry-form :is(input, textarea, select, button)[aria-invalid="true"] { border-color: #dc2626; }
 .entry-form :is(input, textarea, select, button):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .entry-form :is(input, textarea, button, select) { scroll-margin-block: 24px 112px; }
-.entry-form__muted { margin: 6px 0 0; color: #4b5563; font-size: 13px; line-height: 19px; }
+.entry-form__muted { margin: 6px 0 0; color: #4b5563; font-size: 13px; line-height: 19px; overflow-wrap: anywhere; }
 .entry-category-selector, .entry-status-selector { min-width: 0; margin: 0; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); }
 .entry-category-selector legend, .entry-status-selector legend { padding: 0 4px; margin-bottom: 0; }
 .entry-category-selector__trigger { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: var(--surface); color: var(--text); text-align: left; font-size: 14px; }
@@ -262,7 +262,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .entry-image-field { min-width: 0; }
 .entry-image-field__zone { display: flex; width: 100%; min-width: 0; flex-direction: column; gap: 12px; align-items: center; padding: 12px; border: 1px dashed #9ca3af; border-radius: 8px; background: var(--canvas); color: var(--text); }
 .entry-image-field__zone:hover:not(:disabled) { border-color: var(--brand); background: var(--soft-brand); }
-.entry-image-field__preview { display: grid; width: 100%; height: 176px; min-height: 176px; place-items: center; overflow: hidden; color: #4b5563; text-align: center; font-size: 14px; line-height: 20px; }
+.entry-image-field__preview { display: grid; width: 100%; height: clamp(64px, calc(100dvh - 224px), 176px); place-items: center; overflow: hidden; color: #4b5563; text-align: center; font-size: 14px; line-height: 20px; }
 .entry-image-field__preview img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .entry-image-field__action { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: var(--surface); color: var(--text); font-size: 14px; font-weight: 600; }
 .entry-image-field__input, .entry-form-shell .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
