@@ -131,7 +131,7 @@ function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, re
   if (isEmpty) {
     return <section className="empty-state offers-empty">
       <h2>No hay ofertas configuradas.</h2>
-      <p>La creación de ofertas estará disponible en V4.</p>
+      <p>Crea la primera oferta para comenzar a configurar sus opciones y precios.</p>
       <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>
     </section>;
   }
@@ -430,7 +430,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
             <h1 tabIndex={-1}>Ofertas de {visibleEntry?.brandName ?? "la entrada"}</h1>
             <p className="catalog-header__intro">Presentaciones vendibles de la misma identidad comercial.</p>
           </div>
-          {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta · V4</Link>}
+          {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
         <OffersFeedback loadError={loadError} entryErrorMessage={entryErrorMessage} offersErrorMessage={offersErrorMessage} actionError={actionError} notice={notice} onRetryEntry={() => setEntryRetry((current) => current + 1)} onRetryOffers={() => setOffersRetry((current) => current + 1)} />
