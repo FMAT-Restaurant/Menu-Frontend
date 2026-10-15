@@ -26,7 +26,8 @@ test("uploads an image first, then creates an inactive entry with its imageId in
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
   const image = new File(["image bytes"], "bowl.png", { type: "image/png" });
 
-  await expect(api.createEntry({ brandName: entry.brandName, description: entry.description, categoryIds: entry.categoryIds }, image))
+  const imageId = await api.uploadEntryImage(image);
+  await expect(api.createEntry({ brandName: entry.brandName, description: entry.description, categoryIds: entry.categoryIds, imageId }))
     .resolves.toEqual(entry);
 
   expect(requests.map(({ method, url }) => `${method} ${url}`)).toEqual([
@@ -63,7 +64,8 @@ test("edits an entry with If-Match and preserves its image when no file is selec
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
   const draft = { brandName: "Bowl especial", description: "Con verduras", categoryIds: [], status: "INACTIVE" as const };
 
-  await expect(api.updateEntry(entry.id, draft)).resolves.toEqual(entry);
+  const opened = await api.getEntry(entry.id);
+  await expect(api.updateEntry(entry.id, draft, opened.etag ?? "")).resolves.toEqual(entry);
   expect(requests).toEqual([
     { method: "get", url: "/menu/entries/entry-1", data: undefined, ifMatch: undefined },
     { method: "patch", url: "/menu/entries/entry-1", data: draft, ifMatch: '"rev-3"' },
@@ -86,15 +88,15 @@ test("uploads a replacement image before PATCH and sends only its id with the cu
   const image = new File(["new image"], "new.png", { type: "image/png" });
   const draft = { brandName: "Bowl especial", description: "Con verduras", categoryIds: [], status: "INACTIVE" as const };
 
-  await api.updateEntry(entry.id, draft, image);
+  const imageId = await api.uploadEntryImage(image);
+  await api.updateEntry(entry.id, { ...draft, imageId }, '"rev-opened"');
   expect(requests.map(({ method, url }) => `${method} ${url}`)).toEqual([
     "post /media/images",
-    "get /menu/entries/entry-1",
     "patch /menu/entries/entry-1",
   ]);
   expect((requests[0].data as FormData).get("file")).toBe(image);
-  expect(JSON.parse(requests[2].data as string)).toEqual({ ...draft, imageId: "image-2" });
-  expect(requests[2].ifMatch).toBe('"rev-3"');
+  expect(JSON.parse(requests[1].data as string)).toEqual({ ...draft, imageId: "image-2" });
+  expect(requests[1].ifMatch).toBe('"rev-opened"');
 });
 
 test("does not create an entry when image upload fails", async () => {
@@ -106,7 +108,7 @@ test("does not create an entry when image upload fails", async () => {
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.createEntry({ brandName: "Bowl", description: "Con arroz", categoryIds: [] }, new File(["bad"], "bad.png", { type: "image/png" })))
+  await expect(api.uploadEntryImage(new File(["bad"], "bad.png", { type: "image/png" })))
     .rejects.toBe(uploadError);
   expect(requests).toEqual(["post /media/images"]);
 });
@@ -119,7 +121,7 @@ test("does not create an entry when the upload response has no imageId", async (
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.createEntry({ brandName: "Bowl", description: "Con arroz", categoryIds: [] }, new File(["image"], "bowl.png", { type: "image/png" })))
+  await expect(api.uploadEntryImage(new File(["image"], "bowl.png", { type: "image/png" })))
     .rejects.toThrow("No se recibió el identificador de la imagen");
   expect(requests).toEqual(["post /media/images"]);
 });
@@ -134,8 +136,8 @@ test("does not patch an entry if its current ETag is missing", async () => {
 
   await expect(api.updateEntry(entry.id, {
     brandName: "Bowl especial", description: "Con arroz", categoryIds: [], status: "INACTIVE",
-  })).rejects.toThrow("No se recibió una versión fuerte de la entrada");
-  expect(requests).toEqual(["get /menu/entries/entry-1"]);
+  }, "")).rejects.toThrow("No se recibió una versión fuerte de la entrada");
+  expect(requests).toEqual([]);
 });
 
 test("does not patch a recipe if its current ETag is missing", async () => {

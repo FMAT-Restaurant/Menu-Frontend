@@ -5,6 +5,7 @@ interface CacheValue<T> { value: T; savedAt: number }
 interface CatalogCache {
   entries: Map<string, CacheValue<Page<MenuEntry>>>;
   categories?: CacheValue<MenuCategory[]>;
+  categoriesRevision: number;
 }
 
 const stores = new WeakMap<object, CatalogCache>();
@@ -12,7 +13,7 @@ const stores = new WeakMap<object, CatalogCache>();
 function store(repository: object): CatalogCache {
   let current = stores.get(repository);
   if (!current) {
-    current = { entries: new Map() };
+    current = { entries: new Map(), categoriesRevision: 0 };
     stores.set(repository, current);
   }
   return current;
@@ -38,6 +39,14 @@ export function cachedCategories(repository: object) {
   return fresh(store(repository).categories);
 }
 
+export function previousCategories(repository: object) {
+  return store(repository).categories?.value;
+}
+
+export function categoryCacheRevision(repository: object) {
+  return store(repository).categoriesRevision;
+}
+
 export function rememberCategories(repository: object, categories: MenuCategory[]) {
   store(repository).categories = { value: categories, savedAt: Date.now() };
 }
@@ -48,4 +57,5 @@ export function invalidateCatalogEntries(repository: object) {
 
 export function invalidateCatalogCategories(repository: object) {
   store(repository).categories = undefined;
+  store(repository).categoriesRevision += 1;
 }

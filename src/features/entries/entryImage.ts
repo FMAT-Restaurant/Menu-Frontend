@@ -7,7 +7,7 @@ export async function validateEntryImage(file: File): Promise<void> {
     throw new Error("Selecciona una imagen JPEG, PNG o WebP.");
   }
   if (file.size > maxImageBytes) {
-    throw new Error("La imagen no puede superar 10 MiB.");
+    throw new Error("La imagen no puede superar aproximadamente 10,49 MB.");
   }
 
   let bitmap: ImageBitmap;

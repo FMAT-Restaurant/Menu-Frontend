@@ -1,0 +1,51 @@
+import type { RefObject } from "react";
+import { Link } from "react-router-dom";
+import { isStrongEntryVersion } from "../../application/entryVersion";
+import type { useEntryForm } from "./useEntryForm";
+
+type Model = ReturnType<typeof useEntryForm>;
+interface Props { model: Model; editing: boolean; returnTo: string; summaryRef: RefObject<HTMLDivElement | null> }
+
+function EntryReview({ model }: Readonly<{ model: Model }>) {
+  if (!model.review) return null;
+  const current = model.review;
+  const versionValid = isStrongEntryVersion(current.etag);
+  return <section className="entry-form__review" aria-label="Datos actuales de la entrada">
+    <h2>Datos actuales de la entrada</h2>
+    <dl><dt>Nombre</dt><dd>{current.brandName}</dd><dt>Descripción</dt><dd>{current.description}</dd><dt>Estado</dt><dd>{current.status}</dd><dt>Categorías</dt><dd>{current.categoryIds.join(", ") || "Sin clasificación"}</dd></dl>
+    <p>Tu borrador permanece en el formulario. Elige usar estos datos o conservar tu borrador con la versión que acabas de revisar.</p>
+    {!versionValid && <p>No se recibió una versión fuerte. Reintenta la consulta antes de continuar.</p>}
+    <div className="entry-form__review-actions">
+      <button type="button" disabled={!versionValid || model.reviewLoading} onClick={() => model.acceptReview(false)}>Usar datos actuales</button>
+      <button type="button" disabled={!versionValid || model.reviewLoading} onClick={() => model.acceptReview(true)}>Continuar con mi borrador y versión revisada</button>
+    </div>
+  </section>;
+}
+
+function UncertainSave({ model, editing, returnTo }: Readonly<Pick<Props, "model" | "editing" | "returnTo">>) {
+  if (model.uncertain === "idle") return null;
+  const upload = model.uncertain === "upload";
+  return <div className="entry-form__uncertain">
+    <p>No se confirmó el resultado. El servidor pudo haber recibido la operación; no se repetirá automáticamente.</p>
+    {!editing && !upload && <Link to={returnTo} target="_blank" rel="noopener noreferrer">Revisar entradas en otra pestaña</Link>}
+    {(!editing || upload) && <button type="button" onClick={model.allowExplicitRetry}>He verificado el resultado; permitir otro intento</button>}
+  </div>;
+}
+
+export function EntryFormFeedback({ model, editing, returnTo, summaryRef }: Readonly<Props>) {
+  const reviewNeeded = editing && (model.failure?.kind === "conflict" || model.uncertain === "persist");
+  return <>
+    {model.failure && <div ref={summaryRef} className="feedback feedback--error entry-form__summary" role="alert" aria-label="Error al guardar entrada" tabIndex={-1}>
+      <p>{model.failure.message}</p>
+      {model.failure.violations.length > 0 && <ul>{model.failure.violations.map((item, index) => <li key={`${item.field ?? "general"}-${index}`}>
+        {item.message}
+        {item.field && <button type="button" onClick={() => document.getElementById(`entry-${item.field}`)?.focus()}>Ir al campo</button>}
+      </li>)}</ul>}
+      <UncertainSave model={model} editing={editing} returnTo={returnTo} />
+      {reviewNeeded && <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button>}
+    </div>}
+    {model.reviewLoading && <output className="feedback" aria-live="polite">Consultando la entrada actual; tu borrador se conserva…</output>}
+    {model.reviewError && <p className="feedback feedback--error" role="alert">{model.reviewError}</p>}
+    <EntryReview model={model} />
+  </>;
+}

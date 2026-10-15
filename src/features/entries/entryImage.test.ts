@@ -41,7 +41,7 @@ test("rejects files larger than 10 MiB before decoding", async () => {
   Object.defineProperty(globalThis, "createImageBitmap", { configurable: true, value: decode });
   const file = { type: "image/png", size: 10 * 1024 * 1024 + 1 } as File;
 
-  await expect(validateEntryImage(file)).rejects.toThrow("La imagen no puede superar 10 MiB.");
+  await expect(validateEntryImage(file)).rejects.toThrow("La imagen no puede superar aproximadamente 10,49 MB.");
   expect(decode).not.toHaveBeenCalled();
 });
 

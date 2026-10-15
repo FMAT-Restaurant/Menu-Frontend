@@ -10,6 +10,6 @@ La imagen se valida en el navegador como JPEG, PNG o WebP, hasta 10 MiB y 4096 p
 
 La integración sigue el [OpenAPI publicado](https://fmat-restaurant.github.io/Menu-Documentation/api/): `GET /menu/categories`, `GET /menu/entries/{entryId}`, `POST /media/images` con archivo en la parte `file`, `POST /menu/entries` con JSON que incluye `imageId`, y `PATCH /menu/entries/{entryId}` con JSON e `If-Match`. Si no se reemplaza la imagen, se omite `imageId`; al reemplazarla, se sube primero y se envía el nuevo identificador. `API_BASE_URL` conserva su función de URL base. El menú está provisionado en la instalación y no se envía `menuId`.
 
-El cliente obtiene un ETag vigente antes de cada edición y deja al Back la validación de categorías, transiciones y referencias de imagen. Los errores de carga o guardado mantienen el borrador en pantalla.
+El cliente conserva el ETag fuerte recibido al abrir la edición y lo envía en `If-Match` sin renovarlo silenciosamente al guardar. Un conflicto requiere consultar y revisar los datos actuales antes de adoptar otra versión. El Back valida categorías, transiciones y referencias de imagen. Los errores mantienen el borrador en pantalla; [T33](T33-remediacion-V2.md) detalla los reintentos, caché y controles de concurrencia.
 
 Jest exige al menos 80% en sentencias, ramas, funciones y líneas para `EntryFormPage.tsx` y `entryImage.ts`; la suite incluye validación de archivos, creación/edición, errores, cancelación y transiciones.

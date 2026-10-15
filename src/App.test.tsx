@@ -30,7 +30,7 @@ test("opens the implemented offers page for an entry", async () => {
     getEntry: jest.fn().mockResolvedValue({
       id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Con piña", status: "ACTIVE", categoryIds: [],
     }),
-    createEntry: jest.fn(),
+    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn(),
     updateEntry: jest.fn(),
     listOffers: jest.fn().mockResolvedValue({
       data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 },
@@ -63,7 +63,7 @@ test("opens the T24 entry form routes", async () => {
     getEntry: jest.fn().mockResolvedValue({
       id: "entry-1", brandName: "Bowl", description: "Con arroz", status: "INACTIVE", categoryIds: [],
     }),
-    createEntry: jest.fn(),
+    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn(),
     updateEntry: jest.fn(),
     listOffers: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
     setOfferStatus: jest.fn(),
