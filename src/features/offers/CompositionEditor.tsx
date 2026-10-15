@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { type SlotDraft, SlotCard } from "./SlotCard";
 
 export interface CompositionEditorProps {
@@ -24,10 +23,8 @@ export function CompositionEditor({
   onToggleOptionStatus,
   disabled = false,
 }: Readonly<CompositionEditorProps>) {
-  const [copyNotice, setCopyNotice] = useState("");
-
   function handleCopyFromAnotherOffer() {
-    setCopyNotice("La copia de composición desde otra oferta se implementará en V8.");
+    // TODO: Copying composition from another offer will be implemented in V8.
   }
 
   return (
@@ -51,12 +48,6 @@ export function CompositionEditor({
           Copiar composición desde otra oferta
         </button>
       </div>
-
-      {copyNotice && (
-        <output className="feedback feedback--info" aria-live="polite">
-          {copyNotice}
-        </output>
-      )}
 
       {slots.length === 0 && (
         <div className="feedback feedback--warning" role="alert">

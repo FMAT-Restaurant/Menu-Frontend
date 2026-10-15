@@ -44,7 +44,6 @@ export function OptionModal({
   const [unit, setUnit] = useState<string | undefined>(undefined);
 
   const [validationError, setValidationError] = useState("");
-  const [featureNotice, setFeatureNotice] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -72,7 +71,6 @@ export function OptionModal({
       setUnit(undefined);
     }
     setValidationError("");
-    setFeatureNotice("");
   }, [initialData, isOpen]);
 
   useEffect(() => {
@@ -136,7 +134,7 @@ export function OptionModal({
   }
 
   function handleInventoryClick() {
-    setFeatureNotice("La selección interactiva de artículos de inventario se implementará en V7.");
+    // TODO: Interactive selection of inventory items will be implemented in V7.
   }
 
   const title = initialData ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
@@ -181,11 +179,6 @@ export function OptionModal({
               {validationError}
             </p>
           )}
-          {featureNotice && (
-            <output className="feedback feedback--info" aria-live="polite">
-              {featureNotice}
-            </output>
-          )}
 
           <div className="form-field">
             <label htmlFor="option-display-name">Nombre mostrado (opcional)</label>
@@ -216,7 +209,7 @@ export function OptionModal({
               >
                 <span className="source-btn__title">Elegir receta</span>
                 <span className="source-btn__desc">
-                  Seleccionar una preparación de la biblioteca (V6).
+                  Seleccionar una preparación de la biblioteca.
                 </span>
               </button>
               <button
@@ -226,7 +219,7 @@ export function OptionModal({
               >
                 <span className="source-btn__title">Elegir artículo de inventario</span>
                 <span className="source-btn__desc">
-                  Seleccionar un artículo directamente de stock (V7).
+                  Seleccionar un artículo directamente de stock.
                 </span>
               </button>
             </div>

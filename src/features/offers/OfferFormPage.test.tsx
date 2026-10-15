@@ -152,7 +152,7 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByRole("button", { name: "Agregar grupo" })).toBeVisible();
   });
 
-  test("shows notice when clicking copy composition button (V8 placeholder)", async () => {
+  test("handles copy composition button without displaying UI placeholder alerts", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
 
@@ -162,8 +162,8 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(copyBtn);
 
     expect(
-      screen.getByText("La copia de composición desde otra oferta se implementará en V8.")
-    ).toBeVisible();
+      screen.queryByText(/se implementará/)
+    ).not.toBeInTheDocument();
   });
 
   test("creates a new slot via SlotModal (C31)", async () => {
@@ -235,11 +235,11 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Principal" }));
     expect(screen.getByRole("heading", { name: /Agregar opción · Principal/ })).toBeVisible();
 
-    // Click inventory button -> shows notice for V7
+    // Click inventory button -> handled without showing placeholder notice in UI
     fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
     expect(
-      screen.getByText("La selección interactiva de artículos de inventario se implementará en V7.")
-    ).toBeVisible();
+      screen.queryByText(/se implementará/)
+    ).not.toBeInTheDocument();
 
     // Click recipe button -> opens V6 RecipePage
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));

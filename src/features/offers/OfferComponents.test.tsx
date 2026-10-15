@@ -430,7 +430,7 @@ describe("OptionModal Component", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  test("triggers onOpenRecipePicker and displays feature notice for inventory", () => {
+  test("triggers onOpenRecipePicker and handles inventory selection without UI notices", () => {
     const handleOpenRecipePicker = jest.fn();
     render(
       <OptionModal
@@ -448,8 +448,8 @@ describe("OptionModal Component", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
     expect(
-      screen.getByText("La selección interactiva de artículos de inventario se implementará en V7.")
-    ).toBeVisible();
+      screen.queryByText(/se implementará/)
+    ).not.toBeInTheDocument();
   });
 
   test("renders source summary with IDs when names are absent", () => {

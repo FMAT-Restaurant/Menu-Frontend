@@ -131,7 +131,7 @@ function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, re
   if (isEmpty) {
     return <section className="empty-state offers-empty">
       <h2>No hay ofertas configuradas.</h2>
-      <p>La creación de ofertas estará disponible en V4.</p>
+      <p>Crea la primera oferta para comenzar a configurar sus opciones y precios.</p>
       <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>
     </section>;
   }
