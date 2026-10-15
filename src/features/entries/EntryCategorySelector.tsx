@@ -49,8 +49,16 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
     function outside(event: PointerEvent) {
       if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
     }
+    function escape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || !(event.target instanceof Node) || !root.current?.contains(event.target)) return;
+      event.preventDefault(); setOpen(false); trigger.current?.focus();
+    }
     document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
   }, [open]);
 
   function toggle(id: string) {
@@ -58,26 +66,25 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
     else onChange([...selected, id]);
   }
 
-  return <fieldset ref={root} className="entry-category-selector" onKeyDown={(event) => {
-    if (event.key === "Escape" && open) { event.preventDefault(); setOpen(false); trigger.current?.focus(); }
-  }}>
+  return <fieldset ref={root} className="entry-category-selector">
     <legend>Categorías</legend>
     <p className="entry-form__muted">Puedes asignar varias o guardar sin clasificación.</p>
     <CategoryLoadState loading={loading} error={error} continuing={continuing} onRetry={onRetry} onContinue={onContinue} />
-    <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" aria-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
+    <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" data-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
       <span>{selectionLabel(selected.length)}</span><span aria-hidden="true">⌄</span>
     </button>
     {open && <div id="entry-category-panel" className="entry-category-selector__panel">
       <label className="sr-only" htmlFor="entry-category-search">Buscar categorías</label>
       <input ref={search} id="entry-category-search" type="search" placeholder="Buscar categorías…" value={query} onChange={(event) => setQuery(event.target.value)} disabled={disabled} />
-      <div className="entry-category-selector__list" role="group" aria-label="Categorías disponibles">
+      <fieldset className="entry-category-selector__list">
+        <legend className="sr-only">Categorías disponibles</legend>
         {filtered.map((category) => <label className="entry-category-selector__option" key={category.id}>
-          <input type="checkbox" checked={selected.includes(category.id)} onChange={() => toggle(category.id)} disabled={disabled} />
+          <input type="checkbox" checked={selected.includes(category.id)} onChange={() => toggle(category.id)} disabled={disabled} aria-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" />
           <span>{category.name}</span>
         </label>)}
         {!loading && !error && available.length === 0 && <p>Aún no hay categorías. Puedes guardar sin clasificación.</p>}
         {available.length > 0 && filtered.length === 0 && <p>No hay coincidencias para esta búsqueda.</p>}
-      </div>
+      </fieldset>
     </div>}
     {selected.length > 0 && <ul className="entry-category-selector__selection" aria-label="Categorías seleccionadas">
       {selected.map((id) => <li key={id}><span>{nameFor(id)}</span><button type="button" aria-label={`Retirar categoría ${nameFor(id)}`} disabled={disabled} onClick={() => toggle(id)}>×</button></li>)}

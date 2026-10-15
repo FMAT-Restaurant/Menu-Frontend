@@ -41,7 +41,7 @@ La validación autoritativa de imágenes, categorías, estados y elegibilidad de
 
 ## Validación
 
-- Controles finales tras los retoques visuales aprobados: `lint` y `build` (incluye typecheck) pasan; **218 pruebas unitarias en 16 suites** y la suite completa de **12 E2E** pasan. Cada módulo V2 cumple los cuatro umbrales exigidos.
+- Controles finales tras los retoques visuales y correcciones de Sonar: `lint` y `build` (incluye typecheck) pasan; **219 pruebas unitarias en 16 suites** y la suite completa de **12 E2E** pasan. Cada módulo V2 cumple los cuatro umbrales exigidos.
 - Jest impone **80 % mínimo de sentencias, ramas, funciones y líneas por módulo de V2**, incluidos los componentes extraídos, hooks, validación de imágenes, normalización de errores, caché y validación de ETag. No se rebajan umbrales anteriores.
 - Pruebas con `AxiosError` real: campos, foco, 404/412/422/5xx, acceso, red y timeout; carga parcial, reintentos, respuestas tardías, StrictMode y cancelación.
 - Transporte simulado: ETag de apertura sin GET previo al PATCH, timeouts separados y 701 categorías en ocho páginas con concurrencia máxima cuatro.
@@ -80,3 +80,5 @@ Se volvió a consultar issue #49 y se contrastaron sus **11 bloques de implement
 No quedan cambios funcionales identificados pendientes en el alcance de Front de T33. El usuario aprobó la revisión visual y autorizó publicar el PR. Quedan diferenciadas las verificaciones externas: teclado virtual en dispositivo real y CI/SonarCloud al publicar el PR. La idempotencia y limpieza de imágenes son límites del contrato documentados, no operaciones inventadas por el Front.
 
 La ayuda de imagen y su error de tamaño usan MB para facilitar su lectura: «aprox. 10,49 MB». El límite exacto permanece en 10 MiB = 10 485 760 bytes, conforme al contrato; no se cambia la validación.
+
+Las correcciones de accesibilidad usan un `fieldset` nativo para las opciones de categorías y ubican `aria-invalid` en sus checkboxes y en el input de archivo. Los botones conservan la descripción del error y su borde visual mediante `data-invalid`. Escape se escucha mientras el panel está abierto y solo se procesa si procede del selector; los listeners se limpian al cerrar. La alineación de unidades de recetas usa un selector específico sin `!important`.

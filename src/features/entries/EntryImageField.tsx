@@ -45,14 +45,14 @@ export function EntryImageField({ file, entry, validating, error, disabled, onSe
 
   return <section className="entry-image-field" aria-labelledby="entry-image-title">
     <h2 id="entry-image-title">Imagen de referencia</h2>
-    <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} aria-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
+    <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} data-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
       <span className="entry-image-field__preview">
         {source && !broken && <img src={source} alt="Vista previa de la imagen de la entrada" onError={() => setBroken(true)} />}
         {(!source || broken) && <ImageContent source={source} broken={broken} reference={entry?.imageRef} />}
       </span>
       <span className="entry-image-field__action">{labels.action}</span>
     </button>
-    <input ref={input} className="entry-image-field__input" id="entry-image-file" aria-label="Archivo de imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={select} disabled={disabled} tabIndex={-1} />
+    <input ref={input} className="entry-image-field__input" id="entry-image-file" aria-label="Archivo de imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={select} disabled={disabled} tabIndex={-1} aria-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error" />
     <p id="entry-image-help" className="entry-form__muted">{labels.help}</p>
     <p className="entry-form__muted">JPEG, PNG o WebP · hasta aprox. 10,49 MB y 4096 × 4096 px.</p>
     {validating && <output className="entry-image-field__validation" aria-live="polite">Validando archivo e imagen…</output>}

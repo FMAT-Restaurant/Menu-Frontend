@@ -213,7 +213,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .recipe-supplies-table th, .recipe-supplies-table td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
 .recipe-supplies-table th { background: #f1f5f9; font-weight: 600; color: var(--text); font-size: 13px; }
 .recipe-supplies-table td select, .recipe-supplies-table td input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 13px; }
-.recipe-supplies-table__unit { text-align: center !important; color: var(--muted); font-weight: 600; }
+.recipe-supplies-table .recipe-supplies-table__unit { text-align: center; color: var(--muted); font-weight: 600; }
 .recipe-form-dialog__error { margin: 0; color: #991b1b; font-size: 14px; }
 .recipe-form-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--border); background: #f8fafc; }
 .button--small { min-height: 32px; padding: 4px 10px; font-size: 13px; }
@@ -234,7 +234,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .entry-form__field label { color: var(--text); font-size: 14px; font-weight: 600; }
 .entry-form__field input, .entry-form__field textarea, .entry-status-selector select, .entry-category-selector__panel > input { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; line-height: 20px; }
 .entry-form__field textarea { min-height: 80px; resize: vertical; }
-.entry-form :is(input, textarea, select, button)[aria-invalid="true"] { border-color: #dc2626; }
+.entry-form :is(input, textarea, select)[aria-invalid="true"], .entry-form [data-invalid="true"] { border-color: #dc2626; }
 .entry-form :is(input, textarea, select, button):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .entry-form :is(input, textarea, button, select) { scroll-margin-block: 24px 112px; }
 .entry-form__muted { margin: 6px 0 0; color: #4b5563; font-size: 13px; line-height: 19px; overflow-wrap: anywhere; }
@@ -243,7 +243,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .entry-category-selector__trigger { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: var(--surface); color: var(--text); text-align: left; font-size: 14px; }
 .entry-category-selector__trigger span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .entry-category-selector__panel { margin-top: 8px; padding: 8px; border: 1px solid #d1d5db; border-radius: 8px; background: var(--surface); box-shadow: 0 4px 12px rgb(0 0 0 / 5%); }
-.entry-category-selector__list { max-height: 192px; margin-top: 8px; overflow-y: auto; overscroll-behavior: contain; }
+.entry-category-selector__list { min-width: 0; max-height: 192px; margin: 8px 0 0; padding: 0; border: 0; overflow-y: auto; overscroll-behavior: contain; }
 .entry-category-selector__list > p { padding: 8px; color: var(--text); font-size: 13px; line-height: 20px; }
 .entry-category-selector__option { display: flex; min-height: 44px; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--text); font-size: 14px; }
 .entry-category-selector__option:hover { background: var(--canvas); }

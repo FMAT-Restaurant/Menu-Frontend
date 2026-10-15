@@ -329,6 +329,27 @@ test("category search retains hidden selections, chips remove them, and editing 
   expect(api.listCategories).toHaveBeenCalledTimes(1);
 });
 
+test("category validation uses native grouped controls and Escape only closes from inside the selector", async () => {
+  const api = repository();
+  api.createEntry.mockRejectedValueOnce(rejected(422, [{ path: "/categoryIds", message: "Revisa las categorías elegidas." }]));
+  renderPage(api); await chooseValidImage(); fillIdentity();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+  await screen.findByRole("alert", { name: "Error al guardar entrada" });
+  const trigger = screen.getByRole("button", { name: "Seleccionar categorías" });
+  expect(trigger).not.toHaveAttribute("aria-invalid");
+  expect(trigger).toHaveAccessibleDescription("Revisa las categorías elegidas.");
+  fireEvent.click(trigger);
+  expect(screen.getByRole("group", { name: "Categorías disponibles" }).tagName).toBe("FIELDSET");
+  const checkbox = screen.getByRole("checkbox", { name: "Principales" });
+  expect(checkbox).toHaveAttribute("aria-invalid", "true");
+  expect(checkbox).toHaveAccessibleDescription("Revisa las categorías elegidas.");
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  expect(screen.getByRole("searchbox", { name: "Buscar categorías" })).toBeInTheDocument();
+  fireEvent.keyDown(checkbox, { key: "Escape" });
+  expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+});
+
 test("slow categories do not hide independent fields or overwrite the draft", async () => {
   const api = repository();
   const categoriesRequest = pending<typeof categories>();
@@ -416,7 +437,9 @@ test("invalid image references invalidate the upload id so a retry can recover",
   api.createEntry.mockRejectedValueOnce(rejected(422, [{ path: "/imageId", message: "Imagen no disponible." }]));
   renderPage(api); await chooseValidImage(); fillIdentity();
   fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
-  await waitFor(() => expect(screen.getByRole("button", { name: "Cambiar imagen" })).toHaveAttribute("aria-invalid", "true"));
+  await waitFor(() => expect(screen.getByLabelText("Archivo de imagen")).toHaveAttribute("aria-invalid", "true"));
+  expect(screen.getByRole("button", { name: "Cambiar imagen" })).not.toHaveAttribute("aria-invalid");
+  expect(screen.getByRole("button", { name: "Cambiar imagen" })).toHaveAccessibleDescription(/Imagen no disponible/);
   fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
   await screen.findByRole("heading", { name: "Catálogo restaurado" });
   expect(api.uploadEntryImage).toHaveBeenCalledTimes(2);
