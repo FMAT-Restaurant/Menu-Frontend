@@ -213,7 +213,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .recipe-supplies-table th, .recipe-supplies-table td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
 .recipe-supplies-table th { background: #f1f5f9; font-weight: 600; color: var(--text); font-size: 13px; }
 .recipe-supplies-table td select, .recipe-supplies-table td input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 13px; }
-.recipe-supplies-table__unit { text-align: center !important; color: var(--muted); font-weight: 600; }
+.recipe-supplies-table .recipe-supplies-table__unit { text-align: center; color: var(--muted); font-weight: 600; }
 .recipe-form-dialog__error { margin: 0; color: #991b1b; font-size: 14px; }
 .recipe-form-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--border); background: #f8fafc; }
 .button--small { min-height: 32px; padding: 4px 10px; font-size: 13px; }

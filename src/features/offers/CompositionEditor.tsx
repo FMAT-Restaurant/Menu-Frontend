@@ -12,6 +12,10 @@ export interface CompositionEditorProps {
   disabled?: boolean;
 }
 
+function handleCopyFromAnotherOffer() {
+  // TODO: Copying composition from another offer will be implemented in V8.
+}
+
 export function CompositionEditor({
   slots,
   onAddSlot,
@@ -23,10 +27,6 @@ export function CompositionEditor({
   onToggleOptionStatus,
   disabled = false,
 }: Readonly<CompositionEditorProps>) {
-  function handleCopyFromAnotherOffer() {
-    // TODO: Copying composition from another offer will be implemented in V8.
-  }
-
   return (
     <section className="composition-editor" aria-labelledby="composition-editor-title">
       <div className="composition-editor__header">

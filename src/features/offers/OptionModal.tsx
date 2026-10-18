@@ -24,6 +24,10 @@ export interface OptionModalProps {
   onOpenRecipePicker: () => void;
 }
 
+function handleInventoryClick() {
+  // TODO: Interactive selection of inventory items will be implemented in V7.
+}
+
 export function OptionModal({
   isOpen,
   slotName,
@@ -131,10 +135,6 @@ export function OptionModal({
       quantity,
       unit,
     });
-  }
-
-  function handleInventoryClick() {
-    // TODO: Interactive selection of inventory items will be implemented in V7.
   }
 
   const title = initialData ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
