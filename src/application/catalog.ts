@@ -31,6 +31,7 @@ export interface MenuEntryDetail {
   categoryIds: string[];
   imageRef?: string;
   image?: MenuImage | null;
+  etag?: string;
 }
 
 export type OfferStatus = "ACTIVE" | "INACTIVE";
@@ -54,6 +55,11 @@ export interface EntryCreateDraft {
 
 export interface EntryUpdateDraft extends EntryCreateDraft {
   status: EntryStatus;
+  imageId?: string;
+}
+
+export interface EntryCreateRequest extends EntryCreateDraft {
+  imageId: string;
 }
 
 export interface CategoryDraft {
@@ -129,8 +135,9 @@ export interface MenuRepository {
   setEntryStatus(id: string, status: EntryStatus): Promise<void>;
   deleteArchivedEntry(id: string): Promise<void>;
   getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail>;
-  createEntry(draft: EntryCreateDraft, image: File): Promise<MenuEntryDetail>;
-  updateEntry(id: string, draft: EntryUpdateDraft, image?: File): Promise<MenuEntryDetail>;
+  uploadEntryImage(image: File): Promise<string>;
+  createEntry(draft: EntryCreateRequest): Promise<MenuEntryDetail>;
+  updateEntry(id: string, draft: EntryUpdateDraft, etag: string): Promise<MenuEntryDetail>;
   listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
   setOfferStatus(id: string, status: OfferStatus): Promise<void>;
   deleteInactiveOffer(id: string): Promise<void>;

@@ -1,7 +1,7 @@
 import type { AxiosInstance } from "axios";
 import type {
   CategoryDraft,
-  EntryCreateDraft,
+  EntryCreateRequest,
   EntryQuery,
   EntryStatus,
   EntryUpdateDraft,
@@ -20,6 +20,7 @@ import type {
   RecipeSummary,
 } from "../application/catalog";
 import { entryPage, categoryPage } from "./catalogResponse";
+import { isStrongEntryVersion } from "../application/entryVersion";
 
 function sanitizeIdentifier(id: string): string {
   const cleanId = id.trim();
@@ -34,6 +35,8 @@ function recipePath(recipeId: string) {
 }
 
 const offersRequestTimeoutMs = 12000;
+const entryWriteTimeoutMs = 20000;
+const imageUploadTimeoutMs = 60000;
 
 function entryPath(entryId?: string) {
   const base = "/menu/entries";
@@ -55,7 +58,7 @@ async function categoryPages(getPage: (page: number) => Promise<Page<MenuCategor
 
 export function createMenuApi(client: AxiosInstance): MenuRepository {
   async function uploadImage(image: File): Promise<string> {
-    const response = await client.post<{ data: { id: string } }>("/media/images", imageMultipart(image));
+    const response = await client.post<{ data: { id: string } }>("/media/images", imageMultipart(image), { timeout: imageUploadTimeoutMs });
     const id = response.data?.data?.id;
     if (typeof id !== "string" || !id) throw new Error("No se recibió el identificador de la imagen. La entrada no se guardó.");
     return id;
@@ -106,7 +109,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
 
     async listCategories(signal?: AbortSignal): Promise<MenuCategory[]> {
       const getPage = async (page: number) => {
-        const response = await client.get<unknown>("/menu/categories", { params: { page, pageSize: 100 }, signal });
+        const response = await client.get<unknown>("/menu/categories", { params: { page, pageSize: 100 }, signal, timeout: offersRequestTimeoutMs });
         return categoryPage(response.data);
       };
       const firstPage = await getPage(1);
@@ -144,20 +147,20 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
 
     async getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail> {
       const response = await client.get<{ data: MenuEntryDetail }>(entryPath(id), { signal, timeout: offersRequestTimeoutMs });
+      const etag = response.headers.etag;
+      return { ...response.data.data, etag: typeof etag === "string" ? etag : undefined };
+    },
+
+    uploadEntryImage: uploadImage,
+
+    async createEntry(draft: EntryCreateRequest): Promise<MenuEntryDetail> {
+      const response = await client.post<{ data: MenuEntryDetail }>(entryPath(), draft, { timeout: entryWriteTimeoutMs });
       return response.data.data;
     },
 
-    async createEntry(draft: EntryCreateDraft, image: File): Promise<MenuEntryDetail> {
-      const imageId = await uploadImage(image);
-      const response = await client.post<{ data: MenuEntryDetail }>(entryPath(), { ...draft, imageId });
-      return response.data.data;
-    },
-
-    async updateEntry(id: string, draft: EntryUpdateDraft, image?: File): Promise<MenuEntryDetail> {
-      const imageId = image ? await uploadImage(image) : undefined;
-      const current = await currentEntry(id);
-      const body = imageId ? { ...draft, imageId } : draft;
-      const response = await client.patch<{ data: MenuEntryDetail }>(current.path, body, { headers: { "If-Match": current.etag } });
+    async updateEntry(id: string, draft: EntryUpdateDraft, etag: string): Promise<MenuEntryDetail> {
+      if (!isStrongEntryVersion(etag)) throw new Error("No se recibió una versión fuerte de la entrada. Revisa los datos actuales antes de guardar.");
+      const response = await client.patch<{ data: MenuEntryDetail }>(entryPath(id), draft, { headers: { "If-Match": etag }, timeout: entryWriteTimeoutMs });
       return response.data.data;
     },
 
