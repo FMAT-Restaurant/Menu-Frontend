@@ -62,6 +62,7 @@ function createMockRepository(): jest.Mocked<MenuRepository> {
     setEntryStatus: jest.fn(),
     deleteArchivedEntry: jest.fn(),
     getEntry: jest.fn().mockResolvedValue(mockEntry),
+    uploadEntryImage: jest.fn(),
     createEntry: jest.fn(),
     updateEntry: jest.fn(),
     listOffers: jest.fn(),
