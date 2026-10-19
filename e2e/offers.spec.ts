@@ -11,6 +11,15 @@ test("opens an entry's offers and returns to the catalog without losing the quer
   await page.route("**/api/v1/menu/entries?*", (route) => route.fulfill({ json: { data: [entry], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } } }));
   await page.route("**/api/v1/menu/entries/entry-1", (route) => route.fulfill({ json: { data: { ...entry, categoryIds: [] } } }));
   await page.route("**/api/v1/menu/offers?*", (route) => route.fulfill({ json: { data: [offer()], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } } }));
+  await page.route("**/api/v1/menu/offers/offer-1", (route) => route.fulfill({
+    headers: { ETag: '"offer-rev-1"' },
+    json: {
+      data: {
+        ...offer(),
+        composition: { slots: [] },
+      },
+    },
+  }));
 
   await page.goto("/?q=hawai");
   const card = await page.getByRole("article").boundingBox();
@@ -22,7 +31,7 @@ test("opens an entry's offers and returns to the catalog without losing the quer
   await expect(page.getByRole("button", { name: "Cambiar estado de oferta Combo: Inactiva" })).toHaveCSS("border-radius", "999px");
   await expect(page.locator(".offer-card__composition")).toHaveCSS("justify-content", "center");
   await page.getByRole("link", { name: "Abrir oferta Combo para editar" }).click();
-  await expect(page.getByText(/creación y edición de ofertas se implementará en V4/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Editar oferta" })).toBeVisible();
   await page.getByRole("link", { name: /Volver a ofertas/ }).click();
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
   await page.getByRole("link", { name: /Volver a entradas/ }).click();

@@ -11,8 +11,11 @@ import type {
   MenuEntry,
   MenuEntryDetail,
   MenuOffer,
+  MenuOfferDetail,
   MenuRepository,
+  OfferCreateDraft,
   OfferStatus,
+  OfferUpdateDraft,
   Page,
   RecipeDetail,
   RecipeDraft,
@@ -171,6 +174,36 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
         timeout: offersRequestTimeoutMs,
       });
       return response.data;
+    },
+
+    async getOffer(id: string, signal?: AbortSignal): Promise<MenuOfferDetail> {
+      const response = await client.get<{ data: MenuOfferDetail }>(`/menu/offers/${encodeURIComponent(id)}`, {
+        signal,
+        timeout: offersRequestTimeoutMs,
+      });
+      return response.data.data;
+    },
+
+    async createOffer(entryId: string, draft: OfferCreateDraft, image: File): Promise<MenuOfferDetail> {
+      const imageId = await uploadImage(image);
+      const response = await client.post<{ data: MenuOfferDetail }>(
+        `/menu/entries/${encodeURIComponent(entryId)}/offers`,
+        { ...draft, imageId },
+        { timeout: offersRequestTimeoutMs }
+      );
+      return response.data.data;
+    },
+
+    async updateOffer(id: string, draft: OfferUpdateDraft, image?: File): Promise<MenuOfferDetail> {
+      const imageId = image ? await uploadImage(image) : undefined;
+      const current = await currentOffer(id);
+      const body = imageId ? { ...draft, imageId } : draft;
+      const response = await client.patch<{ data: MenuOfferDetail }>(
+        current.path,
+        body,
+        { headers: { "If-Match": current.etag }, timeout: offersRequestTimeoutMs }
+      );
+      return response.data.data;
     },
 
     async setOfferStatus(id: string, status: OfferStatus): Promise<void> {
