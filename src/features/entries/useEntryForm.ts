@@ -102,6 +102,7 @@ export function useEntryForm(
   const loaded = useRef(false);
   const mounted = useRef(true);
   const saving = useRef(false);
+  const saveSucceeded = useRef(false);
   const userEdited = useRef(false);
   const validationRun = useRef(0);
   const validationPending = useRef(false);
@@ -380,9 +381,10 @@ export function useEntryForm(
       description: draft.description.trim(),
       categoryIds: [...draft.categoryIds],
     };
-    const update = {
+    const statusChanged = resources.entry?.status !== draft.status;
+    const update: EntryUpdateDraft = {
       ...identity,
-      status: draft.status,
+      ...(statusChanged ? { status: draft.status } : {}),
       ...(imageId ? { imageId } : {}),
     };
     await repository.updateEntry(entryId, update, resources.entry?.etag ?? "");
@@ -406,6 +408,7 @@ export function useEntryForm(
     event.preventDefault();
     if (
       saving.current ||
+      saveSucceeded.current ||
       uncertain !== "idle" ||
       (entryId && failure?.kind === "conflict")
     )
@@ -428,19 +431,26 @@ export function useEntryForm(
         attempted = "persist";
         setStage("persist");
         await persist(imageId);
-        if (!mounted.current) return;
-        invalidateCatalogEntries(repository);
-        await onSaved();
       } catch (error: unknown) {
         if (mounted.current) saveFailure(error, attempted);
+        return;
       } finally {
         saving.current = false;
         if (mounted.current) setStage("idle");
       }
+      if (!mounted.current) return;
+      saveSucceeded.current = true;
+      invalidateCatalogEntries(repository);
+        try {
+          await onSaved();
+        } catch {
+          // Failure of onSaved callback must not invalidate the successful write
+        }
       return;
     }
 
     // Creation flow (idempotent, multi-stage controller)
+    let createdSuccessfully = false;
     try {
       lastRawErrorRef.current = null;
       const controller = getOrInitController();
@@ -468,8 +478,7 @@ export function useEntryForm(
       if (!mounted.current) return;
 
       if (result.status === "succeeded") {
-        invalidateCatalogEntries(repository);
-        await onSaved();
+        createdSuccessfully = true;
       } else {
         const activeStage = controller.getCurrentAttempt();
         const attempted =
@@ -502,6 +511,16 @@ export function useEntryForm(
     } finally {
       saving.current = false;
       if (mounted.current) setStage("idle");
+    }
+
+    if (createdSuccessfully && mounted.current) {
+      saveSucceeded.current = true;
+      invalidateCatalogEntries(repository);
+      try {
+        await onSaved();
+      } catch {
+        // Failure of onSaved callback must not invalidate the successful write or enable another creation
+      }
     }
   }
 
@@ -558,7 +577,9 @@ export function useEntryForm(
     changeCategories,
     changeStatus,
     save,
+    saveSucceeded: saveSucceeded.current,
     abandon: () => {
+      saveSucceeded.current = false;
       if (controllerRef.current) {
         void controllerRef.current.abandonFlow().catch(() => {});
       }

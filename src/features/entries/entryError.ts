@@ -31,7 +31,7 @@ function violationsFrom(details: unknown): EntryViolation[] {
 }
 
 function kindFor(status: unknown, code: unknown): FailureKind {
-  if (status === 409 || status === 412) return "conflict";
+  if (status === 409 || status === 412 || status === 428) return "conflict";
   if (status === 400 || status === 415 || status === 422) return "validation";
   if (status === 404) return "notFound";
   if (status === 401 || status === 403) return "access";

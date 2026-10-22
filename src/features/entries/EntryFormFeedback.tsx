@@ -10,9 +10,39 @@ function EntryReview({ model }: Readonly<{ model: Model }>) {
   if (!model.review) return null;
   const current = model.review;
   const versionValid = isStrongEntryVersion(current.etag);
+
+  let currentImageText = "Sin imagen";
+  if (current.image?.url) {
+    currentImageText = current.image.url;
+  } else if (current.imageRef) {
+    currentImageText = `Referencia: ${current.imageRef}`;
+  } else if (current.image?.id) {
+    currentImageText = `ID: ${current.image.id}`;
+  }
+
+  let draftImageText = "Sin imagen";
+  if (model.file) {
+    draftImageText = `Archivo local: ${model.file.name}`;
+  } else if (model.entry?.image?.url) {
+    draftImageText = `Imagen previa: ${model.entry.image.url}`;
+  } else if (model.entry?.imageRef) {
+    draftImageText = `Referencia previa: ${model.entry.imageRef}`;
+  }
   return <section className="entry-form__review" aria-label="Datos actuales de la entrada">
     <h2>Datos actuales de la entrada</h2>
-    <dl><dt>Nombre</dt><dd>{current.brandName}</dd><dt>Descripción</dt><dd>{current.description}</dd><dt>Estado</dt><dd>{current.status}</dd><dt>Categorías</dt><dd>{current.categoryIds.join(", ") || "Sin clasificación"}</dd></dl>
+    <dl>
+      <dt>Nombre</dt><dd>{current.brandName}</dd>
+      <dt>Descripción</dt><dd>{current.description}</dd>
+      <dt>Estado</dt><dd>{current.status}</dd>
+      <dt>Categorías</dt><dd>{current.categoryIds.join(", ") || "Sin clasificación"}</dd>
+      <dt>Imagen actual en servidor</dt>
+      <dd>
+        {current.image?.url ? <img src={current.image.url} alt="Imagen actual de la entrada en el servidor" className="entry-form__review-image" /> : null}
+        <span>{currentImageText}</span>
+      </dd>
+      <dt>Imagen en borrador local</dt>
+      <dd>{draftImageText}</dd>
+    </dl>
     <p>Tu borrador permanece en el formulario. Elige usar estos datos o conservar tu borrador con la versión que acabas de revisar.</p>
     {!versionValid && <p>No se recibió una versión fuerte. Reintenta la consulta antes de continuar.</p>}
     <div className="entry-form__review-actions">

@@ -46,6 +46,7 @@ function renderPage(
   path = "/entries/new",
   state?: unknown,
   storage?: PendingOperationStorageAdapter,
+  onSaved?: () => Promise<void>,
 ) {
   const harness = storage ? null : createControllableIndexedDbHarness();
   const actualStorage =
@@ -56,11 +57,11 @@ function renderPage(
       <Routes>
         <Route
           path="/entries/new"
-          element={<EntryFormPage repository={api} storage={actualStorage} />}
+          element={<EntryFormPage repository={api} storage={actualStorage} onSaved={onSaved} />}
         />
         <Route
           path="/entries/:entryId/edit"
-          element={<EntryFormPage repository={api} storage={actualStorage} />}
+          element={<EntryFormPage repository={api} storage={actualStorage} onSaved={onSaved} />}
         />
         <Route path="/" element={<CatalogDestination />} />
       </Routes>
@@ -72,6 +73,46 @@ function CatalogDestination() {
   const location = useLocation();
   return <h1>Catálogo restaurado {location.search}</h1>;
 }
+
+const originalDescriptors = {
+  createImageBitmap: Object.getOwnPropertyDescriptor(globalThis, "createImageBitmap"),
+  createObjectURL: Object.getOwnPropertyDescriptor(URL, "createObjectURL"),
+  revokeObjectURL: Object.getOwnPropertyDescriptor(URL, "revokeObjectURL"),
+  requestAnimationFrame: Object.getOwnPropertyDescriptor(window, "requestAnimationFrame"),
+  scrollBy: Object.getOwnPropertyDescriptor(window, "scrollBy"),
+  scrollTo: Object.getOwnPropertyDescriptor(window, "scrollTo"),
+};
+
+function restoreGlobal(target: object, prop: string, original: PropertyDescriptor | undefined) {
+  if (original) {
+    Object.defineProperty(target, prop, original);
+  } else {
+    Reflect.deleteProperty(target, prop);
+  }
+}
+
+beforeEach(() => {
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    writable: true,
+    value: jest.fn().mockReturnValue("blob:default-preview"),
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    writable: true,
+    value: jest.fn(),
+  });
+});
+
+afterEach(() => {
+  restoreGlobal(globalThis, "createImageBitmap", originalDescriptors.createImageBitmap);
+  restoreGlobal(URL, "createObjectURL", originalDescriptors.createObjectURL);
+  restoreGlobal(URL, "revokeObjectURL", originalDescriptors.revokeObjectURL);
+  restoreGlobal(window, "requestAnimationFrame", originalDescriptors.requestAnimationFrame);
+  restoreGlobal(window, "scrollBy", originalDescriptors.scrollBy);
+  restoreGlobal(window, "scrollTo", originalDescriptors.scrollTo);
+  jest.restoreAllMocks();
+});
 
 async function chooseValidImage() {
   const bitmap = { width: 800, height: 600, close: jest.fn() };
@@ -151,7 +192,6 @@ test("loads an entry for editing and keeps its current image when no replacement
     brandName: "Hamburguesa de la casa",
     description: "Descripción actualizada.",
     categoryIds: ["category-1"],
-    status: "INACTIVE",
   }, '"entry-rev-1"'));
   expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?q=pollo" })).toBeVisible();
 });
@@ -202,14 +242,26 @@ test("keeps the form open and its values when the server rejects a save", async 
   expect(api.uploadEntryImage).toHaveBeenCalledWith(image, expect.any(String));
 });
 
-test("cancel discards the draft and returns to the catalog filters", async () => {
+test("cancel discards the draft after modifying fields and image, and reopening shows clean initial state", async () => {
   const api = repository();
   renderPage(api, "/entries/new", { returnTo: "/?status=ARCHIVED" });
   await screen.findByRole("button", { name: "Guardar entrada" });
+  await chooseValidImage();
+  fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Borrador a cancelar" } });
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción a cancelar" } });
+
   fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
   expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?status=ARCHIVED" })).toBeVisible();
   expect(api.createEntry).not.toHaveBeenCalled();
+  expect(api.updateEntry).not.toHaveBeenCalled();
+
+  renderPage(api, "/entries/new", { returnTo: "/?status=ARCHIVED" });
+  expect(await screen.findByLabelText("Nombre comercial")).toHaveValue("");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("");
+  expect(screen.queryByRole("img", { name: "Vista previa de la imagen de la entrada" })).not.toBeInTheDocument();
+  expect(api.createEntry).not.toHaveBeenCalled();
+  expect(api.updateEntry).not.toHaveBeenCalled();
 });
 
 test("unarchiving sets INACTIVE and requires a later explicit activation", async () => {
@@ -840,4 +892,187 @@ test("acceptReview keeping draft when reviewed entry is ARCHIVED sets active dra
   const continueBtn = await screen.findByRole("button", { name: "Continuar con mi borrador y versión revisada" });
   fireEvent.click(continueBtn);
   expect(screen.getByRole("combobox", { name: "Estado administrativo" })).toHaveValue("INACTIVE");
+});
+
+test("rejection of image upload during submit prevents calling createEntry (A07)", async () => {
+  const api = repository();
+  api.uploadEntryImage.mockRejectedValueOnce(
+    new AxiosError("Upload rejected", "ERR_BAD_REQUEST", undefined, {}, {
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: { error: { message: "Formato de imagen inválido." } },
+    }),
+  );
+  renderPage(api);
+  await screen.findByLabelText("Archivo de imagen");
+  await chooseValidImage();
+  fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Bowl de pollo" } });
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Pollo con arroz." } });
+
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Formato de imagen inválido.");
+  expect(api.uploadEntryImage).toHaveBeenCalledTimes(1);
+  expect(api.createEntry).not.toHaveBeenCalled();
+});
+
+test("HTTP 428 Precondition Required is classified as conflict and enables version review (E01)", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(428));
+  api.getEntry
+    .mockResolvedValueOnce(entry)
+    .mockResolvedValueOnce({ ...entry, brandName: "Cambio concurrente 428", etag: '"entry-rev-428"' });
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Modificación con 428" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  const alert = await screen.findByRole("alert", { name: "Error al guardar entrada" });
+  expect(alert).toHaveTextContent("Revisa los datos enviados.");
+  expect(within(alert).getByRole("button", { name: "Revisar entrada actual" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
+
+  fireEvent.click(screen.getByRole("button", { name: "Revisar entrada actual" }));
+  await screen.findByText("Cambio concurrente 428");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("Modificación con 428");
+
+  fireEvent.click(screen.getByRole("button", { name: "Continuar con mi borrador y versión revisada" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  await screen.findByRole("heading", { name: "Catálogo restaurado" });
+  expect(api.updateEntry).toHaveBeenLastCalledWith(
+    entry.id,
+    expect.objectContaining({ description: "Modificación con 428" }),
+    '"entry-rev-428"',
+  );
+});
+
+test("conflict review displays server image URL, reference, or absence alongside draft image (E02)", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(412));
+  api.getEntry
+    .mockResolvedValueOnce(entry)
+    .mockResolvedValueOnce({
+      ...entry,
+      brandName: "Entrada con imagen remota",
+      image: { id: "remote-img-1", url: "https://example.com/remote.png", thumbnailUrl: "https://example.com/remote.png" },
+      imageRef: "remote-ref-1",
+      etag: '"entry-rev-remote"',
+    });
+
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  await chooseValidImage();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: "Revisar entrada actual" }));
+  const reviewSection = await screen.findByRole("region", { name: "Datos actuales de la entrada" });
+  expect(within(reviewSection).getByText("https://example.com/remote.png")).toBeVisible();
+  expect(within(reviewSection).getByRole("img", { name: "Imagen actual de la entrada en el servidor" })).toHaveAttribute("src", "https://example.com/remote.png");
+  expect(within(reviewSection).getByText(/Archivo local: hamburguesa\.png/)).toBeVisible();
+});
+
+test("conflict review displays 'Sin imagen' when server has no image (E02 absence)", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(412));
+  api.getEntry
+    .mockResolvedValueOnce({ ...entry, image: null, imageRef: undefined })
+    .mockResolvedValueOnce({
+      ...entry,
+      brandName: "Entrada sin imagen",
+      image: null,
+      imageRef: undefined,
+      etag: '"entry-rev-no-img"',
+    });
+
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: "Revisar entrada actual" }));
+  const reviewSection = await screen.findByRole("region", { name: "Datos actuales de la entrada" });
+  expect(within(reviewSection).getAllByText("Sin imagen")[0]).toBeVisible();
+});
+
+test("editing text of an ACTIVE entry does NOT include status in update payload (E03)", async () => {
+  const api = repository();
+  api.getEntry.mockResolvedValueOnce({ ...entry, status: "ACTIVE" });
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Texto editado sin cambio de estado" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  await waitFor(() => {
+    expect(api.updateEntry).toHaveBeenCalledWith(
+      "entry-1",
+      expect.not.objectContaining({ status: expect.anything() }),
+      '"entry-rev-1"',
+    );
+  });
+  expect(api.updateEntry).toHaveBeenCalledWith(
+    "entry-1",
+    {
+      brandName: "Hamburguesa de la casa",
+      description: "Texto editado sin cambio de estado",
+      categoryIds: ["category-1"],
+    },
+    '"entry-rev-1"',
+  );
+});
+
+test("transitioning an entry to ACTIVE sends status: ACTIVE, and server rejection preserves draft and confirmed status (E03)", async () => {
+  const api = repository();
+  api.getEntry.mockResolvedValueOnce({ ...entry, status: "INACTIVE" });
+  api.updateEntry.mockRejectedValueOnce(
+    new AxiosError("Activation rejected", "ERR_BAD_REQUEST", undefined, {}, {
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: { error: { message: "No se puede activar: no tiene ofertas activas asociadas." } },
+    }),
+  );
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.change(screen.getByRole("combobox", { name: "Estado administrativo" }), { target: { value: "ACTIVE" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  await waitFor(() => {
+    expect(api.updateEntry).toHaveBeenCalledWith(
+      "entry-1",
+      expect.objectContaining({ status: "ACTIVE" }),
+      '"entry-rev-1"',
+    );
+  });
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent("No se puede activar: no tiene ofertas activas asociadas.");
+  expect(screen.getByRole("combobox", { name: "Estado administrativo" })).toHaveValue("ACTIVE");
+});
+
+test("onSaved failure after successful creation does not mark write uncertain or allow a second createEntry (E04)", async () => {
+  const api = repository();
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+  const onSaved = jest.fn().mockRejectedValue(new Error("Callback navigation failed"));
+
+  renderPage(api, "/entries/new", undefined, storage, onSaved);
+
+  await screen.findByLabelText("Archivo de imagen");
+  await chooseValidImage();
+  fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Bowl único" } });
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción única" } });
+
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+
+  await waitFor(() => expect(api.createEntry).toHaveBeenCalledTimes(1));
+  expect(onSaved).toHaveBeenCalledTimes(1);
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.queryByText(/El servidor pudo haber recibido/)).not.toBeInTheDocument();
+
+  expect(screen.getByRole("button", { name: "Guardar entrada" })).toBeDisabled();
+
+  fireEvent.submit(document.querySelector("form")!);
+  expect(api.createEntry).toHaveBeenCalledTimes(1);
 });

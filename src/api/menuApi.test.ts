@@ -551,13 +551,19 @@ test("reads a strong ETag before archiving and sends only the new status", async
   ]);
 });
 
-test("does not request the server when activation is unavailable", async () => {
-  const methods: string[] = [];
+test("requests server activation when transition to ACTIVE is requested", async () => {
+  const requests: { method?: string; url?: string; data?: unknown; ifMatch?: string }[] = [];
   const adapter: AxiosAdapter = async (config) => {
-    methods.push(config.method ?? "");
+    requests.push({
+      method: config.method,
+      url: config.url,
+      data: typeof config.data === "string" ? JSON.parse(config.data) : config.data,
+      ifMatch: config.headers?.get?.("If-Match")?.toString(),
+    });
+    const isPatch = config.method === "patch";
     return {
       config,
-      data: { data: validEntryDetail },
+      data: { data: { ...validEntryDetail, status: isPatch ? "ACTIVE" : "INACTIVE" } },
       headers: { etag: '"rev-3"' },
       status: 200,
       statusText: "OK",
@@ -565,10 +571,11 @@ test("does not request the server when activation is unavailable", async () => {
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.setEntryStatus("entry-1", "ACTIVE")).rejects.toThrow(
-    "La activación estará disponible cuando el servidor valide las ofertas activas",
-  );
-  expect(methods).toEqual([]);
+  await api.setEntryStatus("entry-1", "ACTIVE");
+  expect(requests).toEqual([
+    { method: "get", url: "/menu/entries/entry-1", data: undefined, ifMatch: undefined },
+    { method: "patch", url: "/menu/entries/entry-1", data: { status: "ACTIVE" }, ifMatch: '"rev-3"' },
+  ]);
 });
 
 test("does not send a status mutation when the entry already has that status", async () => {

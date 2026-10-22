@@ -73,6 +73,7 @@ export type EntryFormRepository = Pick<
 export interface EntryFormPageProps {
   repository: EntryFormRepository;
   storage?: PendingOperationStorageAdapter;
+  onSaved?: () => Promise<void>;
 }
 
 function EntryFormEditor({
@@ -80,22 +81,24 @@ function EntryFormEditor({
   entryId,
   returnTo,
   storage,
+  onSaved: customOnSaved,
 }: Readonly<{
   repository: EntryFormRepository;
   entryId?: string;
   returnTo: string;
   storage?: PendingOperationStorageAdapter;
+  onSaved?: () => Promise<void>;
 }>) {
   const navigate = useNavigate();
   const editing = Boolean(entryId);
-  const onSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
-  const model = useEntryForm(repository, entryId, onSaved, storage);
+  const defaultOnSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
+  const model = useEntryForm(repository, entryId, customOnSaved ?? defaultOnSaved, storage);
   const summary = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLElement>(null);
   const busy = model.stage !== "idle";
   const disabled = busy || !model.editingReady;
   const conflict = editing && model.failure?.kind === "conflict";
-  const saveDisabled = disabled || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
+  const saveDisabled = disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
   let saveLabel = progressLabels[model.stage];
   if (editing && !busy) saveLabel = "Guardar cambios";
 
@@ -136,8 +139,8 @@ function EntryFormEditor({
   </div>;
 }
 
-export function EntryFormPage({ repository, storage }: Readonly<EntryFormPageProps>) {
+export function EntryFormPage({ repository, storage, onSaved }: Readonly<EntryFormPageProps>) {
   const { entryId } = useParams();
   const location = useLocation();
-  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} storage={storage} />;
+  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} storage={storage} onSaved={onSaved} />;
 }

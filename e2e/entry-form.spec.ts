@@ -103,6 +103,6 @@ test("creates and edits an entry with separate image upload and JSON writes", as
   expect(requests[2]).toMatchObject({ method: "PATCH" });
   expect(detailReads).toBe(readsBeforeSave);
   expect(requests[2].body).toBe(JSON.stringify({
-    brandName: "Bowl de pollo", description: "Con vegetales.", categoryIds: ["category-1"], status: "INACTIVE",
+    brandName: "Bowl de pollo", description: "Con vegetales.", categoryIds: ["category-1"],
   }));
 });

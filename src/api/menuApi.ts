@@ -351,12 +351,6 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     },
 
     async setEntryStatus(id: string, status: EntryStatus): Promise<void> {
-      // The backend does not yet verify a valid active offer, so activation must wait.
-      if (status === "ACTIVE") {
-        throw new Error(
-          "La activación estará disponible cuando el servidor valide las ofertas activas.",
-        );
-      }
       const current = await currentEntry(id);
       if (current.status === status) return;
       const response = await client.patch<unknown>(

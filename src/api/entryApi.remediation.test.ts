@@ -83,12 +83,13 @@ test("an unexpected body ETag cannot substitute the missing HTTP version header"
 });
 
 test("bounds reads, upload and persistence separately and lets the caller reuse an uploaded id", async () => {
-  const requests: { method?: string; url?: string; timeout?: number }[] = [];
+  const requests: { method?: string; url?: string; timeout?: number; data?: unknown }[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push({
       method: config.method,
       url: config.url,
       timeout: config.timeout,
+      data: config.data,
     });
     let data: unknown = { data: entry };
     if (config.url === "/media/images") {
@@ -140,6 +141,28 @@ test("bounds reads, upload and persistence separately and lets the caller reuse 
   expect(
     requests.filter((request) => request.url === "/media/images"),
   ).toHaveLength(1);
+
+  const createReq = requests.find((r) => r.method === "post" && r.url === "/menu/entries");
+  expect(createReq).toBeDefined();
+  const createPayload = typeof createReq!.data === "string" ? JSON.parse(createReq!.data) : createReq!.data;
+  expect(createPayload).toEqual({
+    brandName: "Entrada",
+    description: "Descripción",
+    categoryIds: [],
+    imageId: "uploaded-1",
+  });
+  expect(createPayload.imageId).toBe("uploaded-1");
+
+  const patchReqs = requests.filter((r) => r.method === "patch" && r.url === "/menu/entries/entry-1");
+  expect(patchReqs).toHaveLength(2);
+  for (const patchReq of patchReqs) {
+    const patchPayload = typeof patchReq.data === "string" ? JSON.parse(patchReq.data) : patchReq.data;
+    expect(patchPayload).toEqual({
+      ...draft,
+      imageId: "uploaded-1",
+    });
+    expect(patchPayload.imageId).toBe("uploaded-1");
+  }
 });
 
 test("loads every category page with at most four concurrent later pages", async () => {
@@ -172,4 +195,39 @@ test("loads every category page with at most four concurrent later pages", async
   expect(await api.listCategories()).toHaveLength(701);
   expect(pages).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   expect(maxActive).toBeLessThanOrEqual(4);
+});
+
+test("omitting or changing imageId in create or edit requests is detected and fails exact inspection", async () => {
+  const requests: { method?: string; url?: string; data?: unknown }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      data: typeof config.data === "string" ? JSON.parse(config.data) : config.data,
+    });
+    return {
+      config,
+      data: { data: entry },
+      headers: { etag: '"rev-1"' },
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ adapter }));
+  await api.createEntry(
+    { brandName: "Entrada", description: "Descripción", categoryIds: [], imageId: "uploaded-1" },
+    "22222222-2222-4222-8222-222222222222",
+  );
+  await api.updateEntry("entry-1", { ...draft, imageId: "uploaded-1" }, '"rev-1"');
+
+  const createBody = requests.find((r) => r.url === "/menu/entries")?.data as Record<string, unknown>;
+  const editBody = requests.find((r) => r.url === "/menu/entries/entry-1")?.data as Record<string, unknown>;
+
+  expect(createBody.imageId).toBe("uploaded-1");
+  expect(editBody.imageId).toBe("uploaded-1");
+
+  expect(createBody.imageId).not.toBe("wrong-id");
+  expect(createBody.imageId).not.toBeUndefined();
+  expect(editBody.imageId).not.toBe("wrong-id");
+  expect(editBody.imageId).not.toBeUndefined();
 });

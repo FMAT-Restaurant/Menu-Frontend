@@ -169,7 +169,7 @@ export interface EntryCreateDraft {
 }
 
 export interface EntryUpdateDraft extends EntryCreateDraft {
-  status: EntryStatus;
+  status?: EntryStatus;
   imageId?: string;
 }
 

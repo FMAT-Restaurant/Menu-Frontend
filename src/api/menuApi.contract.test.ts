@@ -194,7 +194,7 @@ test("uploads a replacement image before PATCH and sends only its id with the cu
   expect(requests[1].ifMatch).toBe('"rev-opened"');
 });
 
-test("does not create an entry when image upload fails", async () => {
+test("rejects image upload when the upload request fails", async () => {
   const requests: string[] = [];
   const uploadError = new Error("Invalid image");
   const adapter: AxiosAdapter = async (config) => {
@@ -212,7 +212,7 @@ test("does not create an entry when image upload fails", async () => {
   expect(requests).toEqual(["post /media/images"]);
 });
 
-test("does not create an entry when the upload response has no imageId", async () => {
+test("rejects image upload when the upload response has no imageId", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(`${config.method} ${config.url}`);

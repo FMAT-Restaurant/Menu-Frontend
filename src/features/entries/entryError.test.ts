@@ -23,7 +23,7 @@ test("prioritizes a real AxiosError's server envelope and maps JSON pointer viol
   expect(failure.message).not.toContain("Request failed");
 });
 
-test.each([[400, "validation"], [415, "validation"], [422, "validation"], [409, "conflict"], [412, "conflict"], [404, "notFound"], [401, "access"], [403, "access"], [429, "temporary"], [503, "temporary"]])("classifies HTTP %i without exposing Axios's technical message", (status, kind) => {
+test.each([[400, "validation"], [415, "validation"], [422, "validation"], [409, "conflict"], [412, "conflict"], [428, "conflict"], [404, "notFound"], [401, "access"], [403, "access"], [429, "temporary"], [503, "temporary"]])("classifies HTTP %i without exposing Axios's technical message", (status, kind) => {
   const failure = entryFailure(httpError(Number(status), {}));
   expect(failure.kind).toBe(kind);
   expect(failure.message).not.toContain("Request failed");
