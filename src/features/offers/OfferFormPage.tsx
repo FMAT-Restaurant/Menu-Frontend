@@ -1,5 +1,7 @@
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { contractErrorResponse } from "../../api/catalogResponse";
+import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import type {
   MenuEntryDetail,
   MenuImage,
@@ -12,6 +14,7 @@ import type {
   RecipeSummary,
   VersionedResource,
 } from "../../application/catalog";
+import { invalidateCatalogEntries } from "../../application/catalogCache";
 import {
   createOperationAttemptController,
   sealJsonPayload,
@@ -19,7 +22,6 @@ import {
   type OperationFlowScope,
   type PendingOperationStorageAdapter,
 } from "../../application/operationAttempt";
-import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipePage } from "../recipes/RecipePage";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
@@ -109,7 +111,11 @@ function validateOfferForm(
   imageError: string,
   slots: SlotDraft[],
   confirmedImageId?: string | null,
+  imageValidating?: boolean,
 ): string | null {
+  if (imageValidating) {
+    return "La imagen se está validando. Espera a que termine la validación.";
+  }
   const priceNumber = Number(basePrice);
   if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
     return "El precio base debe ser un número positivo.";
@@ -211,9 +217,24 @@ function buildUpdateDraft(
   };
 }
 
-function extractErrorMessage(err: unknown): string {
-  if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
-    return err.message;
+function extractStructuredErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    const data =
+      "response" in err && (err as { response?: { data?: unknown } }).response?.data
+        ? (err as { response?: { data?: unknown } }).response!.data
+        : err;
+    const contract = contractErrorResponse(data);
+    if (contract) {
+      const violations = contract.details?.violations ?? [];
+      const violationMessages = violations.map((item) => item.message).join(" ");
+      if (violationMessages.length > 0 && contract.message) {
+        return `${contract.message} ${violationMessages}`;
+      }
+      return contract.message;
+    }
+    if ("message" in err && typeof (err as { message: unknown }).message === "string") {
+      return (err as { message: string }).message;
+    }
   }
   return "Ocurrió un error al guardar la oferta.";
 }
@@ -304,6 +325,46 @@ export function OfferFormPage({
 
   const imageValidationId = useRef(0);
   const restoredFromStorageRef = useRef(false);
+  const isSubmittingRef = useRef(false);
+  const activeContextRef = useRef({ entryId, offerId });
+  activeContextRef.current = { entryId, offerId };
+
+  // O12: Reset all form state and invalidate in-flight validations when route identity changes
+  useEffect(() => {
+    imageValidationId.current += 1;
+    controllerRef.current = null;
+    confirmedImageIdRef.current = null;
+    openingEtagRef.current = undefined;
+    sentSlotsRef.current = [];
+    restoredFromStorageRef.current = false;
+    isSubmittingRef.current = false;
+
+    setPresentationTag("");
+    setBasePrice("");
+    setDesiredStatus("INACTIVE");
+    setSlots([]);
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setExistingImage(null);
+    setImageError("");
+    setImageValidating(false);
+    setFormError("");
+    setConflictNotice("");
+    setAmbiguousNotice("");
+    setAmbiguousResponse(null);
+    setUncertainStage(null);
+    setRetryCountdownMs(0);
+    setReviewedOffer(null);
+    setReviewLoading(false);
+    setSlotModalOpen(false);
+    setEditingSlotIndex(null);
+    setOptionModalOpen(false);
+    setTargetSlotIndex(null);
+    setEditingOptionIndex(null);
+    setCurrentOptionDraft(null);
+    setRecipePickerOpen(false);
+    setSaving(false);
+  }, [entryId, offerId]);
 
   function getOrInitController(
     overrideFile?: File | null,
@@ -522,8 +583,13 @@ export function OfferFormPage({
     Promise.all(promises)
       .then(([entryData, offerData]) => {
         if (controller.signal.aborted) return;
+        if (activeContextRef.current.entryId !== entryId || activeContextRef.current.offerId !== offerId) return;
         setEntry(entryData);
         if (offerData && !restoredFromStorageRef.current) {
+          if (offerData.data.entryId && offerData.data.entryId !== entryId) {
+            setLoadError("La oferta no pertenece a la entrada seleccionada.");
+            return;
+          }
           setOpeningEtag(offerData.etag);
           openingEtagRef.current = offerData.etag;
           setPresentationTag(offerData.data.presentationTag || "");
@@ -534,16 +600,13 @@ export function OfferFormPage({
         }
       })
       .catch((err) => {
-        if (!controller.signal.aborted) {
-          const message =
-            err && typeof err === "object" && "message" in err && typeof err.message === "string"
-              ? err.message
-              : "No se pudieron cargar los datos de la oferta.";
+        if (!controller.signal.aborted && activeContextRef.current.entryId === entryId && activeContextRef.current.offerId === offerId) {
+          const message = extractStructuredErrorMessage(err);
           setLoadError(message);
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && activeContextRef.current.entryId === entryId && activeContextRef.current.offerId === offerId) {
           setLoading(false);
         }
       });
@@ -767,6 +830,15 @@ export function OfferFormPage({
 
   async function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmittingRef.current || saving) {
+      return;
+    }
+    if (imageValidating) {
+      setFormError("La imagen se está validando. Espera a que termine la validación.");
+      return;
+    }
+    isSubmittingRef.current = true;
+    setSaving(true);
     setFormError("");
     setConflictNotice("");
     setAmbiguousNotice("");
@@ -778,18 +850,24 @@ export function OfferFormPage({
       imageError,
       slots,
       confirmedImageIdRef.current,
+      imageValidating,
     );
     if (error) {
       setFormError(error);
+      isSubmittingRef.current = false;
+      setSaving(false);
       return;
     }
 
     if (ambiguousResponse) {
       setFormError("Debes resolver la revisión de la composición guardada antes de guardar nuevos cambios.");
+      isSubmittingRef.current = false;
+      setSaving(false);
       return;
     }
 
-    setSaving(true);
+    const currentEntryId = entryId;
+    const currentOfferId = offerId;
     const controller = getOrInitController();
 
     try {
@@ -811,6 +889,10 @@ export function OfferFormPage({
         ? await controller.retryPending()
         : await controller.submit();
 
+      if (activeContextRef.current.entryId !== currentEntryId || activeContextRef.current.offerId !== currentOfferId) {
+        return;
+      }
+
       if (attemptResult.status === "succeeded") {
         const result = attemptResult.result!;
         const reconciliation = reconcileComposition({
@@ -820,6 +902,7 @@ export function OfferFormPage({
         });
 
         if (reconciliation.status === "success") {
+          invalidateCatalogEntries(repository);
           setSlots(reconciliation.slots);
           const scope = isEditing ? buildOfferUpdateScope(offerId!) : buildOfferCreateScope(entryId);
           await storage.deleteRecord(scope);
@@ -853,7 +936,10 @@ export function OfferFormPage({
         }
       }
     } catch (err) {
-      const msg = extractErrorMessage(err);
+      if (activeContextRef.current.entryId !== currentEntryId || activeContextRef.current.offerId !== currentOfferId) {
+        return;
+      }
+      const msg = extractStructuredErrorMessage(err);
       if (err && typeof err === "object" && "response" in err) {
         const res = (err as { response?: { status?: number } }).response;
         if (res?.status === 412) {
@@ -865,18 +951,28 @@ export function OfferFormPage({
       }
       setFormError(msg);
     } finally {
-      setSaving(false);
+      isSubmittingRef.current = false;
+      if (activeContextRef.current.entryId === currentEntryId && activeContextRef.current.offerId === currentOfferId) {
+        setSaving(false);
+      }
     }
   }
 
   async function handleManualRetry() {
-    if (saving) return;
+    if (isSubmittingRef.current || saving) return;
+    isSubmittingRef.current = true;
     setSaving(true);
     setFormError("");
+    const currentEntryId = entryId;
+    const currentOfferId = offerId;
     const controller = getOrInitController();
 
     try {
       const attemptResult = await controller.retryPending();
+
+      if (activeContextRef.current.entryId !== currentEntryId || activeContextRef.current.offerId !== currentOfferId) {
+        return;
+      }
 
       if (attemptResult.status === "succeeded") {
         setUncertainStage(null);
@@ -888,6 +984,7 @@ export function OfferFormPage({
         });
 
         if (reconciliation.status === "success") {
+          invalidateCatalogEntries(repository);
           setSlots(reconciliation.slots);
           const scope = isEditing ? buildOfferUpdateScope(offerId!) : buildOfferCreateScope(entryId);
           await storage.deleteRecord(scope);
@@ -919,9 +1016,14 @@ export function OfferFormPage({
         }
       }
     } catch (err) {
-      setFormError(extractErrorMessage(err));
+      if (activeContextRef.current.entryId === currentEntryId && activeContextRef.current.offerId === currentOfferId) {
+        setFormError(extractStructuredErrorMessage(err));
+      }
     } finally {
-      setSaving(false);
+      isSubmittingRef.current = false;
+      if (activeContextRef.current.entryId === currentEntryId && activeContextRef.current.offerId === currentOfferId) {
+        setSaving(false);
+      }
     }
   }
 
@@ -933,7 +1035,7 @@ export function OfferFormPage({
       const versioned = await repository.getOffer(offerId);
       setReviewedOffer(versioned);
     } catch (err) {
-      setFormError(extractErrorMessage(err));
+      setFormError(extractStructuredErrorMessage(err));
     } finally {
       setReviewLoading(false);
     }
@@ -953,6 +1055,7 @@ export function OfferFormPage({
     setAmbiguousResponse(null);
     setReviewedOffer(null);
     controllerRef.current = null;
+    invalidateCatalogEntries(repository);
   }
 
   const slotModalInitialData: SlotModalData | null =
@@ -1019,9 +1122,11 @@ export function OfferFormPage({
         {loadError && (
           <div className="feedback feedback--error" role="alert">
             {loadError}{" "}
-            <button type="button" onClick={() => setRetryCount((c) => c + 1)}>
-              Reintentar
-            </button>
+            {loadError !== "La oferta no pertenece a la entrada seleccionada." && (
+              <button type="button" onClick={() => setRetryCount((c) => c + 1)}>
+                Reintentar
+              </button>
+            )}
           </div>
         )}
 
@@ -1144,7 +1249,7 @@ export function OfferFormPage({
               <button
                 type="submit"
                 className="button button--primary"
-                disabled={saving || imageValidating || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
+                disabled={saving || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
                 {saving ? "Guardando…" : "Guardar Oferta"}
               </button>

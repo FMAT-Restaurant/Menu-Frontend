@@ -19,6 +19,7 @@ import {
   buildOperationStorageKey,
   sealJsonPayload,
 } from "../../application/operationAttempt";
+import { cachedEntries, rememberEntries } from "../../application/catalogCache";
 import {
   createControllableIndexedDbHarness,
   createIndexedDbPendingOperationStorage,
@@ -284,6 +285,13 @@ afterAll(() => {
   }
   globalThis.URL.createObjectURL = originalCreateObjectURL;
   globalThis.URL.revokeObjectURL = originalRevokeObjectURL;
+});
+
+afterEach(() => {
+  Object.defineProperty(globalThis, "createImageBitmap", {
+    configurable: true,
+    value: jest.fn().mockResolvedValue({ width: 1000, height: 1000, close: jest.fn() }),
+  });
 });
 
 describe("OfferFormPage (V4)", () => {
@@ -616,16 +624,48 @@ describe("OfferFormPage (V4)", () => {
     expect(await screen.findByText("Vista de ofertas")).toBeVisible();
   });
 
-  test("displays error message if server rejects save", async () => {
+  test("displays structured error and violations from Axios 422 rejection while preserving form draft (O20, O33)", async () => {
     const repository = createMockRepository();
-    repository.updateOffer.mockRejectedValueOnce(new Error("Error 422: Datos de oferta inválidos"));
+    const axios422Error = {
+      isAxiosError: true,
+      name: "AxiosError",
+      message: "Request failed with status code 422",
+      response: {
+        status: 422,
+        statusText: "Unprocessable Entity",
+        headers: { "content-type": "application/json" },
+        data: {
+          error: {
+            message: "Datos de oferta inválidos según las reglas comerciales.",
+            details: {
+              code: "VALIDATION_FAILED",
+              violations: [
+                { path: "basePrice", message: "El precio base debe ser mayor a 0." },
+              ],
+            },
+          },
+        },
+      },
+    };
+    repository.updateOffer.mockRejectedValueOnce(axios422Error);
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
 
+    // Verify initial loaded draft values
+    expect(screen.getByDisplayValue("Individual")).toBeVisible();
+    expect(screen.getByDisplayValue("150")).toBeVisible();
+
     fireEvent.click(saveButton);
 
-    expect(await screen.findByText("Error 422: Datos de oferta inválidos")).toBeVisible();
+    // Displays server message and structured violation details (not just generic Axios message)
+    expect(
+      await screen.findByText(/Datos de oferta inválidos según las reglas comerciales.*El precio base debe ser mayor a 0/)
+    ).toBeVisible();
+
+    // Draft values are preserved in the form
+    expect(screen.getByDisplayValue("Individual")).toBeVisible();
+    expect(screen.getByDisplayValue("150")).toBeVisible();
     expect(screen.queryByText("Vista de ofertas")).not.toBeInTheDocument();
   });
 
@@ -639,17 +679,287 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeVisible();
   });
 
-  test("retries loading entry and offer when Reintentar button is clicked", async () => {
+  test("retries loading entry and offer in edit mode and populates recovered form data (O32)", async () => {
     const repository = createMockRepository();
-    repository.getEntry.mockRejectedValueOnce(new Error("Error al consultar la entrada"));
+    repository.getOffer.mockRejectedValueOnce(new Error("Error al consultar la oferta"));
 
-    renderComponent(repository);
-    expect(await screen.findByText("Error al consultar la entrada")).toBeVisible();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    expect(await screen.findByText("Error al consultar la oferta")).toBeVisible();
+
+    // Form inputs must not be present while in loadError state
+    expect(screen.queryByDisplayValue("Individual")).not.toBeInTheDocument();
 
     const retryBtn = screen.getByRole("button", { name: "Reintentar" });
     fireEvent.click(retryBtn);
 
-    expect(await screen.findByRole("heading", { name: "Nueva oferta" })).toBeVisible();
+    // After retry, both getEntry and getOffer must have been called twice (1 initial + 1 retry)
+    await waitFor(() => {
+      expect(repository.getEntry).toHaveBeenCalledTimes(2);
+      expect(repository.getOffer).toHaveBeenCalledTimes(2);
+    });
+
+    // Expect real recovered offer data displayed in inputs
+    expect(await screen.findByDisplayValue("Individual")).toBeVisible();
+    expect(screen.getByDisplayValue("150")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Guardar Oferta" })).toBeVisible();
+  });
+
+  test("blocks editing and displays error when offer does not belong to the entry in route (O11)", async () => {
+    const repository = createMockRepository();
+    repository.getOffer.mockResolvedValueOnce({
+      data: {
+        ...mockOffer,
+        entryId: "entry-other-999", // Mismatch with route entry-1
+      },
+      etag: '"offer-rev-other"',
+    });
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    expect(
+      await screen.findByText("La oferta no pertenece a la entrada seleccionada.")
+    ).toBeVisible();
+
+    // Form and save controls are not rendered
+    expect(screen.queryByRole("button", { name: "Guardar Oferta" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Etiqueta de presentación/)).not.toBeInTheDocument();
+    // Retry button is also not rendered for route belonging mismatch
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+  });
+
+  test("resets draft state and ignores in-flight validations when route identity changes (O12)", async () => {
+    const repository = createMockRepository();
+    let resolveBitmap: (val: unknown) => void = () => {};
+    const bitmapPromise = new Promise((resolve) => {
+      resolveBitmap = resolve;
+    });
+
+    const mockCreateImageBitmap = jest.fn().mockImplementation(() => bitmapPromise);
+    Object.defineProperty(globalThis, "createImageBitmap", {
+      configurable: true,
+      value: mockCreateImageBitmap,
+    });
+
+    function TestNavHelper({ to }: { to: string }) {
+      const { Link } = jest.requireActual("react-router-dom");
+      return <Link to={to}>Cambiar a Entrada 2</Link>;
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/entries/entry-1/offers/new"]}>
+        <Routes>
+          <Route
+            path="/entries/:entryId/offers/new"
+            element={
+              <>
+                <OfferFormPage repository={repository} />
+                <TestNavHelper to="/entries/entry-2/offers/new" />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const tagInput = await screen.findByLabelText(/Etiqueta de presentación/);
+
+    // Fill in presentation tag on entry-1
+    fireEvent.change(tagInput, {
+      target: { value: "Tag Entrada 1" },
+    });
+    expect(screen.getByDisplayValue("Tag Entrada 1")).toBeVisible();
+
+    // Select an image on entry-1 (triggers in-flight validation via createImageBitmap)
+    const file = new File(["dummy"], "entry1.jpg", { type: "image/jpeg" });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Navigate to entry-2 within the same router
+    fireEvent.click(screen.getByRole("link", { name: "Cambiar a Entrada 2" }));
+
+    // Form draft is completely reset for entry-2
+    await screen.findByLabelText(/Etiqueta de presentación/);
+    expect(screen.queryByDisplayValue("Tag Entrada 1")).not.toBeInTheDocument();
+
+    // Now resolve previous in-flight validation of entry-1
+    resolveBitmap({ width: 1000, height: 1000, close: jest.fn() });
+
+    // Ensure delayed resolution from entry-1 does not corrupt entry-2 state
+    expect(screen.queryByText(/Error al validar/)).not.toBeInTheDocument();
+
+    // Restore standard mock
+    Object.defineProperty(globalThis, "createImageBitmap", {
+      configurable: true,
+      value: jest.fn().mockResolvedValue({ width: 1000, height: 1000, close: jest.fn() }),
+    });
+  });
+
+  test("blocks submission while image validation is in progress and locks against concurrent double submits (O16)", async () => {
+    const repository = createMockRepository();
+    let resolveBitmap: (val: unknown) => void = () => {};
+    const bitmapPromise = new Promise((resolve) => {
+      resolveBitmap = resolve;
+    });
+
+    Object.defineProperty(globalThis, "createImageBitmap", {
+      configurable: true,
+      value: jest.fn().mockImplementation(() => bitmapPromise),
+    });
+
+    renderComponent(repository, "/entries/entry-1/offers/new");
+    const basePriceInput = await screen.findByLabelText(/Precio base/);
+
+    // Fill minimum required fields
+    fireEvent.change(basePriceInput, { target: { value: "100" } });
+
+    // Select image which starts slow validation
+    const file = new File(["dummy"], "slow.jpg", { type: "image/jpeg" });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Submit button should be disabled during image validation
+    const submitBtn = screen.getByRole("button", { name: "Guardar Oferta" });
+    expect(submitBtn).toBeDisabled();
+
+    // Attempting submit while validating produces validation error
+    fireEvent.submit(submitBtn.closest("form")!);
+    expect(await screen.findByText("La imagen se está validando. Espera a que termine la validación.")).toBeVisible();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+
+    // Restore standard mock and complete validation
+    Object.defineProperty(globalThis, "createImageBitmap", {
+      configurable: true,
+      value: jest.fn().mockResolvedValue({ width: 1000, height: 1000, close: jest.fn() }),
+    });
+    resolveBitmap({ width: 1000, height: 1000, close: jest.fn() });
+
+    await waitFor(() => {
+      expect(submitBtn).toBeEnabled();
+    });
+
+    // Add slot & option so form is valid
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Grupo 1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Grupo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    const recipeArticle = await screen.findByRole("article", { name: "Receta Hamburguesa" });
+    fireEvent.click(within(recipeArticle).getByRole("button", { name: "Asignar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Now test concurrent submits: slow createOffer
+    let resolveCreate: (val: MenuOfferDetail) => void = () => {};
+    repository.createOffer.mockImplementationOnce(() => new Promise<MenuOfferDetail>((resolve) => {
+      resolveCreate = resolve;
+    }));
+
+    // First click
+    fireEvent.click(submitBtn);
+    // Concurrent second click
+    fireEvent.click(submitBtn);
+
+    // createOffer should only be called once!
+    await waitFor(() => {
+      expect(repository.createOffer).toHaveBeenCalledTimes(1);
+    });
+
+    resolveCreate(mockOffer);
+  });
+
+  test("reuses confirmed imageId on uncertain outcome retry without re-uploading the image (O17)", async () => {
+    const repository = createMockRepository();
+    const storage = createControllableIndexedDbHarness();
+    const storageAdapter = createIndexedDbPendingOperationStorage({ idbFactory: storage.factory });
+    repository.uploadEntryImage.mockResolvedValueOnce("img-confirmed-999");
+    repository.createOffer.mockRejectedValueOnce(new Error("Network timeout on create"));
+
+    renderComponent(repository, "/entries/entry-1/offers/new", undefined, storageAdapter);
+    const basePriceInput = await screen.findByLabelText(/Precio base/);
+
+    // Fill form
+    fireEvent.change(basePriceInput, { target: { value: "120" } });
+    const file = new File(["dummy"], "photo.jpg", { type: "image/jpeg" });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Add slot & option
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Grupo 1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Grupo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    const recipeArticle = await screen.findByRole("article", { name: "Receta Hamburguesa" });
+    fireEvent.click(within(recipeArticle).getByRole("button", { name: "Asignar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Submit
+    const submitBtn = screen.getByRole("button", { name: "Guardar Oferta" });
+    fireEvent.click(submitBtn);
+
+    // uploadEntryImage was called
+    await waitFor(() => {
+      expect(repository.uploadEntryImage).toHaveBeenCalledTimes(1);
+      expect(repository.createOffer).toHaveBeenCalledTimes(1);
+    });
+
+    // Uncertainty banner shows up
+    expect(await screen.findByText(/La operación anterior no pudo confirmarse/)).toBeVisible();
+
+    // Now retry createOffer
+    repository.createOffer.mockResolvedValueOnce(mockOffer);
+    const retryBtn = screen.getByRole("button", { name: "Reintentar" });
+    fireEvent.click(retryBtn);
+
+    await waitFor(() => {
+      expect(repository.createOffer).toHaveBeenCalledTimes(2);
+    });
+
+    // uploadEntryImage was NOT called again (still 1)
+    expect(repository.uploadEntryImage).toHaveBeenCalledTimes(1);
+    // createOffer received the same confirmed imageId
+    expect(repository.createOffer).toHaveBeenLastCalledWith(
+      "entry-1",
+      expect.anything(),
+      "img-confirmed-999",
+      expect.any(String)
+    );
+  });
+
+  test("invalidates catalog entries cache on successful offer creation (O18)", async () => {
+    const repository = createMockRepository();
+    rememberEntries(repository, { page: 1, pageSize: 12 }, {
+      data: [],
+      meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 },
+    });
+    expect(cachedEntries(repository, { page: 1, pageSize: 12 })).toBeDefined();
+
+    renderComponent(repository, "/entries/entry-1/offers/new");
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Fill form
+    fireEvent.change(screen.getByLabelText(/Precio base/), { target: { value: "100" } });
+    const file = new File(["dummy"], "photo.jpg", { type: "image/jpeg" });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Add slot & option
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Grupo 1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Grupo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    const recipeArticle = await screen.findByRole("article", { name: "Receta Hamburguesa" });
+    fireEvent.click(within(recipeArticle).getByRole("button", { name: "Asignar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Submit
+    const submitBtn = screen.getByRole("button", { name: "Guardar Oferta" });
+    fireEvent.click(submitBtn);
+
+    expect(await screen.findByText("Vista de ofertas")).toBeVisible();
+
+    // Cache has been cleared!
+    expect(cachedEntries(repository, { page: 1, pageSize: 12 })).toBeUndefined();
   });
 
   test("allows editing and deleting an existing slot in the offer", async () => {
