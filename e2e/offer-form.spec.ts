@@ -229,3 +229,99 @@ test("creates and deletes an offer updating catalog offerCount within cache TTL 
   await expect(entryCard.getByRole("heading", { name: "Hamburguesa Hawaiana", level: 2 })).toBeVisible();
   await expect(entryCard).toContainText("Ofertas: 0");
 });
+
+test("manages multi-modal Escape hierarchy preserving option draft and restoring focus without losing composition (O19, O34)", async ({
+  page,
+}) => {
+  const entry = {
+    id: "entry-1",
+    brandName: "Hamburguesa Hawaiana",
+    description: "Con piña",
+    status: "ACTIVE",
+    image: null,
+    categories: [],
+    offerCount: 0,
+  };
+
+  const recipe = {
+    id: "rec-1",
+    name: "Receta Hamburguesa",
+    description: "Preparación base",
+    supplies: [],
+  };
+
+  await page.route("**/api/v1/menu/categories?*", (route) =>
+    route.fulfill({
+      json: { data: [], meta: { page: 1, pageSize: 100, total: 0, totalPages: 0 } },
+    }),
+  );
+
+  await page.route("**/api/v1/menu/recipes?*", (route) =>
+    route.fulfill({
+      json: { data: [recipe], meta: { page: 1, pageSize: 10, total: 1, totalPages: 1 } },
+    }),
+  );
+
+  await page.route("**/api/v1/menu/entries/entry-1", (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          id: entry.id,
+          brandName: entry.brandName,
+          description: entry.description,
+          status: entry.status,
+          image: entry.image,
+          categories: entry.categories,
+          offerCount: entry.offerCount,
+          categoryIds: [],
+        },
+      },
+    }),
+  );
+
+  // Navigate directly to new offer form for entry-1
+  await page.goto("/entries/entry-1/offers/new");
+  await expect(page.getByRole("heading", { name: "Nueva oferta" })).toBeVisible();
+
+  // Add composition slot "Acompañamiento"
+  const addSlotBtn = page.getByRole("button", { name: "Agregar grupo" });
+  await addSlotBtn.click();
+  await page.getByLabel("Nombre del grupo").fill("Acompañamiento");
+  await page.getByRole("button", { name: "Guardar grupo" }).click();
+  await expect(page.getByRole("heading", { name: "Acompañamiento", level: 3 })).toBeVisible();
+
+  // Open option modal
+  const addOptionBtn = page.getByRole("button", { name: "Agregar opción a Acompañamiento" });
+  await addOptionBtn.click();
+  const optionDialog = page.getByRole("dialog", { name: /Agregar opción/ });
+  await expect(optionDialog).toBeVisible();
+
+  // Type a custom display name in the option draft
+  const displayNameInput = page.getByLabel("Nombre mostrado (opcional)");
+  await displayNameInput.fill("Papas Rústicas");
+
+  // Open nested recipe picker
+  const chooseRecipeBtn = page.getByRole("button", { name: "Elegir receta" });
+  await chooseRecipeBtn.click();
+  const recipeDialog = page.getByRole("dialog", { name: "Biblioteca de recetas" });
+  await expect(recipeDialog).toBeVisible();
+
+  // Press Escape while nested recipe picker is open
+  await page.keyboard.press("Escape");
+
+  // Verify only recipeDialog closes while optionDialog remains open and draft is intact
+  await expect(recipeDialog).not.toBeVisible();
+  await expect(optionDialog).toBeVisible();
+  await expect(displayNameInput).toHaveValue("Papas Rústicas");
+
+  // Focus is restored to the "Elegir receta" button inside OptionModal
+  await expect(chooseRecipeBtn).toBeFocused();
+
+  // Press Escape again while OptionModal is top dialog
+  await page.keyboard.press("Escape");
+
+  // Verify OptionModal closes and composition slot remains intact
+  await expect(optionDialog).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: "Acompañamiento", level: 3 })).toBeVisible();
+  await expect(addOptionBtn).toBeFocused();
+});

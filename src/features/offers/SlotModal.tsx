@@ -14,6 +14,16 @@ export interface SlotModalProps {
   onClose: () => void;
 }
 
+function parseRoundsQuantity(text: string): number | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  if (!Number.isFinite(num) || !Number.isSafeInteger(num) || num < 1) {
+    return null;
+  }
+  return num;
+}
+
 export function SlotModal({
   isOpen,
   initialData,
@@ -21,7 +31,7 @@ export function SlotModal({
   onClose,
 }: Readonly<SlotModalProps>) {
   const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantityText, setQuantityText] = useState("1");
   const [course, setCourse] = useState<OfferCourse | "">("");
   const [validationError, setValidationError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -29,11 +39,11 @@ export function SlotModal({
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
-      setQuantity(initialData.quantity > 0 ? initialData.quantity : 1);
+      setQuantityText(String(initialData.quantity > 0 ? initialData.quantity : 1));
       setCourse(initialData.course ?? "");
     } else {
       setName("");
-      setQuantity(1);
+      setQuantityText("1");
       setCourse("");
     }
     setValidationError("");
@@ -76,13 +86,14 @@ export function SlotModal({
       setValidationError("El nombre del grupo es obligatorio.");
       return;
     }
-    if (quantity < 1 || !Number.isFinite(quantity)) {
+    const parsedQuantity = parseRoundsQuantity(quantityText);
+    if (parsedQuantity === null) {
       setValidationError("La cantidad de rondas debe ser al menos 1.");
       return;
     }
     onSave({
       name: cleanName,
-      quantity,
+      quantity: parsedQuantity,
       course: course === "" ? null : course,
     });
   }
@@ -139,11 +150,10 @@ export function SlotModal({
               </label>
               <input
                 id="slot-quantity-input"
-                type="number"
-                min="1"
-                step="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Number.parseInt(e.target.value, 10) || 0)}
+                type="text"
+                inputMode="numeric"
+                value={quantityText}
+                onChange={(e) => setQuantityText(e.target.value)}
                 required
               />
             </div>

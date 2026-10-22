@@ -63,7 +63,6 @@ const mockOffer: MenuOfferDetail = {
             status: "ACTIVE",
             sourceType: "RECIPE",
             recipeId: "rec-1",
-            recipeRevision: 1,
           },
         ],
       },
@@ -1563,7 +1562,6 @@ describe("OfferFormPage (V4)", () => {
                 status: "ACTIVE",
                 sourceType: "RECIPE",
                 recipeId: "rec-1",
-                recipeRevision: 1,
               },
             ],
           },
@@ -1626,5 +1624,243 @@ describe("OfferFormPage (V4)", () => {
         expect(opt).not.toHaveProperty("recipeRevision");
       }
     }
+  });
+
+  test("omits recipeId in PATCH when existing recipe option was not re-selected, but includes it upon explicit selection of the same or another recipe (O13, O14, O35)", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Step A: Edit display name of existing option without selecting recipe
+    fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
+    const nameInput = screen.getByLabelText("Nombre mostrado (opcional)");
+    fireEvent.change(nameInput, { target: { value: "Hamburguesa Doble Renombrada" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Save offer
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    await waitFor(() => {
+      expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    });
+
+    const call1Payload = repository.updateOffer.mock.calls[0][1];
+    const call1Option = call1Payload.composition?.slots?.[0]?.options?.[0];
+    expect(call1Option).toBeDefined();
+    expect(call1Option?.optionId).toBe("opt-1");
+    expect(call1Option?.displayName).toBe("Hamburguesa Doble Renombrada");
+    expect(call1Option).not.toHaveProperty("recipeId");
+    expect(call1Option).not.toHaveProperty("recipeRevision");
+
+    // Step B: In another instance, open picker and cancel -> still omits recipeId
+    const repository2 = createMockRepository();
+    renderComponent(repository2, "/entries/entry-1/offers/offer-1/edit");
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    // Cancel recipe picker without selecting
+    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    await waitFor(() => {
+      expect(repository2.updateOffer).toHaveBeenCalledTimes(1);
+    });
+    const call2Option = repository2.updateOffer.mock.calls[0][1].composition?.slots?.[0]?.options?.[0];
+    expect(call2Option).not.toHaveProperty("recipeId");
+
+    // Step C: Explicitly select the same recipe ("rec-1") -> sets intent and includes recipeId
+    const repository3 = createMockRepository();
+    renderComponent(repository3, "/entries/entry-1/offers/offer-1/edit");
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    await screen.findByRole("heading", { name: "Receta Hamburguesa", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    await waitFor(() => {
+      expect(repository3.updateOffer).toHaveBeenCalledTimes(1);
+    });
+    const call3Option = repository3.updateOffer.mock.calls[0][1].composition?.slots?.[0]?.options?.[0];
+    expect(call3Option).toBeDefined();
+    if (call3Option && call3Option.sourceType === "RECIPE") {
+      expect(call3Option.recipeId).toBe("rec-1");
+    }
+    expect(call3Option).not.toHaveProperty("recipeRevision");
+  });
+
+  test("omits option status in POST draft payload on offer creation (O15, O35)", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Fill valid commercial info
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
+      target: { value: "Promo Estudiante" },
+    });
+    fireEvent.change(screen.getByLabelText("Precio base"), {
+      target: { value: "199" },
+    });
+
+    // Provide image
+    const fakeFile = new File(["fake"], "combo.png", { type: "image/png" });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [fakeFile] } });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Validando imagen…")).not.toBeInTheDocument();
+    });
+
+    // Add slot
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Combo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+
+    // Add recipe option
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Combo" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    await screen.findByRole("heading", { name: "Receta Hamburguesa", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Submit offer create
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    await waitFor(() => {
+      expect(repository.createOffer).toHaveBeenCalledTimes(1);
+    });
+
+    const createPayload = repository.createOffer.mock.calls[0][1];
+    expect(createPayload).toBeDefined();
+    const createdOption = createPayload.composition.slots[0].options[0];
+    expect(createdOption.displayName).toBe("Receta Hamburguesa");
+    expect(createdOption.sourceType).toBe("RECIPE");
+    if (createdOption.sourceType === "RECIPE") {
+      expect(createdOption.recipeId).toBe("rec-1");
+    }
+    expect(createdOption).not.toHaveProperty("status");
+    expect(createdOption).not.toHaveProperty("optionId");
+    expect(createdOption).not.toHaveProperty("recipeRevision");
+  });
+
+  test("nested Escape closes only recipe picker modal while preserving option draft and restoring focus, and second Escape closes option modal (O19, O34)", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Add a slot
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Principal" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+
+    // Open option modal
+    const addOptBtn = screen.getByRole("button", { name: "Agregar opción a Principal" });
+    fireEvent.click(addOptBtn);
+
+    // Type custom display name
+    const nameInput = screen.getByLabelText("Nombre mostrado (opcional)");
+    fireEvent.change(nameInput, { target: { value: "Mi Selección Favorita" } });
+
+    // Open recipe picker
+    const pickerBtn = screen.getByRole("button", { name: /Elegir receta/ });
+    fireEvent.click(pickerBtn);
+    expect(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
+
+    // First Escape -> closes ONLY the nested recipe picker
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+
+    // OptionModal remains open with draft preserved
+    expect(screen.getByRole("dialog", { name: /Agregar opción/ })).toBeInTheDocument();
+    expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Mi Selección Favorita");
+
+    // Second Escape -> closes OptionModal
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: /Agregar opción/ })).not.toBeInTheDocument();
+
+    // Slot "Principal" remains intact in the form
+    expect(screen.getByRole("heading", { name: "Principal", level: 3 })).toBeVisible();
+  });
+
+  test("validates option fields and slots rejecting invalid attempts with 0 repository calls, and succeeds with exact payload upon correction (O09, O21, O35, O38)", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/new");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
+      target: { value: "Oferta Válida" },
+    });
+    fireEvent.change(screen.getByLabelText("Precio base"), {
+      target: { value: "150" },
+    });
+
+    const fakeFile = new File(["fake"], "combo.png", { type: "image/png" });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [fakeFile] } });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Validando imagen…")).not.toBeInTheDocument();
+    });
+
+    // Attempt 1: submit with 0 slots -> rejected, 0 calls
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    expect(await screen.findByText("La composición debe incluir al menos un grupo (slot).")).toBeVisible();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+
+    // Add slot with 0 options
+    fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Entrada" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+
+    // Attempt 2: submit slot with 0 options -> rejected, 0 calls
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    expect(await screen.findByText('El grupo "Entrada" debe incluir al menos una opción.')).toBeVisible();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+
+    // Correct: add valid recipe option
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Entrada" }));
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    await screen.findByRole("heading", { name: "Receta Hamburguesa", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Attempt 3: submit valid offer -> exact 1 call
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    await waitFor(() => {
+      expect(repository.createOffer).toHaveBeenCalledTimes(1);
+    });
+    expect(repository.createOffer).toHaveBeenCalledWith(
+      "entry-1",
+      expect.objectContaining({
+        presentationTag: "Oferta Válida",
+        basePrice: 150,
+        composition: {
+          slots: [
+            {
+              name: "Entrada",
+              quantity: 1,
+              course: null,
+              options: [
+                {
+                  sourceType: "RECIPE",
+                  recipeId: "rec-1",
+                  displayName: "Receta Hamburguesa",
+                },
+              ],
+            },
+          ],
+        },
+      }),
+      "img-offer-uploaded",
+      expect.any(String)
+    );
   });
 });

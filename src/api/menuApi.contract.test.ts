@@ -375,7 +375,6 @@ const offerDetail = {
             status: "ACTIVE" as const,
             sourceType: "RECIPE" as const,
             recipeId: "recipe-1",
-            recipeRevision: 1,
           },
         ],
       },

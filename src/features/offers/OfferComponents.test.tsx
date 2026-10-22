@@ -527,6 +527,47 @@ describe("SlotModal Component", () => {
       course: "bebida",
     });
   });
+
+  test("validates full conversion of rounds quantity without truncation: rejects 1.5, 0, negatives, and non-numeric; accepts 1e2 as 100 (O07, O38)", () => {
+    const handleSave = jest.fn();
+    render(
+      <SlotModal isOpen={true} initialData={null} onSave={handleSave} onClose={jest.fn()} />
+    );
+
+    const submitBtn = screen.getByRole("button", { name: "Guardar grupo" });
+    const nameInput = screen.getByLabelText("Nombre del grupo");
+    const qtyInput = screen.getByLabelText(/Unidades incluidas/);
+
+    fireEvent.change(nameInput, { target: { value: "Acompañamiento" } });
+
+    // Try float 1.5 -> rejected without truncation
+    fireEvent.change(qtyInput, { target: { value: "1.5" } });
+    fireEvent.click(submitBtn);
+    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(handleSave).not.toHaveBeenCalled();
+
+    // Try negative -> rejected
+    fireEvent.change(qtyInput, { target: { value: "-1" } });
+    fireEvent.click(submitBtn);
+    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(handleSave).not.toHaveBeenCalled();
+
+    // Try non-numeric -> rejected
+    fireEvent.change(qtyInput, { target: { value: "abc" } });
+    fireEvent.click(submitBtn);
+    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(handleSave).not.toHaveBeenCalled();
+
+    // Try 1e2 -> accepted as 100 without truncation
+    fireEvent.change(qtyInput, { target: { value: "1e2" } });
+    fireEvent.click(submitBtn);
+    expect(handleSave).toHaveBeenCalledTimes(1);
+    expect(handleSave).toHaveBeenCalledWith({
+      name: "Acompañamiento",
+      quantity: 100,
+      course: null,
+    });
+  });
 });
 
 describe("OptionModal Component", () => {
@@ -674,7 +715,6 @@ describe("OptionModal Component", () => {
       status: "ACTIVE",
       sourceType: "RECIPE",
       recipeId: "rec-999",
-      recipeRevision: 2,
     };
 
     const { rerender } = render(
@@ -767,6 +807,152 @@ describe("OptionModal Component", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(handleClose).toHaveBeenCalled();
+  });
+
+  test("validates inventory item requiring positive quantity and authoritative non-empty unit (O09, O10, O38)", () => {
+    const handleSave = jest.fn();
+    const invWithoutUnit: OptionDraft = {
+      displayName: "Refresco",
+      status: "ACTIVE",
+      sourceType: "INVENTORY_ITEM",
+      inventoryItemId: "inv-soda",
+      quantity: 1,
+      unit: "   ",
+    };
+
+    const { rerender } = render(
+      <OptionModal
+        isOpen={true}
+        slotName="Bebidas"
+        initialData={invWithoutUnit}
+        onSave={handleSave}
+        onClose={jest.fn()}
+        onOpenRecipePicker={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    expect(screen.getByText("El artículo de inventario requiere una unidad autoritativa.")).toBeVisible();
+    expect(handleSave).not.toHaveBeenCalled();
+
+    // Now provide valid unit and quantity
+    const invValid: OptionDraft = {
+      displayName: "Refresco",
+      status: "ACTIVE",
+      sourceType: "INVENTORY_ITEM",
+      inventoryItemId: "inv-soda",
+      inventoryItemName: "Refresco de Cola",
+      quantity: 2,
+      unit: "lata",
+    };
+
+    rerender(
+      <OptionModal
+        isOpen={true}
+        slotName="Bebidas"
+        initialData={invValid}
+        onSave={handleSave}
+        onClose={jest.fn()}
+        onOpenRecipePicker={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    expect(handleSave).toHaveBeenCalledTimes(1);
+    expect(handleSave).toHaveBeenCalledWith({
+      displayName: "Refresco",
+      status: "ACTIVE",
+      sourceType: "INVENTORY_ITEM",
+      inventoryItemId: "inv-soda",
+      inventoryItemName: "Refresco de Cola",
+      quantity: 2,
+      unit: "lata",
+    });
+  });
+
+  test("in creation mode does not offer INACTIVE status and locks to ACTIVE (O15)", () => {
+    const handleSave = jest.fn();
+    const recipeOpt: OptionDraft = {
+      displayName: "Taco de pastor",
+      status: "ACTIVE",
+      sourceType: "RECIPE",
+      recipeId: "rec-1",
+      recipeName: "Tacos",
+    };
+
+    const { rerender } = render(
+      <OptionModal
+        isOpen={true}
+        slotName="Tacos"
+        initialData={recipeOpt}
+        isCreateMode={true}
+        onSave={handleSave}
+        onClose={jest.fn()}
+        onOpenRecipePicker={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByRole("radio", { name: /Inactiva/ })).not.toBeInTheDocument();
+    expect(screen.getByText("Las opciones se crean activas por defecto.")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    expect(handleSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "ACTIVE",
+      })
+    );
+
+    // In edit mode (isCreateMode=false), status choices are offered
+    rerender(
+      <OptionModal
+        isOpen={true}
+        slotName="Tacos"
+        initialData={recipeOpt}
+        isCreateMode={false}
+        onSave={handleSave}
+        onClose={jest.fn()}
+        onOpenRecipePicker={jest.fn()}
+      />
+    );
+    expect(screen.getByRole("radio", { name: /Inactiva/ })).toBeInTheDocument();
+  });
+
+  test("respects modal hierarchy for Escape and restores focus to recipe picker button when nested picker closes (O19, O34)", () => {
+    const handleClose = jest.fn();
+    const { rerender } = render(
+      <OptionModal
+        isOpen={true}
+        slotName="Bebidas"
+        initialData={null}
+        isNestedPickerOpen={true}
+        onSave={jest.fn()}
+        onClose={handleClose}
+        onOpenRecipePicker={jest.fn()}
+      />
+    );
+
+    // Escape while nested picker is open does NOT close OptionModal
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(handleClose).not.toHaveBeenCalled();
+
+    // Nested picker closes -> focus restores to "Elegir receta" button
+    rerender(
+      <OptionModal
+        isOpen={true}
+        slotName="Bebidas"
+        initialData={null}
+        isNestedPickerOpen={false}
+        onSave={jest.fn()}
+        onClose={handleClose}
+        onOpenRecipePicker={jest.fn()}
+      />
+    );
+    const pickerBtn = screen.getByRole("button", { name: /Elegir receta/ });
+    expect(document.activeElement).toBe(pickerBtn);
+
+    // Now Escape closes OptionModal
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(handleClose).toHaveBeenCalledTimes(1);
   });
 });
 

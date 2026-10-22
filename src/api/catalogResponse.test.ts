@@ -138,20 +138,13 @@ describe("catalogResponse runtime validators", () => {
     );
   });
 
-  test("validates offers, composition slots and slot options with optional recipeRevision", () => {
-    const recipeOptionWithoutRevision = {
+  test("validates offers, composition slots and slot options rejecting recipeRevision (D01)", () => {
+    const recipeOption = {
       optionId: "opt-1",
       displayName: "Sopa miso",
-      sourceType: "RECIPE",
-      recipeId: "rec-1",
-    };
-    const recipeOptionWithRevision = {
-      optionId: "opt-2",
-      displayName: "Tonkotsu",
       status: "ACTIVE",
       sourceType: "RECIPE",
-      recipeId: "rec-2",
-      recipeRevision: 2,
+      recipeId: "rec-1",
     };
     const inventoryOption = {
       optionId: "opt-3",
@@ -163,12 +156,13 @@ describe("catalogResponse runtime validators", () => {
       unit: "pieza",
     };
 
-    expect(isSlotOptionDetail(recipeOptionWithoutRevision)).toBe(true);
-    expect(isSlotOptionDetail(recipeOptionWithRevision)).toBe(true);
+    expect(isSlotOptionDetail(recipeOption)).toBe(true);
     expect(isSlotOptionDetail(inventoryOption)).toBe(true);
-    expect(isSlotOptionDetail({ ...recipeOptionWithRevision, recipeRevision: 0 })).toBe(false);
-    expect(isSlotOptionDetail({ ...recipeOptionWithoutRevision, inventoryItemId: "inv-1" })).toBe(false);
+    expect(isSlotOptionDetail({ ...recipeOption, recipeRevision: 1 })).toBe(false);
+    expect(isSlotOptionDetail({ ...recipeOption, recipeRevision: 2 })).toBe(false);
+    expect(isSlotOptionDetail({ ...recipeOption, inventoryItemId: "inv-1" })).toBe(false);
     expect(isSlotOptionDetail({ ...inventoryOption, recipeId: "rec-1" })).toBe(false);
+    expect(isSlotOptionDetail({ ...inventoryOption, recipeRevision: 1 })).toBe(false);
     expect(isSlotOptionDetail({ ...inventoryOption, sourceType: "OTHER" })).toBe(false);
     expect(isSlotOptionDetail({ optionId: "", displayName: "X", sourceType: "RECIPE", recipeId: "r" })).toBe(
       false,
@@ -180,7 +174,7 @@ describe("catalogResponse runtime validators", () => {
       quantity: 1,
       status: "ACTIVE",
       course: "entrada",
-      options: [recipeOptionWithoutRevision, inventoryOption],
+      options: [recipeOption, inventoryOption],
     };
     expect(isCompositionSlotDetail(slot)).toBe(true);
     expect(isCompositionSlotDetail({ ...slot, course: "invalido" })).toBe(false);

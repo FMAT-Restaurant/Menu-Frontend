@@ -68,7 +68,6 @@ export type OfferCourse = "entrada" | "plato fuerte" | "postre" | "bebida";
 export interface RecipeSlotOptionInput {
   sourceType: "RECIPE";
   recipeId: string;
-  recipeRevision?: number;
   displayName: string;
 }
 
@@ -82,17 +81,25 @@ export interface InventoryItemSlotOptionInput {
 
 export type SlotOptionInput = RecipeSlotOptionInput | InventoryItemSlotOptionInput;
 
-export interface SlotOptionDetail {
+export interface RecipeSlotOptionDetail {
   optionId: string;
   displayName: string;
-  status: OfferStatus;
-  sourceType: "RECIPE" | "INVENTORY_ITEM";
-  recipeId?: string;
-  recipeRevision?: number;
-  inventoryItemId?: string;
-  quantity?: number;
-  unit?: string;
+  status?: OfferStatus;
+  sourceType: "RECIPE";
+  recipeId: string;
 }
+
+export interface InventorySlotOptionDetail {
+  optionId: string;
+  displayName: string;
+  status?: OfferStatus;
+  sourceType: "INVENTORY_ITEM";
+  inventoryItemId: string;
+  quantity: number;
+  unit: string;
+}
+
+export type SlotOptionDetail = RecipeSlotOptionDetail | InventorySlotOptionDetail;
 
 export interface CompositionSlotInput {
   name: string;
@@ -132,6 +139,26 @@ export interface OfferCreateDraft {
   };
 }
 
+export type RecipeSlotOptionUpdate = {
+  optionId?: string;
+  displayName?: string;
+  status?: OfferStatus;
+  sourceType: "RECIPE";
+  recipeId?: string;
+};
+
+export type InventoryItemSlotOptionUpdate = {
+  optionId?: string;
+  displayName?: string;
+  status?: OfferStatus;
+  sourceType: "INVENTORY_ITEM";
+  inventoryItemId?: string;
+  quantity?: number;
+  unit?: string;
+};
+
+export type SlotOptionUpdate = RecipeSlotOptionUpdate | InventoryItemSlotOptionUpdate;
+
 export interface OfferUpdateDraft {
   presentationTag: string;
   basePrice?: number;
@@ -142,17 +169,7 @@ export interface OfferUpdateDraft {
       name?: string;
       quantity?: number;
       course?: OfferCourse | null;
-      options?: Array<{
-        optionId?: string;
-        displayName?: string;
-        status?: OfferStatus;
-        sourceType: "RECIPE" | "INVENTORY_ITEM";
-        recipeId?: string;
-        recipeRevision?: number;
-        inventoryItemId?: string;
-        quantity?: number;
-        unit?: string;
-      }>;
+      options?: SlotOptionUpdate[];
     }>;
   };
 }

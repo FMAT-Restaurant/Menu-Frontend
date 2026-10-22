@@ -12,6 +12,10 @@ import type {
   OfferUpdateDraft,
   RecipeDraft,
   RecipeSummary,
+  RecipeSlotOptionUpdate,
+  InventoryItemSlotOptionUpdate,
+  SlotOptionInput,
+  SlotOptionUpdate,
   VersionedResource,
 } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
@@ -87,20 +91,23 @@ function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
     name: s.name,
     quantity: s.quantity,
     course: s.course ?? null,
-    options: (s.options || []).map((o) => ({
-      localId: generateLocalId(),
-      optionId: o.optionId,
-      displayName: o.displayName,
-      status: o.status,
-      sourceType: o.sourceType,
-      recipeId: o.recipeId,
-      recipeRevision: o.recipeRevision,
-      recipeName: o.displayName,
-      inventoryItemId: o.inventoryItemId,
-      inventoryItemName: o.displayName,
-      quantity: o.quantity,
-      unit: o.unit,
-    })),
+    options: (s.options || []).map((o) => {
+      const isRecipe = o.sourceType === "RECIPE";
+      return {
+        localId: generateLocalId(),
+        optionId: o.optionId,
+        displayName: o.displayName,
+        status: o.status ?? "ACTIVE",
+        sourceType: o.sourceType,
+        recipeId: isRecipe ? o.recipeId : undefined,
+        recipeName: isRecipe ? o.displayName : undefined,
+        hasRecipeAssignmentIntent: false,
+        inventoryItemId: !isRecipe ? o.inventoryItemId : undefined,
+        inventoryItemName: !isRecipe ? o.displayName : undefined,
+        quantity: !isRecipe ? o.quantity : undefined,
+        unit: !isRecipe ? o.unit : undefined,
+      };
+    }),
   }));
 }
 
@@ -133,25 +140,47 @@ function validateOfferForm(
     if (slot.options.length === 0) {
       return `El grupo "${slot.name}" debe incluir al menos una opción.`;
     }
+    const cleanSlotName = slot.name.trim();
+    if (!cleanSlotName) {
+      return "Todos los grupos deben tener un nombre.";
+    }
+    if (!Number.isSafeInteger(slot.quantity) || slot.quantity < 1) {
+      return `La cantidad de rondas del grupo "${slot.name}" debe ser al menos 1.`;
+    }
     for (const opt of slot.options) {
       if (!opt.sourceType) {
         return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" debe tener un origen seleccionado.`;
+      }
+      if (opt.sourceType === "RECIPE") {
+        if (!opt.optionId && !opt.recipeId) {
+          return `La nueva opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere una receta asignada.`;
+        }
+      } else if (opt.sourceType === "INVENTORY_ITEM") {
+        if (!opt.inventoryItemId) {
+          return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere un artículo de inventario.`;
+        }
+        if (typeof opt.quantity !== "number" || !Number.isFinite(opt.quantity) || opt.quantity <= 0) {
+          return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere una cantidad válida mayor a cero.`;
+        }
+        if (!opt.unit || !opt.unit.trim()) {
+          return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere una unidad autoritativa.`;
+        }
       }
     }
   }
   return null;
 }
 
-function mapOptionCreate(o: OptionDraft) {
+function mapOptionCreate(o: OptionDraft): SlotOptionInput {
   if (o.sourceType === "RECIPE") {
     return {
-      sourceType: "RECIPE" as const,
+      sourceType: "RECIPE",
       recipeId: o.recipeId!,
       displayName: o.displayName || o.recipeName || "Receta",
     };
   }
   return {
-    sourceType: "INVENTORY_ITEM" as const,
+    sourceType: "INVENTORY_ITEM",
     inventoryItemId: o.inventoryItemId!,
     quantity: o.quantity ?? 1,
     unit: o.unit || "u",
@@ -159,25 +188,31 @@ function mapOptionCreate(o: OptionDraft) {
   };
 }
 
-function mapOptionUpdate(o: OptionDraft) {
+function mapOptionUpdate(o: OptionDraft): SlotOptionUpdate {
   if (o.sourceType === "RECIPE") {
-    return {
-      optionId: o.optionId,
+    const isNew = !o.optionId;
+    const shouldIncludeRecipeId = isNew || Boolean(o.hasRecipeAssignmentIntent);
+
+    const recipeOption: RecipeSlotOptionUpdate = {
+      ...(o.optionId ? { optionId: o.optionId } : {}),
       displayName: o.displayName || o.recipeName || "Receta",
       status: o.status,
-      sourceType: "RECIPE" as const,
-      recipeId: o.recipeId!,
+      sourceType: "RECIPE",
+      ...(shouldIncludeRecipeId && o.recipeId ? { recipeId: o.recipeId } : {}),
     };
+    return recipeOption;
   }
-  return {
-    optionId: o.optionId,
+
+  const inventoryOption: InventoryItemSlotOptionUpdate = {
+    ...(o.optionId ? { optionId: o.optionId } : {}),
     displayName: o.displayName || o.inventoryItemName || "Insumo",
     status: o.status,
-    sourceType: "INVENTORY_ITEM" as const,
+    sourceType: "INVENTORY_ITEM",
     inventoryItemId: o.inventoryItemId!,
     quantity: o.quantity ?? 1,
     unit: o.unit || "u",
   };
+  return inventoryOption;
 }
 
 function buildCreateDraft(presentationTag: string, basePrice: number, slots: SlotDraft[]): OfferCreateDraft {
@@ -322,12 +357,70 @@ export function OfferFormPage({
 
   const [recipePickerOpen, setRecipePickerOpen] = useState(false);
   const recipeDialogRef = useRef<HTMLDialogElement>(null);
+  const slotModalTriggerRef = useRef<HTMLElement | null>(null);
+  const optionModalTriggerRef = useRef<HTMLElement | null>(null);
+  const wasOptionModalOpenRef = useRef(false);
+  const wasSlotModalOpenRef = useRef(false);
+  const previousTargetSlotNameRef = useRef("");
+
+  if (targetSlotIndex !== null && slots[targetSlotIndex]?.name) {
+    previousTargetSlotNameRef.current = slots[targetSlotIndex].name;
+  }
+
+  useEffect(() => {
+    if (wasOptionModalOpenRef.current && !optionModalOpen) {
+      const slotName = previousTargetSlotNameRef.current;
+      const fallback = slotName
+        ? document.querySelector<HTMLElement>(`button[aria-label="Agregar opción a ${slotName}"]`)
+        : null;
+      const target =
+        optionModalTriggerRef.current && optionModalTriggerRef.current !== document.body && optionModalTriggerRef.current.isConnected
+          ? optionModalTriggerRef.current
+          : fallback;
+      const restoreFocus = () => {
+        target?.focus();
+      };
+      restoreFocus();
+      requestAnimationFrame(restoreFocus);
+      setTimeout(restoreFocus, 0);
+    }
+    wasOptionModalOpenRef.current = optionModalOpen;
+  }, [optionModalOpen]);
+
+  useEffect(() => {
+    if (wasSlotModalOpenRef.current && !slotModalOpen) {
+      const target =
+        slotModalTriggerRef.current && slotModalTriggerRef.current !== document.body
+          ? slotModalTriggerRef.current
+          : null;
+      const restoreFocus = () => {
+        target?.focus();
+      };
+      restoreFocus();
+      requestAnimationFrame(restoreFocus);
+      setTimeout(restoreFocus, 0);
+    }
+    wasSlotModalOpenRef.current = slotModalOpen;
+  }, [slotModalOpen]);
 
   const imageValidationId = useRef(0);
   const restoredFromStorageRef = useRef(false);
   const isSubmittingRef = useRef(false);
   const activeContextRef = useRef({ entryId, offerId });
   activeContextRef.current = { entryId, offerId };
+
+  useEffect(() => {
+    if (!recipePickerOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setRecipePickerOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [recipePickerOpen]);
 
   // O12: Reset all form state and invalidate in-flight validations when route identity changes
   useEffect(() => {
@@ -708,11 +801,15 @@ export function OfferFormPage({
 
   // Slot modal handlers
   function handleOpenAddSlot() {
+    const active = document.activeElement as HTMLElement | null;
+    slotModalTriggerRef.current = active && active !== document.body ? active : null;
     setEditingSlotIndex(null);
     setSlotModalOpen(true);
   }
 
   function handleOpenEditSlot(index: number) {
+    const active = document.activeElement as HTMLElement | null;
+    slotModalTriggerRef.current = active && active !== document.body ? active : null;
     setEditingSlotIndex(index);
     setSlotModalOpen(true);
   }
@@ -735,6 +832,8 @@ export function OfferFormPage({
 
   // Option modal handlers
   function handleOpenAddOption(slotIndex: number) {
+    const active = document.activeElement as HTMLElement | null;
+    optionModalTriggerRef.current = active && active !== document.body ? active : null;
     setTargetSlotIndex(slotIndex);
     setEditingOptionIndex(null);
     setCurrentOptionDraft(null);
@@ -742,6 +841,8 @@ export function OfferFormPage({
   }
 
   function handleOpenEditOption(slotIndex: number, optionIndex: number) {
+    const active = document.activeElement as HTMLElement | null;
+    optionModalTriggerRef.current = active && active !== document.body ? active : null;
     setTargetSlotIndex(slotIndex);
     setEditingOptionIndex(optionIndex);
     const existing = slots[slotIndex]?.options[optionIndex] || null;
@@ -806,20 +907,31 @@ export function OfferFormPage({
   }
 
   function handleSelectRecipe(recipe: RecipeSummary) {
-    setCurrentOptionDraft((prev) => ({
-      localId: prev?.localId || generateLocalId(),
-      optionId: prev?.optionId,
-      displayName: prev?.displayName || recipe.name,
-      status: prev?.status ?? "ACTIVE",
-      sourceType: "RECIPE",
-      recipeId: recipe.id,
-      recipeRevision: 1,
-      recipeName: recipe.name,
-      inventoryItemId: undefined,
-      inventoryItemName: undefined,
-      quantity: undefined,
-      unit: undefined,
-    }));
+    setCurrentOptionDraft((prev) => {
+      if (!prev) {
+        return {
+          localId: generateLocalId(),
+          displayName: recipe.name,
+          status: "ACTIVE",
+          sourceType: "RECIPE",
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          hasRecipeAssignmentIntent: true,
+        };
+      }
+      return {
+        ...prev,
+        sourceType: "RECIPE",
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        displayName: prev.displayName.trim() ? prev.displayName : recipe.name,
+        hasRecipeAssignmentIntent: true,
+        inventoryItemId: undefined,
+        inventoryItemName: undefined,
+        quantity: undefined,
+        unit: undefined,
+      };
+    });
     setRecipePickerOpen(false);
   }
 
@@ -903,7 +1015,14 @@ export function OfferFormPage({
 
         if (reconciliation.status === "success") {
           invalidateCatalogEntries(repository);
-          setSlots(reconciliation.slots);
+          const confirmedSlots = reconciliation.slots.map((slot) => ({
+            ...slot,
+            options: slot.options.map((opt) => ({
+              ...opt,
+              hasRecipeAssignmentIntent: false,
+            })),
+          }));
+          setSlots(confirmedSlots);
           const scope = isEditing ? buildOfferUpdateScope(offerId!) : buildOfferCreateScope(entryId);
           await storage.deleteRecord(scope);
           await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
@@ -985,7 +1104,14 @@ export function OfferFormPage({
 
         if (reconciliation.status === "success") {
           invalidateCatalogEntries(repository);
-          setSlots(reconciliation.slots);
+          const confirmedSlots = reconciliation.slots.map((slot) => ({
+            ...slot,
+            options: slot.options.map((opt) => ({
+              ...opt,
+              hasRecipeAssignmentIntent: false,
+            })),
+          }));
+          setSlots(confirmedSlots);
           const scope = isEditing ? buildOfferUpdateScope(offerId!) : buildOfferCreateScope(entryId);
           await storage.deleteRecord(scope);
           await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
@@ -1261,13 +1387,18 @@ export function OfferFormPage({
           isOpen={slotModalOpen}
           initialData={slotModalInitialData}
           onSave={handleSaveSlot}
-          onClose={() => setSlotModalOpen(false)}
+          onClose={() => {
+            setSlotModalOpen(false);
+            setEditingSlotIndex(null);
+          }}
         />
 
         <OptionModal
           isOpen={optionModalOpen}
           slotName={currentSlotName}
           initialData={currentOptionDraft}
+          isCreateMode={!isEditing}
+          isNestedPickerOpen={recipePickerOpen}
           onChangeDraft={(updated) => setCurrentOptionDraft(updated)}
           onSave={handleSaveOption}
           onClose={() => {
@@ -1286,6 +1417,7 @@ export function OfferFormPage({
             aria-label="Biblioteca de recetas"
             onCancel={(event) => {
               event.preventDefault();
+              event.stopPropagation();
               setRecipePickerOpen(false);
             }}
           >

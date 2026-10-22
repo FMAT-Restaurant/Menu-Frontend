@@ -8,8 +8,8 @@ export interface OptionDraft {
   status: OfferStatus;
   sourceType: "RECIPE" | "INVENTORY_ITEM" | null;
   recipeId?: string;
-  recipeRevision?: number;
   recipeName?: string;
+  hasRecipeAssignmentIntent?: boolean;
   inventoryItemId?: string;
   inventoryItemName?: string;
   quantity?: number;
@@ -20,6 +20,8 @@ export interface OptionModalProps {
   isOpen: boolean;
   slotName: string;
   initialData: OptionDraft | null;
+  isCreateMode?: boolean;
+  isNestedPickerOpen?: boolean;
   onSave: (data: OptionDraft) => void;
   onClose: () => void;
   onOpenRecipePicker: () => void;
@@ -30,6 +32,8 @@ export function OptionModal({
   isOpen,
   slotName,
   initialData,
+  isCreateMode = false,
+  isNestedPickerOpen = false,
   onSave,
   onClose,
   onOpenRecipePicker,
@@ -39,8 +43,8 @@ export function OptionModal({
   const [status, setStatus] = useState<OfferStatus>("ACTIVE");
   const [sourceType, setSourceType] = useState<"RECIPE" | "INVENTORY_ITEM" | null>(null);
   const [recipeId, setRecipeId] = useState<string | undefined>(undefined);
-  const [recipeRevision, setRecipeRevision] = useState<number | undefined>(undefined);
   const [recipeName, setRecipeName] = useState<string | undefined>(undefined);
+  const [hasRecipeAssignmentIntent, setHasRecipeAssignmentIntent] = useState<boolean | undefined>(undefined);
   const [inventoryItemId, setInventoryItemId] = useState<string | undefined>(undefined);
   const [inventoryItemName, setInventoryItemName] = useState<string | undefined>(undefined);
   const [quantity, setQuantity] = useState<number | undefined>(undefined);
@@ -48,33 +52,53 @@ export function OptionModal({
 
   const [validationError, setValidationError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const recipePickerBtnRef = useRef<HTMLButtonElement>(null);
+  const wasNestedPickerOpenRef = useRef(false);
 
   useEffect(() => {
     if (initialData) {
       setDisplayName(initialData.displayName || "");
-      setStatus(initialData.status);
+      setStatus(isCreateMode ? "ACTIVE" : initialData.status);
       setSourceType(initialData.sourceType);
-      setRecipeId(initialData.recipeId);
-      setRecipeRevision(initialData.recipeRevision);
-      setRecipeName(initialData.recipeName);
-      setInventoryItemId(initialData.inventoryItemId);
-      setInventoryItemName(initialData.inventoryItemName);
-      setQuantity(initialData.quantity);
-      setUnit(initialData.unit);
+      if (initialData.sourceType === "RECIPE") {
+        setRecipeId(initialData.recipeId);
+        setRecipeName(initialData.recipeName);
+        setHasRecipeAssignmentIntent(initialData.hasRecipeAssignmentIntent);
+        setInventoryItemId(undefined);
+        setInventoryItemName(undefined);
+        setQuantity(undefined);
+        setUnit(undefined);
+      } else if (initialData.sourceType === "INVENTORY_ITEM") {
+        setRecipeId(undefined);
+        setRecipeName(undefined);
+        setHasRecipeAssignmentIntent(undefined);
+        setInventoryItemId(initialData.inventoryItemId);
+        setInventoryItemName(initialData.inventoryItemName);
+        setQuantity(initialData.quantity);
+        setUnit(initialData.unit);
+      } else {
+        setRecipeId(undefined);
+        setRecipeName(undefined);
+        setHasRecipeAssignmentIntent(undefined);
+        setInventoryItemId(undefined);
+        setInventoryItemName(undefined);
+        setQuantity(undefined);
+        setUnit(undefined);
+      }
     } else {
       setDisplayName("");
       setStatus("ACTIVE");
       setSourceType(null);
       setRecipeId(undefined);
-      setRecipeRevision(undefined);
       setRecipeName(undefined);
+      setHasRecipeAssignmentIntent(undefined);
       setInventoryItemId(undefined);
       setInventoryItemName(undefined);
       setQuantity(undefined);
       setUnit(undefined);
     }
     setValidationError("");
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, isCreateMode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -93,16 +117,33 @@ export function OptionModal({
     };
   }, [isOpen]);
 
+  // Focus restoration when nested picker closes
+  useEffect(() => {
+    if (wasNestedPickerOpenRef.current && !isNestedPickerOpen && isOpen) {
+      recipePickerBtnRef.current?.focus();
+    }
+    wasNestedPickerOpenRef.current = Boolean(isNestedPickerOpen);
+  }, [isNestedPickerOpen, isOpen]);
+
+  // Modal Escape key handling respecting modal hierarchy
   useEffect(() => {
     if (!isOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        if (isNestedPickerOpen) {
+          // Topmost dialog handles escape
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
         onClose();
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isNestedPickerOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -113,35 +154,50 @@ export function OptionModal({
         localId: initialData?.localId,
         optionId: initialData?.optionId,
         displayName: val,
-        status,
+        status: isCreateMode ? "ACTIVE" : status,
         sourceType,
-        recipeId,
-        recipeRevision,
-        recipeName,
-        inventoryItemId,
-        inventoryItemName,
-        quantity,
-        unit,
+        ...(sourceType === "RECIPE"
+          ? {
+              recipeId,
+              recipeName,
+              hasRecipeAssignmentIntent,
+            }
+          : sourceType === "INVENTORY_ITEM"
+            ? {
+                inventoryItemId,
+                inventoryItemName,
+                quantity,
+                unit,
+              }
+            : {}),
       });
     }
   }
 
   function handleStatusChange(val: OfferStatus) {
-    setStatus(val);
+    const nextStatus = isCreateMode ? "ACTIVE" : val;
+    setStatus(nextStatus);
     if (onChangeDraft) {
       onChangeDraft({
         localId: initialData?.localId,
         optionId: initialData?.optionId,
         displayName,
-        status: val,
+        status: nextStatus,
         sourceType,
-        recipeId,
-        recipeRevision,
-        recipeName,
-        inventoryItemId,
-        inventoryItemName,
-        quantity,
-        unit,
+        ...(sourceType === "RECIPE"
+          ? {
+              recipeId,
+              recipeName,
+              hasRecipeAssignmentIntent,
+            }
+          : sourceType === "INVENTORY_ITEM"
+            ? {
+                inventoryItemId,
+                inventoryItemName,
+                quantity,
+                unit,
+              }
+            : {}),
       });
     }
   }
@@ -152,29 +208,55 @@ export function OptionModal({
       setValidationError("Debes seleccionar un origen de contenido (receta o artículo de inventario).");
       return;
     }
-    if (sourceType === "RECIPE" && !recipeId) {
-      setValidationError("Debes elegir una receta de la biblioteca.");
-      return;
-    }
-    if (sourceType === "INVENTORY_ITEM" && (!inventoryItemId || (quantity ?? 0) <= 0)) {
-      setValidationError("El artículo de inventario requiere una cantidad positiva.");
+    if (sourceType === "RECIPE") {
+      const activeRecipeId = recipeId ?? initialData?.recipeId;
+      if (!activeRecipeId && !initialData?.optionId) {
+        setValidationError("Debes elegir una receta de la biblioteca.");
+        return;
+      }
+      if (!activeRecipeId) {
+        setValidationError("Debes elegir una receta de la biblioteca.");
+        return;
+      }
+
+      onSave({
+        localId: initialData?.localId,
+        optionId: initialData?.optionId,
+        displayName: displayName.trim(),
+        status: isCreateMode ? "ACTIVE" : status,
+        sourceType: "RECIPE",
+        recipeId: activeRecipeId,
+        recipeName: recipeName ?? initialData?.recipeName,
+        hasRecipeAssignmentIntent,
+      });
       return;
     }
 
-    onSave({
-      localId: initialData?.localId,
-      optionId: initialData?.optionId,
-      displayName: displayName.trim(),
-      status,
-      sourceType,
-      recipeId,
-      recipeRevision: recipeRevision ?? 1,
-      recipeName,
-      inventoryItemId,
-      inventoryItemName,
-      quantity,
-      unit,
-    });
+    if (sourceType === "INVENTORY_ITEM") {
+      const isPositiveFinite = typeof quantity === "number" && Number.isFinite(quantity) && quantity > 0;
+      const hasUnit = typeof unit === "string" && unit.trim().length > 0;
+      if (!inventoryItemId || !isPositiveFinite) {
+        setValidationError("El artículo de inventario requiere una cantidad positiva.");
+        return;
+      }
+      if (!hasUnit) {
+        setValidationError("El artículo de inventario requiere una unidad autoritativa.");
+        return;
+      }
+
+      onSave({
+        localId: initialData?.localId,
+        optionId: initialData?.optionId,
+        displayName: displayName.trim(),
+        status: isCreateMode ? "ACTIVE" : status,
+        sourceType: "INVENTORY_ITEM",
+        inventoryItemId,
+        inventoryItemName,
+        quantity,
+        unit: unit.trim(),
+      });
+      return;
+    }
   }
 
   const title = initialData?.optionId ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
@@ -197,6 +279,8 @@ export function OptionModal({
       aria-labelledby="option-modal-title"
       onCancel={(event) => {
         event.preventDefault();
+        event.stopPropagation();
+        if (isNestedPickerOpen) return;
         onClose();
       }}
     >
@@ -243,6 +327,7 @@ export function OptionModal({
             <span className="field-label">Origen del contenido de esta opción</span>
             <div className="source-picker-buttons">
               <button
+                ref={recipePickerBtnRef}
                 type="button"
                 className="source-btn"
                 onClick={onOpenRecipePicker}
@@ -270,31 +355,38 @@ export function OptionModal({
             </p>
           </div>
 
-          <fieldset className="form-fieldset">
-            <legend>Disponibilidad</legend>
-            <div className="radio-group">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="option-status"
-                  value="ACTIVE"
-                  checked={status === "ACTIVE"}
-                  onChange={() => handleStatusChange("ACTIVE")}
-                />
-                Activa
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="option-status"
-                  value="INACTIVE"
-                  checked={status === "INACTIVE"}
-                  onChange={() => handleStatusChange("INACTIVE")}
-                />
-                Inactiva
-              </label>
+          {isCreateMode ? (
+            <div className="form-field">
+              <span className="field-label">Disponibilidad</span>
+              <p className="field-hint">Las opciones se crean activas por defecto.</p>
             </div>
-          </fieldset>
+          ) : (
+            <fieldset className="form-fieldset">
+              <legend>Disponibilidad</legend>
+              <div className="radio-group">
+                <label className="radio-option">
+                  <input
+                    type="radio"
+                    name="option-status"
+                    value="ACTIVE"
+                    checked={status === "ACTIVE"}
+                    onChange={() => handleStatusChange("ACTIVE")}
+                  />
+                  Activa
+                </label>
+                <label className="radio-option">
+                  <input
+                    type="radio"
+                    name="option-status"
+                    value="INACTIVE"
+                    checked={status === "INACTIVE"}
+                    onChange={() => handleStatusChange("INACTIVE")}
+                  />
+                  Inactiva
+                </label>
+              </div>
+            </fieldset>
+          )}
         </div>
 
         <footer className="modal-footer">

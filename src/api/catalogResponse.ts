@@ -179,8 +179,7 @@ export function isSlotOptionDetail(value: unknown): value is SlotOptionDetail {
   if (value.sourceType === "RECIPE") {
     return (
       nonEmptyString(value.recipeId) &&
-      (value.recipeRevision === undefined ||
-        (nonNegativeSafeInteger(value.recipeRevision) && value.recipeRevision >= 1)) &&
+      value.recipeRevision === undefined &&
       value.inventoryItemId === undefined &&
       value.quantity === undefined &&
       value.unit === undefined
