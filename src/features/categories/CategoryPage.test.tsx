@@ -131,6 +131,86 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     expect(screen.getByText("Categoría creada.")).toBeVisible();
   });
 
+  test("G04: creates a category and confirms that the list displays the newly created category upon reload", async () => {
+    const list: MenuCategory[] = [];
+    const api = createMockRepository(list);
+    api.listCategories.mockImplementation(async () => [...list]);
+    api.createCategory.mockImplementation(async (draft) => {
+      const created = { id: "cat-new", ...draft, entryCount: 0 };
+      list.push(created);
+      return created;
+    });
+
+    renderPage(api);
+    await screen.findByText("Aún no hay categorías.");
+    fireEvent.click(screen.getByRole("button", { name: "Nueva categoría" }));
+    const dialog = screen.getByRole("dialog", { name: "Crear categoría" });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Nombre" }), {
+      target: { value: "Postres" },
+    });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Descripción" }), {
+      target: { value: "Opciones dulces" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Guardar categoría" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(await screen.findByRole("heading", { name: "Postres" })).toBeVisible();
+    expect(screen.getByText("Opciones dulces")).toBeVisible();
+    expect(screen.getByText("0 entradas asociadas")).toBeVisible();
+    expect(screen.queryByText("Aún no hay categorías.")).not.toBeInTheDocument();
+  });
+
+  test("G01: blocks fields and handlers during active save submission", async () => {
+    const api = createMockRepository([]);
+    let resolveSave: (cat: MenuCategory) => void;
+    const savePromise = new Promise<MenuCategory>((resolve) => {
+      resolveSave = resolve;
+    });
+    api.createCategory.mockReturnValueOnce(savePromise);
+
+    renderPage(api);
+    await screen.findByText("Aún no hay categorías.");
+    fireEvent.click(screen.getByRole("button", { name: "Nueva categoría" }));
+    const dialog = screen.getByRole("dialog", { name: "Crear categoría" });
+    const nameInput = within(dialog).getByRole("textbox", { name: "Nombre" });
+    const descInput = within(dialog).getByRole("textbox", { name: "Descripción" });
+    const submitBtn = within(dialog).getByRole("button", { name: "Guardar categoría" });
+
+    fireEvent.change(nameInput, { target: { value: "Cafés" } });
+    fireEvent.click(submitBtn);
+
+    // During active submission, fields and buttons are disabled
+    expect(nameInput).toBeDisabled();
+    expect(descInput).toBeDisabled();
+    expect(submitBtn).toBeDisabled();
+    expect(submitBtn).toHaveTextContent("Guardando…");
+
+    // Attempting to change value while busy is blocked
+    fireEvent.change(nameInput, { target: { value: "Cafés Calientes" } });
+    expect(nameInput).toHaveValue("Cafés");
+
+    // Completing submission
+    resolveSave!({ id: "cat-c", name: "Cafés", entryCount: 0 });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  test("G03: renders four distinct representations for entry count: undefined, 0, 1, and plural", async () => {
+    const categoriesWithVariousCounts: MenuCategory[] = [
+      { id: "c-undef", name: "Cat Indefinida", description: "Desc", entryCount: undefined },
+      { id: "c-zero", name: "Cat Cero", description: "Desc", entryCount: 0 },
+      { id: "c-one", name: "Cat Uno", description: "Desc", entryCount: 1 },
+      { id: "c-plural", name: "Cat Plural", description: "Desc", entryCount: 4 },
+    ];
+    const api = createMockRepository(categoriesWithVariousCounts);
+    renderPage(api);
+
+    expect(await screen.findByRole("heading", { name: "Cat Indefinida" })).toBeVisible();
+    expect(screen.getByText("Cuenta de entradas no disponible")).toBeVisible();
+    expect(screen.getByText("0 entradas asociadas")).toBeVisible();
+    expect(screen.getByText("1 entrada asociada")).toBeVisible();
+    expect(screen.getByText("4 entradas asociadas")).toBeVisible();
+  });
+
   test("edits a category: fetches opening version with strong ETag and updates using it directly", async () => {
     const api = createMockRepository();
     renderPage(api);
@@ -269,13 +349,18 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
 
   test("POST success with edits after submission preserves draft in edit mode and warns user", async () => {
     const api = createMockRepository([]);
-    let resolveFirstPost: (val: MenuCategory) => void;
-    const firstPostPromise = new Promise<MenuCategory>((resolve) => {
-      resolveFirstPost = resolve;
-    });
-
-    api.createCategory.mockImplementationOnce(async () => {
-      return firstPostPromise;
+    let callCount = 0;
+    api.createCategory.mockImplementation(async (draft) => {
+      callCount++;
+      if (callCount === 1) {
+        throw { isTimeout: true, message: "Timeout" };
+      }
+      return {
+        id: "cat-123",
+        name: draft.name,
+        description: draft.description,
+        entryCount: 0,
+      };
     });
 
     renderPage(api);
@@ -288,20 +373,23 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     });
     fireEvent.click(within(dialog).getByRole("button", { name: "Guardar categoría" }));
 
-    // Durante el envío, el usuario cambia la descripción
-    fireEvent.change(within(dialog).getByRole("textbox", { name: "Descripción" }), {
-      target: { value: "Descripción añadida mientras enviaba" },
+    // Primer intento falla por timeout, campos se desbloquean para editar entre intentos inciertos
+    await waitFor(() => expect(callCount).toBe(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Timeout");
+
+    // Entre intentos, el usuario añade una descripción al borrador
+    const descInput = within(dialog).getByRole("textbox", { name: "Descripción" });
+    expect(descInput).toBeEnabled();
+    fireEvent.change(descInput, {
+      target: { value: "Descripción añadida tras timeout" },
     });
 
-    // Se resuelve la creación exitosa en el servidor
-    resolveFirstPost!({
-      id: "cat-123",
-      name: "Bebidas",
-      description: "",
-      entryCount: 0,
-    });
+    // Ahora pulsa Reintentar (que reenvía la solicitud original)
+    fireEvent.click(within(dialog).getByRole("button", { name: "Reintentar" }));
 
-    // El diálogo permanece abierto en modo edición y muestra el aviso de cambios pendientes
+    // El reintento tiene éxito, pero como hay cambios posteriores en el borrador, el diálogo
+    // permanece abierto en modo edición y muestra el aviso de cambios pendientes
+    await waitFor(() => expect(callCount).toBe(2));
     await waitFor(() =>
       expect(
         within(dialog).getByText(/La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario/),
@@ -309,7 +397,7 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     );
     expect(within(dialog).getByRole("heading", { name: "Editar categoría" })).toBeVisible();
     expect(within(dialog).getByRole("textbox", { name: "Descripción" })).toHaveValue(
-      "Descripción añadida mientras enviaba",
+      "Descripción añadida tras timeout",
     );
   });
 

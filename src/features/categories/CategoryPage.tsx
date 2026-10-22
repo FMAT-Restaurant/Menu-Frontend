@@ -17,6 +17,19 @@ export type CategoryRepository = Pick<
   "listCategories" | "getCategory" | "createCategory" | "updateCategory"
 >;
 
+export function formatCategoryEntryCount(entryCount?: number): string {
+  if (entryCount === undefined || entryCount === null) {
+    return "Cuenta de entradas no disponible";
+  }
+  if (entryCount === 0) {
+    return "0 entradas asociadas";
+  }
+  if (entryCount === 1) {
+    return "1 entrada asociada";
+  }
+  return `${entryCount} entradas asociadas`;
+}
+
 interface CategoryPageProps {
   repository: CategoryRepository;
   storage?: PendingOperationStorageAdapter;
@@ -113,7 +126,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
                   <div>
                     <h3>{category.name}</h3>
                     <p>{category.description || "Sin descripción"}</p>
-                    <span>{category.entryCount} {category.entryCount === 1 ? "entrada asociada" : "entradas asociadas"}</span>
+                    <span>{formatCategoryEntryCount(category.entryCount)}</span>
                   </div>
                   <button className="button button--secondary" type="button" onClick={() => setFormCategory(category)} aria-label={`Editar ${category.name}`}>Editar</button>
                 </li>

@@ -271,6 +271,7 @@ export function CategoryFormDialog({
   }, [retryCountdownMs, pendingAttempt]);
 
   function handleNameChange(nextName: string) {
+    if (busy) return;
     userEditedRef.current = true;
     setName(nextName);
     if (!activeCategory) {
@@ -280,6 +281,7 @@ export function CategoryFormDialog({
   }
 
   function handleDescriptionChange(nextDescription: string) {
+    if (busy) return;
     userEditedRef.current = true;
     setDescription(nextDescription);
     if (!activeCategory) {
@@ -579,6 +581,7 @@ export function CategoryFormDialog({
               ref={nameRef}
               id="category-name"
               value={name}
+              disabled={busy}
               onChange={(event) => handleNameChange(event.target.value)}
               maxLength={255}
               required
@@ -590,6 +593,7 @@ export function CategoryFormDialog({
             <textarea
               id="category-description"
               value={description}
+              disabled={busy}
               onChange={(event) => handleDescriptionChange(event.target.value)}
               maxLength={255}
               rows={3}
