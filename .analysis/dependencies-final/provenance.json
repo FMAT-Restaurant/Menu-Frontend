@@ -1,0 +1,51 @@
+{
+  "capturedAt": "2026-10-22T20:25:18.830Z",
+  "repository": "C:\\Users\\tony\\Desktop\\Septimo semestre\\vyv\\proyecto\\repos\\Menu-Frontend",
+  "commit": "9ac4411c5b835eb893f4d9f8042f532f67dfd896",
+  "dependencyCruiserVersion": "18.7.0",
+  "nodeVersion": "v24.21.0",
+  "command": "npx --no-install depcruise src e2e public scripts vite.config.ts playwright.config.ts eslint.config.js jest.config.cjs babel.config.cjs .dependency-cruiser.cjs --config .dependency-cruiser.cjs --ts-config tsconfig.json --ts-pre-compilation-deps -T json -f .analysis/dependencies-final/dependencies.json",
+  "config": ".dependency-cruiser.cjs",
+  "tsconfig": "tsconfig.json",
+  "counts": {
+    "nodes": 112,
+    "edges": 270,
+    "unresolved": 0,
+    "circularEdges": 0,
+    "violations": 3
+  },
+  "violations": [
+    {
+      "type": "dependency",
+      "from": "src/test-setup.ts",
+      "to": "node_modules/@testing-library/jest-dom/types/index.d.ts",
+      "unresolvedTo": "@testing-library/jest-dom",
+      "dependencyTypes": [
+        "npm-dev",
+        "import"
+      ],
+      "rule": {
+        "severity": "error",
+        "name": "not-to-dev-dep"
+      }
+    },
+    {
+      "type": "module",
+      "from": "jest.config.cjs",
+      "to": "jest.config.cjs",
+      "rule": {
+        "severity": "warn",
+        "name": "no-orphans"
+      }
+    },
+    {
+      "type": "module",
+      "from": "public/runtime-config.js",
+      "to": "public/runtime-config.js",
+      "rule": {
+        "severity": "warn",
+        "name": "no-orphans"
+      }
+    }
+  ]
+}

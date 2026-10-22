@@ -1,0 +1,7 @@
+
+  warn no-orphans: public/runtime-config.js
+  warn no-orphans: jest.config.cjs
+  error not-to-dev-dep: src/test-setup.ts → node_modules/@testing-library/jest-dom/types/index.d.ts
+
+x 3 dependency violations (1 errors, 2 warnings). 112 modules, 270 dependencies cruised.
+
