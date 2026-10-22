@@ -11,6 +11,8 @@ import {
   buildCategoryCreateScope,
   CategoryFormDialog,
 } from "./CategoryFormDialog";
+import "./styles.css";
+import "./styles.css";
 
 export type CategoryRepository = Pick<
   MenuRepository,

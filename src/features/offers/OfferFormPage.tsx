@@ -35,6 +35,7 @@ import { type OptionDraft, OptionModal } from "./OptionModal";
 import { type SlotDraft } from "./SlotCard";
 import { type SlotModalData, SlotModal } from "./SlotModal";
 import { validateOfferImage } from "./offerImage";
+import "./styles.css";
 import {
   ensureOptionLocalId,
   ensureSlotLocalIds,

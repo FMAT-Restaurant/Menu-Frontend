@@ -5,6 +5,9 @@ module.exports = {
     "^.+\\.[jt]sx?$": "babel-jest",
   },
   setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
+  moduleNameMapper: {
+    "\\.css$": "<rootDir>/src/test-setup.ts",
+  },
   coverageProvider: "babel",
   coverageDirectory: "<rootDir>/coverage",
   coverageReporters: ["text", "lcov"],

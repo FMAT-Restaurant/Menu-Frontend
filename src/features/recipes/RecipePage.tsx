@@ -16,6 +16,7 @@ import { analyzeNonIdempotentWriteError } from "../../api/idempotencyResponse";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFormDialog, buildRecipeCreateScope } from "./RecipeFormDialog";
+import "./styles.css";
 
 export type RecipeRepository = Pick<
   MenuRepository,

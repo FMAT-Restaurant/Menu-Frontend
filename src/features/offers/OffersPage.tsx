@@ -4,6 +4,7 @@ import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { OfferCard } from "./OfferCard";
+import "./styles.css";
 
 const pageSize = 12;
 const entryStatusLabel = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };

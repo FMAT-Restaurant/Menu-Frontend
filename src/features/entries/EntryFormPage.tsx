@@ -6,6 +6,7 @@ import { EntryCategorySelector } from "./EntryCategorySelector";
 import { EntryImageField } from "./EntryImageField";
 import { EntryFormFeedback } from "./EntryFormFeedback";
 import { useEntryForm } from "./useEntryForm";
+import "./styles.css";
 
 const statusLabels: Record<EntryStatus, string> = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };
 const progressLabels = { idle: "Guardar entrada", upload: "Subiendo imagen…", persist: "Guardando entrada…" };

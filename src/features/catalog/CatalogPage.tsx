@@ -6,6 +6,7 @@ import { loadEntryCategories } from "../../application/entryCategories";
 import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
+import "./styles.css";
 
 const pageSizes = new Set([6, 12, 24]);
 const statuses: EntryStatus[] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
