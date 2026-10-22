@@ -54,6 +54,7 @@ export function SlotOptionItem({
           disabled={disabled}
           title={isActive ? "Hacer inactiva" : "Hacer activa"}
           aria-label={`Cambiar estado de ${label}`}
+          aria-pressed={isActive}
         >
           {isActive ? "Activa" : "Inactiva"}
         </button>

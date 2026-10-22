@@ -1,4 +1,5 @@
-﻿import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { MenuOffer, OfferStatus } from "../../application/catalog";
 
 interface OfferCardProps {
@@ -14,12 +15,27 @@ export function OfferCard({ offer, busy, returnTo, catalogReturnTo, onStatusChan
   const active = offer.status === "ACTIVE";
   const presentation = offer.presentationTag || "Sin etiqueta de presentación";
   const editPath = `/entries/${encodeURIComponent(offer.entryId)}/offers/${encodeURIComponent(offer.id)}/edit`;
+  const imageSource = offer.image?.url ? (offer.image.thumbnailUrl || offer.image.url) : "";
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageSource, offer.image?.url, offer.image?.thumbnailUrl]);
 
   return (
     <article className="offer-card">
       <Link className="offer-card__content" to={editPath} state={{ returnTo, catalogReturnTo }} aria-label={`Abrir oferta ${presentation} para editar`}>
         <div className="offer-card__image">
-          {offer.image?.url ? <img src={offer.image.thumbnailUrl || offer.image.url} alt={`Imagen de la oferta ${presentation}`} loading="lazy" /> : <span className="offer-card__image-placeholder">Imagen de la oferta</span>}
+          {imageSource && !imageFailed ? (
+            <img
+              src={imageSource}
+              alt={`Imagen de la oferta ${presentation}`}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <span className="offer-card__image-placeholder">Imagen de la oferta</span>
+          )}
         </div>
         <h2>{presentation}</h2>
         <p className="offer-card__entry">{offer.entryName}</p>

@@ -1,4 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { MenuOffer } from "../../application/catalog";
+import { OfferCard } from "./OfferCard";
 import { OfferCommercialInfo } from "./OfferCommercialInfo";
 import { SlotModal } from "./SlotModal";
 import { OptionModal, type OptionDraft } from "./OptionModal";
@@ -6,8 +9,90 @@ import { CompositionEditor } from "./CompositionEditor";
 import { SlotCard, type SlotDraft } from "./SlotCard";
 import { SlotOptionItem } from "./SlotOptionItem";
 
+describe("OfferCard Component", () => {
+  const baseOffer: MenuOffer = {
+    id: "offer-1",
+    entryId: "entry-1",
+    entryName: "Hamburguesa Clásica",
+    presentationTag: "Individual",
+    basePrice: 150,
+    status: "ACTIVE",
+    image: {
+      id: "img-1",
+      url: "https://example.com/broken.jpg",
+      thumbnailUrl: "https://example.com/broken-thumb.jpg",
+    },
+    slotCount: 1,
+  };
+
+  test("shows fallback placeholder when existing image URL fails to load and retries when URL changes", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <OfferCard
+          offer={baseOffer}
+          busy={false}
+          returnTo="/entries/entry-1/offers"
+          catalogReturnTo="/"
+          onStatusChange={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const initialImg = screen.getByRole("img", { name: "Imagen de la oferta Individual" });
+    expect(initialImg).toHaveAttribute("src", "https://example.com/broken-thumb.jpg");
+    expect(screen.queryByText("Imagen de la oferta")).not.toBeInTheDocument();
+
+    // Image load fails -> fallback placeholder is shown
+    fireEvent.error(initialImg);
+    expect(screen.queryByRole("img", { name: "Imagen de la oferta Individual" })).not.toBeInTheDocument();
+    expect(screen.getByText("Imagen de la oferta")).toBeVisible();
+
+    // Re-rendering with the same broken URL keeps the fallback
+    rerender(
+      <MemoryRouter>
+        <OfferCard
+          offer={{ ...baseOffer }}
+          busy={false}
+          returnTo="/entries/entry-1/offers"
+          catalogReturnTo="/"
+          onStatusChange={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.queryByRole("img", { name: "Imagen de la oferta Individual" })).not.toBeInTheDocument();
+    expect(screen.getByText("Imagen de la oferta")).toBeVisible();
+
+    // Re-rendering with a new image URL resets fallback and attempts loading the new URL
+    rerender(
+      <MemoryRouter>
+        <OfferCard
+          offer={{
+            ...baseOffer,
+            image: {
+              id: "img-2",
+              url: "https://example.com/recovered.jpg",
+              thumbnailUrl: "https://example.com/recovered-thumb.jpg",
+            },
+          }}
+          busy={false}
+          returnTo="/entries/entry-1/offers"
+          catalogReturnTo="/"
+          onStatusChange={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const recoveredImg = screen.getByRole("img", { name: "Imagen de la oferta Individual" });
+    expect(recoveredImg).toHaveAttribute("src", "https://example.com/recovered-thumb.jpg");
+    expect(screen.queryByText("Imagen de la oferta")).not.toBeInTheDocument();
+  });
+});
+
 describe("OfferCommercialInfo Component", () => {
-  test("handles drag and drop for image upload", () => {
+  test("handles drag and drop for image upload and shows creation draft status notice", () => {
     const handleDropImage = jest.fn();
     const handleSelectImage = jest.fn();
     const handlePresentationTagChange = jest.fn();
@@ -33,6 +118,12 @@ describe("OfferCommercialInfo Component", () => {
       />
     );
 
+    expect(
+      screen.getByText(
+        "Toda oferta se crea con estado inactivo (INACTIVE); la composición del borrador local no garantiza la aceptación del servidor ni activa la oferta automáticamente."
+      )
+    ).toBeVisible();
+
     const dropzone = screen.getByRole("button", {
       name: "Seleccionar o arrastrar imagen de la oferta",
     });
@@ -49,7 +140,7 @@ describe("OfferCommercialInfo Component", () => {
     expect(handleDropImage).toHaveBeenCalledWith(file);
   });
 
-  test("renders status controls in editing mode and triggers status change", () => {
+  test("renders status controls in editing mode and distinguishes draft from server acceptance without promising automatic activation", () => {
     const handleStatusChange = jest.fn();
 
     const { rerender } = render(
@@ -73,9 +164,12 @@ describe("OfferCommercialInfo Component", () => {
 
     expect(
       screen.getByText(
-        "La oferta cuenta con grupos activos y cumple las condiciones para permanecer activa."
+        "El borrador incluye al menos un grupo con opciones activas para solicitar el estado activo. Toda oferta inicia inactiva (INACTIVE) al crearse y la composición local no garantiza la aceptación del servidor hasta guardar."
       )
     ).toBeVisible();
+    expect(
+      screen.queryByText(/cumple las condiciones para permanecer activa/i)
+    ).not.toBeInTheDocument();
 
     const inactiveRadio = screen.getByLabelText("Inactiva");
     fireEvent.click(inactiveRadio);
@@ -101,12 +195,14 @@ describe("OfferCommercialInfo Component", () => {
       />
     );
 
-    expect(
-      screen.getByText(/La oferta se mantiene inactiva porque no tiene ningún grupo activo/)
-    ).toBeVisible();
+    const warningAlert = screen.getByRole("alert");
+    expect(warningAlert).toHaveTextContent(
+      "La oferta se mantiene inactiva porque no tiene ningún grupo activo en este borrador. Toda oferta nueva inicia inactiva (INACTIVE) y la composición local no activa la oferta automáticamente ni garantiza la aceptación del servidor hasta guardar."
+    );
+    expect(screen.queryByText(/Se activará automáticamente/i)).not.toBeInTheDocument();
   });
 
-  test("triggers file input click via keyboard Enter/Space", () => {
+  test("activates file input selector via keyboard Enter and Space when enabled", () => {
     render(
       <OfferCommercialInfo
         presentationTag=""
@@ -121,8 +217,56 @@ describe("OfferCommercialInfo Component", () => {
         previewUrl=""
         onSelectImage={jest.fn()}
         onDropImage={jest.fn()}
+        imageError=""
+        imageValidating={false}
+        disabled={false}
+      />
+    );
+
+    const dropzone = screen.getByRole("button", {
+      name: "Seleccionar o arrastrar imagen de la oferta",
+    });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    expect(dropzone).toBeEnabled();
+    expect(fileInput).toBeEnabled();
+
+    const clickSpy = jest.spyOn(fileInput, "click");
+    try {
+      fireEvent.keyDown(dropzone, { key: "Enter" });
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+
+      fireEvent.keyDown(dropzone, { key: " " });
+      expect(clickSpy).toHaveBeenCalledTimes(2);
+
+      fireEvent.click(dropzone);
+      expect(clickSpy).toHaveBeenCalledTimes(3);
+    } finally {
+      clickSpy.mockRestore();
+    }
+  });
+
+  test("blocks click, keyboard, file input change, and drag-and-drop during image validation and saving", () => {
+    const handleSelectImage = jest.fn();
+    const handleDropImage = jest.fn();
+
+    const { rerender } = render(
+      <OfferCommercialInfo
+        presentationTag=""
+        onPresentationTagChange={jest.fn()}
+        basePrice=""
+        onBasePriceChange={jest.fn()}
+        onStatusChange={jest.fn()}
+        desiredStatus="INACTIVE"
+        hasActiveSlot={false}
+        isEditing={false}
+        existingImage={null}
+        previewUrl=""
+        onSelectImage={handleSelectImage}
+        onDropImage={handleDropImage}
         imageError="Error de imagen"
         imageValidating={true}
+        disabled={false}
       />
     );
 
@@ -132,8 +276,60 @@ describe("OfferCommercialInfo Component", () => {
     const dropzone = screen.getByRole("button", {
       name: "Seleccionar o arrastrar imagen de la oferta",
     });
-    fireEvent.keyDown(dropzone, { key: "Enter" });
-    fireEvent.keyDown(dropzone, { key: " " });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["bytes"], "offer.png", { type: "image/png" });
+
+    expect(dropzone).toBeDisabled();
+    expect(fileInput).toBeDisabled();
+
+    const clickSpy = jest.spyOn(fileInput, "click");
+    try {
+      fireEvent.click(dropzone);
+      fireEvent.keyDown(dropzone, { key: "Enter" });
+      fireEvent.keyDown(dropzone, { key: " " });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+      fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
+
+      expect(clickSpy).not.toHaveBeenCalled();
+      expect(handleSelectImage).not.toHaveBeenCalled();
+      expect(handleDropImage).not.toHaveBeenCalled();
+
+      // Also verify blocking when saving (disabled = true, imageValidating = false)
+      rerender(
+        <OfferCommercialInfo
+          presentationTag=""
+          onPresentationTagChange={jest.fn()}
+          basePrice=""
+          onBasePriceChange={jest.fn()}
+          onStatusChange={jest.fn()}
+          desiredStatus="INACTIVE"
+          hasActiveSlot={false}
+          isEditing={false}
+          existingImage={null}
+          previewUrl=""
+          onSelectImage={handleSelectImage}
+          onDropImage={handleDropImage}
+          imageError=""
+          imageValidating={false}
+          disabled={true}
+        />
+      );
+
+      expect(dropzone).toBeDisabled();
+      expect(fileInput).toBeDisabled();
+
+      fireEvent.click(dropzone);
+      fireEvent.keyDown(dropzone, { key: "Enter" });
+      fireEvent.keyDown(dropzone, { key: " " });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+      fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
+
+      expect(clickSpy).not.toHaveBeenCalled();
+      expect(handleSelectImage).not.toHaveBeenCalled();
+      expect(handleDropImage).not.toHaveBeenCalled();
+    } finally {
+      clickSpy.mockRestore();
+    }
   });
 
   test("handles file input change and renders preview", () => {
@@ -556,7 +752,7 @@ describe("OptionModal Component", () => {
 });
 
 describe("SlotOptionItem Component", () => {
-  test("renders recipe option with default label and handles actions", () => {
+  test("renders recipe option with default label, coherent accessible status, and updates state on toggle", () => {
     const handleEdit = jest.fn();
     const handleDelete = jest.fn();
     const handleToggle = jest.fn();
@@ -569,7 +765,7 @@ describe("SlotOptionItem Component", () => {
       recipeName: "Papas Fritas",
     };
 
-    render(
+    const { rerender } = render(
       <SlotOptionItem
         option={option}
         optionIndex={0}
@@ -582,8 +778,32 @@ describe("SlotOptionItem Component", () => {
     expect(screen.getByText("Papas Fritas")).toBeVisible();
     expect(screen.getByText("Receta")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de Papas Fritas" }));
-    expect(handleToggle).toHaveBeenCalled();
+    const statusButton = screen.getByRole("button", {
+      name: "Cambiar estado de Papas Fritas",
+      pressed: true,
+    });
+    expect(statusButton).toHaveAttribute("aria-pressed", "true");
+    expect(statusButton).toHaveTextContent("Activa");
+
+    fireEvent.click(statusButton);
+    expect(handleToggle).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <SlotOptionItem
+        option={{ ...option, status: "INACTIVE" }}
+        optionIndex={0}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onToggleStatus={handleToggle}
+      />
+    );
+
+    const updatedStatusButton = screen.getByRole("button", {
+      name: "Cambiar estado de Papas Fritas",
+      pressed: false,
+    });
+    expect(updatedStatusButton).toHaveAttribute("aria-pressed", "false");
+    expect(updatedStatusButton).toHaveTextContent("Inactiva");
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Papas Fritas" }));
     expect(handleEdit).toHaveBeenCalled();
@@ -592,7 +812,7 @@ describe("SlotOptionItem Component", () => {
     expect(handleDelete).toHaveBeenCalled();
   });
 
-  test("renders inventory item without name and shows custom label and source reference", () => {
+  test("renders inventory item without name and shows custom label, source reference, and inactive accessible state", () => {
     const option: OptionDraft = {
       displayName: "Refresco Mediano",
       status: "INACTIVE",
@@ -615,7 +835,14 @@ describe("SlotOptionItem Component", () => {
     expect(screen.getByText("Refresco Mediano")).toBeVisible();
     expect(screen.getByText("Origen: Artículo de inventario")).toBeVisible();
     expect(screen.getByText("2 u")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Cambiar estado de Refresco Mediano" })).toBeDisabled();
+
+    const statusButton = screen.getByRole("button", {
+      name: "Cambiar estado de Refresco Mediano",
+      pressed: false,
+    });
+    expect(statusButton).toHaveAttribute("aria-pressed", "false");
+    expect(statusButton).toHaveTextContent("Inactiva");
+    expect(statusButton).toBeDisabled();
   });
 });
 

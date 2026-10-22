@@ -1,4 +1,4 @@
-import { type ChangeEvent, type DragEvent, useRef } from "react";
+import { type ChangeEvent, type DragEvent, type KeyboardEvent, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
 
 export interface OfferCommercialInfoProps {
@@ -41,10 +41,28 @@ export function OfferCommercialInfo({
   disabled = false,
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isImageBlocked = disabled || imageValidating;
+
+  function handleTriggerFileSelect() {
+    if (isImageBlocked) return;
+    fileInputRef.current?.click();
+  }
+
+  function handleDropzoneKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleTriggerFileSelect();
+    }
+  }
+
+  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
+    if (isImageBlocked) return;
+    onSelectImage(e);
+  }
 
   function handleDrop(e: DragEvent) {
     e.preventDefault();
-    if (disabled) return;
+    if (isImageBlocked) return;
     const file = e.dataTransfer.files?.[0];
     if (file) {
       onDropImage(file);
@@ -104,7 +122,7 @@ export function OfferCommercialInfo({
               <div className="status-fixed-box">
                 <span className="badge badge--inactive">Inactiva</span>
                 <p className="field-hint">
-                  Toda oferta se crea con estado inactivo y debe activarse manualmente después.
+                  Toda oferta se crea con estado inactivo (INACTIVE); la composición del borrador local no garantiza la aceptación del servidor ni activa la oferta automáticamente.
                 </p>
               </div>
             ) : (
@@ -140,12 +158,12 @@ export function OfferCommercialInfo({
 
                 {isAutoInactive && (
                   <p className="feedback feedback--warning" role="alert">
-                    La oferta se mantiene inactiva porque no tiene ningún grupo activo. Se activará automáticamente cuando exista al menos un grupo activo con opciones disponibles.
+                    La oferta se mantiene inactiva porque no tiene ningún grupo activo en este borrador. Toda oferta nueva inicia inactiva (INACTIVE) y la composición local no activa la oferta automáticamente ni garantiza la aceptación del servidor hasta guardar.
                   </p>
                 )}
                 {desiredStatus === "ACTIVE" && hasActiveSlot && (
                   <p className="field-hint">
-                    La oferta cuenta con grupos activos y cumple las condiciones para permanecer activa.
+                    El borrador incluye al menos un grupo con opciones activas para solicitar el estado activo. Toda oferta inicia inactiva (INACTIVE) al crearse y la composición local no garantiza la aceptación del servidor hasta guardar.
                   </p>
                 )}
               </div>
@@ -163,17 +181,19 @@ export function OfferCommercialInfo({
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              onChange={onSelectImage}
+              onChange={handleInputChange}
               style={{ display: "none" }}
-              disabled={disabled || imageValidating}
+              disabled={isImageBlocked}
             />
 
             <button
               type="button"
               className={`image-dropzone ${effectivePreview ? "image-dropzone--has-preview" : ""}`}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleTriggerFileSelect}
+              onKeyDown={handleDropzoneKeyDown}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
+              disabled={isImageBlocked}
               aria-label="Seleccionar o arrastrar imagen de la oferta"
             >
               {effectivePreview ? (

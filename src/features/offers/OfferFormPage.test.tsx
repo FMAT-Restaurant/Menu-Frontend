@@ -529,6 +529,10 @@ describe("OfferFormPage (V4)", () => {
       dataTransfer: { files: [validFile] },
     });
 
+    await waitFor(() => {
+      expect(screen.queryByText("Validando imagen…")).not.toBeInTheDocument();
+    });
+
     // Drop invalid format (text/plain)
     const invalidFile = new File(["not image"], "notes.txt", { type: "text/plain" });
     fireEvent.drop(dropzone, {
