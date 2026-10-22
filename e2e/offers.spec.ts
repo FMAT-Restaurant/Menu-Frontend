@@ -52,7 +52,7 @@ test("keeps the offers view inside narrow screens and reconciles an out-of-range
   await page.route("**/api/v1/menu/entries/entry-1", (route) => route.fulfill({ json: { data: { ...entry, categoryIds: [] } } }));
   await page.route("**/api/v1/menu/offers/offer-13", async (route) => {
     if (route.request().method() === "GET") {
-      await route.fulfill({ headers: { ETag: '"offer-rev-13"' }, json: { data: { id: "offer-13", entryId: "entry-1", entryName: entry.brandName, presentationTag: "Familiar", basePrice: 240, status: "INACTIVE", image: null, slotCount: 1 } } });
+      await route.fulfill({ headers: { ETag: '"offer-rev-13"' }, json: { data: { id: "offer-13", entryId: "entry-1", entryName: entry.brandName, presentationTag: "Familiar", basePrice: 240, status: "INACTIVE", image: null, slotCount: 1, composition: { slots: [] } } } });
       return;
     }
     if (route.request().method() === "DELETE") total = 12;

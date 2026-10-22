@@ -1,12 +1,23 @@
 export type EntryStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 
+export interface MenuCategoryReference {
+  id: string;
+  name: string;
+}
+
+export interface CatalogImage {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+}
+
 export interface MenuEntry {
   id: string;
   brandName: string;
   description: string;
   status: EntryStatus;
-  image: { id: string; url: string; thumbnailUrl: string } | null;
-  categories: { id: string; name: string }[];
+  image: CatalogImage | null;
+  categories: MenuCategoryReference[];
   offerCount: number;
 }
 

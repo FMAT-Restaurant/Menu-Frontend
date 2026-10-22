@@ -10,7 +10,7 @@ async function fixture(page: Page, count = 3, rejectCreation = false, conflictEd
   });
   await page.route("**/api/v1/media/images", (route) => {
     uploads += 1;
-    return route.fulfill({ status: 201, json: { data: { id: "image-uploaded" } } });
+    return route.fulfill({ status: 201, json: { data: { id: "image-uploaded", url: "/images/uploaded.png", thumbnailUrl: "/images/uploaded-thumb.png" } } });
   });
   await page.route("**/api/v1/menu/entries", (route) => {
     creates += 1;
