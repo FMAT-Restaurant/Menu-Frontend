@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
+import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { OfferCard } from "./OfferCard";
 
 const pageSize = 12;
@@ -95,11 +97,25 @@ interface OffersFeedbackProps {
   offersErrorMessage: string;
   actionError: string;
   notice: string;
+  dialogOpen: boolean;
+  hasPendingStatusMutation: boolean;
   onRetryEntry(): void;
   onRetryOffers(): void;
+  onRetryStatus(): void;
 }
 
-function OffersFeedback({ loadError, entryErrorMessage, offersErrorMessage, actionError, notice, onRetryEntry, onRetryOffers }: Readonly<OffersFeedbackProps>) {
+function OffersFeedback({
+  loadError,
+  entryErrorMessage,
+  offersErrorMessage,
+  actionError,
+  notice,
+  dialogOpen,
+  hasPendingStatusMutation,
+  onRetryEntry,
+  onRetryOffers,
+  onRetryStatus,
+}: Readonly<OffersFeedbackProps>) {
   const message = errorMessageForLoad(loadError, entryErrorMessage, offersErrorMessage);
   const retryLabel = retryLabelForLoad(loadError);
   const onRetry = loadError === "entry" ? onRetryEntry : onRetryOffers;
@@ -109,7 +125,11 @@ function OffersFeedback({ loadError, entryErrorMessage, offersErrorMessage, acti
       {message}
       <button type="button" onClick={onRetry}>Reintentar {retryLabel}</button>
     </div>}
-    {actionError && <div className="feedback feedback--error" role="alert">{actionError} <button type="button" onClick={onRetryOffers}>Actualizar datos</button></div>}
+    {!dialogOpen && actionError && <div className="feedback feedback--error" role="alert">
+      {actionError}{" "}
+      {hasPendingStatusMutation && <button type="button" onClick={onRetryStatus}>Reintentar cambio de estado</button>}
+      <button type="button" onClick={onRetryOffers}>Actualizar datos</button>
+    </div>}
     {notice && <output className="feedback feedback--success">{notice}</output>}
   </>;
 }
@@ -151,16 +171,17 @@ interface OffersPaginationProps {
   page: number;
   displayedPage: number;
   offersLoading: boolean;
+  busy: boolean;
   onPageChange(nextPage: number): void;
 }
 
-function OffersPagination({ totalPages, isEmpty, page, displayedPage, offersLoading, onPageChange }: Readonly<OffersPaginationProps>) {
+function OffersPagination({ totalPages, isEmpty, page, displayedPage, offersLoading, busy, onPageChange }: Readonly<OffersPaginationProps>) {
   if (totalPages <= 1 || isEmpty) return null;
 
   return <nav className="pagination" aria-label="Páginas de ofertas">
-    <button className="button button--secondary" type="button" disabled={page <= 1 || offersLoading} onClick={() => onPageChange(page - 1)}>Anterior</button>
+    <button className="button button--secondary" type="button" disabled={page <= 1 || offersLoading || busy} onClick={() => onPageChange(page - 1)}>Anterior</button>
     <span className="offers-page__page">Página {displayedPage} de {totalPages}</span>
-    <button className="button button--secondary" type="button" disabled={page >= totalPages || offersLoading} onClick={() => onPageChange(page + 1)}>Siguiente</button>
+    <button className="button button--secondary" type="button" disabled={page >= totalPages || offersLoading || busy} onClick={() => onPageChange(page + 1)}>Siguiente</button>
   </nav>;
 }
 
@@ -180,7 +201,7 @@ function OffersResults({ initialLoading, result, offersLoading, first, last, ...
     {offersLoading && <output className="feedback" aria-live="polite">Actualizando ofertas…</output>}
     {!collectionProps.isEmpty && <p className="offers-page__count">Mostrando {first}–{last} de {result.meta.total} ofertas</p>}
     <OffersCollection {...collectionProps} />
-    <OffersPagination totalPages={collectionProps.totalPages} isEmpty={collectionProps.isEmpty} page={collectionProps.page} displayedPage={collectionProps.displayedPage} offersLoading={offersLoading} onPageChange={collectionProps.onPageChange} />
+    <OffersPagination totalPages={collectionProps.totalPages} isEmpty={collectionProps.isEmpty} page={collectionProps.page} displayedPage={collectionProps.displayedPage} offersLoading={offersLoading} busy={collectionProps.busy} onPageChange={collectionProps.onPageChange} />
   </>;
 }
 
@@ -192,6 +213,8 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const currentContext = `${entryId ?? ""}:${page}`;
   const currentContextRef = useRef(currentContext);
   currentContextRef.current = currentContext;
+  const activeOperationId = useRef<string | null>(null);
+
   const [entry, setEntry] = useState<MenuEntryDetail | null>(null);
   const [entryDataId, setEntryDataId] = useState<string | null>(null);
   const [result, setResult] = useState<Page<MenuOffer> | null>(null);
@@ -211,13 +234,16 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const [offersRetry, setOffersRetry] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [updatingOffers, setUpdatingOffers] = useState(false);
+  const [needsReconcile, setNeedsReconcile] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<MenuOffer | null>(null);
+
   const pendingStatusMutation = useRef<{
     offerId: string;
     draft: OfferStatusDraft;
     etag: string;
     idempotencyKey: string;
   } | null>(null);
+
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const deleteTriggerRef = useRef<HTMLElement | null>(null);
@@ -253,7 +279,9 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setUpdatingOffers(false);
     setPendingAction("");
     setOfferToDelete(null);
+    setNeedsReconcile(false);
     pendingStatusMutation.current = null;
+    activeOperationId.current = null;
   }, [entryId, page]);
 
   const reloadOffers = useCallback(async (signal: AbortSignal) => {
@@ -304,32 +332,41 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     cancelRef.current?.focus();
     return () => {
       if (dialog?.open && typeof dialog.close === "function") dialog.close();
-      if (!document.contains(deleteTriggerRef.current)) document.querySelector<HTMLElement>(".offers-page h1")?.focus();
-      else deleteTriggerRef.current?.focus();
+      if (!document.contains(deleteTriggerRef.current)) {
+        document.querySelector<HTMLElement>(".offers-page h1")?.focus();
+      } else {
+        deleteTriggerRef.current?.focus();
+      }
     };
   }, [offerToDelete]);
 
-  async function reconcileOffers(signal?: AbortSignal, expectedContext = currentContext): Promise<"updated" | "navigating" | "failed" | "stale"> {
+  function closeDeleteDialog() {
+    if (busyId === offerToDelete?.id) return;
+    setOfferToDelete(null);
+    setNeedsReconcile(false);
+  }
+
+  async function reconcileOffers(
+    signal?: AbortSignal,
+    expectedContext = currentContextRef.current,
+    opId = activeOperationId.current,
+  ): Promise<"updated" | "navigating" | "failed" | "stale"> {
     setUpdatingOffers(true);
     try {
       const offers = await repository.listOffers(entryId ?? "", page, pageSize, signal);
-      if (signal?.aborted || currentContextRef.current !== expectedContext) return "stale";
+      if (signal?.aborted || currentContextRef.current !== expectedContext || (opId !== null && activeOperationId.current !== opId)) {
+        return "stale";
+      }
       const lastPage = Math.max(1, offers.meta.totalPages);
       if (offers.meta.total === 0 && page !== 1) {
         const params = new URLSearchParams(searchParams);
         params.delete("page");
         setSearchParams(params, { replace: true });
-        setOffersLoading(false);
-        setUpdatingOffers(false);
-        setBusyId(null);
         return "navigating";
       } else if (offers.meta.total > 0 && page > lastPage) {
         const params = new URLSearchParams(searchParams);
         params.set("page", String(lastPage));
         setSearchParams(params, { replace: true });
-        setOffersLoading(false);
-        setUpdatingOffers(false);
-        setBusyId(null);
         return "navigating";
       } else {
         setResult(offers);
@@ -339,22 +376,69 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         return "updated";
       }
     } catch (error: unknown) {
-      if (signal?.aborted || currentContextRef.current !== expectedContext) return "stale";
+      if (signal?.aborted || currentContextRef.current !== expectedContext || (opId !== null && activeOperationId.current !== opId)) {
+        return "stale";
+      }
       setOffersError(true);
       setOffersErrorMessage(failureMessage(error, "offers"));
       setOffersErrorContext(expectedContext);
       return "failed";
     } finally {
-      if (!signal?.aborted) {
+      if (!signal?.aborted && currentContextRef.current === expectedContext && (opId === null || activeOperationId.current === opId)) {
         setUpdatingOffers(false);
         setBusyId(null);
       }
     }
   }
 
-  async function changeStatus(offer: MenuOffer, status: OfferStatus) {
+  async function reconcileFromDialog() {
     if (busyId) return;
     const expectedContext = currentContextRef.current;
+    const opId = crypto.randomUUID();
+    activeOperationId.current = opId;
+    setBusyId(offerToDelete?.id ?? "reconcile");
+    setUpdatingOffers(true);
+    setPendingAction("Actualizando lista…");
+    try {
+      const offers = await repository.listOffers(entryId ?? "", page, pageSize);
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      const stillPresent = offers.data.some((item) => item.id === offerToDelete?.id);
+      if (!stillPresent) {
+        setResult(offers);
+        setResultEntryId(entryId ?? null);
+        deleteTriggerRef.current = null;
+        setOfferToDelete(null);
+        setNeedsReconcile(false);
+        setActionError("");
+        invalidateCatalogEntries(repository);
+        setNotice(deleteNotice(false));
+      } else {
+        setResult(offers);
+        setResultEntryId(entryId ?? null);
+        const updatedOffer = offers.data.find((item) => item.id === offerToDelete?.id);
+        if (updatedOffer) setOfferToDelete(updatedOffer);
+        setNeedsReconcile(false);
+        setActionError("");
+      }
+    } catch (error: unknown) {
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      setActionError(failureMessage(error, "offers"));
+      setNeedsReconcile(true);
+    } finally {
+      if (currentContextRef.current === expectedContext && activeOperationId.current === opId) {
+        setBusyId(null);
+        setUpdatingOffers(false);
+        setPendingAction("");
+        activeOperationId.current = null;
+      }
+    }
+  }
+
+  async function changeStatus(offer: MenuOffer, status: OfferStatus) {
+    if (busyId || isCardActionBlocked) return;
+    const expectedContext = currentContextRef.current;
+    const opId = crypto.randomUUID();
+    activeOperationId.current = opId;
     setBusyId(offer.id);
     setUpdatingOffers(true);
     setActionError("");
@@ -364,6 +448,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       let mutation = pendingStatusMutation.current;
       if (!mutation || mutation.offerId !== offer.id || mutation.draft.status !== status) {
         const versioned = await repository.getOffer(offer.id);
+        if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
         if (!versioned.etag) {
           throw new Error("No se recibió una versión fuerte de la oferta.");
         }
@@ -380,28 +465,60 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       }
 
       await repository.setOfferStatus(
-        mutation!.offerId,
-        mutation!.draft,
-        mutation!.etag,
-        mutation!.idempotencyKey,
+        mutation.offerId,
+        mutation.draft,
+        mutation.etag,
+        mutation.idempotencyKey,
       );
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       pendingStatusMutation.current = null;
-      if (currentContextRef.current !== expectedContext) return;
-      const updated = await reconcileOffers(new AbortController().signal, expectedContext);
+
+      const updated = await reconcileOffers(new AbortController().signal, expectedContext, opId);
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       if (updated === "stale") return;
+      invalidateCatalogEntries(repository);
       setNotice(statusNotice(status, updated === "failed"));
     } catch (error: unknown) {
-      if (currentContextRef.current !== expectedContext) return;
-      setActionError(failureMessage(error, "status"));
-      setBusyId(null);
-      setUpdatingOffers(false);
-      setPendingAction("");
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      const statusHttp = httpStatus(error);
+      const errAnalysis = analyzeIdempotentAttemptError(error, "offer.patch");
+
+      if (errAnalysis.kind === "key_reused_conflict" || errAnalysis.errorCode === "INVALID_IDEMPOTENCY_KEY") {
+        pendingStatusMutation.current = null;
+        setActionError(errAnalysis.message);
+      } else if (errAnalysis.kind === "in_progress_conflict") {
+        setActionError(errAnalysis.message);
+      } else if (errAnalysis.kind === "precondition_conflict" || statusHttp === 409 || statusHttp === 412) {
+        pendingStatusMutation.current = null;
+        setActionError("Los datos cambiaron desde que se cargaron. Actualiza la lista antes de volver a intentarlo.");
+      } else if (errAnalysis.kind === "pre_commit_rejection" || statusHttp === 422) {
+        pendingStatusMutation.current = null;
+        setActionError(errAnalysis.message || "El servidor rechazó los datos de la oferta. Revisa su estado y composición.");
+      } else if (statusHttp === 401 || statusHttp === 403) {
+        pendingStatusMutation.current = null;
+        setActionError("No tienes acceso a esta operación. Verifica tu sesión y permisos.");
+      } else if (statusHttp === 404) {
+        pendingStatusMutation.current = null;
+        setActionError("La entrada u oferta solicitada ya no existe.");
+      } else {
+        // Uncertain outcome (timeout, network error, 5xx): preserve pendingStatusMutation.current
+        setActionError(failureMessage(error, "status"));
+      }
+    } finally {
+      if (currentContextRef.current === expectedContext && activeOperationId.current === opId) {
+        setBusyId(null);
+        setUpdatingOffers(false);
+        setPendingAction("");
+        activeOperationId.current = null;
+      }
     }
   }
 
   async function confirmDelete() {
     if (!offerToDelete || busyId) return;
     const expectedContext = currentContextRef.current;
+    const opId = crypto.randomUUID();
+    activeOperationId.current = opId;
     setBusyId(offerToDelete.id);
     setUpdatingOffers(true);
     setActionError("");
@@ -409,22 +526,43 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setPendingAction("Eliminando oferta…");
     try {
       await repository.deleteInactiveOffer(offerToDelete.id);
-      if (currentContextRef.current !== expectedContext) return;
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       setPendingAction("Actualizando lista…");
       const controller = new AbortController();
-      const updated = await reconcileOffers(controller.signal, expectedContext);
+      const updated = await reconcileOffers(controller.signal, expectedContext, opId);
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       if (updated === "stale") return;
       deleteTriggerRef.current = null;
       setOfferToDelete(null);
+      setNeedsReconcile(false);
       pendingStatusMutation.current = null;
+      invalidateCatalogEntries(repository);
       setNotice(deleteNotice(updated === "failed"));
       setPendingAction("");
     } catch (error: unknown) {
-      if (currentContextRef.current !== expectedContext) return;
+      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      const statusHttp = httpStatus(error);
+      const code = transportCode(error);
+      const isUncertainOrConflict =
+        code === "ECONNABORTED" ||
+        code === "ETIMEDOUT" ||
+        code === "ERR_NETWORK" ||
+        statusHttp === 409 ||
+        statusHttp === 412 ||
+        (statusHttp !== undefined && statusHttp >= 500);
+
+      if (isUncertainOrConflict) {
+        setNeedsReconcile(true);
+      }
       setActionError(failureMessage(error, "delete"));
-      setBusyId(null);
-      setUpdatingOffers(false);
       setPendingAction("");
+    } finally {
+      if (currentContextRef.current === expectedContext && activeOperationId.current === opId) {
+        setBusyId(null);
+        setUpdatingOffers(false);
+        setPendingAction("");
+        activeOperationId.current = null;
+      }
     }
   }
 
@@ -433,6 +571,15 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     if (next <= 1) params.delete("page");
     else params.set("page", String(next));
     setSearchParams(params);
+  }
+
+  function retryPendingStatus() {
+    const mutation = pendingStatusMutation.current;
+    if (!mutation || !visibleResult) return;
+    const offer = visibleResult.data.find((item) => item.id === mutation.offerId);
+    if (offer) {
+      void changeStatus(offer, mutation.draft.status);
+    }
   }
 
   const visibleEntry = entryDataId === entryId ? entry : null;
@@ -447,6 +594,14 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const currentOffersError = offersError && offersErrorContext === currentContext;
   const loadError = loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
   const isEmpty = !initialLoading && !loadError && visibleResult?.meta.total === 0;
+
+  const isCardActionBlocked =
+    Boolean(busyId) ||
+    offersLoading ||
+    entryLoading ||
+    updatingOffers ||
+    Boolean(loadError) ||
+    displayedPage !== page;
 
   return (
     <div className="app-shell">
@@ -465,17 +620,92 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
-        <OffersFeedback loadError={loadError} entryErrorMessage={entryErrorMessage} offersErrorMessage={offersErrorMessage} actionError={actionError} notice={notice} onRetryEntry={() => setEntryRetry((current) => current + 1)} onRetryOffers={() => setOffersRetry((current) => current + 1)} />
-        <OffersResults initialLoading={initialLoading} result={visibleResult} offersLoading={offersLoading} first={first} last={last} isEmpty={isEmpty} offers={offers} updatingOffers={updatingOffers} busy={Boolean(busyId)} offerPath={offerPath} returnTo={location.pathname + location.search} catalogReturnTo={backTo} onStatusChange={changeStatus} onDelete={(selected) => { deleteTriggerRef.current = document.activeElement as HTMLElement; setOfferToDelete(selected); }} onReload={() => setOffersRetry((current) => current + 1)} totalPages={totalPages} page={page} displayedPage={displayedPage} onPageChange={goToPage} />
+        <OffersFeedback
+          loadError={loadError}
+          entryErrorMessage={entryErrorMessage}
+          offersErrorMessage={offersErrorMessage}
+          actionError={actionError}
+          notice={notice}
+          dialogOpen={Boolean(offerToDelete)}
+          hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
+          onRetryEntry={() => setEntryRetry((current) => current + 1)}
+          onRetryOffers={() => setOffersRetry((current) => current + 1)}
+          onRetryStatus={retryPendingStatus}
+        />
+        <OffersResults
+          initialLoading={initialLoading}
+          result={visibleResult}
+          offersLoading={offersLoading}
+          first={first}
+          last={last}
+          isEmpty={isEmpty}
+          offers={offers}
+          updatingOffers={updatingOffers}
+          busy={isCardActionBlocked}
+          offerPath={offerPath}
+          returnTo={location.pathname + location.search}
+          catalogReturnTo={backTo}
+          onStatusChange={changeStatus}
+          onDelete={(selected) => {
+            deleteTriggerRef.current = document.activeElement as HTMLElement;
+            setOfferToDelete(selected);
+            setNeedsReconcile(false);
+          }}
+          onReload={() => setOffersRetry((current) => current + 1)}
+          totalPages={totalPages}
+          page={page}
+          displayedPage={displayedPage}
+          onPageChange={goToPage}
+        />
         {offerToDelete && <div className="dialog-backdrop">
-          <dialog ref={dialogRef} className="confirm-dialog" aria-modal="true" aria-labelledby="offer-delete-title" aria-describedby="offer-delete-description" onCancel={(event) => { event.preventDefault(); if (busyId !== offerToDelete.id) setOfferToDelete(null); }}>
+          <dialog
+            ref={dialogRef}
+            className="confirm-dialog"
+            aria-modal="true"
+            aria-labelledby="offer-delete-title"
+            aria-describedby="offer-delete-description"
+            onCancel={(event) => {
+              event.preventDefault();
+              closeDeleteDialog();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                closeDeleteDialog();
+              }
+            }}
+          >
             <h2 id="offer-delete-title">Eliminar oferta inactiva</h2>
             <p id="offer-delete-description">¿Eliminar definitivamente la presentación “{offerToDelete.presentationTag}” de {offerToDelete.entryName}?</p>
             {pendingAction && <output className="feedback" aria-live="polite">{pendingAction}</output>}
-            {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
+            {actionError && (
+              <div className="feedback feedback--error dialog-feedback" role="alert">
+                {actionError}{" "}
+                {needsReconcile && (
+                  <button type="button" onClick={() => { void reconcileFromDialog(); }}>
+                    Actualizar lista
+                  </button>
+                )}
+              </div>
+            )}
             <div className="confirm-dialog__actions">
-              <button ref={cancelRef} className="button button--secondary" type="button" disabled={busyId === offerToDelete.id} onClick={() => setOfferToDelete(null)}>Cancelar</button>
-              <button className="button button--danger" type="button" disabled={busyId === offerToDelete.id} onClick={() => { void confirmDelete(); }}>Eliminar oferta</button>
+              <button
+                ref={cancelRef}
+                className="button button--secondary"
+                type="button"
+                disabled={busyId === offerToDelete.id}
+                onClick={closeDeleteDialog}
+              >
+                Cancelar
+              </button>
+              <button
+                className="button button--danger"
+                type="button"
+                disabled={busyId === offerToDelete.id || needsReconcile}
+                onClick={() => { void confirmDelete(); }}
+              >
+                Eliminar oferta
+              </button>
             </div>
           </dialog>
         </div>}

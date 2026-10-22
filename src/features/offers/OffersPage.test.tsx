@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import type { MenuOffer, MenuOfferDetail, MenuRepository, Page } from "../../application/catalog";
 import { OffersPage } from "./OffersPage";
@@ -116,6 +116,10 @@ test("shows composition groups and keeps delete available in the card footer", a
 
 test("changes offer status from its inline status control and refreshes only offers", async () => {
   const repository = makeRepository();
+  const updatedOffer: MenuOffer = { ...offer, status: "INACTIVE" };
+  repository.listOffers
+    .mockResolvedValueOnce({ data: [offer, inactive], meta: { page: 1, pageSize: 12, total: 2, totalPages: 1 } })
+    .mockResolvedValueOnce({ data: [updatedOffer, inactive], meta: { page: 1, pageSize: 12, total: 2, totalPages: 1 } });
   renderPage(repository);
   await screen.findByRole("heading", { name: "Individual" });
   fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" }));
@@ -127,6 +131,11 @@ test("changes offer status from its inline status control and refreshes only off
       expect.any(String),
     ),
   );
+  // O29: mock changes list and tests assert final card state and DOM
+  const updatedBtn = await screen.findByRole("button", { name: "Cambiar estado de oferta Individual: Inactiva" });
+  expect(updatedBtn).toHaveClass("offer-card__status-control--inactive");
+  expect(updatedBtn).toHaveAttribute("aria-pressed", "false");
+  expect(screen.getByText("Oferta inactivada.")).toBeVisible();
   await waitFor(() => expect(repository.listOffers).toHaveBeenCalledTimes(2));
   expect(repository.getEntry).toHaveBeenCalledTimes(1);
 });
@@ -156,8 +165,65 @@ test("retrying a failed status change uses exact same draft, etag, and key witho
   expect(secondCall[3]).toBe(firstCall[3]); // same idempotencyKey
 });
 
+test("handles status PATCH 409 IDEMPOTENCY_IN_PROGRESS and KEY_REUSED with distinct recoveries", async () => {
+  const repository = makeRepository();
+  repository.setOfferStatus.mockRejectedValueOnce({
+    response: {
+      status: 409,
+      data: {
+        error: {
+          message: "La solicitud sigue en proceso.",
+          details: { code: "IDEMPOTENCY_IN_PROGRESS" },
+        },
+      },
+      headers: { "retry-after": "5" },
+    },
+  });
+  renderPage(repository);
+  await screen.findByRole("heading", { name: "Individual" });
+  const button = screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" });
+  fireEvent.click(button);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("sigue en proceso");
+  expect(screen.getByRole("button", { name: "Reintentar cambio de estado" })).toBeVisible();
+  expect(repository.getOffer).toHaveBeenCalledTimes(1);
+  expect(repository.setOfferStatus).toHaveBeenCalledTimes(1);
+  const firstKey = repository.setOfferStatus.mock.calls[0][3];
+
+  // Retry with same key
+  fireEvent.click(screen.getByRole("button", { name: "Reintentar cambio de estado" }));
+  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(2));
+  expect(repository.getOffer).toHaveBeenCalledTimes(1); // No new getOffer
+  expect(repository.setOfferStatus.mock.calls[1][3]).toBe(firstKey); // Preserved idempotency key
+
+  // Now simulate KEY_REUSED
+  repository.setOfferStatus.mockRejectedValueOnce({
+    response: {
+      status: 409,
+      data: {
+        error: {
+          message: "La clave de idempotencia ya fue utilizada.",
+          details: { code: "IDEMPOTENCY_KEY_REUSED" },
+        },
+      },
+    },
+  });
+  fireEvent.click(button);
+  expect(await screen.findByRole("alert")).toHaveTextContent("ya fue utilizada");
+
+  // Next attempt starts fresh with a new key and new getOffer
+  fireEvent.click(button);
+  await waitFor(() => expect(repository.getOffer).toHaveBeenCalledTimes(3));
+  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(4));
+  const newKey = repository.setOfferStatus.mock.calls[3][3];
+  expect(newKey).not.toBe(firstKey);
+});
+
 test("confirms deletion only for an inactive offer", async () => {
   const repository = makeRepository();
+  repository.listOffers
+    .mockResolvedValueOnce({ data: [offer, inactive], meta: { page: 1, pageSize: 12, total: 2, totalPages: 1 } })
+    .mockResolvedValueOnce({ data: [offer], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } });
   renderPage(repository);
   await screen.findByRole("heading", { name: "Combo" });
   fireEvent.click(screen.getByRole("button", { name: "Eliminar oferta Combo" }));
@@ -167,7 +233,11 @@ test("confirms deletion only for an inactive offer", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Eliminar oferta Combo" }));
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Eliminar oferta" }));
   await waitFor(() => expect(repository.deleteInactiveOffer).toHaveBeenCalledWith("offer-2"));
-  await waitFor(() => expect(repository.listOffers).toHaveBeenCalledTimes(2));
+  // O29: mock changes list and test asserts actual removal from DOM
+  await waitFor(() => expect(screen.queryByRole("heading", { name: "Combo" })).not.toBeInTheDocument());
+  expect(screen.getByText("Oferta eliminada.")).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Individual" })).toBeVisible();
+  expect(repository.listOffers).toHaveBeenCalledTimes(2);
 });
 
 test("paginates the collection for the current entry", async () => {
@@ -237,13 +307,69 @@ test("ignores a mutation response after the view changes page", async () => {
   renderWithNavigation(repository);
   await screen.findByRole("heading", { name: "Individual" });
   fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" }));
+  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(1));
   fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
   await screen.findByText("Página 2 de 2");
-  finishMutation?.({ ...offer, presentationTag: offer.presentationTag ?? "", status: "INACTIVE", composition: { slots: [] } });
-  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(1));
+  await act(async () => {
+    finishMutation?.({ ...offer, presentationTag: offer.presentationTag ?? "", status: "INACTIVE", composition: { slots: [] } });
+    await Promise.resolve();
+  });
   expect(await screen.findByRole("heading", { name: "Combo" })).toBeVisible();
   expect(screen.queryByText("Oferta inactivada.")).not.toBeInTheDocument();
   expect(repository.listOffers).toHaveBeenCalledTimes(2);
+});
+
+test("late completion and finally of mutation A does not unlock or publish to context B", async () => {
+  const repository = makeRepository();
+  const page1Offer: MenuOffer = { ...offer, id: "offer-p1", presentationTag: "Oferta P1" };
+  const page2Offer: MenuOffer = { ...inactive, id: "offer-p2", presentationTag: "Oferta P2", slotCount: 1 };
+  let finishMutationA: ((value: MenuOfferDetail) => void) | undefined;
+  let finishMutationB: ((value: MenuOfferDetail) => void) | undefined;
+  repository.listOffers.mockImplementation(async (_id, page): Promise<Page<MenuOffer>> => page === 1
+    ? { data: [page1Offer], meta: { page: 1, pageSize: 12, total: 13, totalPages: 2 } }
+    : { data: [page2Offer], meta: { page: 2, pageSize: 12, total: 13, totalPages: 2 } });
+  repository.setOfferStatus
+    .mockImplementationOnce(() => new Promise((resolve) => { finishMutationA = resolve; }))
+    .mockImplementationOnce(() => new Promise((resolve) => { finishMutationB = resolve; }));
+
+  renderWithNavigation(repository);
+  await screen.findByRole("heading", { name: "Oferta P1" });
+
+  // Start mutation A on page 1
+  fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de oferta Oferta P1: Activa" }));
+  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(1));
+
+  // Navigate to page 2 (Context B)
+  fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
+  await screen.findByRole("heading", { name: "Oferta P2" });
+  expect(screen.getByText("Página 2 de 2")).toBeVisible();
+
+  // Start mutation B on page 2
+  const page2StatusBtn = screen.getByRole("button", { name: "Cambiar estado de oferta Oferta P2: Inactiva" });
+  fireEvent.click(page2StatusBtn);
+  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(2));
+  // B is now locked/busy
+  expect(page2StatusBtn).toBeDisabled();
+
+  // Now resolve mutation A (its promise resolves and its finally executes)
+  await act(async () => {
+    finishMutationA?.({ ...page1Offer, presentationTag: "Oferta P1", status: "INACTIVE", composition: { slots: [] } });
+    await Promise.resolve();
+  });
+
+  // O23: B MUST still be locked! A's finally did not clear busyId or locks of B!
+  expect(page2StatusBtn).toBeDisabled();
+  expect(screen.queryByText("Oferta inactivada.")).not.toBeInTheDocument();
+
+  // Now finish mutation B
+  await act(async () => {
+    finishMutationB?.({ ...page2Offer, presentationTag: "Oferta P2", status: "ACTIVE", composition: { slots: [] } });
+    await Promise.resolve();
+  });
+
+  // B finishes and unlocks cleanly
+  await waitFor(() => expect(page2StatusBtn).not.toBeDisabled());
+  expect(screen.getByText("Oferta activada.")).toBeVisible();
 });
 
 test("reconciles an invalid page using server metadata and does not refetch the entry", async () => {
@@ -278,13 +404,38 @@ test("reports a specific entry error and retries only that request", async () =>
   expect(repository.getEntry).toHaveBeenCalledTimes(2);
 });
 
-test("keeps existing results visible when refreshing offers fails", async () => {
-  const repository = makeRepository();
+test("keeps existing results visible when refreshing offers fails and blocks mutations on retained cards", async () => {
+  const repository = makeRepository([offer]);
+  repository.listOffers.mockResolvedValueOnce({
+    data: [offer],
+    meta: { page: 1, pageSize: 12, total: 13, totalPages: 2 },
+  });
+  renderWithNavigation(repository);
+  await screen.findByRole("heading", { name: "Individual" });
+  const statusBtn = screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" });
+  expect(statusBtn).not.toBeDisabled();
+
+  // Navigate to page 2, but page 2 refresh fails
   repository.listOffers.mockRejectedValueOnce({ isAxiosError: true, code: "ERR_NETWORK" });
-  renderPage(repository);
-  expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo conectar");
+  fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
+
+  // O22: Previous cards remain visible, but locked against mutations
+  expect(await screen.findByRole("alert")).toHaveTextContent("La información anterior se conserva");
+  expect(screen.getByRole("heading", { name: "Individual" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Eliminar oferta Individual" })).toBeDisabled();
+
+  // O27: Recovery with fresh data unlocks cards
+  const page2Offer = { ...inactive, id: "offer-p2", presentationTag: "Combo Página 2" };
+  repository.listOffers.mockResolvedValueOnce({
+    data: [page2Offer],
+    meta: { page: 2, pageSize: 12, total: 13, totalPages: 2 },
+  });
   fireEvent.click(screen.getByRole("button", { name: "Reintentar ofertas" }));
-  expect(await screen.findByRole("heading", { name: "Individual" })).toBeVisible();
+
+  expect(await screen.findByRole("heading", { name: "Combo Página 2" })).toBeVisible();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Cambiar estado de oferta Combo Página 2: Inactiva" })).not.toBeDisabled();
 });
 
 test("distinguishes a missing entry from a network failure", async () => {
@@ -295,7 +446,7 @@ test("distinguishes a missing entry from a network failure", async () => {
   expect(await screen.findByRole("heading", { name: "Individual" })).toBeVisible();
 });
 
-test("retains the delete dialog after a failed delete and permits retry", async () => {
+test("retains the delete dialog after a failed delete and permits retry via dialog recovery", async () => {
   const repository = makeRepository();
   repository.deleteInactiveOffer.mockRejectedValueOnce({ response: { status: 412 } });
   renderPage(repository);
@@ -304,10 +455,26 @@ test("retains the delete dialog after a failed delete and permits retry", async 
   const dialog = screen.getByRole("dialog", { name: "Eliminar oferta inactiva" });
   fireEvent.click(within(dialog).getByRole("button", { name: "Eliminar oferta" }));
   expect(await within(dialog).findByRole("alert")).toHaveTextContent("Los datos cambiaron");
-  expect(screen.getByRole("dialog", { name: "Eliminar oferta inactiva" })).toBeInTheDocument();
+
+  // O26: Single alert inside active dialog, not on inert background
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  // O24: Delete button disabled, "Actualizar lista" button available inside dialog
+  expect(within(dialog).getByRole("button", { name: "Eliminar oferta" })).toBeDisabled();
+  const reconcileBtn = within(dialog).getByRole("button", { name: "Actualizar lista" });
+  expect(reconcileBtn).toBeVisible();
+
+  // Reconcile inside dialog returns updated list where Combo is still present
+  repository.listOffers.mockResolvedValueOnce({ data: [offer, inactive], meta: { page: 1, pageSize: 12, total: 2, totalPages: 1 } });
+  fireEvent.click(reconcileBtn);
+  await waitFor(() => expect(within(dialog).getByRole("button", { name: "Eliminar oferta" })).not.toBeDisabled());
+
+  // User retries delete; this time it succeeds and list is reconciled without Combo
+  repository.listOffers.mockResolvedValueOnce({ data: [offer], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Eliminar oferta" }));
   await waitFor(() => expect(repository.deleteInactiveOffer).toHaveBeenCalledTimes(2));
-  await waitFor(() => expect(repository.listOffers).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(screen.queryByRole("heading", { name: "Combo" })).not.toBeInTheDocument();
+  expect(screen.getByText("Oferta eliminada.")).toBeVisible();
 });
 
 test("distinguishes mutation success from a failed list refresh", async () => {
@@ -321,26 +488,58 @@ test("distinguishes mutation success from a failed list refresh", async () => {
   expect(repository.setOfferStatus).toHaveBeenCalledTimes(1);
 });
 
-test("does not retry a mutation automatically after a timeout", async () => {
+test("does not retry a delete automatically after a timeout and offers dialog reconciliation", async () => {
   const repository = makeRepository();
   repository.deleteInactiveOffer.mockRejectedValueOnce({ code: "ECONNABORTED" });
   renderPage(repository);
   await screen.findByRole("heading", { name: "Combo" });
   fireEvent.click(screen.getByRole("button", { name: "Eliminar oferta Combo" }));
-  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Eliminar oferta" }));
-  expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("agotó el tiempo de espera");
+  const dialog = screen.getByRole("dialog", { name: "Eliminar oferta inactiva" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Eliminar oferta" }));
+
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("agotó el tiempo de espera");
   expect(repository.deleteInactiveOffer).toHaveBeenCalledTimes(1);
-  expect(repository.listOffers).toHaveBeenCalledTimes(1);
+  // O24: "Eliminar oferta" disabled after uncertain delete; "Actualizar lista" inside dialog
+  expect(within(dialog).getByRole("button", { name: "Eliminar oferta" })).toBeDisabled();
+  const reconcileBtn = within(dialog).getByRole("button", { name: "Actualizar lista" });
+  expect(reconcileBtn).toBeVisible();
+
+  // Backend actually completed the delete: reconcile returns list without Combo
+  repository.listOffers.mockResolvedValueOnce({ data: [offer], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } });
+  fireEvent.click(reconcileBtn);
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(screen.queryByRole("heading", { name: "Combo" })).not.toBeInTheDocument();
+  expect(screen.getByText("Oferta eliminada.")).toBeVisible();
 });
 
-test("allows cancel and Escape before a delete request starts", async () => {
+test("closes delete dialog on Cancel button click without mutating and restores focus", async () => {
   const repository = makeRepository();
   renderPage(repository);
   await screen.findByRole("heading", { name: "Combo" });
   const trigger = screen.getByRole("button", { name: "Eliminar oferta Combo" });
+  trigger.focus();
   fireEvent.click(trigger);
   const dialog = screen.getByRole("dialog", { name: "Eliminar oferta inactiva" });
-  fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+  expect(dialog).toBeInTheDocument();
+  const cancelBtn = within(dialog).getByRole("button", { name: "Cancelar" });
+  expect(cancelBtn).toHaveFocus();
+  fireEvent.click(cancelBtn);
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(repository.deleteInactiveOffer).not.toHaveBeenCalled();
+  expect(trigger).toHaveFocus();
+});
+
+test("closes delete dialog on Escape key without mutating and restores focus", async () => {
+  const repository = makeRepository();
+  renderPage(repository);
+  await screen.findByRole("heading", { name: "Combo" });
+  const trigger = screen.getByRole("button", { name: "Eliminar oferta Combo" });
+  trigger.focus();
+  fireEvent.click(trigger);
+  const dialog = screen.getByRole("dialog", { name: "Eliminar oferta inactiva" });
+  expect(dialog).toBeInTheDocument();
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(repository.deleteInactiveOffer).not.toHaveBeenCalled();
+  expect(trigger).toHaveFocus();
 });
