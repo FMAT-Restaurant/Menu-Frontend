@@ -246,13 +246,14 @@ export interface MenuRepository {
   setEntryStatus(id: string, status: EntryStatus): Promise<void>;
   deleteArchivedEntry(id: string): Promise<void>;
   getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail>;
-  uploadEntryImage(image: File): Promise<string>;
-  createEntry(draft: EntryCreateRequest): Promise<MenuEntryDetail>;
+  uploadImage(image: File, idempotencyKey: string): Promise<string>;
+  uploadEntryImage(image: File, idempotencyKey: string): Promise<string>;
+  createEntry(draft: EntryCreateRequest, idempotencyKey: string): Promise<MenuEntryDetail>;
   updateEntry(id: string, draft: EntryUpdateDraft, etag: string): Promise<MenuEntryDetail>;
   listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
   getOffer(id: string, signal?: AbortSignal): Promise<MenuOfferDetail>;
-  createOffer(entryId: string, draft: OfferCreateDraft, image: File): Promise<MenuOfferDetail>;
-  updateOffer(id: string, draft: OfferUpdateDraft, image?: File): Promise<MenuOfferDetail>;
+  createOffer(entryId: string, draft: OfferCreateDraft, imageId: string): Promise<MenuOfferDetail>;
+  updateOffer(id: string, draft: OfferUpdateDraft, imageId?: string): Promise<MenuOfferDetail>;
   setOfferStatus(id: string, status: OfferStatus): Promise<void>;
   deleteInactiveOffer(id: string): Promise<void>;
   listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>>;

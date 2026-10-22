@@ -184,6 +184,8 @@ export type OfferFormRepository = Pick<
   MenuRepository,
   | "getEntry"
   | "getOffer"
+  | "uploadEntryImage"
+  | "uploadImage"
   | "createOffer"
   | "updateOffer"
   | "listRecipes"
@@ -536,12 +538,18 @@ export function OfferFormPage({
     const priceNumber = Number(basePrice);
 
     try {
+      let imageId: string | undefined = undefined;
+      if (selectedFile) {
+        const uploadKey = crypto.randomUUID();
+        imageId = await repository.uploadEntryImage(selectedFile, uploadKey);
+      }
+
       if (!isEditing) {
         const createDraft = buildCreateDraft(presentationTag, priceNumber, slots);
-        await repository.createOffer(entryId, createDraft, selectedFile!);
+        await repository.createOffer(entryId, createDraft, imageId!);
       } else {
         const updateDraft = buildUpdateDraft(presentationTag, priceNumber, effectiveStatus, slots);
-        await repository.updateOffer(offerId!, updateDraft, selectedFile || undefined);
+        await repository.updateOffer(offerId!, updateDraft, imageId);
       }
 
       await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });

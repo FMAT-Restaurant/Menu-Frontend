@@ -243,4 +243,130 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     expect(postRecipeRequests).toHaveLength(2);
     expect(postRecipeRequests[1].key).toBe(initialKey);
   });
+
+  test("entry creation recovery: two-stage flow with image upload and entry create across real reload (F5)", async ({
+    page,
+  }) => {
+    const uploadRequests: Array<{ key?: string }> = [];
+    const entryRequests: Array<{ key?: string; body?: unknown }> = [];
+    const shouldFailUpload = false;
+    let shouldFailEntry = true;
+
+    await page.route("**/api/v1/menu/entries?*", (route) =>
+      route.fulfill({
+        json: { data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } },
+      }),
+    );
+
+    await page.route("**/api/v1/menu/categories?*", (route) =>
+      route.fulfill({
+        json: { data: [], meta: { page: 1, pageSize: 100, total: 0, totalPages: 0 } },
+      }),
+    );
+
+    await page.route("**/api/v1/media/images", async (route) => {
+      const key = route.request().headers()["idempotency-key"];
+      uploadRequests.push({ key });
+
+      if (shouldFailUpload) {
+        return route.abort("timedout");
+      }
+
+      return route.fulfill({
+        status: 201,
+        json: {
+          data: {
+            id: "img-recovered-123",
+            url: "https://example.com/images/burger.png",
+            thumbnailUrl: "https://example.com/images/burger-thumb.png",
+          },
+        },
+      });
+    });
+
+    await page.route("**/api/v1/menu/entries", async (route) => {
+      const key = route.request().headers()["idempotency-key"];
+      const body = route.request().postDataJSON();
+      entryRequests.push({ key, body });
+
+      if (shouldFailEntry) {
+        shouldFailEntry = false;
+        return route.abort("timedout");
+      }
+
+      const created = {
+        id: "entry-recovered-1",
+        ...body,
+        status: "INACTIVE",
+        etag: '"rev-entry-1"',
+      };
+      return route.fulfill({
+        status: 201,
+        headers: { ETag: '"rev-entry-1"' },
+        json: { data: created },
+      });
+    });
+
+    // 1. Navigate to new entry page
+    await page.goto("/entries/new");
+    await expect(page.getByRole("heading", { name: "Nueva entrada", level: 1 })).toBeVisible();
+
+    // 2. Fill identity
+    await page.getByLabel("Nombre comercial").fill("Hamburguesa Clásica");
+    await page.getByLabel("Descripción").fill("Carne de res, lechuga y tomate");
+
+    // 3. Attach valid 1x1 PNG image
+    const validPngBuffer = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await page.locator("input#entry-image-file").setInputFiles({
+      name: "burger.png",
+      mimeType: "image/png",
+      buffer: validPngBuffer,
+    });
+    await expect(page.getByRole("img", { name: "Vista previa de la imagen de la entrada" })).toBeVisible();
+
+    // 4. Submit form: Stage 1 upload succeeds, Stage 2 entry.create times out
+    await page.getByRole("button", { name: "Guardar entrada" }).click();
+
+    // 5. Verification of error feedback and manual retry
+    await expect(page.getByRole("alert")).toBeVisible();
+    expect(uploadRequests).toHaveLength(1);
+    expect(entryRequests).toHaveLength(1);
+    const initialUploadKey = uploadRequests[0].key;
+    const initialEntryKey = entryRequests[0].key;
+    expect(initialUploadKey).toBeTruthy();
+    expect(initialEntryKey).toBeTruthy();
+
+    // 6. Real browser reload (F5)
+    await page.reload();
+
+    // 7. After reload, form restores with draft, confirmed image is remembered, NO automatic POSTs
+    await expect(page.getByLabel("Nombre comercial")).toHaveValue("Hamburguesa Clásica");
+    await expect(page.getByLabel("Descripción")).toHaveValue("Carne de res, lechuga y tomate");
+    expect(uploadRequests).toHaveLength(1); // 0 POSTs upon reload
+    expect(entryRequests).toHaveLength(1);
+
+    // 8. User acknowledges or retries
+    const ackButton = page.getByRole("button", { name: /He verificado el resultado/ });
+    if (await ackButton.isVisible()) {
+      await ackButton.click();
+    }
+    const saveButton = page.getByRole("button", { name: "Guardar entrada" });
+    await expect(saveButton).toBeEnabled();
+    await saveButton.click();
+
+    // 9. Recovered! Entry creation succeeds with same entry idempotency key, WITHOUT re-uploading image!
+    await expect(page).toHaveURL("/");
+    expect(uploadRequests).toHaveLength(1); // Image was NOT re-uploaded!
+    expect(entryRequests).toHaveLength(2);
+    expect(entryRequests[1].key).toBe(initialEntryKey);
+    expect(entryRequests[1].body).toEqual({
+      brandName: "Hamburguesa Clásica",
+      description: "Carne de res, lechuga y tomate",
+      categoryIds: [],
+      imageId: "img-recovered-123",
+    });
+  });
 });

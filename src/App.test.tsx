@@ -33,6 +33,7 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
     setEntryStatus: unprepared("setEntryStatus"),
     deleteArchivedEntry: unprepared("deleteArchivedEntry"),
     getEntry: unprepared("getEntry"),
+    uploadImage: unprepared("uploadImage"),
     uploadEntryImage: unprepared("uploadEntryImage"),
     createEntry: unprepared("createEntry"),
     updateEntry: unprepared("updateEntry"),

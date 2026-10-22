@@ -710,6 +710,18 @@ export function createOperationAttemptController<TDraft, TResult>(
     }
 
     while (currentRecord) {
+      if (detached) {
+        return {
+          status: "failed",
+          outcome: {
+            kind: "uncertain_outcome",
+            message: "La operación quedó pausada porque saliste de la página.",
+          },
+          record: currentRecord,
+          hasDraftChangesSinceSubmission:
+            currentRecord.currentDraftVersion > currentRecord.submittedDraftVersion,
+        };
+      }
       const now = getNow();
       const stageIndex = currentRecord.currentStageIndex;
       const stage = currentRecord.stages[stageIndex];
@@ -790,6 +802,18 @@ export function createOperationAttemptController<TDraft, TResult>(
             confirmedImageId: uploaded.id,
           };
           currentRecord = await persistBestEffortAfterProgress(nextRecordWithStage2, true);
+          if (detached) {
+            return {
+              status: "failed",
+              outcome: {
+                kind: "uncertain_outcome",
+                message: "La operación quedó pausada porque saliste de la página.",
+              },
+              record: currentRecord,
+              hasDraftChangesSinceSubmission:
+                currentRecord.currentDraftVersion > currentRecord.submittedDraftVersion,
+            };
+          }
           continue;
         } catch (error) {
           const failNow = getNow();

@@ -49,15 +49,20 @@ test("uploads an image first, then creates an inactive entry with its imageId in
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
   const image = new File(["image bytes"], "bowl.png", { type: "image/png" });
+  const uploadKey = "11111111-1111-4111-8111-111111111111";
+  const createKey = "22222222-2222-4222-8222-222222222222";
 
-  const imageId = await api.uploadEntryImage(image);
+  const imageId = await api.uploadEntryImage(image, uploadKey);
   await expect(
-    api.createEntry({
-      brandName: entry.brandName,
-      description: entry.description,
-      categoryIds: entry.categoryIds,
-      imageId,
-    }),
+    api.createEntry(
+      {
+        brandName: entry.brandName,
+        description: entry.description,
+        categoryIds: entry.categoryIds,
+        imageId,
+      },
+      createKey,
+    ),
   ).resolves.toEqual(entry);
 
   expect(requests.map(({ method, url }) => `${method} ${url}`)).toEqual([
@@ -171,7 +176,7 @@ test("uploads a replacement image before PATCH and sends only its id with the cu
     status: "INACTIVE" as const,
   };
 
-  const imageId = await api.uploadEntryImage(image);
+  const imageId = await api.uploadEntryImage(image, "11111111-1111-4111-8111-111111111111");
   await api.updateEntry(entry.id, { ...draft, imageId }, '"rev-opened"');
   expect(requests.map(({ method, url }) => `${method} ${url}`)).toEqual([
     "post /media/images",
@@ -199,7 +204,10 @@ test("does not create an entry when image upload fails", async () => {
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
   await expect(
-    api.uploadEntryImage(new File(["bad"], "bad.png", { type: "image/png" })),
+    api.uploadEntryImage(
+      new File(["bad"], "bad.png", { type: "image/png" }),
+      "11111111-1111-4111-8111-111111111111",
+    ),
   ).rejects.toBe(uploadError);
   expect(requests).toEqual(["post /media/images"]);
 });
@@ -221,6 +229,7 @@ test("does not create an entry when the upload response has no imageId", async (
   await expect(
     api.uploadEntryImage(
       new File(["image"], "bowl.png", { type: "image/png" }),
+      "11111111-1111-4111-8111-111111111111",
     ),
   ).rejects.toThrow("No se recibió el identificador de la imagen");
   expect(requests).toEqual(["post /media/images"]);
@@ -431,7 +440,9 @@ test("creates an offer uploading its image first, then posting to /menu/entries/
     composition: offerDetail.composition,
   };
 
-  await expect(api.createOffer("entry-1", draft, image)).resolves.toEqual(
+  const uploadKey = "33333333-3333-4333-8333-333333333333";
+  const imageId = await api.uploadImage(image, uploadKey);
+  await expect(api.createOffer("entry-1", draft, imageId)).resolves.toEqual(
     offerDetail,
   );
 
@@ -546,7 +557,9 @@ test("updates an offer uploading new image before PATCH with If-Match", async ()
     composition: offerDetail.composition,
   };
 
-  await api.updateOffer("offer-1", updateDraft, newImage);
+  const uploadKey = "44444444-4444-4444-8444-444444444444";
+  const newImageId = await api.uploadImage(newImage, uploadKey);
+  await api.updateOffer("offer-1", updateDraft, newImageId);
   expect(requests.map(({ method, url }) => `${method} ${url}`)).toEqual([
     "post /media/images",
     "get /menu/offers/offer-1",

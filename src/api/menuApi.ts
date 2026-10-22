@@ -208,14 +208,15 @@ export async function executeSealedAttemptWithClient(
 export function createMenuApi(client: AxiosInstance): MenuRepository {
   async function uploadImage(
     image: File,
-    options?: IdempotentWriteCallOptions,
+    idempotencyKey: string,
+    options?: { signal?: AbortSignal },
   ): Promise<string> {
-    const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
+    const validatedKey = assertValidIdempotencyKey(idempotencyKey);
     const response = await client.post<unknown>(
       "/media/images",
       imageMultipart(image),
       {
-        headers: { "Idempotency-Key": idempotencyKey },
+        headers: { "Idempotency-Key": validatedKey },
         timeout: IMAGE_UPLOAD_TIMEOUT_MS,
         ...(options?.signal ? { signal: options.signal } : {}),
       },
@@ -405,15 +406,17 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       return entryDetailResponse(response.data, response.headers?.etag);
     },
 
+    uploadImage,
     uploadEntryImage: uploadImage,
 
     async createEntry(
       draft: EntryCreateRequest,
-      options?: IdempotentWriteCallOptions,
+      idempotencyKey: string,
+      options?: { signal?: AbortSignal },
     ): Promise<MenuEntryDetail> {
-      const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
+      const validatedKey = assertValidIdempotencyKey(idempotencyKey);
       const response = await client.post<unknown>(entryPath(), draft, {
-        headers: { "Idempotency-Key": idempotencyKey },
+        headers: { "Idempotency-Key": validatedKey },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
         ...(options?.signal ? { signal: options.signal } : {}),
       });
@@ -475,15 +478,9 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async createOffer(
       entryId: string,
       draft: OfferCreateDraft,
-      image: File,
+      imageId: string,
       options?: IdempotentWriteCallOptions,
     ): Promise<MenuOfferDetail> {
-      const imageId =
-        options?.confirmedImageId ??
-        (await uploadImage(image, {
-          idempotencyKey: options?.stage1IdempotencyKey,
-          signal: options?.signal,
-        }));
       const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
       const response = await client.post<unknown>(
         `/menu/entries/${encodeURIComponent(entryId)}/offers`,
@@ -504,17 +501,9 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async updateOffer(
       id: string,
       draft: OfferUpdateDraft,
-      image?: File,
+      imageId?: string,
       options?: IdempotentWriteCallOptions,
     ): Promise<MenuOfferDetail> {
-      const imageId =
-        options?.confirmedImageId ??
-        (image
-          ? await uploadImage(image, {
-              idempotencyKey: options?.stage1IdempotencyKey,
-              signal: options?.signal,
-            })
-          : undefined);
       const path = `/menu/offers/${encodeURIComponent(id)}`;
       const etag =
         options?.ifMatch !== undefined

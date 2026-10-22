@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { EntryStatus, MenuRepository } from "../../application/catalog";
+import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
 import { EntryCategorySelector } from "./EntryCategorySelector";
 import { EntryImageField } from "./EntryImageField";
 import { EntryFormFeedback } from "./EntryFormFeedback";
@@ -69,11 +70,26 @@ export type EntryFormRepository = Pick<
   "listCategories" | "getEntry" | "uploadEntryImage" | "createEntry" | "updateEntry"
 >;
 
-function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repository: EntryFormRepository; entryId?: string; returnTo: string }>) {
+export interface EntryFormPageProps {
+  repository: EntryFormRepository;
+  storage?: PendingOperationStorageAdapter;
+}
+
+function EntryFormEditor({
+  repository,
+  entryId,
+  returnTo,
+  storage,
+}: Readonly<{
+  repository: EntryFormRepository;
+  entryId?: string;
+  returnTo: string;
+  storage?: PendingOperationStorageAdapter;
+}>) {
   const navigate = useNavigate();
   const editing = Boolean(entryId);
   const onSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
-  const model = useEntryForm(repository, entryId, onSaved);
+  const model = useEntryForm(repository, entryId, onSaved, storage);
   const summary = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLElement>(null);
   const busy = model.stage !== "idle";
@@ -87,11 +103,11 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
 
   return <div className="app-shell entry-form-shell">
     <nav className="global-nav" aria-label="Navegación principal"><div className="entry-form-nav">
-      <Link className="brand" to={returnTo} onClick={(event) => { if (busy) event.preventDefault(); }}><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
+      <Link className="brand" to={returnTo} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
       <span className="global-nav__section">Administración del menú</span>
     </div></nav>
     <main className="entry-form-page">
-      <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) event.preventDefault(); }}>← Volver a entradas</Link>
+      <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}>← Volver a entradas</Link>
       <header className="entry-form-page__heading"><p className="eyebrow">Administración / Menú</p><h1>{editing ? "Editar entrada" : "Nueva entrada"}</h1><p>Nombre, descripción, categorías e imagen de referencia.</p></header>
       <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
         const control = event.target;
@@ -112,7 +128,7 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
           </aside>
         </div>
         <footer ref={actions} className="entry-form__actions">
-          <button className="button button--secondary" type="button" disabled={busy} onClick={() => { void navigate(returnTo); }}>Cancelar</button>
+          <button className="button button--secondary" type="button" disabled={busy} onClick={() => { model.abandon(); void navigate(returnTo); }}>Cancelar</button>
           <button className="button button--primary" type="submit" disabled={saveDisabled}>{saveLabel}</button>
         </footer>
       </form>
@@ -120,8 +136,8 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
   </div>;
 }
 
-export function EntryFormPage({ repository }: Readonly<{ repository: EntryFormRepository }>) {
+export function EntryFormPage({ repository, storage }: Readonly<EntryFormPageProps>) {
   const { entryId } = useParams();
   const location = useLocation();
-  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} />;
+  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} storage={storage} />;
 }

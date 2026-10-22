@@ -62,6 +62,8 @@ type OfferFormRepository = Pick<
   MenuRepository,
   | "getEntry"
   | "getOffer"
+  | "uploadEntryImage"
+  | "uploadImage"
   | "createOffer"
   | "updateOffer"
   | "listRecipes"
@@ -76,6 +78,8 @@ function createMockRepository(): jest.Mocked<OfferFormRepository> {
   return {
     getEntry: jest.fn().mockResolvedValue(mockEntry),
     getOffer: jest.fn().mockResolvedValue(mockOffer),
+    uploadEntryImage: jest.fn().mockResolvedValue("img-offer-uploaded"),
+    uploadImage: jest.fn().mockResolvedValue("img-offer-uploaded"),
     createOffer: jest.fn().mockResolvedValue(mockOffer),
     updateOffer: jest.fn().mockResolvedValue(mockOffer),
     listRecipes: jest.fn().mockResolvedValue({
@@ -464,7 +468,7 @@ describe("OfferFormPage (V4)", () => {
           ],
         },
       }),
-      file
+      "img-offer-uploaded"
     );
 
     // Navigates to offers page

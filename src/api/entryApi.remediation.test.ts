@@ -117,15 +117,21 @@ test("bounds reads, upload and persistence separately and lets the caller reuse 
   const api = createMenuApi(axios.create({ adapter }));
   const current = await api.getEntry("entry-1");
   await api.listCategories();
+  const uploadKey = "11111111-1111-4111-8111-111111111111";
+  const createKey = "22222222-2222-4222-8222-222222222222";
   const imageId = await api.uploadEntryImage(
     new File(["image"], "entry.png", { type: "image/png" }),
+    uploadKey,
   );
-  await api.createEntry({
-    brandName: "Entrada",
-    description: "Descripción",
-    categoryIds: [],
-    imageId,
-  });
+  await api.createEntry(
+    {
+      brandName: "Entrada",
+      description: "Descripción",
+      categoryIds: [],
+      imageId,
+    },
+    createKey,
+  );
   await api.updateEntry("entry-1", { ...draft, imageId }, current.etag ?? "");
   await api.updateEntry("entry-1", { ...draft, imageId }, current.etag ?? "");
   expect(requests.map((request) => request.timeout)).toEqual([
