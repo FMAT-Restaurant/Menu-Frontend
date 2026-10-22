@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
-import type { MenuOffer, MenuRepository, Page } from "../../application/catalog";
+import type { MenuOffer, MenuOfferDetail, MenuRepository, Page } from "../../application/catalog";
 import { OffersPage } from "./OffersPage";
 
 const offer: MenuOffer = {
@@ -10,11 +10,31 @@ const offer: MenuOffer = {
 const inactive: MenuOffer = { ...offer, id: "offer-2", presentationTag: "Combo", status: "INACTIVE", slotCount: 1 };
 const entry = { id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Con piña", status: "INACTIVE" as const, categoryIds: [] };
 
-function makeRepository(items = [offer, inactive]): jest.Mocked<Pick<MenuRepository, "getEntry" | "listOffers" | "setOfferStatus" | "deleteInactiveOffer">> {
+function makeRepository(items = [offer, inactive]): jest.Mocked<Pick<MenuRepository, "getEntry" | "listOffers" | "getOffer" | "setOfferStatus" | "deleteInactiveOffer">> {
   return {
     getEntry: jest.fn().mockResolvedValue(entry),
     listOffers: jest.fn().mockResolvedValue({ data: items, meta: { page: 1, pageSize: 12, total: items.length, totalPages: 1 } }),
-    setOfferStatus: jest.fn().mockResolvedValue(undefined),
+    getOffer: jest.fn().mockImplementation((id: string) => Promise.resolve({
+      data: {
+        id,
+        entryId: "entry-1",
+        presentationTag: id === "offer-1" ? "Individual" : "Combo",
+        basePrice: 180,
+        status: id === "offer-1" ? "ACTIVE" : "INACTIVE",
+        image: null,
+        composition: { slots: [] },
+      },
+      etag: '"offer-rev-1"',
+    })),
+    setOfferStatus: jest.fn().mockResolvedValue({
+      id: "offer-1",
+      entryId: "entry-1",
+      presentationTag: "Individual",
+      basePrice: 180,
+      status: "INACTIVE",
+      image: null,
+      composition: { slots: [] },
+    }),
     deleteInactiveOffer: jest.fn().mockResolvedValue(undefined),
   };
 }
@@ -99,9 +119,41 @@ test("changes offer status from its inline status control and refreshes only off
   renderPage(repository);
   await screen.findByRole("heading", { name: "Individual" });
   fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" }));
-  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledWith("offer-1", "INACTIVE"));
+  await waitFor(() =>
+    expect(repository.setOfferStatus).toHaveBeenCalledWith(
+      "offer-1",
+      { presentationTag: "Individual", status: "INACTIVE" },
+      '"offer-rev-1"',
+      expect.any(String),
+    ),
+  );
   await waitFor(() => expect(repository.listOffers).toHaveBeenCalledTimes(2));
   expect(repository.getEntry).toHaveBeenCalledTimes(1);
+});
+
+test("retrying a failed status change uses exact same draft, etag, and key without another getOffer query", async () => {
+  const repository = makeRepository();
+  repository.setOfferStatus.mockRejectedValueOnce({ code: "ERR_NETWORK" });
+  renderPage(repository);
+  await screen.findByRole("heading", { name: "Individual" });
+  const button = screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" });
+  fireEvent.click(button);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo conectar");
+  expect(repository.getOffer).toHaveBeenCalledTimes(1);
+  expect(repository.setOfferStatus).toHaveBeenCalledTimes(1);
+  const firstCall = repository.setOfferStatus.mock.calls[0];
+
+  // Click again to retry the same mutation
+  fireEvent.click(button);
+  await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(2));
+  const secondCall = repository.setOfferStatus.mock.calls[1];
+
+  expect(repository.getOffer).toHaveBeenCalledTimes(1); // NO second getOffer!
+  expect(secondCall[0]).toBe(firstCall[0]); // same offerId
+  expect(secondCall[1]).toEqual(firstCall[1]); // same draft
+  expect(secondCall[2]).toBe(firstCall[2]); // same etag
+  expect(secondCall[3]).toBe(firstCall[3]); // same idempotencyKey
 });
 
 test("confirms deletion only for an inactive offer", async () => {
@@ -180,14 +232,14 @@ test("ignores a mutation response after the view changes page", async () => {
   repository.listOffers.mockImplementation(async (_id, page): Promise<Page<MenuOffer>> => page === 1
     ? { data: [offer], meta: { page: 1, pageSize: 12, total: 13, totalPages: 2 } }
     : { data: [inactive], meta: { page: 2, pageSize: 12, total: 13, totalPages: 2 } });
-  let finishMutation: (() => void) | undefined;
+  let finishMutation: ((value: MenuOfferDetail) => void) | undefined;
   repository.setOfferStatus.mockImplementation(() => new Promise((resolve) => { finishMutation = resolve; }));
   renderWithNavigation(repository);
   await screen.findByRole("heading", { name: "Individual" });
   fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" }));
   fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
   await screen.findByText("Página 2 de 2");
-  finishMutation?.();
+  finishMutation?.({ ...offer, presentationTag: offer.presentationTag ?? "", status: "INACTIVE", composition: { slots: [] } });
   await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(1));
   expect(await screen.findByRole("heading", { name: "Combo" })).toBeVisible();
   expect(screen.queryByText("Oferta inactivada.")).not.toBeInTheDocument();

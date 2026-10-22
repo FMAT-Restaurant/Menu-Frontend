@@ -124,19 +124,26 @@ test("bounds entry, offer list, and offer mutation requests with distinct read (
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
   await api.getEntry("entry-1");
+  await api.getOffer("offer-1");
   await api.listOffers("entry-1", 1, 12);
-  await api.setOfferStatus("offer-1", "ACTIVE");
+  await api.setOfferStatus(
+    "offer-1",
+    { presentationTag: "Combo", status: "ACTIVE" },
+    '"offer-rev-1"',
+    "11111111-1111-4111-8111-111111111111",
+  );
   await api.deleteInactiveOffer("offer-1");
 
   expect(timeouts).toEqual([12000, 12000, 12000, 20000, 12000, 20000]);
 });
 
-test("reads a strong offer ETag before changing only its status", async () => {
+test("updates offer status directly using opening strong ETag and Idempotency-Key without pre-GET", async () => {
   const requests: {
     method?: string;
     url?: string;
     body?: unknown;
     ifMatch?: string;
+    idempotencyKey?: string;
   }[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push({
@@ -144,13 +151,14 @@ test("reads a strong offer ETag before changing only its status", async () => {
       url: config.url,
       body: typeof config.data === "string" ? JSON.parse(config.data) : undefined,
       ifMatch: config.headers?.get("If-Match")?.toString(),
+      idempotencyKey: config.headers?.get("Idempotency-Key")?.toString(),
     });
     return {
       config,
       data: {
         data: {
           ...validOfferDetail,
-          status: config.method === "patch" ? "ACTIVE" : "INACTIVE",
+          status: "ACTIVE",
         },
       },
       headers: { etag: '"offer-rev-2"' },
@@ -159,24 +167,24 @@ test("reads a strong offer ETag before changing only its status", async () => {
     };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
-  await api.setOfferStatus("offer-1", "ACTIVE");
+  await api.setOfferStatus(
+    "offer-1",
+    { presentationTag: "Combo", status: "ACTIVE" },
+    '"offer-rev-1"',
+    "11111111-1111-4111-8111-111111111111",
+  );
   expect(requests).toEqual([
-    {
-      method: "get",
-      url: "/menu/offers/offer-1",
-      body: undefined,
-      ifMatch: undefined,
-    },
     {
       method: "patch",
       url: "/menu/offers/offer-1",
-      body: { status: "ACTIVE" },
-      ifMatch: '"offer-rev-2"',
+      body: { presentationTag: "Combo", status: "ACTIVE" },
+      ifMatch: '"offer-rev-1"',
+      idempotencyKey: "11111111-1111-4111-8111-111111111111",
     },
   ]);
 });
 
-test("rejects a weak or missing ETag before mutating an offer", async () => {
+test("rejects a weak or missing ETag before mutating an offer without HTTP requests", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config.method ?? "");
@@ -189,10 +197,15 @@ test("rejects a weak or missing ETag before mutating an offer", async () => {
     };
   };
   const api = createMenuApi(axios.create({ adapter }));
-  await expect(api.setOfferStatus("offer-1", "ACTIVE")).rejects.toThrow(
-    "versión fuerte",
-  );
-  expect(requests).toEqual(["get"]);
+  await expect(
+    api.setOfferStatus(
+      "offer-1",
+      { presentationTag: "Combo", status: "ACTIVE" },
+      'W/"offer-rev-2"',
+      "11111111-1111-4111-8111-111111111111",
+    ),
+  ).rejects.toThrow("versión fuerte");
+  expect(requests).toEqual([]);
 });
 
 test("deletes only an inactive offer using its current ETag", async () => {
@@ -1083,7 +1096,7 @@ test("lists inventory items with search and pagination", async () => {
   ]);
 });
 
-test("rejects invalid recipe identifiers, stops category batches when aborted, and skips no-op offer status patches", async () => {
+test("rejects invalid recipe identifiers, stops category batches when aborted, and fetches offer with strong ETag", async () => {
   const methods: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     methods.push(config.method ?? "");
@@ -1113,8 +1126,9 @@ test("rejects invalid recipe identifiers, stops category batches when aborted, a
     "Identificador inválido.",
   );
 
-  // Offer is already INACTIVE, so setOfferStatus("offer-1", "INACTIVE") performs only GET
-  await api.setOfferStatus("offer-1", "INACTIVE");
+  const offerVersioned = await api.getOffer("offer-1");
+  expect(offerVersioned.etag).toBe('"offer-rev-1"');
+  expect(offerVersioned.data.id).toBe("offer-1");
   expect(methods).toEqual(["get"]);
 
   const defaultInventory = await api.listInventoryItems();

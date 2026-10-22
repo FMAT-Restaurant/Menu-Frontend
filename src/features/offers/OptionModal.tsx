@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
 export interface OptionDraft {
+  localId?: string;
   optionId?: string;
   displayName: string;
   status: OfferStatus;
@@ -109,6 +110,7 @@ export function OptionModal({
     setDisplayName(val);
     if (onChangeDraft) {
       onChangeDraft({
+        localId: initialData?.localId,
         optionId: initialData?.optionId,
         displayName: val,
         status,
@@ -128,6 +130,7 @@ export function OptionModal({
     setStatus(val);
     if (onChangeDraft) {
       onChangeDraft({
+        localId: initialData?.localId,
         optionId: initialData?.optionId,
         displayName,
         status: val,
@@ -159,6 +162,7 @@ export function OptionModal({
     }
 
     onSave({
+      localId: initialData?.localId,
       optionId: initialData?.optionId,
       displayName: displayName.trim(),
       status,
@@ -248,6 +252,7 @@ export function OptionModal({
                   Seleccionar una preparación de la biblioteca.
                 </span>
               </button>
+
               <button
                 type="button"
                 className="source-btn"
@@ -256,7 +261,7 @@ export function OptionModal({
               >
                 <span className="source-btn__title">Elegir artículo de inventario</span>
                 <span className="source-btn__desc">
-                  Selección de artículos de stock pendiente de disponibilidad.
+                  Vincular un insumo del catálogo de inventario.
                 </span>
               </button>
             </div>
@@ -265,10 +270,10 @@ export function OptionModal({
             </p>
           </div>
 
-          <div className="form-field">
-            <span className="field-label" id="option-status-label">Estado de la opción</span>
-            <div className="radio-group" role="radiogroup" aria-labelledby="option-status-label">
-              <label className="radio-label">
+          <fieldset className="form-fieldset">
+            <legend>Disponibilidad</legend>
+            <div className="radio-group">
+              <label className="radio-option">
                 <input
                   type="radio"
                   name="option-status"
@@ -276,9 +281,9 @@ export function OptionModal({
                   checked={status === "ACTIVE"}
                   onChange={() => handleStatusChange("ACTIVE")}
                 />
-                <span>Activa</span>
+                Activa
               </label>
-              <label className="radio-label">
+              <label className="radio-option">
                 <input
                   type="radio"
                   name="option-status"
@@ -286,21 +291,14 @@ export function OptionModal({
                   checked={status === "INACTIVE"}
                   onChange={() => handleStatusChange("INACTIVE")}
                 />
-                <span>Inactiva</span>
+                Inactiva
               </label>
             </div>
-            <p className="field-hint">
-              Una opción inactiva no se ofrece para nuevas selecciones. Si todas las opciones de un grupo están inactivas, el grupo pasa a estar inactivo.
-            </p>
-          </div>
+          </fieldset>
         </div>
 
         <footer className="modal-footer">
-          <button
-            type="button"
-            className="button button--secondary"
-            onClick={onClose}
-          >
+          <button type="button" className="button button--secondary" onClick={onClose}>
             Cancelar
           </button>
           <button

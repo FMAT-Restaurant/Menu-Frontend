@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
-import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, Page } from "../../application/catalog";
+import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
 import { OfferCard } from "./OfferCard";
 
 const pageSize = 12;
@@ -58,7 +58,7 @@ function failureMessage(error: unknown, scope: ErrorScope) {
   return "No se pudo eliminar la oferta.";
 }
 
-type Repository = Pick<MenuRepository, "getEntry" | "listOffers" | "setOfferStatus" | "deleteInactiveOffer">;
+type Repository = Pick<MenuRepository, "getEntry" | "listOffers" | "getOffer" | "setOfferStatus" | "deleteInactiveOffer">;
 type LoadError = "entry" | "offers" | null;
 
 function statusNotice(status: OfferStatus, refreshFailed: boolean) {
@@ -212,6 +212,12 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const [busyId, setBusyId] = useState<string | null>(null);
   const [updatingOffers, setUpdatingOffers] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<MenuOffer | null>(null);
+  const pendingStatusMutation = useRef<{
+    offerId: string;
+    draft: OfferStatusDraft;
+    etag: string;
+    idempotencyKey: string;
+  } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const deleteTriggerRef = useRef<HTMLElement | null>(null);
@@ -247,6 +253,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setUpdatingOffers(false);
     setPendingAction("");
     setOfferToDelete(null);
+    pendingStatusMutation.current = null;
   }, [entryId, page]);
 
   const reloadOffers = useCallback(async (signal: AbortSignal) => {
@@ -354,7 +361,31 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setNotice("");
     setPendingAction("Actualizando estado de la oferta…");
     try {
-      await repository.setOfferStatus(offer.id, status);
+      let mutation = pendingStatusMutation.current;
+      if (!mutation || mutation.offerId !== offer.id || mutation.draft.status !== status) {
+        const versioned = await repository.getOffer(offer.id);
+        if (!versioned.etag) {
+          throw new Error("No se recibió una versión fuerte de la oferta.");
+        }
+        mutation = {
+          offerId: offer.id,
+          draft: {
+            presentationTag: versioned.data.presentationTag ?? offer.presentationTag ?? "",
+            status,
+          },
+          etag: versioned.etag,
+          idempotencyKey: crypto.randomUUID(),
+        };
+        pendingStatusMutation.current = mutation;
+      }
+
+      await repository.setOfferStatus(
+        mutation!.offerId,
+        mutation!.draft,
+        mutation!.etag,
+        mutation!.idempotencyKey,
+      );
+      pendingStatusMutation.current = null;
       if (currentContextRef.current !== expectedContext) return;
       const updated = await reconcileOffers(new AbortController().signal, expectedContext);
       if (updated === "stale") return;
@@ -385,6 +416,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       if (updated === "stale") return;
       deleteTriggerRef.current = null;
       setOfferToDelete(null);
+      pendingStatusMutation.current = null;
       setNotice(deleteNotice(updated === "failed"));
       setPendingAction("");
     } catch (error: unknown) {

@@ -3,6 +3,7 @@ import type { OptionDraft } from "./OptionModal";
 import { SlotOptionItem } from "./SlotOptionItem";
 
 export interface SlotDraft {
+  localId?: string;
   slotId?: string;
   name: string;
   quantity: number;
@@ -102,7 +103,7 @@ export function SlotCard({
           <div className="slot-card__options-list">
             {slot.options.map((option, optIdx) => (
               <SlotOptionItem
-                key={option.optionId || `opt-${optIdx}`}
+                key={option.localId || option.optionId || `opt-${optIdx}`}
                 option={option}
                 optionIndex={optIdx}
                 onEdit={() => onEditOption(optIdx)}

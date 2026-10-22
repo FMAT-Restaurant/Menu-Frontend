@@ -14,7 +14,7 @@ import type {
   MenuOfferDetail,
   MenuRepository,
   OfferCreateDraft,
-  OfferStatus,
+  OfferStatusDraft,
   OfferUpdateDraft,
   Page,
   RecipeDetail,
@@ -40,7 +40,6 @@ import { assertStrongEtag } from "../application/entryVersion";
 import {
   assertValidIdempotencyKey,
   buildFormDataFromSealedFile,
-  generateIdempotencyKey,
   type SealedOperationAttempt,
 } from "../application/operationAttempt";
 
@@ -107,13 +106,6 @@ function imageMultipart(image: File): FormData {
   const form = new FormData();
   form.append("file", image);
   return form;
-}
-
-function resolveIdempotencyKey(explicitKey?: string): string {
-  if (explicitKey !== undefined) {
-    return assertValidIdempotencyKey(explicitKey);
-  }
-  return generateIdempotencyKey();
 }
 
 export async function collectCategoryPages(
@@ -464,7 +456,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async getOffer(
       id: string,
       signal?: AbortSignal,
-    ): Promise<MenuOfferDetail> {
+    ): Promise<VersionedResource<MenuOfferDetail>> {
       const response = await client.get<unknown>(
         `/menu/offers/${encodeURIComponent(id)}`,
         {
@@ -472,21 +464,29 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
           timeout: READ_REQUEST_TIMEOUT_MS,
         },
       );
-      return offerDetailResponse(response.data);
+      const etag = assertStrongEtag(
+        extractHeaderEtag(response.headers),
+        "No se recibió una versión fuerte de la oferta.",
+      );
+      return {
+        data: offerDetailResponse(response.data),
+        etag,
+      };
     },
 
     async createOffer(
       entryId: string,
       draft: OfferCreateDraft,
       imageId: string,
-      options?: IdempotentWriteCallOptions,
+      idempotencyKey: string,
+      options?: { signal?: AbortSignal },
     ): Promise<MenuOfferDetail> {
-      const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
+      const validatedKey = assertValidIdempotencyKey(idempotencyKey);
       const response = await client.post<unknown>(
         `/menu/entries/${encodeURIComponent(entryId)}/offers`,
         { ...draft, imageId },
         {
-          headers: { "Idempotency-Key": idempotencyKey },
+          headers: { "Idempotency-Key": validatedKey },
           timeout: WRITE_REQUEST_TIMEOUT_MS,
           ...(options?.signal ? { signal: options.signal } : {}),
         },
@@ -501,23 +501,22 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async updateOffer(
       id: string,
       draft: OfferUpdateDraft,
+      etag: string,
+      idempotencyKey: string,
       imageId?: string,
-      options?: IdempotentWriteCallOptions,
+      options?: { signal?: AbortSignal },
     ): Promise<MenuOfferDetail> {
       const path = `/menu/offers/${encodeURIComponent(id)}`;
-      const etag =
-        options?.ifMatch !== undefined
-          ? assertStrongEtag(
-              options.ifMatch,
-              "No se recibió una versión fuerte de la oferta. Recarga e inténtalo de nuevo.",
-            )
-          : (await currentOffer(id)).etag;
+      const validatedEtag = assertStrongEtag(
+        etag,
+        "No se recibió una versión fuerte de la oferta. Recarga e inténtalo de nuevo.",
+      );
+      const validatedKey = assertValidIdempotencyKey(idempotencyKey);
       const body = imageId ? { ...draft, imageId } : draft;
-      const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
       const response = await client.patch<unknown>(path, body, {
         headers: {
-          "If-Match": etag,
-          "Idempotency-Key": idempotencyKey,
+          "If-Match": validatedEtag,
+          "Idempotency-Key": validatedKey,
         },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
         ...(options?.signal ? { signal: options.signal } : {}),
@@ -531,31 +530,34 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
 
     async setOfferStatus(
       id: string,
-      status: OfferStatus,
-      options?: IdempotentWriteCallOptions,
-    ): Promise<void> {
-      const current = await currentOffer(id);
-      if (current.status === status) return;
-      const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
+      draft: OfferStatusDraft,
+      etag: string,
+      idempotencyKey: string,
+      options?: { signal?: AbortSignal },
+    ): Promise<MenuOfferDetail> {
+      const path = `/menu/offers/${encodeURIComponent(id)}`;
+      const validatedEtag = assertStrongEtag(
+        etag,
+        "No se recibió una versión fuerte de la oferta.",
+      );
+      const validatedKey = assertValidIdempotencyKey(idempotencyKey);
       const response = await client.patch<unknown>(
-        current.path,
-        { status },
+        path,
+        { presentationTag: draft.presentationTag, status: draft.status },
         {
           headers: {
-            "If-Match": current.etag,
-            "Idempotency-Key": idempotencyKey,
+            "If-Match": validatedEtag,
+            "Idempotency-Key": validatedKey,
           },
           timeout: WRITE_REQUEST_TIMEOUT_MS,
           ...(options?.signal ? { signal: options.signal } : {}),
         },
       );
-      if (response?.data !== undefined) {
-        validateWriteSuccessResponse(
-          response.data,
-          offerDetailResponse,
-          response.status,
-        );
-      }
+      return validateWriteSuccessResponse(
+        response.data,
+        offerDetailResponse,
+        response.status,
+      );
     },
 
     async deleteInactiveOffer(id: string): Promise<void> {

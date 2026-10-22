@@ -59,7 +59,7 @@ export function CompositionEditor({
       <div className="composition-editor__slots-container">
         {slots.map((slot, index) => (
           <SlotCard
-            key={slot.slotId || `slot-${index}`}
+            key={slot.localId || slot.slotId || `slot-${index}`}
             slot={slot}
             slotIndex={index}
             onEdit={() => onEditSlot(index)}

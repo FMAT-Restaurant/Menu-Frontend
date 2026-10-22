@@ -4,6 +4,10 @@ import type {
   MenuEntryDetail,
   MenuOfferDetail,
   MenuRepository,
+  OfferCourse,
+  OfferCreateDraft,
+  OfferStatus,
+  OfferUpdateDraft,
   RecipeSummary,
 } from "../../application/catalog";
 import type {
@@ -11,7 +15,15 @@ import type {
   PendingOperationChainRecord,
   PendingOperationStorageAdapter,
 } from "../../application/operationAttempt";
-import { OfferFormPage } from "./OfferFormPage";
+import {
+  buildOperationStorageKey,
+  sealJsonPayload,
+} from "../../application/operationAttempt";
+import {
+  createControllableIndexedDbHarness,
+  createIndexedDbPendingOperationStorage,
+} from "../../shared/pendingOperationStorage";
+import { buildOfferUpdateScope, OfferFormPage } from "./OfferFormPage";
 
 const mockEntry: MenuEntryDetail = {
   id: "entry-1",
@@ -74,14 +86,98 @@ type OfferFormRepository = Pick<
   | "listInventoryItems"
 >;
 
+interface MockOptionInput {
+  optionId?: string;
+  displayName: string;
+  status: OfferStatus;
+  sourceType: "RECIPE" | "INVENTORY_ITEM";
+  recipeId?: string;
+  recipeRevision?: number;
+  inventoryItemId?: string;
+}
+
+interface MockSlotInput {
+  slotId?: string;
+  name: string;
+  quantity: number;
+  course?: OfferCourse | null;
+  options: readonly MockOptionInput[];
+}
+
 function createMockRepository(): jest.Mocked<OfferFormRepository> {
   return {
     getEntry: jest.fn().mockResolvedValue(mockEntry),
-    getOffer: jest.fn().mockResolvedValue(mockOffer),
+    getOffer: jest.fn().mockResolvedValue({ data: mockOffer, etag: '"offer-rev-1"' }),
     uploadEntryImage: jest.fn().mockResolvedValue("img-offer-uploaded"),
     uploadImage: jest.fn().mockResolvedValue("img-offer-uploaded"),
-    createOffer: jest.fn().mockResolvedValue(mockOffer),
-    updateOffer: jest.fn().mockResolvedValue(mockOffer),
+    createOffer: jest.fn().mockImplementation(async (_entryId: string, draft: OfferCreateDraft, imageId?: string) => {
+      const slots = draft.composition.slots as unknown as readonly MockSlotInput[];
+      return {
+        id: "offer-created-id",
+        entryId: "entry-1",
+        presentationTag: draft.presentationTag,
+        basePrice: draft.basePrice,
+        status: "INACTIVE" as const,
+        image: {
+          id: imageId || "img-default",
+          url: imageId ? `https://example.com/${imageId}.jpg` : "https://example.com/default.jpg",
+          thumbnailUrl: imageId ? `https://example.com/${imageId}-thumb.jpg` : "https://example.com/default-thumb.jpg",
+        },
+        composition: {
+          slots: slots.map((s, idx) => ({
+            slotId: `srv-slot-${idx + 1}`,
+            name: s.name,
+            quantity: s.quantity,
+            course: s.course ?? null,
+            status: "ACTIVE" as const,
+            options: s.options.map((o, optIdx) => ({
+              optionId: `srv-opt-${idx + 1}-${optIdx + 1}`,
+              displayName: o.displayName,
+              status: o.status,
+              sourceType: o.sourceType,
+              recipeId: o.recipeId,
+              recipeRevision: o.recipeRevision,
+              inventoryItemId: o.inventoryItemId,
+            })),
+          })),
+        },
+      };
+    }),
+    updateOffer: jest.fn().mockImplementation(async (id: string, draft: OfferUpdateDraft, _etag?: string, _key?: string, imageId?: string) => {
+      const slots = (draft.composition?.slots ?? []) as unknown as readonly MockSlotInput[];
+      return {
+        id,
+        entryId: "entry-1",
+        presentationTag: draft.presentationTag,
+        basePrice: draft.basePrice,
+        status: draft.status,
+        image: imageId
+          ? {
+              id: imageId,
+              url: `https://example.com/${imageId}.jpg`,
+              thumbnailUrl: `https://example.com/${imageId}-thumb.jpg`,
+            }
+          : mockOffer.image,
+        composition: {
+          slots: slots.map((s, idx) => ({
+            slotId: s.slotId || `srv-slot-${idx + 1}`,
+            name: s.name,
+            quantity: s.quantity,
+            course: s.course ?? null,
+            status: "ACTIVE" as const,
+            options: s.options.map((o, optIdx) => ({
+              optionId: o.optionId || `srv-opt-${idx + 1}-${optIdx + 1}`,
+              displayName: o.displayName,
+              status: o.status,
+              sourceType: o.sourceType,
+              recipeId: o.recipeId,
+              recipeRevision: o.recipeRevision,
+              inventoryItemId: o.inventoryItemId,
+            })),
+          })),
+        },
+      };
+    }),
     listRecipes: jest.fn().mockResolvedValue({
       data: [mockRecipe],
       meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
@@ -101,21 +197,31 @@ function createMemoryStorage(): PendingOperationStorageAdapter {
   const map = new Map<string, unknown>();
   return {
     async saveRecord<TDraft = unknown>(record: PendingOperationChainRecord<TDraft>) {
-      map.set(record.storageKey, record);
+      const canonicalKey = buildOperationStorageKey(record.scope);
+      if (record.storageKey) {
+        map.set(record.storageKey, record);
+      }
+      map.set(canonicalKey, record);
     },
     async getRecord<TDraft = unknown>(scopeOrKey: OperationFlowScope | string) {
-      const key =
-        typeof scopeOrKey === "string"
-          ? scopeOrKey
-          : `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
-      return (map.get(key) as PendingOperationChainRecord<TDraft> | undefined) ?? null;
+      if (typeof scopeOrKey === "string") {
+        return (map.get(scopeOrKey) as PendingOperationChainRecord<TDraft> | undefined) ?? null;
+      }
+      const canonicalKey = buildOperationStorageKey(scopeOrKey);
+      const colonKey = `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
+      return (
+        (map.get(canonicalKey) as PendingOperationChainRecord<TDraft> | undefined) ??
+        (map.get(colonKey) as PendingOperationChainRecord<TDraft> | undefined) ??
+        null
+      );
     },
     async deleteRecord(scopeOrKey: OperationFlowScope | string) {
-      const key =
-        typeof scopeOrKey === "string"
-          ? scopeOrKey
-          : `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
-      map.delete(key);
+      if (typeof scopeOrKey === "string") {
+        map.delete(scopeOrKey);
+      } else {
+        map.delete(buildOperationStorageKey(scopeOrKey));
+        map.delete(`${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`);
+      }
     },
     async listByTab(tabId: string) {
       return Array.from(map.values()).filter(
@@ -131,16 +237,21 @@ function renderComponent(
   state?: unknown,
   storage?: PendingOperationStorageAdapter,
 ) {
+  const actualStorage =
+    storage ??
+    createIndexedDbPendingOperationStorage({
+      idbFactory: createControllableIndexedDbHarness().factory,
+    });
   return render(
     <MemoryRouter initialEntries={[{ pathname: path, state }]}>
       <Routes>
         <Route
           path="/entries/:entryId/offers/new"
-          element={<OfferFormPage repository={repository} storage={storage} />}
+          element={<OfferFormPage repository={repository} storage={actualStorage} />}
         />
         <Route
           path="/entries/:entryId/offers/:offerId/edit"
-          element={<OfferFormPage repository={repository} storage={storage} />}
+          element={<OfferFormPage repository={repository} storage={actualStorage} />}
         />
         <Route path="/entries/:entryId/offers" element={<div>Vista de ofertas</div>} />
       </Routes>
@@ -468,7 +579,8 @@ describe("OfferFormPage (V4)", () => {
           ],
         },
       }),
-      "img-offer-uploaded"
+      "img-offer-uploaded",
+      expect.any(String)
     );
 
     // Navigates to offers page
@@ -496,6 +608,8 @@ describe("OfferFormPage (V4)", () => {
         basePrice: 175,
         status: "ACTIVE",
       }),
+      '"offer-rev-1"',
+      expect.any(String),
       undefined
     );
 
@@ -644,6 +758,8 @@ describe("OfferFormPage (V4)", () => {
       expect.objectContaining({
         status: "INACTIVE",
       }),
+      '"offer-rev-1"',
+      expect.any(String),
       undefined
     );
   });
@@ -724,7 +840,7 @@ describe("OfferFormPage (V4)", () => {
     };
 
     const repository = createMockRepository();
-    repository.getOffer.mockResolvedValueOnce(inventoryOffer);
+    repository.getOffer.mockResolvedValueOnce({ data: inventoryOffer, etag: '"offer-rev-inv"' });
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
 
@@ -754,6 +870,8 @@ describe("OfferFormPage (V4)", () => {
           ],
         },
       }),
+      '"offer-rev-inv"',
+      expect.any(String),
       undefined
     );
   });
@@ -830,7 +948,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(saveButton);
 
     expect(
-      await screen.findByText("Ocurrió un error al guardar la oferta.")
+      await screen.findByText("Error de servidor en texto plano")
     ).toBeVisible();
   });
 
@@ -983,5 +1101,220 @@ describe("OfferFormPage (V4)", () => {
     expect(await screen.findByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
     expect(screen.getByDisplayValue("Receta Recuperada")).toBeVisible();
+  });
+
+  test("handles 412 Precondition Failed by preserving local draft and offering review / adoption (A01, A08)", async () => {
+    const repository = createMockRepository();
+    // Simulate initial offer read at rev 1
+    repository.getOffer.mockResolvedValueOnce({
+      data: mockOffer,
+      etag: '"offer-rev-1"',
+    });
+
+    const error412 = Object.assign(new Error("Precondition Failed"), {
+      response: { status: 412 },
+      status: 412,
+    });
+    repository.updateOffer.mockRejectedValueOnce(error412);
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const tagInput = screen.getByLabelText(/Etiqueta de presentación/);
+
+    // User edits draft
+    fireEvent.change(tagInput, { target: { value: "Edición Local de Usuario" } });
+    expect(tagInput).toHaveValue("Edición Local de Usuario");
+
+    fireEvent.click(saveButton);
+
+    // Expect 412 notice banner
+    expect(
+      await screen.findByText(
+        /Los datos de la oferta cambiaron en el servidor desde que se abrieron. Revisa la versión actual para decidir si adoptarla./
+      )
+    ).toBeVisible();
+
+    // The user's typed draft is preserved (NOT overwritten by v2)
+    expect(tagInput).toHaveValue("Edición Local de Usuario");
+
+    // Click "Revisar oferta actual"
+    const serverOfferV2 = {
+      ...mockOffer,
+      presentationTag: "Tag Actualizado en Servidor v2",
+      basePrice: 999,
+    };
+    repository.getOffer.mockResolvedValueOnce({
+      data: serverOfferV2,
+      etag: '"offer-rev-2"',
+    });
+
+    const reviewButton = screen.getByRole("button", { name: "Revisar oferta actual" });
+    fireEvent.click(reviewButton);
+
+    // Review banner appears
+    expect(
+      await screen.findByRole("region", { name: "Versión del servidor" })
+    ).toBeVisible();
+    expect(screen.getByText(/Versión actual en el servidor:/)).toBeVisible();
+
+    // Click "Adoptar versión del servidor"
+    const adoptButton = screen.getByRole("button", { name: "Adoptar versión del servidor" });
+    fireEvent.click(adoptButton);
+
+    // Local form now has server values and ETag is updated
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Etiqueta de presentación/)).toHaveValue(
+        "Tag Actualizado en Servidor v2"
+      );
+    });
+    expect(screen.getByLabelText(/Precio base/)).toHaveValue(999);
+  });
+
+  test("restores uncertain attempt on mount without auto-submitting and allows retry with same idempotency key (A01, A08)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+    const idempotencyKey = "22222222-2222-4222-8222-222222222222";
+    const scope = buildOfferUpdateScope("offer-1");
+    const storageKey = buildOperationStorageKey(scope);
+
+    const restoredPayload: OfferUpdateDraft = {
+      presentationTag: "Oferta Recuperada de Intento Incierto",
+      basePrice: 350,
+      status: "ACTIVE",
+      composition: {
+        slots: [
+          {
+            slotId: "slot-1",
+            name: "Base",
+            quantity: 1,
+            course: null,
+            options: [
+              {
+                optionId: "opt-1",
+                displayName: "Hamburguesa Doble",
+                status: "ACTIVE",
+                sourceType: "RECIPE",
+                recipeId: "rec-1",
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    await storage.saveRecord({
+      storageKey,
+      scope,
+      currentStageIndex: 0,
+      createdAt: Date.now() - 5000,
+      updatedAt: Date.now() - 5000,
+      stages: [
+        {
+          attemptId: "att-offer-patch-1",
+          operationKind: "offer.patch",
+          method: "PATCH",
+          endpointPath: "/menu/offers/offer-1",
+          idempotencyKey,
+          payload: sealJsonPayload(restoredPayload, '"offer-rev-1"'),
+          createdAt: Date.now() - 5000,
+          firstSentAt: Date.now() - 5000,
+          firstConfirmedAt: null,
+          lastAttemptAt: Date.now() - 5000,
+          attemptCount: 1,
+          status: "uncertain",
+          submittedDraftVersion: 1,
+          retryAfterSeconds: null,
+          retryAfterUntil: null,
+          retryAfterInvalid: false,
+          possibleWriteApplied: true,
+          lastErrorCode: "TIMEOUT",
+          lastErrorMessage: "Tiempo de espera agotado al contactar al servidor",
+        },
+      ],
+      confirmedImageId: null,
+      ifMatch: '"offer-rev-1"',
+      editableDraft: {
+        presentationTag: "Oferta Recuperada de Intento Incierto",
+        basePrice: "350",
+        desiredStatus: "ACTIVE",
+        slots: [
+          {
+            slotId: "slot-1",
+            localId: "loc-slot-1",
+            name: "Base",
+            quantity: 1,
+            course: null,
+            options: [
+              {
+                optionId: "opt-1",
+                localId: "loc-opt-1",
+                displayName: "Hamburguesa Doble",
+                status: "ACTIVE",
+                sourceType: "RECIPE",
+                recipeId: "rec-1",
+                recipeRevision: 1,
+              },
+            ],
+          },
+        ],
+      },
+      submittedDraftVersion: 1,
+      currentDraftVersion: 1,
+    });
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit", undefined, storage);
+
+    // Restores draft in form without auto-sending
+    expect(await screen.findByDisplayValue("Oferta Recuperada de Intento Incierto")).toBeVisible();
+    expect(repository.updateOffer).not.toHaveBeenCalled();
+
+    // Banner indicates uncertain attempt
+    expect(
+      screen.getByText(/La operación anterior no pudo confirmarse./)
+    ).toBeVisible();
+
+    // Click "Reintentar"
+    const retryButton = screen.getByRole("button", { name: "Reintentar" });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    });
+
+    // Reused original idempotency key and original if-match
+    expect(repository.updateOffer).toHaveBeenCalledWith(
+      "offer-1",
+      expect.objectContaining({
+        presentationTag: "Oferta Recuperada de Intento Incierto",
+        basePrice: 350,
+      }),
+      '"offer-rev-1"',
+      idempotencyKey,
+      undefined
+    );
+
+    // Navigates successfully
+    expect(await screen.findByText("Vista de ofertas")).toBeVisible();
+  });
+
+  test("does not send recipeRevision in create or update draft JSON payloads (Invariant 5)", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    });
+
+    const updatePayload = repository.updateOffer.mock.calls[0][1];
+    expect(updatePayload).toBeDefined();
+    for (const slot of updatePayload.composition?.slots ?? []) {
+      for (const opt of slot.options ?? []) {
+        expect(opt).not.toHaveProperty("recipeRevision");
+      }
+    }
   });
 });

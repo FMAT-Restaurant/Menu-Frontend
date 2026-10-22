@@ -1,4 +1,4 @@
-import axios, { type AxiosAdapter } from "axios";
+import axios, { AxiosError, type AxiosAdapter } from "axios";
 import { createMenuApi, executeSealedAttemptWithClient } from "./menuApi";
 import {
   createSealedAttempt,
@@ -383,21 +383,24 @@ const offerDetail = {
   },
 };
 
-test("gets an offer by ID from the menu offers endpoint", async () => {
+test("gets an offer by ID from the menu offers endpoint returning data and strong ETag", async () => {
   const requests: { method?: string; url?: string }[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push({ method: config.method, url: config.url });
     return {
       config,
       data: { data: offerDetail },
-      headers: {},
+      headers: { etag: '"offer-rev-1"' },
       status: 200,
       statusText: "OK",
     };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.getOffer("offer-1")).resolves.toEqual(offerDetail);
+  await expect(api.getOffer("offer-1")).resolves.toEqual({
+    data: offerDetail,
+    etag: '"offer-rev-1"',
+  });
   expect(requests).toEqual([{ method: "get", url: "/menu/offers/offer-1" }]);
 });
 
@@ -441,8 +444,9 @@ test("creates an offer uploading its image first, then posting to /menu/entries/
   };
 
   const uploadKey = "33333333-3333-4333-8333-333333333333";
+  const createKey = "55555555-5555-4555-8555-555555555555";
   const imageId = await api.uploadImage(image, uploadKey);
-  await expect(api.createOffer("entry-1", draft, imageId)).resolves.toEqual(
+  await expect(api.createOffer("entry-1", draft, imageId, createKey)).resolves.toEqual(
     offerDetail,
   );
 
@@ -450,8 +454,8 @@ test("creates an offer uploading its image first, then posting to /menu/entries/
     "post /media/images",
     "post /menu/entries/entry-1/offers",
   ]);
-  expect(isUuidV4(requests[0].idempotencyKey)).toBe(true);
-  expect(isUuidV4(requests[1].idempotencyKey)).toBe(true);
+  expect(requests[0].idempotencyKey).toBe(uploadKey);
+  expect(requests[1].idempotencyKey).toBe(createKey);
   expect(requests[0].data).toBeInstanceOf(FormData);
   if (requests[0].data instanceof FormData) {
     expect(requests[0].data.get("file")).toBe(image);
@@ -464,7 +468,7 @@ test("creates an offer uploading its image first, then posting to /menu/entries/
   }
 });
 
-test("updates an offer with If-Match and Idempotency-Key from current offer ETag and preserves image when no file is passed", async () => {
+test("updates an offer with If-Match and Idempotency-Key from opening ETag directly without pre-GET", async () => {
   const requests: {
     method?: string;
     url?: string;
@@ -495,32 +499,30 @@ test("updates an offer with If-Match and Idempotency-Key from current offer ETag
     status: "ACTIVE" as const,
     composition: offerDetail.composition,
   };
+  const openingEtag = '"offer-rev-4"';
+  const idempotencyKey = "66666666-6666-4666-8666-666666666666";
 
-  await expect(api.updateOffer("offer-1", updateDraft)).resolves.toEqual(
-    offerDetail,
-  );
-  expect(requests).toHaveLength(2);
+  await expect(
+    api.updateOffer("offer-1", updateDraft, openingEtag, idempotencyKey),
+  ).resolves.toEqual(offerDetail);
+
+  expect(requests).toHaveLength(1);
   expect(requests[0]).toMatchObject({
-    method: "get",
-    url: "/menu/offers/offer-1",
-    data: undefined,
-    ifMatch: undefined,
-  });
-  expect(requests[1]).toMatchObject({
     method: "patch",
     url: "/menu/offers/offer-1",
     data: updateDraft,
-    ifMatch: '"offer-rev-5"',
+    ifMatch: '"offer-rev-4"',
+    idempotencyKey,
   });
-  expect(isUuidV4(requests[1].idempotencyKey)).toBe(true);
 });
 
-test("updates an offer uploading new image before PATCH with If-Match", async () => {
+test("updates an offer uploading new image before PATCH with If-Match and without pre-GET", async () => {
   const requests: {
     method?: string;
     url?: string;
     data: unknown;
     ifMatch?: string;
+    idempotencyKey?: string;
   }[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push({
@@ -528,6 +530,7 @@ test("updates an offer uploading new image before PATCH with If-Match", async ()
       url: config.url,
       data: config.data,
       ifMatch: config.headers?.get("If-Match")?.toString(),
+      idempotencyKey: config.headers?.get("Idempotency-Key")?.toString(),
     });
     return {
       config,
@@ -558,23 +561,108 @@ test("updates an offer uploading new image before PATCH with If-Match", async ()
   };
 
   const uploadKey = "44444444-4444-4444-8444-444444444444";
+  const patchKey = "77777777-7777-4777-8777-777777777777";
+  const openingEtag = '"offer-rev-5"';
+
   const newImageId = await api.uploadImage(newImage, uploadKey);
-  await api.updateOffer("offer-1", updateDraft, newImageId);
+  await api.updateOffer("offer-1", updateDraft, openingEtag, patchKey, newImageId);
+
   expect(requests.map(({ method, url }) => `${method} ${url}`)).toEqual([
     "post /media/images",
-    "get /menu/offers/offer-1",
     "patch /menu/offers/offer-1",
   ]);
   if (requests[0].data instanceof FormData) {
     expect(requests[0].data.get("file")).toBe(newImage);
   }
-  if (typeof requests[2].data === "string") {
-    expect(JSON.parse(requests[2].data)).toEqual({
+  if (typeof requests[1].data === "string") {
+    expect(JSON.parse(requests[1].data)).toEqual({
       ...updateDraft,
       imageId: "img-new-2",
     });
   }
-  expect(requests[2].ifMatch).toBe('"offer-rev-6"');
+  expect(requests[1].ifMatch).toBe('"offer-rev-5"');
+  expect(requests[1].idempotencyKey).toBe(patchKey);
+});
+
+test("handles concurrent offer modification with 412 Precondition Failed directly without silent pre-GET (A01, A08)", async () => {
+  const requests: { method?: string; ifMatch?: string }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      ifMatch: config.headers?.get("If-Match")?.toString(),
+    });
+    const error = new AxiosError(
+      "Request failed with status code 412",
+      "ERR_BAD_REQUEST",
+      config,
+      {},
+      {
+        status: 412,
+        statusText: "Precondition Failed",
+        data: { message: "Resource was modified concurrently" },
+        headers: {},
+        config,
+      },
+    );
+    throw error;
+  };
+
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const updateDraft = {
+    presentationTag: "Conflict Check",
+    basePrice: 199,
+    status: "ACTIVE" as const,
+    composition: offerDetail.composition,
+  };
+
+  await expect(
+    api.updateOffer(
+      "offer-1",
+      updateDraft,
+      '"offer-rev-v1"',
+      "88888888-8888-4888-8888-888888888888",
+    ),
+  ).rejects.toMatchObject({
+    response: { status: 412 },
+  });
+
+  // Exactly 1 direct PATCH request, never a silent GET to overwrite v2
+  expect(requests).toEqual([
+    { method: "patch", ifMatch: '"offer-rev-v1"' },
+  ]);
+});
+
+test("supports safe idempotent retry of offer PATCH returning 200 with original data (A01, A08)", async () => {
+  let patchCalls = 0;
+  const adapter: AxiosAdapter = async (config) => {
+    patchCalls++;
+    return {
+      config,
+      data: { data: offerDetail },
+      headers: { etag: '"offer-rev-2"' },
+      status: 200,
+      statusText: "OK",
+    };
+  };
+
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const updateDraft = {
+    presentationTag: "Idempotent Offer",
+    basePrice: 200,
+    status: "ACTIVE" as const,
+    composition: offerDetail.composition,
+  };
+  const key = "99999999-9999-4999-8999-999999999999";
+  const etag = '"offer-rev-1"';
+
+  // First call
+  const first = await api.updateOffer("offer-1", updateDraft, etag, key);
+  expect(first.id).toBe("offer-1");
+
+  // Retry call with identical key, draft, and etag
+  const second = await api.updateOffer("offer-1", updateDraft, etag, key);
+  expect(second.id).toBe("offer-1");
+  expect(patchCalls).toBe(2);
 });
 
 test("executes sealed JSON and multipart attempts via executeSealedAttemptWithClient", async () => {

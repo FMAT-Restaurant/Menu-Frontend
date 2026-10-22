@@ -206,7 +206,12 @@ export function extractHttpFailureContext(
   }
   return {
     isNetworkError: true,
-    message: error instanceof Error ? error.message : "Error de comunicación.",
+    message:
+      typeof error === "string" && error.trim().length > 0
+        ? error
+        : error instanceof Error
+          ? error.message
+          : "Error de comunicación.",
     operationKind,
   };
 }

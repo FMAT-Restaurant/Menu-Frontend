@@ -369,4 +369,310 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
       imageId: "img-recovered-123",
     });
   });
+
+  test("offer creation recovery: uncertain POST, real browser reload (F5) restores form without POST, manual retry sends same Idempotency-Key (A01, A08)", async ({
+    page,
+  }) => {
+    const uploadRequests: Array<{ key?: string }> = [];
+    const offerRequests: Array<{ key?: string; body?: unknown }> = [];
+    let shouldFailOfferWithTimeout = true;
+
+    await page.route("**/api/v1/menu/entries/entry-1", (route) =>
+      route.fulfill({
+        json: {
+          data: {
+            id: "entry-1",
+            brandName: "Hamburguesa Gourmet",
+            description: "Carne angus",
+            status: "ACTIVE",
+            categoryIds: [],
+          },
+        },
+      }),
+    );
+
+    await page.route("**/api/v1/menu/entries/entry-1/offers?*", (route) =>
+      route.fulfill({
+        json: {
+          data: [],
+          meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 },
+        },
+      }),
+    );
+
+    await page.route("**/api/v1/menu/recipes*", (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          json: {
+            data: [
+              {
+                id: "rec-1",
+                name: "Receta Hamburguesa",
+                description: "Carne angus sazonada",
+                supplies: [],
+              },
+            ],
+            meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+          },
+        });
+      }
+      return route.fallback();
+    });
+
+    await page.route("**/api/v1/media/images", async (route) => {
+      const key = route.request().headers()["idempotency-key"];
+      uploadRequests.push({ key });
+      return route.fulfill({
+        status: 201,
+        json: {
+          data: {
+            id: "img-offer-rec-1",
+            url: "/images/offer.png",
+            thumbnailUrl: "/images/offer-thumb.png",
+          },
+        },
+      });
+    });
+
+    await page.route("**/api/v1/menu/entries/entry-1/offers", async (route) => {
+      const key = route.request().headers()["idempotency-key"];
+      const body = route.request().postDataJSON();
+      offerRequests.push({ key, body });
+
+      if (shouldFailOfferWithTimeout) {
+        shouldFailOfferWithTimeout = false;
+        return route.abort("timedout");
+      }
+
+      const created = {
+        id: "offer-rec-1",
+        entryId: "entry-1",
+        presentationTag: body.presentationTag,
+        basePrice: body.basePrice,
+        status: "INACTIVE",
+        image: { id: "img-offer-rec-1", url: "/images/offer.png", thumbnailUrl: "/images/offer-thumb.png" },
+        composition: {
+          slots: [
+            {
+              slotId: "srv-slot-1",
+              name: "Principal",
+              quantity: 1,
+              course: null,
+              status: "ACTIVE",
+              options: [
+                {
+                  optionId: "srv-opt-1",
+                  displayName: "Receta Hamburguesa",
+                  status: "ACTIVE",
+                  sourceType: "RECIPE",
+                  recipeId: "rec-1",
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      return route.fulfill({
+        status: 201,
+        headers: { ETag: '"rev-offer-1"' },
+        json: { data: created },
+      });
+    });
+
+    // 1. Navigate to new offer page
+    await page.goto("/entries/entry-1/offers/new");
+    await expect(page.getByRole("heading", { name: "Nueva oferta", level: 1 })).toBeVisible();
+
+    // 2. Fill commercial fields
+    await page.getByLabel(/Etiqueta de presentación/).fill("Combo Doble");
+    await page.getByLabel(/Precio base/).fill("280");
+
+    // 3. Attach image
+    const validPngBuffer = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await page.locator("input#offer-image-input").setInputFiles({
+      name: "offer.png",
+      mimeType: "image/png",
+      buffer: validPngBuffer,
+    });
+
+    // 4. Add slot and option
+    await page.getByRole("button", { name: "Agregar grupo" }).click();
+    await page.getByLabel("Nombre del grupo").fill("Principal");
+    await page.getByRole("button", { name: "Guardar grupo" }).click();
+
+    await page.getByRole("button", { name: "Agregar opción a Principal" }).click();
+    await page.getByRole("button", { name: /Elegir receta/ }).click();
+    const recipeArticle = page.getByRole("article", { name: "Receta Hamburguesa" });
+    await expect(recipeArticle).toBeVisible();
+    await recipeArticle.getByRole("button", { name: "Asignar" }).click();
+    await page.getByRole("button", { name: "Guardar opción" }).click();
+
+    // 5. Submit form: Stage 1 upload succeeds, Stage 2 offer creation times out
+    await page.getByRole("button", { name: "Guardar Oferta" }).click();
+
+    // 6. Verify error feedback and manual retry
+    await expect(page.getByRole("alert").first()).toBeVisible();
+    expect(uploadRequests).toHaveLength(1);
+    expect(offerRequests).toHaveLength(1);
+    const initialUploadKey = uploadRequests[0].key;
+    const initialOfferKey = offerRequests[0].key;
+    expect(initialUploadKey).toBeTruthy();
+    expect(initialOfferKey).toBeTruthy();
+
+    // 7. Real browser reload (F5)
+    await page.reload();
+
+    // 8. Form restores without automatic submission
+    await expect(page.getByLabel(/Etiqueta de presentación/)).toHaveValue("Combo Doble");
+    await expect(page.getByLabel(/Precio base/)).toHaveValue("280");
+    expect(uploadRequests).toHaveLength(1);
+    expect(offerRequests).toHaveLength(1);
+
+    // 9. Retry button is available
+    const retryButton = page.getByRole("button", { name: "Reintentar" });
+    await expect(retryButton).toBeVisible();
+    await retryButton.click();
+
+    // 10. Navigates to offers list, reusing original idempotency key and image without re-uploading
+    await expect(page).toHaveURL("/entries/entry-1/offers");
+    expect(uploadRequests).toHaveLength(1);
+    expect(offerRequests).toHaveLength(2);
+    expect(offerRequests[1].key).toBe(initialOfferKey);
+  });
+
+  test("offer update recovery: uncertain PATCH, real browser reload (F5) restores form with opening If-Match, manual retry sends same Idempotency-Key and If-Match (A01, A08)", async ({
+    page,
+  }) => {
+    const patchRequests: Array<{ key?: string; ifMatch?: string; body?: unknown }> = [];
+    let shouldFailPatchWithTimeout = true;
+
+    const existingOffer = {
+      id: "offer-update-1",
+      entryId: "entry-1",
+      presentationTag: "Familiar Original",
+      basePrice: 300,
+      status: "ACTIVE",
+      image: { id: "img-exist", url: "/images/exist.png", thumbnailUrl: "/images/exist-thumb.png" },
+      composition: {
+        slots: [
+          {
+            slotId: "srv-slot-1",
+            name: "Plato Principal",
+            quantity: 1,
+            course: null,
+            status: "ACTIVE",
+            options: [
+              {
+                optionId: "srv-opt-1",
+                displayName: "Hamburguesa Doble",
+                status: "ACTIVE",
+                sourceType: "RECIPE",
+                recipeId: "rec-1",
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    await page.route("**/api/v1/menu/entries/entry-1", (route) =>
+      route.fulfill({
+        json: {
+          data: {
+            id: "entry-1",
+            brandName: "Hamburguesa Gourmet",
+            description: "Carne angus",
+            status: "ACTIVE",
+            categoryIds: [],
+          },
+        },
+      }),
+    );
+
+    await page.route("**/api/v1/menu/entries/entry-1/offers?*", (route) =>
+      route.fulfill({
+        json: {
+          data: [existingOffer],
+          meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+        },
+      }),
+    );
+
+    await page.route("**/api/v1/menu/offers/offer-update-1", async (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          headers: { ETag: '"rev-offer-orig"' },
+          json: { data: existingOffer },
+        });
+      }
+
+      if (route.request().method() === "PATCH") {
+        const key = route.request().headers()["idempotency-key"];
+        const ifMatch = route.request().headers()["if-match"];
+        const body = route.request().postDataJSON();
+        patchRequests.push({ key, ifMatch, body });
+
+        if (shouldFailPatchWithTimeout) {
+          shouldFailPatchWithTimeout = false;
+          return route.abort("timedout");
+        }
+
+        const updated = {
+          ...existingOffer,
+          presentationTag: body.presentationTag,
+          basePrice: body.basePrice,
+        };
+
+        return route.fulfill({
+          status: 200,
+          headers: { ETag: '"rev-offer-next"' },
+          json: { data: updated },
+        });
+      }
+
+      return route.fallback();
+    });
+
+    // 1. Navigate to edit offer page
+    await page.goto("/entries/entry-1/offers/offer-update-1/edit");
+    await expect(page.getByRole("heading", { name: "Editar oferta", level: 1 })).toBeVisible();
+    await expect(page.getByLabel(/Etiqueta de presentación/)).toHaveValue("Familiar Original");
+
+    // 2. Edit price
+    await page.getByLabel(/Precio base/).fill("350");
+
+    // 3. Save offer: times out
+    await page.getByRole("button", { name: "Guardar Oferta" }).click();
+
+    // 4. Verification of error and retry
+    await expect(page.getByRole("alert").first()).toBeVisible();
+    expect(patchRequests).toHaveLength(1);
+    const initialKey = patchRequests[0].key;
+    const initialIfMatch = patchRequests[0].ifMatch;
+    expect(initialKey).toBeTruthy();
+    expect(initialIfMatch).toBe('"rev-offer-orig"');
+
+    // 5. Reload (F5)
+    await page.reload();
+
+    // 6. Restores draft without automatic PATCH
+    await expect(page.getByLabel(/Etiqueta de presentación/)).toHaveValue("Familiar Original");
+    await expect(page.getByLabel(/Precio base/)).toHaveValue("350");
+    expect(patchRequests).toHaveLength(1);
+
+    // 7. Click Reintentar: sends same key and same If-Match
+    const retryButton = page.getByRole("button", { name: "Reintentar" });
+    await expect(retryButton).toBeVisible();
+    await retryButton.click();
+
+    // 8. Navigates to offers list
+    await expect(page).toHaveURL("/entries/entry-1/offers");
+    expect(patchRequests).toHaveLength(2);
+    expect(patchRequests[1].key).toBe(initialKey);
+    expect(patchRequests[1].ifMatch).toBe('"rev-offer-orig"');
+  });
 });

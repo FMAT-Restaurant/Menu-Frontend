@@ -157,6 +157,11 @@ export interface OfferUpdateDraft {
   };
 }
 
+export interface OfferStatusDraft {
+  presentationTag: string;
+  status: OfferStatus;
+}
+
 export interface EntryCreateDraft {
   brandName: string;
   description: string;
@@ -251,10 +256,10 @@ export interface MenuRepository {
   createEntry(draft: EntryCreateRequest, idempotencyKey: string): Promise<MenuEntryDetail>;
   updateEntry(id: string, draft: EntryUpdateDraft, etag: string): Promise<MenuEntryDetail>;
   listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
-  getOffer(id: string, signal?: AbortSignal): Promise<MenuOfferDetail>;
-  createOffer(entryId: string, draft: OfferCreateDraft, imageId: string): Promise<MenuOfferDetail>;
-  updateOffer(id: string, draft: OfferUpdateDraft, imageId?: string): Promise<MenuOfferDetail>;
-  setOfferStatus(id: string, status: OfferStatus): Promise<void>;
+  getOffer(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuOfferDetail>>;
+  createOffer(entryId: string, draft: OfferCreateDraft, imageId: string, idempotencyKey: string): Promise<MenuOfferDetail>;
+  updateOffer(id: string, draft: OfferUpdateDraft, etag: string, idempotencyKey: string, imageId?: string): Promise<MenuOfferDetail>;
+  setOfferStatus(id: string, draft: OfferStatusDraft, etag: string, idempotencyKey: string): Promise<MenuOfferDetail>;
   deleteInactiveOffer(id: string): Promise<void>;
   listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>>;
   getRecipe(id: string, signal?: AbortSignal): Promise<VersionedResource<RecipeDetail>>;
