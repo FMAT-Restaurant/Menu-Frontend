@@ -151,22 +151,45 @@ describe("OfferFormPage (V4)", () => {
 
     // Section 2: Composition
     expect(screen.getByRole("heading", { name: "2. Composición", level: 2 })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Copiar composición desde otra oferta" })).toBeVisible();
+    const copyCompositionButton = screen.getByRole("button", {
+      name: "Copiar composición desde otra oferta",
+    });
+    expect(copyCompositionButton).toBeVisible();
+    expect(copyCompositionButton).toBeDisabled();
     expect(screen.getByRole("button", { name: "Agregar grupo" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Agregar grupo" })).toBeEnabled();
   });
 
-  test("handles copy composition button without displaying UI placeholder alerts", async () => {
+  test("shows copy composition action as a disabled pending feature with accessible explanation and without draft or repository effects", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
 
     const copyBtn = await screen.findByRole("button", {
       name: "Copiar composición desde otra oferta",
     });
+    expect(copyBtn).toBeVisible();
+    expect(copyBtn).toBeDisabled();
+    expect(copyBtn).toHaveAttribute("aria-describedby", "copy-composition-pending-hint");
+
+    const pendingHint = document.getElementById("copy-composition-pending-hint");
+    expect(pendingHint).toBeVisible();
+    expect(pendingHint).toHaveTextContent(
+      "Función pendiente: copiar la composición desde otra oferta aún no está disponible."
+    );
+
+    const addGroupBtn = screen.getByRole("button", { name: "Agregar grupo" });
+    expect(addGroupBtn).toBeEnabled();
+
     fireEvent.click(copyBtn);
 
     expect(
-      screen.queryByText(/se implementará/)
-    ).not.toBeInTheDocument();
+      screen.getByText("La composición debe contener al menos un grupo (slot) con opciones válidas.")
+    ).toBeVisible();
+    expect(screen.queryByTestId("slot-card-0")).not.toBeInTheDocument();
+    expect(repository.getEntry).toHaveBeenCalledTimes(1);
+    expect(repository.getOffer).not.toHaveBeenCalled();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+    expect(repository.updateOffer).not.toHaveBeenCalled();
   });
 
   test("creates a new slot via SlotModal (C31)", async () => {
@@ -223,7 +246,7 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.queryByRole("heading", { name: "Bebida fría", level: 3 })).not.toBeInTheDocument();
   });
 
-  test("adds an option via OptionModal (C32) and selects a recipe via V6", async () => {
+  test("keeps pending inventory item selection disabled with explanation in OptionModal while adding a recipe option via V6", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
 
@@ -238,14 +261,30 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Principal" }));
     expect(screen.getByRole("heading", { name: /Agregar opción · Principal/ })).toBeVisible();
 
-    // Click inventory button -> handled without showing placeholder notice in UI
-    fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
+    // Inventory selection is shown as a disabled pending feature with accessible explanation and no effects
+    const inventoryBtn = screen.getByRole("button", { name: /Elegir artículo de inventario/ });
+    expect(inventoryBtn).toBeVisible();
+    expect(inventoryBtn).toBeDisabled();
+    expect(inventoryBtn).toHaveAttribute("aria-describedby", "inventory-source-pending-hint");
+
+    const inventoryHint = document.getElementById("inventory-source-pending-hint");
+    expect(inventoryHint).toBeVisible();
+    expect(inventoryHint).toHaveTextContent(
+      "Función pendiente: la selección de artículos de inventario desde este editor aún no está disponible."
+    );
+
+    fireEvent.click(inventoryBtn);
+    expect(repository.listInventoryItems).not.toHaveBeenCalled();
+    expect(repository.listRecipes).not.toHaveBeenCalled();
     expect(
-      screen.queryByText(/se implementará/)
-    ).not.toBeInTheDocument();
+      screen.getByText("Elige una receta de la biblioteca para esta opción.")
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Guardar opción" })).toBeDisabled();
 
     // Click recipe button -> opens V6 RecipePage
-    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    const recipeBtn = screen.getByRole("button", { name: /Elegir receta/ });
+    expect(recipeBtn).toBeEnabled();
+    fireEvent.click(recipeBtn);
     expect(await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).toBeVisible();
 
     // Select recipe from list

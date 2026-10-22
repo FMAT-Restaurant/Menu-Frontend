@@ -24,10 +24,6 @@ export interface OptionModalProps {
   onOpenRecipePicker: () => void;
 }
 
-function handleInventoryClick() {
-  // TODO: Interactive selection of inventory items will be implemented in V7.
-}
-
 export function OptionModal({
   isOpen,
   slotName,
@@ -139,7 +135,7 @@ export function OptionModal({
 
   const title = initialData ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
 
-  let sourceSummary = "Elige una receta de la biblioteca o un artículo de inventario para esta opción.";
+  let sourceSummary = "Elige una receta de la biblioteca para esta opción.";
   if (sourceType === "RECIPE" && recipeName) {
     sourceSummary = `Receta asignada: ${recipeName}`;
   } else if (sourceType === "RECIPE" && recipeId) {
@@ -215,14 +211,18 @@ export function OptionModal({
               <button
                 type="button"
                 className="source-btn"
-                onClick={handleInventoryClick}
+                disabled
+                aria-describedby="inventory-source-pending-hint"
               >
                 <span className="source-btn__title">Elegir artículo de inventario</span>
                 <span className="source-btn__desc">
-                  Seleccionar un artículo directamente de stock.
+                  Selección de artículos de stock pendiente de disponibilidad.
                 </span>
               </button>
             </div>
+            <p id="inventory-source-pending-hint" className="field-hint">
+              Función pendiente: la selección de artículos de inventario desde este editor aún no está disponible.
+            </p>
           </div>
 
           <div className="form-field">

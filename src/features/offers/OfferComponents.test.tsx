@@ -626,26 +626,45 @@ describe("OptionModal Component", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  test("triggers onOpenRecipePicker and handles inventory selection without UI notices", () => {
+  test("keeps pending inventory item selection disabled with accessible explanation while recipe picker button remains functional", () => {
     const handleOpenRecipePicker = jest.fn();
+    const handleSave = jest.fn();
+    const handleClose = jest.fn();
     render(
       <OptionModal
         isOpen={true}
         slotName="Bebidas"
         initialData={null}
-        onSave={jest.fn()}
-        onClose={jest.fn()}
+        onSave={handleSave}
+        onClose={handleClose}
         onOpenRecipePicker={handleOpenRecipePicker}
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
-    expect(handleOpenRecipePicker).toHaveBeenCalled();
+    const inventoryBtn = screen.getByRole("button", { name: /Elegir artículo de inventario/ });
+    expect(inventoryBtn).toBeVisible();
+    expect(inventoryBtn).toBeDisabled();
+    expect(inventoryBtn).toHaveAttribute("aria-describedby", "inventory-source-pending-hint");
 
-    fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
+    const pendingHint = document.getElementById("inventory-source-pending-hint");
+    expect(pendingHint).toBeVisible();
+    expect(pendingHint).toHaveTextContent(
+      "Función pendiente: la selección de artículos de inventario desde este editor aún no está disponible."
+    );
+
+    fireEvent.click(inventoryBtn);
+    expect(handleOpenRecipePicker).not.toHaveBeenCalled();
+    expect(handleSave).not.toHaveBeenCalled();
+    expect(handleClose).not.toHaveBeenCalled();
     expect(
-      screen.queryByText(/se implementará/)
-    ).not.toBeInTheDocument();
+      screen.getByText("Elige una receta de la biblioteca para esta opción.")
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Guardar opción" })).toBeDisabled();
+
+    const recipeBtn = screen.getByRole("button", { name: /Elegir receta/ });
+    expect(recipeBtn).toBeEnabled();
+    fireEvent.click(recipeBtn);
+    expect(handleOpenRecipePicker).toHaveBeenCalledTimes(1);
   });
 
   test("renders source summary with IDs when names are absent", () => {
@@ -935,6 +954,57 @@ describe("SlotCard Component", () => {
 });
 
 describe("CompositionEditor Component", () => {
+  test("keeps pending copy composition control disabled with accessible explanation and no callback effects while slot actions remain functional", () => {
+    const handleAddSlot = jest.fn();
+    const handleEditSlot = jest.fn();
+    const handleDeleteSlot = jest.fn();
+    const handleAddOption = jest.fn();
+    const handleEditOption = jest.fn();
+    const handleDeleteOption = jest.fn();
+    const handleToggleOptionStatus = jest.fn();
+
+    render(
+      <CompositionEditor
+        slots={[]}
+        onAddSlot={handleAddSlot}
+        onEditSlot={handleEditSlot}
+        onDeleteSlot={handleDeleteSlot}
+        onAddOption={handleAddOption}
+        onEditOption={handleEditOption}
+        onDeleteOption={handleDeleteOption}
+        onToggleOptionStatus={handleToggleOptionStatus}
+        disabled={false}
+      />
+    );
+
+    const copyBtn = screen.getByRole("button", {
+      name: "Copiar composición desde otra oferta",
+    });
+    expect(copyBtn).toBeVisible();
+    expect(copyBtn).toBeDisabled();
+    expect(copyBtn).toHaveAttribute("aria-describedby", "copy-composition-pending-hint");
+
+    const pendingHint = document.getElementById("copy-composition-pending-hint");
+    expect(pendingHint).toBeVisible();
+    expect(pendingHint).toHaveTextContent(
+      "Función pendiente: copiar la composición desde otra oferta aún no está disponible."
+    );
+
+    fireEvent.click(copyBtn);
+    expect(handleAddSlot).not.toHaveBeenCalled();
+    expect(handleEditSlot).not.toHaveBeenCalled();
+    expect(handleDeleteSlot).not.toHaveBeenCalled();
+    expect(handleAddOption).not.toHaveBeenCalled();
+    expect(handleEditOption).not.toHaveBeenCalled();
+    expect(handleDeleteOption).not.toHaveBeenCalled();
+    expect(handleToggleOptionStatus).not.toHaveBeenCalled();
+
+    const addGroupBtn = screen.getByRole("button", { name: "Agregar grupo" });
+    expect(addGroupBtn).toBeEnabled();
+    fireEvent.click(addGroupBtn);
+    expect(handleAddSlot).toHaveBeenCalledTimes(1);
+  });
+
   test("renders warning when no slots are present and triggers onAddSlot", () => {
     const handleAddSlot = jest.fn();
 

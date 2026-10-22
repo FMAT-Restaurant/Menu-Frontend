@@ -12,10 +12,6 @@ export interface CompositionEditorProps {
   disabled?: boolean;
 }
 
-function handleCopyFromAnotherOffer() {
-  // TODO: Copying composition from another offer will be implemented in V8.
-}
-
 export function CompositionEditor({
   slots,
   onAddSlot,
@@ -39,14 +35,19 @@ export function CompositionEditor({
           </p>
         </div>
 
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={handleCopyFromAnotherOffer}
-          disabled={disabled}
-        >
-          Copiar composición desde otra oferta
-        </button>
+        <div>
+          <button
+            type="button"
+            className="button button--secondary"
+            disabled
+            aria-describedby="copy-composition-pending-hint"
+          >
+            Copiar composición desde otra oferta
+          </button>
+          <p id="copy-composition-pending-hint" className="field-hint">
+            Función pendiente: copiar la composición desde otra oferta aún no está disponible.
+          </p>
+        </div>
       </div>
 
       {slots.length === 0 && (
