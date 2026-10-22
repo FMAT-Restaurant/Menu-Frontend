@@ -65,13 +65,19 @@ export function NotFoundPage() {
 
 declare global {
   interface Window {
-    MENU_CONFIG?: { apiBaseUrl: string };
+    MENU_CONFIG?: { apiBaseUrl?: string; inventoryApiBaseUrl?: string };
   }
 }
 
+const menuBaseUrl = window.MENU_CONFIG?.apiBaseUrl || "/api/v1";
+const inventoryBaseUrl = window.MENU_CONFIG?.inventoryApiBaseUrl || menuBaseUrl;
+
 const defaultRepository = createMenuApi(
   axios.create({
-    baseURL: window.MENU_CONFIG?.apiBaseUrl || "/api/v1",
+    baseURL: menuBaseUrl,
+  }),
+  axios.create({
+    baseURL: inventoryBaseUrl,
   }),
 );
 

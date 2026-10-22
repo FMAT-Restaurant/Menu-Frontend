@@ -29,8 +29,11 @@ import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOper
 
 export interface RecipeFormDialogProps {
   recipe?: RecipeDetail | RecipeSummary | null;
-  inventoryItems: InventoryItem[];
-  repository?: Pick<MenuRepository, "createRecipe" | "updateRecipe" | "getRecipe">;
+  inventoryItems?: InventoryItem[];
+  repository?: Pick<
+    MenuRepository,
+    "createRecipe" | "updateRecipe" | "getRecipe" | "listInventoryItems"
+  >;
   onClose(): void;
   onCreated?(created: RecipeDetail): void;
   onCreatedWithPendingEdits?(created: RecipeDetail): void;
@@ -77,6 +80,111 @@ export function RecipeFormDialog({
   const [activeRecipe, setActiveRecipe] = useState<RecipeDetail | RecipeSummary | undefined>(
     recipe ?? undefined,
   );
+
+  const [knownItems, setKnownItems] = useState<Map<string, { id: string; name: string; unit: string }>>(() => {
+    const map = new Map<string, { id: string; name: string; unit: string }>();
+    if (inventoryItems) {
+      for (const item of inventoryItems) {
+        map.set(item.id, item);
+      }
+    }
+    if (recipe?.supplies) {
+      for (const s of recipe.supplies) {
+        if (s.inventoryItem) {
+          map.set(s.inventoryItemId, {
+            id: s.inventoryItemId,
+            name: s.inventoryItem.name || s.inventoryItemId,
+            unit: s.inventoryItem.unit || "",
+          });
+        }
+      }
+    }
+    return map;
+  });
+
+  const [itemsFromApi, setItemsFromApi] = useState<InventoryItem[] | null>(null);
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [inventoryTotalPages, setInventoryTotalPages] = useState(1);
+  const [inventorySearchDraft, setInventorySearchDraft] = useState("");
+  const [confirmedInventoryQuery, setConfirmedInventoryQuery] = useState("");
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryError, setInventoryError] = useState("");
+  const [inventoryRetryCount, setInventoryRetryCount] = useState(0);
+
+  useEffect(() => {
+    if (inventoryItems && inventoryItems.length > 0) {
+      setKnownItems((prev) => {
+        const next = new Map(prev);
+        for (const item of inventoryItems) {
+          next.set(item.id, item);
+        }
+        return next;
+      });
+    }
+  }, [inventoryItems]);
+
+  useEffect(() => {
+    if (activeRecipe?.supplies) {
+      setKnownItems((prev) => {
+        const next = new Map(prev);
+        for (const s of activeRecipe.supplies) {
+          if (s.inventoryItem) {
+            next.set(s.inventoryItemId, {
+              id: s.inventoryItemId,
+              name: s.inventoryItem.name || s.inventoryItemId,
+              unit: s.inventoryItem.unit || "",
+            });
+          }
+        }
+        return next;
+      });
+    }
+  }, [activeRecipe]);
+
+  useEffect(() => {
+    if (!repository?.listInventoryItems) return;
+    const controller = new AbortController();
+    setInventoryLoading(true);
+    setInventoryError("");
+
+    repository
+      .listInventoryItems(
+        {
+          q: confirmedInventoryQuery || undefined,
+          page: inventoryPage,
+          pageSize: 50,
+        },
+        controller.signal,
+      )
+      .then((res) => {
+        if (!controller.signal.aborted) {
+          setItemsFromApi(res.data);
+          setInventoryTotalPages(res.meta.totalPages || 1);
+          setKnownItems((prev) => {
+            const next = new Map(prev);
+            for (const item of res.data) {
+              next.set(item.id, item);
+            }
+            return next;
+          });
+        }
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          const message = err instanceof Error ? err.message : "Error desconocido";
+          setInventoryError(`No se pudieron cargar los artículos de inventario. ${message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setInventoryLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [repository, inventoryPage, confirmedInventoryQuery, inventoryRetryCount]);
+
+  const currentInventoryItems = itemsFromApi ?? inventoryItems ?? [];
 
   const initialDraft = initialPendingRecord?.editableDraft;
 
@@ -416,6 +524,12 @@ export function RecipeFormDialog({
   ) {
     if (busy) return;
     userEditedRef.current = true;
+    if (field === "inventoryItemId" && value) {
+      const selected = currentInventoryItems.find((i) => i.id === value);
+      if (selected) {
+        setKnownItems((prev) => new Map(prev).set(selected.id, selected));
+      }
+    }
     const nextSupplies = supplies.map((item, i) =>
       i === index ? { ...item, [field]: value } : item,
     );
@@ -437,8 +551,10 @@ export function RecipeFormDialog({
 
   function getUnitForItem(inventoryItemId: string) {
     if (!inventoryItemId) return "--";
-    const found = inventoryItems.find((item) => item.id === inventoryItemId);
+    const found = currentInventoryItems.find((item) => item.id === inventoryItemId);
     if (found) return found.unit;
+    const known = knownItems.get(inventoryItemId);
+    if (known?.unit) return known.unit;
     const fromRecipe = activeRecipe?.supplies?.find(
       (s) => s.inventoryItemId === inventoryItemId,
     )?.inventoryItem;
@@ -852,6 +968,74 @@ export function RecipeFormDialog({
               </button>
             </div>
 
+            {inventoryError && (
+              <div className="feedback feedback--error" role="alert" style={{ marginBottom: "0.75rem" }}>
+                <span>{inventoryError}</span>{" "}
+                <button
+                  type="button"
+                  className="button button--secondary button--small"
+                  onClick={() => setInventoryRetryCount((c) => c + 1)}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+            {inventoryLoading && <output className="feedback">Cargando insumos…</output>}
+
+            <div className="recipe-inventory-controls" style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+              <input
+                type="search"
+                aria-label="Buscar insumos de inventario"
+                placeholder="Filtrar insumos de inventario…"
+                value={inventorySearchDraft}
+                onChange={(e) => setInventorySearchDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setConfirmedInventoryQuery(inventorySearchDraft.trim());
+                    setInventoryPage(1);
+                  }
+                }}
+                disabled={busy}
+              />
+              <button
+                type="button"
+                className="button button--secondary button--small"
+                onClick={() => {
+                  setConfirmedInventoryQuery(inventorySearchDraft.trim());
+                  setInventoryPage(1);
+                }}
+                disabled={busy || inventoryLoading}
+              >
+                Buscar insumos
+              </button>
+              {inventoryTotalPages > 1 && (
+                <nav className="pagination" aria-label="Páginas de inventario" style={{ marginLeft: "auto", display: "flex", gap: "0.25rem", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="button button--secondary button--small"
+                    disabled={inventoryPage <= 1 || inventoryLoading || busy}
+                    onClick={() => setInventoryPage((p) => Math.max(1, p - 1))}
+                    aria-label="Página anterior de inventario"
+                  >
+                    Anterior
+                  </button>
+                  <span className="pagination__info">
+                    Página {inventoryPage} de {inventoryTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="button button--secondary button--small"
+                    disabled={inventoryPage >= inventoryTotalPages || inventoryLoading || busy}
+                    onClick={() => setInventoryPage((p) => p + 1)}
+                    aria-label="Siguiente página de inventario"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              )}
+            </div>
+
             <table className="recipe-supplies-table">
               <thead>
                 <tr>
@@ -877,7 +1061,16 @@ export function RecipeFormDialog({
                           required
                         >
                           <option value="">Seleccione insumo…</option>
-                          {inventoryItems.map((item) => (
+                          {supply.inventoryItemId &&
+                            !currentInventoryItems.some((item) => item.id === supply.inventoryItemId) && (
+                              <option key={supply.inventoryItemId} value={supply.inventoryItemId}>
+                                {knownItems.get(supply.inventoryItemId)?.name ||
+                                  activeRecipe?.supplies?.find((s) => s.inventoryItemId === supply.inventoryItemId)
+                                    ?.inventoryItem?.name ||
+                                  supply.inventoryItemId}
+                              </option>
+                            )}
+                          {currentInventoryItems.map((item) => (
                             <option key={item.id} value={item.id}>
                               {item.name}
                             </option>

@@ -152,7 +152,7 @@ describe("RecipePage Component (V6 Integration)", () => {
     });
   });
 
-  test("edits existing recipe with preloaded instructions and supplies", async () => {
+  test("edits existing recipe with preloaded instructions and supplies (P17)", async () => {
     const repository = createMockRepository();
     const storage = createMemoryStorage();
     render(
@@ -174,9 +174,15 @@ describe("RecipePage Component (V6 Integration)", () => {
     await waitFor(() => {
       expect(repository.updateRecipe).toHaveBeenCalledWith(
         "rec-1",
-        expect.objectContaining({
+        {
           name: "Hamburguesa Clásica Especial",
-        }),
+          description: recipeDetail.description,
+          instructions: recipeDetail.instructions,
+          supplies: [
+            { inventoryItemId: "inv-1", quantity: 150 },
+            { inventoryItemId: "inv-2", quantity: 1 },
+          ],
+        },
         '"rec-etag-1"'
       );
     });
@@ -225,6 +231,9 @@ describe("RecipePage Component (V6 Integration)", () => {
     await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción", level: 1 });
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
 
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    await screen.findByRole("option", { name: "Pan Brioche" });
+
     fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Receta Rápida" } });
     fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción rápida" } });
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Paso único" } });
@@ -262,26 +271,48 @@ describe("RecipePage Component (V6 Integration)", () => {
     expect(screen.getByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
   });
 
-  test("filters recipes by submitting search text", async () => {
+  test("filters recipes by submitting search text and replaces results (P13, P14)", async () => {
     const repository = createMockRepository();
     const storage = createMemoryStorage();
+
+    repository.listRecipes.mockImplementation((query) => {
+      if (query?.q === "Pollo") {
+        return Promise.resolve({
+          data: [
+            {
+              id: "rec-pollo",
+              name: "Pollo Asado",
+              description: "Pollo a las brasas",
+              supplies: [],
+            },
+          ],
+          meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+        });
+      }
+      return Promise.resolve({
+        data: recipes,
+        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+      });
+    });
+
     render(
       <MemoryRouter>
         <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
-    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    expect(await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 })).toBeVisible();
     const searchbox = screen.getByRole("searchbox", { name: "Buscar recetas" });
     fireEvent.change(searchbox, { target: { value: "Pollo" } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
 
-    await waitFor(() => {
-      expect(repository.listRecipes).toHaveBeenCalledWith(
-        expect.objectContaining({ q: "Pollo" }),
-        expect.any(AbortSignal)
-      );
-    });
+    expect(await screen.findByRole("heading", { name: "Pollo Asado", level: 3 })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Hamburguesa Clásica", level: 3 })).not.toBeInTheDocument();
+
+    expect(repository.listRecipes).toHaveBeenLastCalledWith(
+      { q: "Pollo", page: 1, pageSize: 50 },
+      expect.any(AbortSignal)
+    );
   });
 
   test("validates description, instructions, item selection and quantities in C26/C27 modal", async () => {
@@ -295,6 +326,9 @@ describe("RecipePage Component (V6 Integration)", () => {
 
     await screen.findByRole("heading", { name: "Biblioteca de recetas", level: 1 });
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    await screen.findByRole("option", { name: "Carne Molida Res 80/20" });
 
     fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Receta Test" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
@@ -377,5 +411,354 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
 
     expect(await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 })).toBeVisible();
+  });
+
+  test("renders management actions in management mode and selection actions in selection mode (P01)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole("button", { name: "Editar Hamburguesa Clásica" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Eliminar Hamburguesa Clásica" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Asignar" })).not.toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="selection" onSelectRecipe={jest.fn()} storage={storage} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole("button", { name: "Asignar" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Editar Hamburguesa Clásica" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eliminar Hamburguesa Clásica" })).not.toBeInTheDocument();
+  });
+
+  test("navigates across recipe pages and reaches recipe 51 (P07)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    const page1Recipes: RecipeSummary[] = Array.from({ length: 50 }, (_, i) => ({
+      id: `rec-${i + 1}`,
+      name: `Receta ${i + 1}`,
+      description: `Descripción ${i + 1}`,
+      supplies: [],
+    }));
+    const page2Recipes: RecipeSummary[] = [
+      { id: "rec-51", name: "Receta 51", description: "La receta cincuenta y uno", supplies: [] },
+    ];
+
+    repository.listRecipes.mockImplementation((query) => {
+      if (query?.page === 2) {
+        return Promise.resolve({
+          data: page2Recipes,
+          meta: { page: 2, pageSize: 50, total: 51, totalPages: 2 },
+        });
+      }
+      return Promise.resolve({
+        data: page1Recipes,
+        meta: { page: 1, pageSize: 50, total: 51, totalPages: 2 },
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole("heading", { name: "Receta 1", level: 3 })).toBeVisible();
+    expect(screen.getByText("Página 1 de 2")).toBeVisible();
+
+    const nextButton = screen.getByRole("button", { name: "Siguiente página" });
+    fireEvent.click(nextButton);
+
+    expect(await screen.findByRole("heading", { name: "Receta 51", level: 3 })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Receta 1", level: 3 })).not.toBeInTheDocument();
+    expect(screen.getByText("Página 2 de 2")).toBeVisible();
+  });
+
+  test("accesses article 101 via inventory pagination and preserves selected items across pages (P07, P03)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    const page1Items: InventoryItem[] = Array.from({ length: 50 }, (_, i) => ({
+      id: `inv-item-${i + 1}`,
+      name: `Insumo ${i + 1}`,
+      unit: "g",
+    }));
+    const page3Items: InventoryItem[] = [
+      { id: "inv-item-101", name: "Insumo 101 Especial", unit: "kg" },
+    ];
+
+    repository.listInventoryItems.mockImplementation((query) => {
+      if (query?.page === 3) {
+        return Promise.resolve({
+          data: page3Items,
+          meta: { page: 3, pageSize: 50, total: 101, totalPages: 3 },
+        });
+      }
+      return Promise.resolve({
+        data: page1Items,
+        meta: { page: 1, pageSize: 50, total: 101, totalPages: 3 },
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    expect(await screen.findByText("Página 1 de 3")).toBeVisible();
+
+    // Go to page 3 of inventory
+    const nextInvBtn = screen.getByRole("button", { name: "Siguiente página de inventario" });
+    fireEvent.click(nextInvBtn); // page 2
+    expect(await screen.findByText("Página 2 de 3")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente página de inventario" })); // page 3
+
+    expect(await screen.findByText("Página 3 de 3")).toBeVisible();
+
+    // Select article 101
+    const select = screen.getByLabelText("Insumo 1");
+    fireEvent.change(select, { target: { value: "inv-item-101" } });
+    expect(screen.getByText("kg")).toBeVisible();
+
+    // Now navigate back to page 1 of inventory
+    const prevInvBtn = screen.getByRole("button", { name: "Página anterior de inventario" });
+    fireEvent.click(prevInvBtn); // page 2
+    expect(await screen.findByText("Página 2 de 3")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Página anterior de inventario" })); // page 1
+
+    expect(await screen.findByText("Página 1 de 3")).toBeVisible();
+    // Article 101 remains selected and visible in the select even though current page is 1!
+    expect(screen.getByLabelText("Insumo 1")).toHaveValue("inv-item-101");
+    expect(screen.getByText("kg")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Receta con 101" } });
+    fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Desc" } });
+    fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Inst" } });
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "5" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+
+    await waitFor(() => {
+      expect(repository.createRecipe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplies: [{ inventoryItemId: "inv-item-101", quantity: 5 }],
+        }),
+        expect.any(String)
+      );
+    });
+  });
+
+  test("displays independent inventory error with retry without resetting recipe draft (P08)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    repository.listInventoryItems
+      .mockRejectedValueOnce(new Error("Fallo de red en inventario"))
+      .mockResolvedValueOnce({
+        data: inventoryItems,
+        meta: { page: 1, pageSize: 50, total: inventoryItems.length, totalPages: 1 },
+      });
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+
+    // Type draft before retry
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Borrador Seguro" } });
+    fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción no se borra" } });
+    fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Pasos intactos" } });
+
+    // Verify inventory error is displayed with retry button
+    expect(
+      await screen.findByText(/No se pudieron cargar los artículos de inventario\. Fallo de red en inventario/)
+    ).toBeVisible();
+
+    // Click retry in inventory section
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    // Once inventory resolves, error disappears and draft is still intact
+    await waitFor(() => {
+      expect(screen.queryByText(/Fallo de red en inventario/)).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Borrador Seguro");
+    expect(screen.getByLabelText("Descripción")).toHaveValue("Descripción no se borra");
+    expect(screen.getByLabelText("Instrucciones")).toHaveValue("Pasos intactos");
+
+    // Can now select retrieved item
+    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
+    expect(screen.getByText("g")).toBeVisible();
+  });
+
+  test("does not open recipe summary when getRecipe detail request fails (P09)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+    repository.getRecipe.mockRejectedValueOnce(new Error("500 Server Error"));
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Editar Hamburguesa Clásica" }));
+
+    // Does NOT open the edit dialog
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Editar receta", level: 2 })).not.toBeInTheDocument();
+    });
+
+    // Displays action error
+    expect(screen.getByText("No se pudo cargar el detalle completo de la receta.")).toBeVisible();
+  });
+
+  test("cancels stale recipe opening and prevents older request from overwriting active editor (P10)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    let resolveRecipeA: (val: unknown) => void = () => {};
+    const slowPromiseA = new Promise((resolve) => {
+      resolveRecipeA = resolve;
+    });
+
+    const recipeB: RecipeDetail = {
+      id: "rec-2",
+      name: "Papas Fritas",
+      description: "Papas crujientes",
+      instructions: "Freír en aceite caliente.",
+      supplies: [],
+    };
+
+    repository.listRecipes.mockResolvedValue({
+      data: [recipes[0], { id: "rec-2", name: "Papas Fritas", description: "Papas crujientes", supplies: [] }],
+      meta: { page: 1, pageSize: 50, total: 2, totalPages: 1 },
+    });
+
+    repository.getRecipe.mockImplementation((id: string) => {
+      if (id === "rec-1") {
+        return slowPromiseA as never;
+      }
+      if (id === "rec-2") {
+        return Promise.resolve({ data: recipeB, etag: '"rec-etag-2"' });
+      }
+      return Promise.reject(new Error("Unknown recipe"));
+    });
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    await screen.findByRole("heading", { name: "Papas Fritas", level: 3 });
+
+    // 1. Click edit on Recipe A (Hamburguesa Clásica) -> pending
+    fireEvent.click(screen.getByRole("button", { name: "Editar Hamburguesa Clásica" }));
+
+    // 2. Click edit on Recipe B (Papas Fritas) -> resolves immediately
+    fireEvent.click(screen.getByRole("button", { name: "Editar Papas Fritas" }));
+
+    // Form opens with Recipe B
+    expect(await screen.findByRole("heading", { name: "Editar receta", level: 2 })).toBeVisible();
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Papas Fritas");
+
+    // User types modifications into Recipe B
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Papas Fritas Trufadas" } });
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Papas Fritas Trufadas");
+
+    // 3. Slow Recipe A finally resolves
+    resolveRecipeA({ data: recipeDetail, etag: '"rec-etag-1"' });
+
+    // Verify Recipe B's draft is NOT overwritten by Recipe A!
+    await waitFor(() => {
+      expect(screen.getByLabelText("Nombre")).toHaveValue("Papas Fritas Trufadas");
+    });
+  });
+
+  test("displays ingredient name and unit from Menu detail when ingredient is not in current inventory page (P03)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    const rareRecipeDetail: RecipeDetail = {
+      id: "rec-rare",
+      name: "Filete Trufado",
+      description: "Carne selecta",
+      instructions: "Cocinar al término",
+      supplies: [
+        {
+          inventoryItemId: "inv-rare-999",
+          quantity: 15,
+          inventoryItem: { id: "inv-rare-999", name: "Trufa Silvestre", unit: "g" },
+        },
+      ],
+    };
+
+    repository.listRecipes.mockResolvedValue({
+      data: [rareRecipeDetail],
+      meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+    });
+    repository.getRecipe.mockResolvedValue({
+      data: rareRecipeDetail,
+      etag: '"rare-etag"',
+    });
+    // Inventory items do NOT contain inv-rare-999
+    repository.listInventoryItems.mockResolvedValue({
+      data: [{ id: "inv-common", name: "Sal Marina", unit: "g" }],
+      meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+    });
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Filete Trufado", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Editar Filete Trufado" }));
+
+    expect(await screen.findByRole("heading", { name: "Editar receta", level: 2 })).toBeVisible();
+
+    // The select displays "Trufa Silvestre" and unit "g" even though inv-rare-999 was not in inventory results!
+    const select = screen.getByLabelText("Insumo 1");
+    expect(select).toHaveValue("inv-rare-999");
+    expect(screen.getByText("Trufa Silvestre")).toBeVisible();
+    expect(screen.getByText("g")).toBeVisible();
+    expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(15);
+
+    // Modifying instructions and saving preserves inv-rare-999 and quantity 15
+    fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Cocinar a fuego lento" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => {
+      expect(repository.updateRecipe).toHaveBeenCalledWith(
+        "rec-rare",
+        expect.objectContaining({
+          supplies: [{ inventoryItemId: "inv-rare-999", quantity: 15 }],
+        }),
+        '"rare-etag"'
+      );
+    });
   });
 });

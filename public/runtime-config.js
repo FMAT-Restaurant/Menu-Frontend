@@ -1,1 +1,1 @@
-window.MENU_CONFIG = Object.freeze({ apiBaseUrl: "" });
+window.MENU_CONFIG = Object.freeze({ apiBaseUrl: "", inventoryApiBaseUrl: "" });

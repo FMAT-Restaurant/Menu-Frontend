@@ -1154,3 +1154,50 @@ test("rejects invalid recipe identifiers, stops category batches when aborted, a
   );
   expect(abortedCategories).toEqual([]);
 });
+
+test("routes inventory queries to inventoryClient when parameterized independently (DEC-02)", async () => {
+  const menuRequests: string[] = [];
+  const inventoryRequests: string[] = [];
+
+  const menuAdapter: AxiosAdapter = async (config) => {
+    menuRequests.push(`${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    return {
+      config,
+      data: { data: validEntryDetail },
+      headers: { etag: '"entry-rev-1"' },
+      status: 200,
+      statusText: "OK",
+    };
+  };
+
+  const inventoryAdapter: AxiosAdapter = async (config) => {
+    inventoryRequests.push(`${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    return {
+      config,
+      data: {
+        data: [{ id: "inv-item-1", name: "Jitomate", unit: "kg" }],
+        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+      },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+
+  const menuClient = axios.create({ baseURL: "http://menu.service.local/api/v1", adapter: menuAdapter });
+  const inventoryClient = axios.create({ baseURL: "http://inventory.service.local/api/v1", adapter: inventoryAdapter });
+
+  const repository = createMenuApi(menuClient, inventoryClient);
+
+  const entry = await repository.getEntry("entry-1");
+  expect(entry.brandName).toBe("Bowl");
+  expect(menuRequests).toEqual(["GET http://menu.service.local/api/v1/menu/entries/entry-1"]);
+  expect(inventoryRequests).toEqual([]);
+
+  const items = await repository.listInventoryItems({ page: 1, pageSize: 50 });
+  expect(items.data).toHaveLength(1);
+  expect(items.data[0].name).toBe("Jitomate");
+  expect(inventoryRequests).toEqual(["GET http://inventory.service.local/api/v1/inventory/items"]);
+  expect(menuRequests).toHaveLength(1);
+});
+

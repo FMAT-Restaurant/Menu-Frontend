@@ -197,7 +197,10 @@ export async function executeSealedAttemptWithClient(
   return { data: response.data, status: response.status, etag };
 }
 
-export function createMenuApi(client: AxiosInstance): MenuRepository {
+export function createMenuApi(
+  client: AxiosInstance,
+  inventoryClient: AxiosInstance = client,
+): MenuRepository {
   async function uploadImage(
     image: File,
     idempotencyKey: string,
@@ -645,7 +648,7 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       query?: InventoryQuery,
       signal?: AbortSignal,
     ): Promise<Page<InventoryItem>> {
-      const response = await client.get<unknown>("/inventory/items", {
+      const response = await inventoryClient.get<unknown>("/inventory/items", {
         params: {
           ...(query?.q ? { q: query.q } : {}),
           page: query?.page ?? 1,

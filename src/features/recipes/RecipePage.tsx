@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type {
-  InventoryItem,
   MenuRepository,
   Page,
   RecipeDetail,
@@ -50,12 +49,20 @@ export function RecipePage({
       ? location.state.returnTo
       : "/";
 
+  // URL-driven query and page state when not controlled via propMode
   const urlQ = searchParams.get("q") ?? "";
-  const [draftSearch, setDraftSearch] = useState(urlQ);
-  const [queryText, setQueryText] = useState(urlQ);
+  const urlPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  // Local query and page state when propMode is supplied (e.g. selection modal)
+  const [localQuery, setLocalQuery] = useState("");
+  const [localPage, setLocalPage] = useState(1);
+
+  const confirmedQuery = propMode ? localQuery : urlQ;
+  const currentPage = propMode ? localPage : urlPage;
+
+  const [draftSearch, setDraftSearch] = useState(confirmedQuery);
 
   const [recipesResult, setRecipesResult] = useState<Page<RecipeSummary> | null>(null);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -67,6 +74,9 @@ export function RecipePage({
   const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
   const [actionError, setActionError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const openingRecipeIdRef = useRef<string | null>(null);
+  const openingControllerRef = useRef<AbortController | null>(null);
 
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
@@ -90,22 +100,8 @@ export function RecipePage({
   }, [storage]);
 
   useEffect(() => {
-    setDraftSearch(urlQ);
-    setQueryText(urlQ);
-  }, [urlQ]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    repository
-      .listInventoryItems({ page: 1, pageSize: 100 }, controller.signal)
-      .then((res) => {
-        if (!controller.signal.aborted) {
-          setInventoryItems(res.data);
-        }
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, [repository]);
+    setDraftSearch(confirmedQuery);
+  }, [confirmedQuery]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -113,7 +109,14 @@ export function RecipePage({
     setError("");
 
     repository
-      .listRecipes({ q: queryText, page: 1, pageSize: 50 }, controller.signal)
+      .listRecipes(
+        {
+          q: confirmedQuery || undefined,
+          page: currentPage,
+          pageSize: 50,
+        },
+        controller.signal,
+      )
       .then((items) => {
         if (!controller.signal.aborted) {
           setRecipesResult(items);
@@ -131,7 +134,7 @@ export function RecipePage({
       });
 
     return () => controller.abort();
-  }, [repository, queryText, retry]);
+  }, [repository, confirmedQuery, currentPage, retry]);
 
   useEffect(() => {
     if (!recipeToDelete) return;
@@ -151,21 +154,43 @@ export function RecipePage({
   }, [recipeToDelete]);
 
   function handleSearchSubmit() {
-    setQueryText(draftSearch);
-    if (!propMode) {
+    const trimmed = draftSearch.trim();
+    if (propMode) {
+      setLocalQuery(trimmed);
+      setLocalPage(1);
+    } else {
       const nextParams = new URLSearchParams(searchParams);
-      if (draftSearch) nextParams.set("q", draftSearch);
+      if (trimmed) nextParams.set("q", trimmed);
       else nextParams.delete("q");
+      nextParams.set("page", "1");
+      setSearchParams(nextParams);
+    }
+  }
+
+  function handlePageChange(newPage: number) {
+    if (propMode) {
+      setLocalPage(newPage);
+    } else {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("page", String(newPage));
       setSearchParams(nextParams);
     }
   }
 
   async function handleOpenEdit(recipe: RecipeSummary) {
+    openingControllerRef.current?.abort();
+    const controller = new AbortController();
+    openingControllerRef.current = controller;
+    openingRecipeIdRef.current = recipe.id;
+    setActionError("");
+
     try {
-      const versioned = await repository.getRecipe(recipe.id);
+      const versioned = await repository.getRecipe(recipe.id, controller.signal);
+      if (controller.signal.aborted || openingRecipeIdRef.current !== recipe.id) return;
       setEditingRecipe(versioned.data);
     } catch {
-      setEditingRecipe(recipe);
+      if (controller.signal.aborted || openingRecipeIdRef.current !== recipe.id) return;
+      setActionError("No se pudo cargar el detalle completo de la receta.");
     }
   }
 
@@ -173,6 +198,7 @@ export function RecipePage({
     setNotice("Receta creada exitosamente.");
     setEditingRecipe(null);
     setInitialPendingRecord(null);
+    openingRecipeIdRef.current = null;
     setRetry((r) => r + 1);
 
     if (mode === "selection") {
@@ -194,6 +220,7 @@ export function RecipePage({
     setNotice("Receta actualizada exitosamente.");
     setEditingRecipe(null);
     setInitialPendingRecord(null);
+    openingRecipeIdRef.current = null;
     setRetry((r) => r + 1);
   }
 
@@ -264,7 +291,10 @@ export function RecipePage({
             <button
               className="button button--primary"
               type="button"
-              onClick={() => setEditingRecipe("new")}
+              onClick={() => {
+                openingRecipeIdRef.current = null;
+                setEditingRecipe("new");
+              }}
             >
               + Nueva receta
             </button>
@@ -296,14 +326,17 @@ export function RecipePage({
               <span className="empty-state__icon" aria-hidden="true">⌕</span>
               <h3>Aún no hay recetas registradas.</h3>
               <p>
-                {queryText
+                {confirmedQuery
                   ? "No se encontraron recetas con el término buscado."
                   : "Crea una receta para asociar insumos y pasos de preparación."}
               </p>
               <button
                 className="button button--primary"
                 type="button"
-                onClick={() => setEditingRecipe("new")}
+                onClick={() => {
+                  openingRecipeIdRef.current = null;
+                  setEditingRecipe("new");
+                }}
               >
                 Crear receta
               </button>
@@ -311,22 +344,59 @@ export function RecipePage({
           )}
 
           {!loading && !error && recipes.length > 0 && (
-            <ul className="recipe-list">
-              {recipes.map((recipe) => (
-                <li key={recipe.id} className="recipe-list__item">
-                  <RecipeCard
-                    recipe={recipe}
-                    mode={mode}
-                    onEdit={(rec) => { void handleOpenEdit(rec); }}
-                    onDelete={(rec) => {
-                      setActionError("");
-                      setRecipeToDelete(rec);
-                    }}
-                    onSelect={handleSelect}
-                  />
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="recipe-list">
+                {recipes.map((recipe) => (
+                  <li key={recipe.id} className="recipe-list__item">
+                    {mode === "selection" ? (
+                      <RecipeCard
+                        recipe={recipe}
+                        mode="selection"
+                        onSelect={handleSelect}
+                        isBusy={loading}
+                      />
+                    ) : (
+                      <RecipeCard
+                        recipe={recipe}
+                        mode="management"
+                        onEdit={(rec) => { void handleOpenEdit(rec); }}
+                        onDelete={(rec) => {
+                          setActionError("");
+                          setRecipeToDelete(rec);
+                        }}
+                        isBusy={loading}
+                      />
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              {recipesResult && recipesResult.meta.totalPages > 1 && (
+                <nav className="pagination" aria-label="Páginas de recetas">
+                  <button
+                    type="button"
+                    className="button button--secondary"
+                    disabled={currentPage <= 1 || loading}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    aria-label="Página anterior"
+                  >
+                    Anterior
+                  </button>
+                  <span className="pagination__info">
+                    Página {recipesResult.meta.page} de {recipesResult.meta.totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="button button--secondary"
+                    disabled={currentPage >= recipesResult.meta.totalPages || loading}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    aria-label="Siguiente página"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              )}
+            </>
           )}
         </section>
       </main>
@@ -339,7 +409,6 @@ export function RecipePage({
               : editingRecipe.id
           }
           recipe={editingRecipe === "new" ? undefined : editingRecipe}
-          inventoryItems={inventoryItems}
           repository={repository}
           storage={storage}
           initialPendingRecord={initialPendingRecord}
@@ -347,6 +416,7 @@ export function RecipePage({
           onClose={() => {
             setEditingRecipe(null);
             setInitialPendingRecord(null);
+            openingRecipeIdRef.current = null;
           }}
           onCreated={handleRecipeCreated}
           onCreatedWithPendingEdits={handleRecipeCreatedWithPendingEdits}
