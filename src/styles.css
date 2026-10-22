@@ -143,6 +143,7 @@ h1 { margin: 0; color: var(--ink); font-size: 28px; line-height: 36px; letter-sp
 .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 .pagination__number { min-width: 40px; min-height: 40px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: var(--text); }
 .pagination__number--current { border-color: var(--brand); background: var(--brand); color: #fff; }
+.pagination__ellipsis { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; color: #6b7280; user-select: none; }
 .dialog-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 24px; background: rgb(17 24 39 / 45%); }
 .confirm-dialog { width: min(100%, 440px); margin: auto; padding: 24px; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 10px 25px rgb(0 0 0 / 12%); }
 .confirm-dialog h2 { margin: 0; font-size: 22px; }

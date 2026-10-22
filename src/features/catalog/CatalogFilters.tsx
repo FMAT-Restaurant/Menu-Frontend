@@ -1,7 +1,7 @@
 import type { MenuCategory, EntryStatus } from "../../application/catalog";
 import { SearchField } from "../../shared/SearchField";
 
-interface CatalogFiltersProps {
+export interface CatalogFiltersProps {
   search: string;
   onSearchChange(value: string): void;
   onSearch(): void;
@@ -12,7 +12,10 @@ interface CatalogFiltersProps {
   categoryId: string;
   status: EntryStatus | "";
   hasFilters: boolean;
-  onFilterChange(name: string, value: string): void;
+  onFilterChange: {
+    (name: "categoryId", value: string): void;
+    (name: "status", value: EntryStatus | ""): void;
+  };
   onClear(): void;
 }
 
@@ -34,7 +37,7 @@ export function CatalogFilters(props: Readonly<CatalogFiltersProps>) {
         </div>
         <div className="select-field">
           <label htmlFor="status-filter">Estado administrativo</label>
-          <select id="status-filter" value={props.status} onChange={(event) => props.onFilterChange("status", event.target.value)}>
+          <select id="status-filter" value={props.status} onChange={(event) => props.onFilterChange("status", event.target.value as EntryStatus | "")}>
             <option value="">Todos los estados</option><option value="ACTIVE">Activa</option><option value="INACTIVE">Inactiva</option><option value="ARCHIVED">Archivada</option>
           </select>
         </div>

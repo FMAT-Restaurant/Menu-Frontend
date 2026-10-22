@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import type { EntryQuery, MenuEntry, Page } from "../../application/catalog";
 import { EntryCard } from "./EntryCard";
@@ -32,13 +33,52 @@ function EmptyEntries({ hasFilters, returnTo, onClear }: Readonly<Pick<ResultsPr
   </section>;
 }
 
-function EntryPagination({ page, totalPages, disabled, onPage }: Readonly<{ page: number; totalPages: number; disabled: boolean; onPage(page: number): void }>) {
-  const visible = Array.from({ length: totalPages }, (_, index) => index + 1).filter((number) => Math.abs(number - page) <= 2);
-  return <nav className="pagination" aria-label="Páginas de entradas">
-    <button type="button" className="button button--secondary" disabled={disabled || page <= 1} onClick={() => onPage(page - 1)} aria-label="Página anterior">Anterior</button>
-    {visible.map((number) => <button key={number} type="button" className={`pagination__number ${number === page ? "pagination__number--current" : ""}`} disabled={disabled} aria-current={number === page ? "page" : undefined} onClick={() => onPage(number)}>{number}</button>)}
-    <button type="button" className="button button--secondary" disabled={disabled || page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Siguiente página">Siguiente</button>
-  </nav>;
+export function computePaginationNumbers(page: number, totalPages: number): number[] {
+  if (totalPages <= 1) return [];
+  if (totalPages <= 5) {
+    const numbers: number[] = [];
+    for (let i = 1; i <= totalPages; i += 1) numbers.push(i);
+    return numbers;
+  }
+  let start: number;
+  if (page <= 3) {
+    start = 2;
+  } else if (page >= totalPages - 2) {
+    start = totalPages - 3;
+  } else {
+    start = page - 1;
+  }
+  return [1, start, start + 1, start + 2, totalPages];
+}
+
+export function EntryPagination({ page, totalPages, disabled, onPage }: Readonly<{ page: number; totalPages: number; disabled: boolean; onPage(page: number): void }>) {
+  const visible = computePaginationNumbers(page, totalPages);
+  if (!visible.length) return null;
+
+  return (
+    <nav className="pagination" aria-label="Páginas de entradas">
+      <button type="button" className="button button--secondary" disabled={disabled || page <= 1} onClick={() => onPage(page - 1)} aria-label="Página anterior">Anterior</button>
+      {visible.map((number, index) => {
+        const prevNumber = index > 0 ? visible[index - 1] : null;
+        const hasGap = prevNumber !== null && number - prevNumber > 1;
+        return (
+          <React.Fragment key={number}>
+            {hasGap && <span className="pagination__ellipsis" aria-hidden="true">…</span>}
+            <button
+              type="button"
+              className={`pagination__number ${number === page ? "pagination__number--current" : ""}`}
+              disabled={disabled}
+              aria-current={number === page ? "page" : undefined}
+              onClick={() => onPage(number)}
+            >
+              {number}
+            </button>
+          </React.Fragment>
+        );
+      })}
+      <button type="button" className="button button--secondary" disabled={disabled || page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Siguiente página">Siguiente</button>
+    </nav>
+  );
 }
 
 function EntryGrid(props: Readonly<Pick<ResultsProps, "displayed" | "busy" | "returnTo" | "onDelete">>) {
