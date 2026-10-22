@@ -188,10 +188,21 @@ describe("RecipePage Component (V6 Integration)", () => {
     });
   });
 
-  test("handles deletion rejection when recipe has references in active offers (BR-MENU-031 / REQ-MENU-REC-005)", async () => {
+  test("handles deletion rejection when recipe has contractual reference error and distinguishes from network, permission, and conflict (P11, P16)", async () => {
     const repository = createMockRepository();
     const storage = createMemoryStorage();
-    repository.deleteRecipe.mockRejectedValueOnce(new Error("Referenced in active offer"));
+    const inUseError = Object.assign(new Error("Referenced in active offer"), {
+      response: {
+        status: 409,
+        data: {
+          error: {
+            message: "No se puede eliminar la receta porque está referenciada por una oferta vigente.",
+            details: { code: "RECIPE_IN_USE", offerIds: ["offer-1"] },
+          },
+        },
+      },
+    });
+    repository.deleteRecipe.mockRejectedValueOnce(inUseError);
 
     render(
       <MemoryRouter>
@@ -210,6 +221,59 @@ describe("RecipePage Component (V6 Integration)", () => {
         "No se puede eliminar la receta porque está referenciada por una oferta vigente."
       )
     ).toBeVisible();
+
+    // 1. 403 Forbidden: does NOT announce "referenciada"
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("heading", { name: "¿Eliminar receta?", level: 2 })).not.toBeInTheDocument();
+
+    const forbiddenError = Object.assign(new Error("Forbidden"), {
+      response: {
+        status: 403,
+        data: {
+          error: { message: "No tienes permisos para eliminar esta receta." },
+        },
+      },
+    });
+    repository.deleteRecipe.mockRejectedValueOnce(forbiddenError);
+
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar Hamburguesa Clásica" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar receta" }));
+
+    expect(await screen.findByText("No tienes permisos para eliminar esta receta.")).toBeVisible();
+    expect(screen.queryByText(/referenciada por una oferta/)).not.toBeInTheDocument();
+
+    // 2. 412 Conflict: does NOT announce "referenciada"
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    const conflictError = Object.assign(new Error("Precondition Failed"), {
+      response: {
+        status: 412,
+        data: {
+          error: { message: "El recurso cambió en el servidor." },
+        },
+      },
+    });
+    repository.deleteRecipe.mockRejectedValueOnce(conflictError);
+
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar Hamburguesa Clásica" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar receta" }));
+
+    expect(await screen.findByText("El recurso cambió en el servidor.")).toBeVisible();
+    expect(screen.queryByText(/referenciada por una oferta/)).not.toBeInTheDocument();
+
+    // 3. Network failure / lost response: does NOT announce "referenciada", reloads list
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    repository.deleteRecipe.mockRejectedValueOnce(new Error("Network timeout"));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar Hamburguesa Clásica" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar receta" }));
+
+    expect(
+      await screen.findByText(
+        "No se pudo confirmar la eliminación. Se consultó la lista para verificar el estado actual."
+      )
+    ).toBeVisible();
+    expect(screen.queryByText(/referenciada por una oferta/)).not.toBeInTheDocument();
   });
 
   test("handles selection mode and calls onSelectRecipe when recipe is chosen or created", async () => {
@@ -315,7 +379,7 @@ describe("RecipePage Component (V6 Integration)", () => {
     );
   });
 
-  test("validates description, instructions, item selection and quantities in C26/C27 modal", async () => {
+  test("validates description, instructions, item selection and quantities with zero repository calls on invalid attempts and exact payload on correction (P15, P05)", async () => {
     const repository = createMockRepository();
     const storage = createMemoryStorage();
     render(
@@ -330,22 +394,55 @@ describe("RecipePage Component (V6 Integration)", () => {
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
     await screen.findByRole("option", { name: "Carne Molida Res 80/20" });
 
+    // P05: fieldset accessible name via legend direct child
+    expect(screen.getByRole("group", { name: "Insumos del inventario" })).toBeInTheDocument();
+
+    // 1. Empty name
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Indica el nombre de la receta.");
+    expect(repository.createRecipe).not.toHaveBeenCalled();
+
+    // 2. Empty description
     fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Receta Test" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Indica la descripción de la receta.");
+    expect(repository.createRecipe).not.toHaveBeenCalled();
 
+    // 3. Empty instructions
     fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Desc Test" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Indica las instrucciones de la receta.");
+    expect(repository.createRecipe).not.toHaveBeenCalled();
 
+    // 4. Missing supply item selection
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Inst Test" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Selecciona un artículo de inventario para cada ingrediente.");
+    expect(repository.createRecipe).not.toHaveBeenCalled();
 
+    // 5. Quantity = 0
     fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
     fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
     expect(screen.getByRole("alert")).toHaveTextContent("La cantidad de cada ingrediente debe ser mayor a 0.");
+    expect(repository.createRecipe).not.toHaveBeenCalled();
+
+    // 6. Correction to valid quantity -> persists exact payload
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "250" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+
+    await waitFor(() => {
+      expect(repository.createRecipe).toHaveBeenCalledTimes(1);
+      expect(repository.createRecipe).toHaveBeenCalledWith(
+        {
+          name: "Receta Test",
+          description: "Desc Test",
+          instructions: "Inst Test",
+          supplies: [{ inventoryItemId: "inv-1", quantity: 250 }],
+        },
+        expect.any(String),
+      );
+    });
   });
 
   test("adds and removes supply rows in C27", async () => {
@@ -758,6 +855,276 @@ describe("RecipePage Component (V6 Integration)", () => {
           supplies: [{ inventoryItemId: "inv-rare-999", quantity: 15 }],
         }),
         '"rare-etag"'
+      );
+    });
+  });
+
+  test("preserves delete dialog and blocking during in-flight DELETE on Escape or Cancel and restores focus after completion (P12)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    let resolveDelete: () => void = () => {};
+    repository.deleteRecipe.mockImplementation(() => new Promise((resolve) => {
+      resolveDelete = resolve;
+    }));
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    const deleteBtn = screen.getByRole("button", { name: "Eliminar Hamburguesa Clásica" });
+    deleteBtn.focus();
+    fireEvent.click(deleteBtn);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeVisible();
+
+    // 1. Idle cancel via button restores focus
+    const cancelBtn = screen.getByRole("button", { name: "Cancelar" });
+    fireEvent.click(cancelBtn);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(deleteBtn);
+
+    // 2. Idle cancel via Escape key restores focus
+    fireEvent.click(deleteBtn);
+    expect(screen.getByRole("dialog")).toBeVisible();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(deleteBtn);
+
+    // 3. During in-flight DELETE, Escape and Cancel are blocked
+    fireEvent.click(deleteBtn);
+    const confirmDeleteBtn = screen.getByRole("button", { name: "Eliminar receta" });
+    fireEvent.click(confirmDeleteBtn);
+
+    expect(confirmDeleteBtn).toHaveTextContent("Eliminando…");
+    expect(confirmDeleteBtn).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
+
+    // Fire Escape key -> dialog remains open!
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeVisible();
+
+    // Fire cancel event on dialog -> dialog remains open!
+    fireEvent(dialog, new Event("cancel", { cancelable: true }));
+    expect(screen.getByRole("dialog")).toBeVisible();
+
+    // Now resolve DELETE
+    resolveDelete();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(document.activeElement).toBe(deleteBtn);
+  });
+
+  test("disables all inputs, buttons, and handlers during submission and prevents double submissions (P02)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    let resolveCreate: (val: RecipeDetail) => void = () => {};
+    repository.createRecipe.mockImplementation((draft) => new Promise((resolve) => {
+      resolveCreate = () => resolve({
+        id: "rec-new",
+        ...draft,
+        supplies: draft.supplies.map((s: { inventoryItemId: string; quantity: number }) => ({
+          ...s,
+          inventoryItem: inventoryItems.find((i) => i.id === s.inventoryItemId),
+        })),
+      });
+    }));
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    await screen.findByRole("option", { name: "Pan Brioche" });
+
+    const nameInput = screen.getByLabelText("Nombre");
+    const descInput = screen.getByLabelText("Descripción");
+    const instInput = screen.getByLabelText("Instrucciones");
+    const supplySelect = screen.getByLabelText("Insumo 1");
+    const supplyQty = screen.getByLabelText("Cantidad del insumo 1");
+    const addSupplyBtn = screen.getByRole("button", { name: "+ Agregar insumo" });
+    const closeBtn = screen.getByLabelText("Cerrar formulario");
+    const cancelBtn = screen.getByRole("button", { name: "Cancelar" });
+    const saveBtn = screen.getByRole("button", { name: "Guardar receta" });
+
+    fireEvent.change(nameInput, { target: { value: "Receta Bloqueo" } });
+    fireEvent.change(descInput, { target: { value: "Desc Bloqueo" } });
+    fireEvent.change(instInput, { target: { value: "Inst Bloqueo" } });
+    fireEvent.change(supplySelect, { target: { value: "inv-2" } });
+    fireEvent.change(supplyQty, { target: { value: "3" } });
+
+    // Submit once
+    fireEvent.click(saveBtn);
+
+    // Wait for in-flight submission to invoke createRecipe
+    await waitFor(() => {
+      expect(repository.createRecipe).toHaveBeenCalledTimes(1);
+    });
+
+    // Verify all fields are locked while in flight
+    expect(nameInput).toBeDisabled();
+    expect(descInput).toBeDisabled();
+    expect(instInput).toBeDisabled();
+    expect(supplySelect).toBeDisabled();
+    expect(supplyQty).toBeDisabled();
+    expect(addSupplyBtn).toBeDisabled();
+    expect(closeBtn).toBeDisabled();
+    expect(cancelBtn).toBeDisabled();
+    expect(saveBtn).toBeDisabled();
+    expect(saveBtn).toHaveTextContent("Guardando…");
+
+    // Second click during in flight must NOT invoke createRecipe again
+    fireEvent.click(saveBtn);
+    expect(repository.createRecipe).toHaveBeenCalledTimes(1);
+
+    // Typing during in flight must be ignored
+    fireEvent.change(nameInput, { target: { value: "Modificado Durante Envío" } });
+    expect(nameInput).toHaveValue("Receta Bloqueo");
+
+    // Resolve create
+    resolveCreate({
+      id: "rec-new",
+      name: "Receta Bloqueo",
+      description: "Desc Bloqueo",
+      instructions: "Inst Bloqueo",
+      supplies: [{ inventoryItemId: "inv-2", quantity: 3 }],
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(repository.createRecipe).toHaveBeenCalledTimes(1);
+  });
+
+  test("maintains instance-scoped row key stability across addition, removal, and edits without global counter (P06)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    await screen.findByRole("option", { name: "Pan Brioche" });
+
+    // Add 2 more supply rows -> 3 total rows
+    fireEvent.click(screen.getByRole("button", { name: "+ Agregar insumo" }));
+    fireEvent.click(screen.getByRole("button", { name: "+ Agregar insumo" }));
+
+    // Configure rows
+    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "100" } });
+
+    fireEvent.change(screen.getByLabelText("Insumo 2"), { target: { value: "inv-2" } });
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 2"), { target: { value: "200" } });
+
+    fireEvent.change(screen.getByLabelText("Insumo 3"), { target: { value: "inv-3" } });
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 3"), { target: { value: "300" } });
+
+    // Remove row 2
+    fireEvent.click(screen.getByLabelText("Eliminar insumo 2"));
+
+    // Verify remaining rows maintain their values and order
+    expect(screen.getByLabelText("Insumo 1")).toHaveValue("inv-1");
+    expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(100);
+
+    expect(screen.getByLabelText("Insumo 2")).toHaveValue("inv-3");
+    expect(screen.getByLabelText("Cantidad del insumo 2")).toHaveValue(300);
+
+    // Cancel dialog
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    // Reopen dialog -> pure instance initialization produces clean rows
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    expect(screen.getAllByRole("row")).toHaveLength(2); // 1 header + 1 row
+    expect(screen.getByLabelText("Insumo 1")).toHaveValue("");
+    expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(1);
+  });
+
+  test("differentiates 412 conflict requiring review on edit without automatic resubmission or auto-renewed ETag (P04)", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    const conflict412Error = Object.assign(new Error("Precondition Failed"), {
+      response: {
+        status: 412,
+        data: {
+          error: {
+            message: "El recurso cambió en el servidor.",
+          },
+        },
+      },
+    });
+    repository.updateRecipe.mockRejectedValueOnce(conflict412Error);
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Editar Hamburguesa Clásica" }));
+
+    expect(await screen.findByRole("heading", { name: "Editar receta", level: 2 })).toBeVisible();
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Hamburguesa Clásica");
+
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Hamburguesa Clásica Con Conflicto" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    // 412 triggers review requirement without auto-resubmit
+    expect(await screen.findByText(/El recurso cambió en el servidor/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Revisar receta actual" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
+
+    // Prepare updated recipe on server
+    const serverUpdatedRecipe: RecipeDetail = {
+      ...recipeDetail,
+      name: "Hamburguesa Servidor v2",
+      description: "Modificada concurrentemente",
+    };
+    repository.getRecipe.mockResolvedValueOnce({
+      data: serverUpdatedRecipe,
+      etag: '"rec-etag-v2"',
+    });
+
+    // Click review
+    fireEvent.click(screen.getByRole("button", { name: "Revisar receta actual" }));
+
+    expect(await screen.findByRole("region", { name: "Datos actuales de la receta" })).toBeVisible();
+    expect(screen.getByText("Hamburguesa Servidor v2")).toBeVisible();
+    // Local draft is still preserved in the input!
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Hamburguesa Clásica Con Conflicto");
+
+    // Choose "Continuar con mi borrador y versión revisada"
+    fireEvent.click(screen.getByRole("button", { name: "Continuar con mi borrador y versión revisada" }));
+
+    // Now save is re-enabled with new ETag
+    expect(screen.getByRole("button", { name: "Guardar cambios" })).not.toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => {
+      expect(repository.updateRecipe).toHaveBeenCalledWith(
+        "rec-1",
+        expect.objectContaining({ name: "Hamburguesa Clásica Con Conflicto" }),
+        '"rec-etag-v2"',
       );
     });
   });

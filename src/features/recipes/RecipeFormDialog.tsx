@@ -44,12 +44,6 @@ export interface RecipeFormDialogProps {
   onSubmit?(draft: RecipeDraft): Promise<void>;
 }
 
-let rowSeed = 0;
-function nextRowKey(): string {
-  rowSeed += 1;
-  return `supply-row-${rowSeed}`;
-}
-
 export interface SupplyRow {
   key: string;
   inventoryItemId: string;
@@ -188,6 +182,21 @@ export function RecipeFormDialog({
 
   const initialDraft = initialPendingRecord?.editableDraft;
 
+  const initialSuppliesCount =
+    recipe?.supplies && recipe.supplies.length > 0
+      ? recipe.supplies.length
+      : initialDraft?.supplies && initialDraft.supplies.length > 0
+        ? initialDraft.supplies.length
+        : 1;
+  const rowCounterRef = useRef(initialSuppliesCount);
+
+  function createNextRowKey(): string {
+    rowCounterRef.current += 1;
+    return `supply-row-${rowCounterRef.current}`;
+  }
+
+  const isSubmittingRef = useRef(false);
+
   const [name, setName] = useState(
     () => recipe?.name ?? initialDraft?.name ?? "",
   );
@@ -202,20 +211,20 @@ export function RecipeFormDialog({
   );
   const [supplies, setSupplies] = useState<SupplyRow[]>(() => {
     if (recipe?.supplies && recipe.supplies.length > 0) {
-      return recipe.supplies.map((s) => ({
-        key: nextRowKey(),
+      return recipe.supplies.map((s, idx) => ({
+        key: `supply-row-${idx + 1}`,
         inventoryItemId: s.inventoryItemId,
         quantity: s.quantity,
       }));
     }
     if (initialDraft?.supplies && initialDraft.supplies.length > 0) {
-      return initialDraft.supplies.map((s) => ({
-        key: nextRowKey(),
+      return initialDraft.supplies.map((s, idx) => ({
+        key: `supply-row-${idx + 1}`,
         inventoryItemId: s.inventoryItemId,
         quantity: s.quantity,
       }));
     }
-    return [{ key: nextRowKey(), inventoryItemId: "", quantity: 1 }];
+    return [{ key: "supply-row-1", inventoryItemId: "", quantity: 1 }];
   });
 
   const [busy, setBusy] = useState(false);
@@ -362,9 +371,13 @@ export function RecipeFormDialog({
             setDescription(restored.editableDraft.description);
             setInstructions(restored.editableDraft.instructions);
             if (restored.editableDraft.supplies && restored.editableDraft.supplies.length > 0) {
+              rowCounterRef.current = Math.max(
+                rowCounterRef.current,
+                restored.editableDraft.supplies.length,
+              );
               setSupplies(
-                restored.editableDraft.supplies.map((s) => ({
-                  key: nextRowKey(),
+                restored.editableDraft.supplies.map((s, idx) => ({
+                  key: `supply-row-restored-${idx + 1}`,
                   inventoryItemId: s.inventoryItemId,
                   quantity: s.quantity,
                 })),
@@ -418,7 +431,7 @@ export function RecipeFormDialog({
   }, [retryCountdownMs]);
 
   function handleNameChange(val: string) {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     userEditedRef.current = true;
     setName(val);
     if (!activeRecipe) {
@@ -437,7 +450,7 @@ export function RecipeFormDialog({
   }
 
   function handleDescriptionChange(val: string) {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     userEditedRef.current = true;
     setDescription(val);
     if (!activeRecipe) {
@@ -456,7 +469,7 @@ export function RecipeFormDialog({
   }
 
   function handleInstructionsChange(val: string) {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     userEditedRef.current = true;
     setInstructions(val);
     if (!activeRecipe) {
@@ -475,11 +488,11 @@ export function RecipeFormDialog({
   }
 
   function handleAddSupply() {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     userEditedRef.current = true;
     const nextSupplies = [
       ...supplies,
-      { key: nextRowKey(), inventoryItemId: "", quantity: 1 },
+      { key: createNextRowKey(), inventoryItemId: "", quantity: 1 },
     ];
     setSupplies(nextSupplies);
     if (!activeRecipe) {
@@ -498,7 +511,7 @@ export function RecipeFormDialog({
   }
 
   function handleRemoveSupply(index: number) {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     userEditedRef.current = true;
     const nextSupplies = supplies.filter((_, i) => i !== index);
     setSupplies(nextSupplies);
@@ -522,7 +535,7 @@ export function RecipeFormDialog({
     field: "inventoryItemId" | "quantity",
     value: string,
   ) {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     userEditedRef.current = true;
     if (field === "inventoryItemId" && value) {
       const selected = currentInventoryItems.find((i) => i.id === value);
@@ -618,7 +631,7 @@ export function RecipeFormDialog({
   }
 
   function handleVoluntaryClose() {
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     activeRef.current = false;
     if (controllerRef.current) {
       void controllerRef.current.abandonFlow().catch(() => {});
@@ -637,6 +650,7 @@ export function RecipeFormDialog({
   }
 
   async function executeCreationFlow(action: "submit" | "retry") {
+    if (isSubmittingRef.current) return;
     const validation = validateDraft();
     if (!validation.ok) {
       setError(validation.error!);
@@ -650,6 +664,7 @@ export function RecipeFormDialog({
       supplies: validation.parsedSupplies!,
     };
 
+    isSubmittingRef.current = true;
     setBusy(true);
     setError("");
     setInfoNotice("");
@@ -662,6 +677,7 @@ export function RecipeFormDialog({
       } catch {
         setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
       } finally {
+        isSubmittingRef.current = false;
         setBusy(false);
       }
       return;
@@ -713,6 +729,7 @@ export function RecipeFormDialog({
           : "Error inesperado al crear la receta.";
       setError(message);
     } finally {
+      isSubmittingRef.current = false;
       if (activeRef.current) {
         setBusy(false);
       }
@@ -720,7 +737,7 @@ export function RecipeFormDialog({
   }
 
   async function executeEditSave() {
-    if (!activeRecipe) return;
+    if (!activeRecipe || isSubmittingRef.current) return;
 
     const validation = validateDraft();
     if (!validation.ok) {
@@ -735,6 +752,7 @@ export function RecipeFormDialog({
       supplies: validation.parsedSupplies!,
     };
 
+    isSubmittingRef.current = true;
     setBusy(true);
     setError("");
     setInfoNotice("");
@@ -747,6 +765,7 @@ export function RecipeFormDialog({
       } catch {
         setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
       } finally {
+        isSubmittingRef.current = false;
         setBusy(false);
       }
       return;
@@ -754,6 +773,7 @@ export function RecipeFormDialog({
 
     if (!repository) {
       setError("No se puede editar la receta sin un repositorio configurado.");
+      isSubmittingRef.current = false;
       setBusy(false);
       return;
     }
@@ -790,6 +810,7 @@ export function RecipeFormDialog({
       }
       setError(`No se pudo guardar la receta. ${analysis.message}`);
     } finally {
+      isSubmittingRef.current = false;
       if (activeRef.current) {
         setBusy(false);
       }
@@ -825,9 +846,13 @@ export function RecipeFormDialog({
       setDescription(reviewedResource.data.description ?? "");
       setInstructions(reviewedResource.data.instructions ?? "");
       if (reviewedResource.data.supplies?.length) {
+        rowCounterRef.current = Math.max(
+          rowCounterRef.current,
+          reviewedResource.data.supplies.length,
+        );
         setSupplies(
-          reviewedResource.data.supplies.map((s) => ({
-            key: nextRowKey(),
+          reviewedResource.data.supplies.map((s, idx) => ({
+            key: `supply-row-reviewed-${idx + 1}`,
             inventoryItemId: s.inventoryItemId,
             quantity: s.quantity,
           })),
@@ -842,7 +867,7 @@ export function RecipeFormDialog({
 
   async function save(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || isSubmittingRef.current) return;
     if (activeRecipe) {
       await executeEditSave();
       return;
@@ -956,8 +981,8 @@ export function RecipeFormDialog({
           </div>
 
           <fieldset className="recipe-supplies-section">
+            <legend>Insumos del inventario</legend>
             <div className="recipe-supplies-section__header">
-              <legend>Insumos del inventario</legend>
               <button
                 type="button"
                 className="button button--secondary button--small"

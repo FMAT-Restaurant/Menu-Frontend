@@ -62,7 +62,10 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
               <button
                 type="button"
                 className="button button--danger"
-                onClick={() => props.onDelete(recipe)}
+                onClick={(e) => {
+                  e.currentTarget.focus();
+                  props.onDelete(recipe);
+                }}
                 disabled={isBusy}
                 aria-label={`Eliminar ${recipe.name}`}
               >

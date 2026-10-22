@@ -484,6 +484,7 @@ export function analyzeNonIdempotentWriteError(
   const ctx = extractHttpFailureContext(errorOrContext);
   const status = ctx.status ?? null;
   const contractError = contractErrorResponse(ctx.rawBody);
+  const contractCode = contractError?.details?.code;
   const violations = contractError?.details?.violations ?? [];
   const offerIds = contractError?.details?.offerIds ?? [];
 
@@ -522,15 +523,55 @@ export function analyzeNonIdempotentWriteError(
     };
   }
 
-  if (status === 409 && offerIds.length > 0) {
+  if (
+    (status === 409 || status === 422) &&
+    (offerIds.length > 0 ||
+      contractCode === "RECIPE_IN_USE" ||
+      contractCode === "RESOURCE_IN_USE" ||
+      contractCode === "RECIPE_REFERENCED_BY_OFFER")
+  ) {
     return {
       kind: "resource_in_use",
-      status: 409,
-      errorCode: "RESOURCE_IN_USE",
+      status: status ?? 409,
+      errorCode: contractCode ?? "RESOURCE_IN_USE",
       message:
         contractError?.message ??
-        "No se puede eliminar el recurso porque sigue referenciado por ofertas.",
+        "No se puede eliminar la receta porque está referenciada por una oferta vigente.",
       requiresResourceReload: false,
+      preserveEditableDraft: true,
+      possibleWriteApplied: false,
+      violations,
+      offerIds,
+    };
+  }
+
+  if (status === 403) {
+    return {
+      kind: "pre_commit_rejection",
+      status: 403,
+      errorCode: contractCode ?? "FORBIDDEN",
+      message:
+        contractError?.message ??
+        ctx.message ??
+        "No tienes permisos para modificar este recurso.",
+      requiresResourceReload: false,
+      preserveEditableDraft: true,
+      possibleWriteApplied: false,
+      violations,
+      offerIds,
+    };
+  }
+
+  if (status === 404) {
+    return {
+      kind: "pre_commit_rejection",
+      status: 404,
+      errorCode: contractCode ?? "NOT_FOUND",
+      message:
+        contractError?.message ??
+        ctx.message ??
+        "El recurso no fue encontrado.",
+      requiresResourceReload: true,
       preserveEditableDraft: true,
       possibleWriteApplied: false,
       violations,

@@ -12,6 +12,7 @@ import type {
   PendingOperationStorageAdapter,
 } from "../../application/operationAttempt";
 import { SearchField } from "../../shared/SearchField";
+import { analyzeNonIdempotentWriteError } from "../../api/idempotencyResponse";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFormDialog, buildRecipeCreateScope } from "./RecipeFormDialog";
@@ -80,6 +81,20 @@ export function RecipePage({
 
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
+  const previousRecipeToDeleteRef = useRef<RecipeSummary | null>(null);
+
+  useEffect(() => {
+    if (previousRecipeToDeleteRef.current && !recipeToDelete) {
+      const target =
+        deleteTriggerRef.current ??
+        document.querySelector<HTMLElement>(
+          `button[aria-label="Eliminar ${previousRecipeToDeleteRef.current.name}"]`,
+        );
+      target?.focus();
+    }
+    previousRecipeToDeleteRef.current = recipeToDelete;
+  }, [recipeToDelete]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,14 +159,22 @@ export function RecipePage({
     cancelDeleteRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setRecipeToDelete(null);
+      if (event.key === "Escape") {
+        if (isDeleting) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        setRecipeToDelete(null);
+        deleteTriggerRef.current?.focus();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       if (dialog?.open && typeof dialog.close === "function") dialog.close();
     };
-  }, [recipeToDelete]);
+  }, [recipeToDelete, isDeleting]);
 
   function handleSearchSubmit() {
     const trimmed = draftSearch.trim();
@@ -234,8 +257,38 @@ export function RecipePage({
       setNotice(`Receta "${recipeToDelete.name}" eliminada.`);
       setRecipeToDelete(null);
       setRetry((r) => r + 1);
-    } catch {
-      setActionError("No se puede eliminar la receta porque está referenciada por una oferta vigente.");
+      deleteTriggerRef.current?.focus();
+    } catch (err) {
+      const analysis = analyzeNonIdempotentWriteError(err);
+      if (analysis.kind === "resource_in_use") {
+        setActionError(
+          analysis.message ||
+            "No se puede eliminar la receta porque está referenciada por una oferta vigente.",
+        );
+      } else if (analysis.kind === "precondition_conflict") {
+        setActionError(
+          analysis.message ||
+            "No se pudo eliminar la receta debido a un conflicto de versión. Actualiza la lista e inténtalo de nuevo.",
+        );
+      } else if (analysis.status === 403) {
+        setActionError(
+          analysis.message || "No tienes permisos para eliminar esta receta.",
+        );
+      } else if (
+        analysis.kind === "uncertain_outcome" ||
+        analysis.kind === "uncertain_write_response"
+      ) {
+        setRecipeToDelete(null);
+        setRetry((r) => r + 1);
+        setActionError(
+          "No se pudo confirmar la eliminación. Se consultó la lista para verificar el estado actual.",
+        );
+        deleteTriggerRef.current?.focus();
+      } else {
+        setActionError(
+          analysis.message || "No se pudo eliminar la receta. Inténtalo de nuevo.",
+        );
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -361,6 +414,11 @@ export function RecipePage({
                         mode="management"
                         onEdit={(rec) => { void handleOpenEdit(rec); }}
                         onDelete={(rec) => {
+                          deleteTriggerRef.current =
+                            (document.activeElement as HTMLElement | null) ??
+                            document.querySelector<HTMLElement>(
+                              `button[aria-label="Eliminar ${rec.name}"]`,
+                            );
                           setActionError("");
                           setRecipeToDelete(rec);
                         }}
@@ -430,6 +488,14 @@ export function RecipePage({
             ref={deleteDialogRef}
             className="confirm-dialog"
             aria-labelledby="confirm-delete-title"
+            onCancel={(event) => {
+              if (isDeleting) {
+                event.preventDefault();
+                return;
+              }
+              setRecipeToDelete(null);
+              deleteTriggerRef.current?.focus();
+            }}
           >
             <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
             <p>
@@ -442,7 +508,11 @@ export function RecipePage({
                 type="button"
                 className="button button--secondary"
                 disabled={isDeleting}
-                onClick={() => setRecipeToDelete(null)}
+                onClick={() => {
+                  if (isDeleting) return;
+                  setRecipeToDelete(null);
+                  deleteTriggerRef.current?.focus();
+                }}
               >
                 Cancelar
               </button>
@@ -450,7 +520,9 @@ export function RecipePage({
                 type="button"
                 className="button button--danger"
                 disabled={isDeleting}
-                onClick={handleConfirmDelete}
+                onClick={() => {
+                  void handleConfirmDelete();
+                }}
               >
                 {isDeleting ? "Eliminando…" : "Eliminar receta"}
               </button>

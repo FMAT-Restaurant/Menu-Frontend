@@ -242,4 +242,82 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
     await expect(page.getByRole("button", { name: /Editar/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Eliminar/ })).toHaveCount(0);
   });
+
+  test("locks delete confirmation against Escape during in-flight DELETE and restores focus (P12, P11)", async ({ page }) => {
+    let unblockDelete: () => void = () => {};
+    const deletePendingPromise = new Promise<void>((resolve) => {
+      unblockDelete = resolve;
+    });
+
+    await page.route("**/api/v1/menu/recipes?*", (route) =>
+      route.fulfill({
+        json: {
+          data: [
+            {
+              id: "recipe-del-1",
+              name: "Receta Para Borrar",
+              description: "Para comprobar borrado",
+              supplies: [],
+            },
+          ],
+          meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+        },
+      }),
+    );
+
+    await page.route("**/api/v1/menu/recipes/recipe-del-1", async (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          headers: { etag: '"rec-del-etag"' },
+          json: {
+            data: {
+              id: "recipe-del-1",
+              name: "Receta Para Borrar",
+              description: "Para comprobar borrado",
+              instructions: "Instrucciones para borrar",
+              supplies: [],
+            },
+          },
+        });
+      }
+      if (route.request().method() === "DELETE") {
+        await deletePendingPromise;
+        return route.fulfill({ status: 204 });
+      }
+      return route.continue();
+    });
+
+    await page.goto("/recipes");
+    await expect(page.getByRole("heading", { name: "Receta Para Borrar", level: 3 })).toBeVisible();
+
+    const deleteBtn = page.getByRole("button", { name: "Eliminar Receta Para Borrar" });
+    await deleteBtn.click();
+
+    const confirmDialog = page.getByRole("dialog");
+    await expect(confirmDialog).toBeVisible();
+
+    // 1. Idle cancel via Escape closes dialog and restores focus
+    await page.keyboard.press("Escape");
+    await expect(confirmDialog).not.toBeVisible();
+    await expect(deleteBtn).toBeFocused();
+
+    // 2. Open delete dialog again and confirm deletion
+    await deleteBtn.click();
+    await expect(confirmDialog).toBeVisible();
+
+    const confirmBtn = confirmDialog.getByRole("button", { name: "Eliminar receta" });
+    await confirmBtn.click();
+
+    // While DELETE is in flight:
+    await expect(confirmDialog.getByRole("button", { name: "Eliminando…" })).toBeVisible();
+    await expect(confirmDialog.getByRole("button", { name: "Cancelar" })).toBeDisabled();
+
+    // Press Escape key while in flight: dialog remains locked and visible!
+    await page.keyboard.press("Escape");
+    await expect(confirmDialog).toBeVisible();
+
+    // Now let DELETE finish
+    unblockDelete();
+    await expect(confirmDialog).not.toBeVisible();
+  });
 });
