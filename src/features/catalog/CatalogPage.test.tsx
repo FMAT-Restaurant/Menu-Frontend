@@ -13,7 +13,12 @@ const entries = [{
   offerCount: 2,
 }];
 
-function repository(total = 1): jest.Mocked<MenuRepository> {
+type CatalogRepository = Pick<
+  MenuRepository,
+  "listEntries" | "listCategories" | "deleteArchivedEntry"
+>;
+
+function repository(total = 1): jest.Mocked<CatalogRepository> {
   return {
     listEntries: jest.fn().mockResolvedValue({
       data: total ? entries : [],
@@ -22,29 +27,11 @@ function repository(total = 1): jest.Mocked<MenuRepository> {
     listCategories: jest.fn().mockResolvedValue([
       { id: "category-1", name: "Hamburguesas", description: "", entryCount: 1 },
     ]),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    setEntryStatus: jest.fn().mockResolvedValue(undefined),
     deleteArchivedEntry: jest.fn().mockResolvedValue(undefined),
-    getEntry: jest.fn(),
-    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn(),
-    updateEntry: jest.fn(),
-    listOffers: jest.fn(),
-    getOffer: jest.fn(),
-    createOffer: jest.fn(),
-    updateOffer: jest.fn(),
-    setOfferStatus: jest.fn(),
-    deleteInactiveOffer: jest.fn(),
-    listRecipes: jest.fn(),
-    getRecipe: jest.fn(),
-    createRecipe: jest.fn(),
-    updateRecipe: jest.fn(),
-    deleteRecipe: jest.fn(),
-    listInventoryItems: jest.fn(),
   };
 }
 
-function renderPage(api: MenuRepository, url = "/") {
+function renderPage(api: CatalogRepository, url = "/") {
   render(<MemoryRouter initialEntries={[url]}><CatalogPage repository={api} /></MemoryRouter>);
 }
 
@@ -116,7 +103,6 @@ test("shows only edit and delete actions without changing status from the catalo
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
   expect(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
   expect(screen.queryByRole("button", { name: /Archivar|Inactivar|Desarchivar|Activar/ })).not.toBeInTheDocument();
-  expect(api.setEntryStatus).not.toHaveBeenCalled();
   expect(api.deleteArchivedEntry).not.toHaveBeenCalled();
 });
 
@@ -154,7 +140,6 @@ test("directs status changes to the edit form for inactive entries", async () =>
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
   expect(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
   expect(screen.queryByRole("button", { name: "Activar Hamburguesa Hawaiana" })).not.toBeInTheDocument();
-  expect(api.setEntryStatus).not.toHaveBeenCalled();
 });
 
 test("keeps the entries visible when deletion fails", async () => {

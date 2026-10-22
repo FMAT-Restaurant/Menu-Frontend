@@ -19,34 +19,47 @@ test("opens recipe library from its V6 route", async () => {
 });
 
 
+function unprepared(method: keyof MenuRepository) {
+  return jest.fn(() => Promise.reject(new Error(`Unprepared MenuRepository.${method} call`)));
+}
+
+function createRepository(overrides: Partial<MenuRepository> = {}): MenuRepository {
+  return {
+    listEntries: unprepared("listEntries"),
+    listCategories: unprepared("listCategories"),
+    createCategory: unprepared("createCategory"),
+    updateCategory: unprepared("updateCategory"),
+    setEntryStatus: unprepared("setEntryStatus"),
+    deleteArchivedEntry: unprepared("deleteArchivedEntry"),
+    getEntry: unprepared("getEntry"),
+    uploadEntryImage: unprepared("uploadEntryImage"),
+    createEntry: unprepared("createEntry"),
+    updateEntry: unprepared("updateEntry"),
+    listOffers: unprepared("listOffers"),
+    getOffer: unprepared("getOffer"),
+    createOffer: unprepared("createOffer"),
+    updateOffer: unprepared("updateOffer"),
+    setOfferStatus: unprepared("setOfferStatus"),
+    deleteInactiveOffer: unprepared("deleteInactiveOffer"),
+    listRecipes: unprepared("listRecipes"),
+    getRecipe: unprepared("getRecipe"),
+    createRecipe: unprepared("createRecipe"),
+    updateRecipe: unprepared("updateRecipe"),
+    deleteRecipe: unprepared("deleteRecipe"),
+    listInventoryItems: unprepared("listInventoryItems"),
+    ...overrides,
+  };
+}
+
 test("opens the implemented offers page for an entry", async () => {
-  const repository: MenuRepository = {
-    listEntries: jest.fn(),
-    listCategories: jest.fn(),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    setEntryStatus: jest.fn(),
-    deleteArchivedEntry: jest.fn(),
+  const repository = createRepository({
     getEntry: jest.fn().mockResolvedValue({
       id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Con piña", status: "ACTIVE", categoryIds: [],
     }),
-    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn(),
-    updateEntry: jest.fn(),
     listOffers: jest.fn().mockResolvedValue({
       data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 },
     }),
-    setOfferStatus: jest.fn(),
-    deleteInactiveOffer: jest.fn(),
-    getOffer: jest.fn(),
-    createOffer: jest.fn(),
-    updateOffer: jest.fn(),
-    listRecipes: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
-    getRecipe: jest.fn(),
-    createRecipe: jest.fn(),
-    updateRecipe: jest.fn(),
-    deleteRecipe: jest.fn(),
-    listInventoryItems: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
-  };
+  });
   window.history.pushState({}, "", "/entries/entry-1/offers");
   render(<App repository={repository} />);
 
@@ -56,31 +69,12 @@ test("opens the implemented offers page for an entry", async () => {
 });
 
 test("opens the T24 entry form routes", async () => {
-  const repository = {
-    listEntries: jest.fn(),
+  const repository = createRepository({
     listCategories: jest.fn().mockResolvedValue([]),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    setEntryStatus: jest.fn(),
-    deleteArchivedEntry: jest.fn(),
     getEntry: jest.fn().mockResolvedValue({
       id: "entry-1", brandName: "Bowl", description: "Con arroz", status: "INACTIVE", categoryIds: [],
     }),
-    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn(),
-    updateEntry: jest.fn(),
-    listOffers: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
-    setOfferStatus: jest.fn(),
-    deleteInactiveOffer: jest.fn(),
-    getOffer: jest.fn(),
-    createOffer: jest.fn(),
-    updateOffer: jest.fn(),
-    listRecipes: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
-    getRecipe: jest.fn(),
-    createRecipe: jest.fn(),
-    updateRecipe: jest.fn(),
-    deleteRecipe: jest.fn(),
-    listInventoryItems: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } }),
-  };
+  });
 
   for (const [path, title] of [["/entries/new", "Nueva entrada"], ["/entries/entry-1/edit", "Editar entrada"]]) {
     window.history.pushState({}, "", path);

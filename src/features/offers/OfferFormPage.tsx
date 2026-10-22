@@ -175,8 +175,22 @@ function extractErrorMessage(err: unknown): string {
   return "Ocurrió un error al guardar la oferta.";
 }
 
+export type OfferFormRepository = Pick<
+  MenuRepository,
+  | "getEntry"
+  | "getOffer"
+  | "createOffer"
+  | "updateOffer"
+  | "listRecipes"
+  | "getRecipe"
+  | "createRecipe"
+  | "updateRecipe"
+  | "deleteRecipe"
+  | "listInventoryItems"
+>;
+
 export interface OfferFormPageProps {
-  repository: MenuRepository;
+  repository: OfferFormRepository;
 }
 
 export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {

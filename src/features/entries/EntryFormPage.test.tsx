@@ -20,33 +20,22 @@ const entry: MenuEntryDetail = {
   categoryIds: ["category-1"],
 };
 
-function repository(): jest.Mocked<MenuRepository> {
+type EntryFormRepository = Pick<
+  MenuRepository,
+  "listCategories" | "getEntry" | "uploadEntryImage" | "createEntry" | "updateEntry"
+>;
+
+function repository(): jest.Mocked<EntryFormRepository> {
   return {
-    listEntries: jest.fn(),
     listCategories: jest.fn().mockResolvedValue(categories),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    setEntryStatus: jest.fn(),
-    deleteArchivedEntry: jest.fn(),
     getEntry: jest.fn().mockResolvedValue(entry),
-    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn().mockResolvedValue(entry),
+    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"),
+    createEntry: jest.fn().mockResolvedValue(entry),
     updateEntry: jest.fn().mockResolvedValue(entry),
-    listOffers: jest.fn(),
-    getOffer: jest.fn(),
-    createOffer: jest.fn(),
-    updateOffer: jest.fn(),
-    setOfferStatus: jest.fn(),
-    deleteInactiveOffer: jest.fn(),
-    listRecipes: jest.fn(),
-    getRecipe: jest.fn(),
-    createRecipe: jest.fn(),
-    updateRecipe: jest.fn(),
-    deleteRecipe: jest.fn(),
-    listInventoryItems: jest.fn(),
   };
 }
 
-function renderPage(api: MenuRepository, path = "/entries/new", state?: unknown) {
+function renderPage(api: EntryFormRepository, path = "/entries/new", state?: unknown) {
   return render(
     <MemoryRouter initialEntries={[{ pathname: path, state }]}>
       <Routes>

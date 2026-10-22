@@ -9,6 +9,7 @@ import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./
 const pageSizes = new Set([6, 12, 24]);
 const statuses: EntryStatus[] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
 
+export type CatalogRepository = Pick<MenuRepository, "listEntries" | "listCategories" | "deleteArchivedEntry">;
 interface Feedback { kind: CatalogErrorKind; message: string }
 
 function positiveNumber(value: string | null, fallback: number) {
@@ -61,7 +62,7 @@ function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
   </>;
 }
 
-export function CatalogPage({ repository }: Readonly<{ repository: MenuRepository }>) {
+export function CatalogPage({ repository }: Readonly<{ repository: CatalogRepository }>) {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = queryFromUrl(searchParams);

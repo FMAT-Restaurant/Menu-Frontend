@@ -53,24 +53,26 @@ const mockOffer: MenuOfferDetail = {
   },
 };
 
-function createMockRepository(): jest.Mocked<MenuRepository> {
+type OfferFormRepository = Pick<
+  MenuRepository,
+  | "getEntry"
+  | "getOffer"
+  | "createOffer"
+  | "updateOffer"
+  | "listRecipes"
+  | "getRecipe"
+  | "createRecipe"
+  | "updateRecipe"
+  | "deleteRecipe"
+  | "listInventoryItems"
+>;
+
+function createMockRepository(): jest.Mocked<OfferFormRepository> {
   return {
-    listEntries: jest.fn(),
-    listCategories: jest.fn(),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    setEntryStatus: jest.fn(),
-    deleteArchivedEntry: jest.fn(),
     getEntry: jest.fn().mockResolvedValue(mockEntry),
-    uploadEntryImage: jest.fn(),
-    createEntry: jest.fn(),
-    updateEntry: jest.fn(),
-    listOffers: jest.fn(),
     getOffer: jest.fn().mockResolvedValue(mockOffer),
     createOffer: jest.fn().mockResolvedValue(mockOffer),
     updateOffer: jest.fn().mockResolvedValue(mockOffer),
-    setOfferStatus: jest.fn(),
-    deleteInactiveOffer: jest.fn(),
     listRecipes: jest.fn().mockResolvedValue({
       data: [mockRecipe],
       meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
@@ -87,7 +89,7 @@ function createMockRepository(): jest.Mocked<MenuRepository> {
 }
 
 function renderComponent(
-  repository: MenuRepository,
+  repository: OfferFormRepository,
   path = "/entries/entry-1/offers/new",
   state?: unknown
 ) {

@@ -64,7 +64,12 @@ function EntryIdentity({ model, disabled }: Readonly<{ model: Model; disabled: b
   </section>;
 }
 
-function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repository: MenuRepository; entryId?: string; returnTo: string }>) {
+export type EntryFormRepository = Pick<
+  MenuRepository,
+  "listCategories" | "getEntry" | "uploadEntryImage" | "createEntry" | "updateEntry"
+>;
+
+function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repository: EntryFormRepository; entryId?: string; returnTo: string }>) {
   const navigate = useNavigate();
   const editing = Boolean(entryId);
   const onSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
@@ -115,7 +120,7 @@ function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repositor
   </div>;
 }
 
-export function EntryFormPage({ repository }: Readonly<{ repository: MenuRepository }>) {
+export function EntryFormPage({ repository }: Readonly<{ repository: EntryFormRepository }>) {
   const { entryId } = useParams();
   const location = useLocation();
   return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} />;

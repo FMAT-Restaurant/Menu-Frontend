@@ -12,16 +12,13 @@ const listed = (data: MenuEntry[] = [entry], page = 1, total = data.length): Pag
   data, meta: { page, pageSize: 12, total, totalPages: total ? Math.ceil(total / 12) : 0 },
 });
 
-function api(): jest.Mocked<MenuRepository> {
+type CatalogRepository = Pick<MenuRepository, "listEntries" | "listCategories" | "deleteArchivedEntry">;
+
+function api(): jest.Mocked<CatalogRepository> {
   return {
     listEntries: jest.fn().mockResolvedValue(listed()),
     listCategories: jest.fn().mockResolvedValue([{ id: "category-1", name: "Principales" }]),
-    createCategory: jest.fn(), updateCategory: jest.fn(), setEntryStatus: jest.fn().mockResolvedValue(undefined),
-    deleteArchivedEntry: jest.fn().mockResolvedValue(undefined), getEntry: jest.fn(), uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn(), updateEntry: jest.fn(),
-    listOffers: jest.fn(), setOfferStatus: jest.fn(), deleteInactiveOffer: jest.fn(),
-    getOffer: jest.fn(), createOffer: jest.fn(), updateOffer: jest.fn(),
-    listRecipes: jest.fn(), getRecipe: jest.fn(), createRecipe: jest.fn(), updateRecipe: jest.fn(),
-    deleteRecipe: jest.fn(), listInventoryItems: jest.fn(),
+    deleteArchivedEntry: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -30,7 +27,7 @@ function Location() {
   return <output data-testid="location">{location.pathname + location.search}</output>;
 }
 
-function page(repository: MenuRepository, url = "/") {
+function page(repository: CatalogRepository, url = "/") {
   return render(<MemoryRouter initialEntries={[url]}><Routes><Route path="/" element={<><CatalogPage repository={repository} /><Location /></>} /></Routes></MemoryRouter>);
 }
 

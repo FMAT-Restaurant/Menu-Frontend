@@ -4,7 +4,9 @@ import { cachedCategories, previousCategories } from "../../application/catalogC
 import { loadEntryCategories } from "../../application/entryCategories";
 import { entryFailure } from "./entryError";
 
-export function useEntryResources(repository: MenuRepository, entryId: string | undefined, onLoaded: (entry: MenuEntryDetail) => void) {
+export type EntryResourcesRepository = Pick<MenuRepository, "listCategories" | "getEntry">;
+
+export function useEntryResources(repository: EntryResourcesRepository, entryId: string | undefined, onLoaded: (entry: MenuEntryDetail) => void) {
   const [entry, setEntry] = useState<MenuEntryDetail | null>(null);
   const [entryLoading, setEntryLoading] = useState(Boolean(entryId));
   const [entryError, setEntryError] = useState("");

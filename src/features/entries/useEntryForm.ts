@@ -22,7 +22,12 @@ function validateDraft(draft: EntryUpdateDraft, editing: boolean, file: File | n
   return null;
 }
 
-export function useEntryForm(repository: MenuRepository, entryId: string | undefined, onSaved: () => Promise<void>) {
+export type EntryFormRepository = Pick<
+  MenuRepository,
+  "listCategories" | "getEntry" | "uploadEntryImage" | "createEntry" | "updateEntry"
+>;
+
+export function useEntryForm(repository: EntryFormRepository, entryId: string | undefined, onSaved: () => Promise<void>) {
   const [draft, setDraft] = useState<EntryUpdateDraft>(emptyDraft);
   const [file, setFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState("");
