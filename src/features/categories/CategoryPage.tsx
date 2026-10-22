@@ -1,12 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { CategoryDraft, MenuCategory, MenuRepository } from "../../application/catalog";
 import { invalidateCatalogCategories, invalidateCatalogEntries } from "../../application/catalogCache";
-import { CategoryFormDialog } from "./CategoryFormDialog";
+import type { PendingOperationChainRecord } from "../../application/operationAttempt";
+import {
+  createIndexedDbPendingOperationStorage,
+  type PendingOperationStorageAdapter,
+} from "../../shared/pendingOperationStorage";
+import {
+  buildCategoryCreateScope,
+  CategoryFormDialog,
+} from "./CategoryFormDialog";
 
-type CategoryRepository = Pick<MenuRepository, "listCategories" | "createCategory" | "updateCategory">;
+export type CategoryRepository = Pick<
+  MenuRepository,
+  "listCategories" | "getCategory" | "createCategory" | "updateCategory"
+>;
 
-export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepository }>) {
+interface CategoryPageProps {
+  repository: CategoryRepository;
+  storage?: PendingOperationStorageAdapter;
+}
+
+export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps>) {
+  const actualStorage = useMemo(
+    () => storage ?? createIndexedDbPendingOperationStorage(),
+    [storage],
+  );
   const location = useLocation();
   const returnTo = typeof location.state?.returnTo === "string" && /^\/(?:\?.*)?$/.test(location.state.returnTo)
     ? location.state.returnTo
@@ -17,6 +37,28 @@ export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepo
   const [notice, setNotice] = useState("");
   const [retry, setRetry] = useState(0);
   const [formCategory, setFormCategory] = useState<MenuCategory | "new" | null>(null);
+  const [restoredPendingRecord, setRestoredPendingRecord] =
+    useState<PendingOperationChainRecord<CategoryDraft> | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void actualStorage
+      .getRecord<CategoryDraft>(buildCategoryCreateScope())
+      .then((record) => {
+        if (!active || !record) return;
+        const stage = record.stages[record.currentStageIndex];
+        if (stage && stage.status !== "succeeded") {
+          setRestoredPendingRecord(record);
+          setFormCategory("new");
+        }
+      })
+      .catch(() => {
+        // Ignorar error de lectura de almacenamiento al montar
+      });
+    return () => {
+      active = false;
+    };
+  }, [actualStorage]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -31,17 +73,6 @@ export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepo
     });
     return () => controller.abort();
   }, [repository, retry]);
-
-  async function saveCategory(draft: CategoryDraft) {
-    if (!formCategory) return;
-    if (formCategory === "new") await repository.createCategory(draft);
-    else await repository.updateCategory(formCategory.id, draft);
-    invalidateCatalogCategories(repository);
-    invalidateCatalogEntries(repository);
-    setNotice(formCategory === "new" ? "Categoría creada." : "Categoría actualizada.");
-    setFormCategory(null);
-    setRetry((current) => current + 1);
-  }
 
   return (
     <div className="category-screen">
@@ -96,8 +127,37 @@ export function CategoryPage({ repository }: Readonly<{ repository: CategoryRepo
         <CategoryFormDialog
           key={formCategory === "new" ? "new" : formCategory.id}
           category={formCategory === "new" ? undefined : formCategory}
-          onClose={() => setFormCategory(null)}
-          onSubmit={saveCategory}
+          repository={repository}
+          storage={actualStorage}
+          initialPendingRecord={formCategory === "new" ? restoredPendingRecord : null}
+          onClose={() => {
+            setRestoredPendingRecord(null);
+            setFormCategory(null);
+          }}
+          onCreated={() => {
+            setRestoredPendingRecord(null);
+            invalidateCatalogCategories(repository);
+            invalidateCatalogEntries(repository);
+            setNotice("Categoría creada.");
+            setFormCategory(null);
+            setRetry((current) => current + 1);
+          }}
+          onCreatedWithPendingEdits={() => {
+            setRestoredPendingRecord(null);
+            invalidateCatalogCategories(repository);
+            invalidateCatalogEntries(repository);
+            setNotice(
+              "La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario; guarda los cambios para actualizarla.",
+            );
+            setRetry((current) => current + 1);
+          }}
+          onUpdated={() => {
+            invalidateCatalogCategories(repository);
+            invalidateCatalogEntries(repository);
+            setNotice("Categoría actualizada.");
+            setFormCategory(null);
+            setRetry((current) => current + 1);
+          }}
         />
       )}
     </div>

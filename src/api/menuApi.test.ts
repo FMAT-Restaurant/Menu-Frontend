@@ -376,15 +376,22 @@ test("collectCategoryPages loads 25 pages iteratively in batches of at most 4 wh
   );
 });
 
-test("creates a category with the supplied draft", async () => {
+test("creates a category with an explicit Idempotency-Key header", async () => {
   const draft = { name: "Bebidas", description: "Bebidas frías" };
   const created = { id: "category-2", ...draft, entryCount: 0 };
-  const requests: { method?: string; url?: string; body?: unknown }[] = [];
+  const idempotencyKey = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
+  const requests: {
+    method?: string;
+    url?: string;
+    body?: unknown;
+    idempotencyKey?: string;
+  }[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push({
       method: config.method,
       url: config.url,
       body: typeof config.data === "string" ? JSON.parse(config.data) : undefined,
+      idempotencyKey: config.headers?.get("Idempotency-Key")?.toString(),
     });
     return {
       config,
@@ -396,13 +403,37 @@ test("creates a category with the supplied draft", async () => {
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.createCategory(draft)).resolves.toEqual(created);
+  await expect(api.createCategory(draft, idempotencyKey)).resolves.toEqual(created);
   expect(requests).toEqual([
-    { method: "post", url: "/menu/categories", body: draft },
+    {
+      method: "post",
+      url: "/menu/categories",
+      body: draft,
+      idempotencyKey,
+    },
   ]);
 });
 
-test("updates an encoded category ID with its current ETag", async () => {
+test("gets a category with its HTTP ETag and sanitizes JSON body", async () => {
+  const categoryData = { id: "category-1", name: "Bebidas", description: "Frías", entryCount: 2 };
+  const adapter: AxiosAdapter = async (config) => ({
+    config,
+    data: { data: { ...categoryData, etag: '"json-etag-to-ignore"' } },
+    headers: { etag: '"strong-header-etag"' },
+    status: 200,
+    statusText: "OK",
+  });
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  const result = await api.getCategory("category-1");
+  expect(result).toEqual({
+    data: categoryData,
+    etag: '"strong-header-etag"',
+  });
+  expect((result.data as unknown as Record<string, unknown>).etag).toBeUndefined();
+});
+
+test("updates an encoded category ID using the opening ETag directly without pre-GET", async () => {
   const draft = { name: "Bebidas", description: "Bebidas frías" };
   const updated = { id: "category /2", ...draft, entryCount: 1 };
   const requests: {
@@ -428,26 +459,20 @@ test("updates an encoded category ID with its current ETag", async () => {
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
-  await expect(api.updateCategory("category /2", draft)).resolves.toEqual(
-    updated,
-  );
+  await expect(
+    api.updateCategory("category /2", draft, '"rev-opening"'),
+  ).resolves.toEqual(updated);
   expect(requests).toEqual([
-    {
-      method: "get",
-      url: "/menu/categories/category%20%2F2",
-      body: undefined,
-      ifMatch: undefined,
-    },
     {
       method: "patch",
       url: "/menu/categories/category%20%2F2",
       body: draft,
-      ifMatch: '"rev-3"',
+      ifMatch: '"rev-opening"',
     },
   ]);
 });
 
-test("does not update a category when its ETag is unavailable", async () => {
+test("does not update a category when its opening ETag is invalid or weak (0 HTTP calls)", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config.method ?? "");
@@ -461,9 +486,9 @@ test("does not update a category when its ETag is unavailable", async () => {
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
   await expect(
-    api.updateCategory("category-1", { name: "Bebidas", description: "" }),
-  ).rejects.toThrow("No se recibió la versión");
-  expect(requests).toEqual(["get"]);
+    api.updateCategory("category-1", { name: "Bebidas", description: "" }, 'W/"weak"'),
+  ).rejects.toThrow("No se recibió la versión de la categoría");
+  expect(requests).toEqual([]);
 });
 
 test("reads a strong ETag before archiving and sends only the new status", async () => {

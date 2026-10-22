@@ -299,7 +299,7 @@ test.each(["", 'W/"rec-1"', "unquoted", "*"])(
 );
 
 test.each(["", 'W/"cat-1"', "unquoted", "*"])(
-  "does not patch a category if its current ETag is not strong (%p)",
+  "does not patch a category if its opening ETag is not strong (%p)",
   async (invalidEtag) => {
     const requests: string[] = [];
     const adapter: AxiosAdapter = async (config) => {
@@ -307,7 +307,7 @@ test.each(["", 'W/"cat-1"', "unquoted", "*"])(
       return {
         config,
         data: { data: { id: "cat-1", name: "Postres" } },
-        headers: invalidEtag ? { etag: invalidEtag } : {},
+        headers: {},
         status: 200,
         statusText: "OK",
       };
@@ -315,9 +315,9 @@ test.each(["", 'W/"cat-1"', "unquoted", "*"])(
     const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
 
     await expect(
-      api.updateCategory("cat-1", { name: "Postres 2", description: "" }),
+      api.updateCategory("cat-1", { name: "Postres 2", description: "" }, invalidEtag),
     ).rejects.toThrow("No se recibió la versión de la categoría");
-    expect(requests).toEqual(["get /menu/categories/cat-1"]);
+    expect(requests).toEqual([]);
   },
 );
 

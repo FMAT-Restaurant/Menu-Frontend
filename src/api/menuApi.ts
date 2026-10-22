@@ -21,6 +21,7 @@ import type {
   RecipeDraft,
   RecipeQuery,
   RecipeSummary,
+  VersionedResource,
 } from "../application/catalog";
 import {
   categoryPage,
@@ -71,6 +72,35 @@ function recipePath(recipeId: string): string {
 function entryPath(entryId?: string): string {
   const base = "/menu/entries";
   return entryId ? `${base}/${encodeURIComponent(entryId)}` : base;
+}
+
+function categoryPath(categoryId?: string): string {
+  const base = "/menu/categories";
+  return categoryId ? `${base}/${encodeURIComponent(categoryId)}` : base;
+}
+
+function sanitizeCategoryPayload(value: unknown): MenuCategory {
+  const raw = categoryResponse(value);
+  return {
+    id: raw.id,
+    name: raw.name,
+    ...(raw.description !== undefined ? { description: raw.description } : {}),
+    ...(raw.entryCount !== undefined ? { entryCount: raw.entryCount } : {}),
+  };
+}
+
+function extractHeaderEtag(headers: unknown): string | undefined {
+  if (!headers || typeof headers !== "object") {
+    return undefined;
+  }
+  const record = headers as Record<string, unknown>;
+  if (typeof record.etag === "string") {
+    return record.etag;
+  }
+  if (typeof record.ETag === "string") {
+    return record.ETag;
+  }
+  return undefined;
 }
 
 function imageMultipart(image: File): FormData {
@@ -275,19 +305,34 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       return [...firstPage.data, ...rest];
     },
 
+    async getCategory(
+      id: string,
+      signal?: AbortSignal,
+    ): Promise<VersionedResource<MenuCategory>> {
+      const response = await client.get<unknown>(categoryPath(id), {
+        signal,
+        timeout: READ_REQUEST_TIMEOUT_MS,
+      });
+      const data = sanitizeCategoryPayload(response.data);
+      const etag = extractHeaderEtag(response.headers);
+      return Object.freeze({
+        data,
+        ...(etag !== undefined ? { etag } : {}),
+      });
+    },
+
     async createCategory(
       draft: CategoryDraft,
-      options?: IdempotentWriteCallOptions,
+      idempotencyKey: string,
     ): Promise<MenuCategory> {
-      const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
-      const response = await client.post<unknown>("/menu/categories", draft, {
-        headers: { "Idempotency-Key": idempotencyKey },
+      const validatedKey = assertValidIdempotencyKey(idempotencyKey);
+      const response = await client.post<unknown>(categoryPath(), draft, {
+        headers: { "Idempotency-Key": validatedKey },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
-        ...(options?.signal ? { signal: options.signal } : {}),
       });
       return validateWriteSuccessResponse(
         response.data,
-        categoryResponse,
+        sanitizeCategoryPayload,
         response.status,
       );
     },
@@ -295,23 +340,19 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
     async updateCategory(
       id: string,
       draft: CategoryDraft,
+      etag: string,
     ): Promise<MenuCategory> {
-      const path = `/menu/categories/${encodeURIComponent(id)}`;
-      const current = await client.get<unknown>(path, {
-        timeout: READ_REQUEST_TIMEOUT_MS,
-      });
-      const etag = assertStrongEtag(
-        current.headers?.etag,
-        "No se recibió la versión de la categoría (se requiere una versión fuerte). Recarga e inténtalo de nuevo.",
+      const strongEtag = assertStrongEtag(
+        etag,
+        "No se recibió la versión de la categoría (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.",
       );
-      categoryResponse(current.data);
-      const response = await client.patch<unknown>(path, draft, {
-        headers: { "If-Match": etag },
+      const response = await client.patch<unknown>(categoryPath(id), draft, {
+        headers: { "If-Match": strongEtag },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
       });
       return validateWriteSuccessResponse(
         response.data,
-        categoryResponse,
+        sanitizeCategoryPayload,
         response.status,
       );
     },

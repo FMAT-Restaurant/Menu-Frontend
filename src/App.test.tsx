@@ -27,6 +27,7 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
   return {
     listEntries: unprepared("listEntries"),
     listCategories: unprepared("listCategories"),
+    getCategory: unprepared("getCategory"),
     createCategory: unprepared("createCategory"),
     updateCategory: unprepared("updateCategory"),
     setEntryStatus: unprepared("setEntryStatus"),

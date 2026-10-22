@@ -1,5 +1,10 @@
 export type EntryStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 
+export type VersionedResource<T> = Readonly<{
+  data: T;
+  etag?: string;
+}>;
+
 export interface MenuCategoryReference {
   id: string;
   name: string;
@@ -235,8 +240,9 @@ export interface InventoryQuery {
 export interface MenuRepository {
   listEntries(query: EntryQuery, signal?: AbortSignal): Promise<Page<MenuEntry>>;
   listCategories(signal?: AbortSignal): Promise<MenuCategory[]>;
-  createCategory(draft: CategoryDraft): Promise<MenuCategory>;
-  updateCategory(id: string, draft: CategoryDraft): Promise<MenuCategory>;
+  getCategory(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuCategory>>;
+  createCategory(draft: CategoryDraft, idempotencyKey: string): Promise<MenuCategory>;
+  updateCategory(id: string, draft: CategoryDraft, etag: string): Promise<MenuCategory>;
   setEntryStatus(id: string, status: EntryStatus): Promise<void>;
   deleteArchivedEntry(id: string): Promise<void>;
   getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail>;
@@ -256,4 +262,3 @@ export interface MenuRepository {
   deleteRecipe(id: string): Promise<void>;
   listInventoryItems(query?: InventoryQuery, signal?: AbortSignal): Promise<Page<InventoryItem>>;
 }
-

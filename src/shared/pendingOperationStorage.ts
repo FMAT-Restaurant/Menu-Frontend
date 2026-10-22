@@ -10,6 +10,11 @@ import {
   type SealedOperationPayload,
 } from "../application/operationAttempt";
 
+export type {
+  PendingOperationChainRecord,
+  PendingOperationStorageAdapter,
+} from "../application/operationAttempt";
+
 export type PendingOperationStorageErrorCode =
   | "IDB_UNAVAILABLE"
   | "IDB_OPEN_FAILED"
