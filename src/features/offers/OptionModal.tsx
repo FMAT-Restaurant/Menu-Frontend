@@ -22,6 +22,7 @@ export interface OptionModalProps {
   onSave: (data: OptionDraft) => void;
   onClose: () => void;
   onOpenRecipePicker: () => void;
+  onChangeDraft?: (data: OptionDraft) => void;
 }
 
 export function OptionModal({
@@ -31,6 +32,7 @@ export function OptionModal({
   onSave,
   onClose,
   onOpenRecipePicker,
+  onChangeDraft,
 }: Readonly<OptionModalProps>) {
   const [displayName, setDisplayName] = useState("");
   const [status, setStatus] = useState<OfferStatus>("ACTIVE");
@@ -103,6 +105,44 @@ export function OptionModal({
 
   if (!isOpen) return null;
 
+  function handleDisplayNameChange(val: string) {
+    setDisplayName(val);
+    if (onChangeDraft) {
+      onChangeDraft({
+        optionId: initialData?.optionId,
+        displayName: val,
+        status,
+        sourceType,
+        recipeId,
+        recipeRevision,
+        recipeName,
+        inventoryItemId,
+        inventoryItemName,
+        quantity,
+        unit,
+      });
+    }
+  }
+
+  function handleStatusChange(val: OfferStatus) {
+    setStatus(val);
+    if (onChangeDraft) {
+      onChangeDraft({
+        optionId: initialData?.optionId,
+        displayName,
+        status: val,
+        sourceType,
+        recipeId,
+        recipeRevision,
+        recipeName,
+        inventoryItemId,
+        inventoryItemName,
+        quantity,
+        unit,
+      });
+    }
+  }
+
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sourceType) {
@@ -133,7 +173,7 @@ export function OptionModal({
     });
   }
 
-  const title = initialData ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
+  const title = initialData?.optionId ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
 
   let sourceSummary = "Elige una receta de la biblioteca para esta opción.";
   if (sourceType === "RECIPE" && recipeName) {
@@ -182,7 +222,7 @@ export function OptionModal({
               id="option-display-name"
               type="text"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => handleDisplayNameChange(e.target.value)}
               placeholder="Ej. Coca-Cola o Papas a la francesa"
             />
             <p className="field-hint">
@@ -234,7 +274,7 @@ export function OptionModal({
                   name="option-status"
                   value="ACTIVE"
                   checked={status === "ACTIVE"}
-                  onChange={() => setStatus("ACTIVE")}
+                  onChange={() => handleStatusChange("ACTIVE")}
                 />
                 <span>Activa</span>
               </label>
@@ -244,7 +284,7 @@ export function OptionModal({
                   name="option-status"
                   value="INACTIVE"
                   checked={status === "INACTIVE"}
-                  onChange={() => setStatus("INACTIVE")}
+                  onChange={() => handleStatusChange("INACTIVE")}
                 />
                 <span>Inactiva</span>
               </label>

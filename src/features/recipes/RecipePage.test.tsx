@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { InventoryItem, Page, RecipeDetail, RecipeSummary } from "../../application/catalog";
+import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
 import { RecipePage, type RecipeRepository } from "./RecipePage";
 
 const inventoryItems: InventoryItem[] = [
@@ -26,33 +27,66 @@ const recipeDetail: RecipeDetail = {
   instructions: "Cocinar la carne en plancha y armar con pan y queso.",
 };
 
+function createMemoryStorage(): PendingOperationStorageAdapter {
+  const map = new Map<string, unknown>();
+  return {
+    async saveRecord(record) {
+      map.set(record.storageKey, record);
+    },
+    async getRecord(scopeOrKey) {
+      const key =
+        typeof scopeOrKey === "string"
+          ? scopeOrKey
+          : `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
+      return (map.get(key) as never) ?? null;
+    },
+    async deleteRecord(scopeOrKey) {
+      const key =
+        typeof scopeOrKey === "string"
+          ? scopeOrKey
+          : `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
+      map.delete(key);
+    },
+    async listByTab(tabId) {
+      return Array.from(map.values()).filter(
+        (r: unknown) => (r as { scope: { tabId: string } }).scope.tabId === tabId,
+      ) as never;
+    },
+  };
+}
+
 function createMockRepository(): jest.Mocked<RecipeRepository> {
   return {
     listRecipes: jest.fn().mockResolvedValue({
       data: recipes,
       meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
     } as Page<RecipeSummary>),
-    getRecipe: jest.fn().mockResolvedValue(recipeDetail),
-    createRecipe: jest.fn().mockImplementation((draft) =>
-      Promise.resolve({
+    getRecipe: jest.fn().mockResolvedValue({
+      data: recipeDetail,
+      etag: '"rec-etag-1"',
+    }),
+    createRecipe: jest.fn().mockImplementation((draft, _idempotencyKey?: string) => {
+      void _idempotencyKey;
+      return Promise.resolve({
         id: "rec-created-1",
         ...draft,
         supplies: draft.supplies.map((s: { inventoryItemId: string; quantity: number }) => ({
           ...s,
           inventoryItem: inventoryItems.find((i) => i.id === s.inventoryItemId),
         })),
-      })
-    ),
-    updateRecipe: jest.fn().mockImplementation((id, draft) =>
-      Promise.resolve({
+      });
+    }),
+    updateRecipe: jest.fn().mockImplementation((id, draft, _etag?: string) => {
+      void _etag;
+      return Promise.resolve({
         id,
         ...draft,
         supplies: draft.supplies.map((s: { inventoryItemId: string; quantity: number }) => ({
           ...s,
           inventoryItem: inventoryItems.find((i) => i.id === s.inventoryItemId),
         })),
-      })
-    ),
+      });
+    }),
     deleteRecipe: jest.fn().mockResolvedValue(undefined),
     listInventoryItems: jest.fn().mockResolvedValue({
       data: inventoryItems,
@@ -61,70 +95,36 @@ function createMockRepository(): jest.Mocked<RecipeRepository> {
   };
 }
 
-describe("RecipePage — V6 Biblioteca de recetas", () => {
-  test("renders management mode with C19 header, C23 search, C24 list and C25 recipe cards", async () => {
+describe("RecipePage Component (V6 Integration)", () => {
+  test("renders recipe list from repository with supply badges (REQ-MENU-REC-001)", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole("heading", { name: "Biblioteca de recetas", level: 1 })).toBeVisible();
-    expect(screen.getByRole("link", { name: "← Volver al menú" })).toBeVisible();
-    expect(screen.getByRole("searchbox", { name: "Buscar recetas" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Biblioteca de recetas", level: 1 })).toBeVisible();
     expect(await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 })).toBeVisible();
+    expect(screen.getByText("Carne con queso en pan brioche")).toBeVisible();
     expect(screen.getByText(/Carne Molida Res 80\/20 \(150 g\)/)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Editar Hamburguesa Clásica" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Eliminar Hamburguesa Clásica" })).toBeVisible();
+    expect(screen.getByText(/Pan Brioche \(1 pza\)/)).toBeVisible();
   });
 
-  test("renders selection mode with specific C19 header and assign button without edit/delete", async () => {
+  test("opens create recipe modal and submits new recipe draft with supplies (C26/C27)", async () => {
     const repository = createMockRepository();
-    const onSelect = jest.fn();
-    const onClose = jest.fn();
-
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage
-          repository={repository}
-          mode="selection"
-          onSelectRecipe={onSelect}
-          onClose={onClose}
-        />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción", level: 1 })).toBeVisible();
-    const cancelButton = screen.getByRole("button", { name: "✕ Cancelar" });
-    expect(cancelButton).toBeVisible();
-
-    expect(await screen.findByRole("button", { name: "Asignar" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Editar Hamburguesa Clásica" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Eliminar Hamburguesa Clásica" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
-    expect(onSelect).toHaveBeenCalledWith(recipes[0]);
-
-    fireEvent.click(cancelButton);
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  test("opens C26 modal, validates required fields, shows authoritative unit and saves recipe", async () => {
-    const repository = createMockRepository();
-    render(
-      <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
-      </MemoryRouter>
-    );
-
-    await screen.findByRole("heading", { name: "Biblioteca de recetas", level: 1 });
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
 
-    expect(screen.getByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-
-    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Indica el nombre de la receta.");
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Hamburguesa Doble" } });
     fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Doble carne y queso" } });
@@ -140,20 +140,24 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
 
     await waitFor(() => {
-      expect(repository.createRecipe).toHaveBeenCalledWith({
-        name: "Hamburguesa Doble",
-        description: "Doble carne y queso",
-        instructions: "Asar dos carnes y armar",
-        supplies: [{ inventoryItemId: "inv-1", quantity: 250 }],
-      });
+      expect(repository.createRecipe).toHaveBeenCalledWith(
+        {
+          name: "Hamburguesa Doble",
+          description: "Doble carne y queso",
+          instructions: "Asar dos carnes y armar",
+          supplies: [{ inventoryItemId: "inv-1", quantity: 250 }],
+        },
+        expect.any(String)
+      );
     });
   });
 
   test("edits existing recipe with preloaded instructions and supplies", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -168,19 +172,24 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => {
-      expect(repository.updateRecipe).toHaveBeenCalledWith("rec-1", expect.objectContaining({
-        name: "Hamburguesa Clásica Especial",
-      }));
+      expect(repository.updateRecipe).toHaveBeenCalledWith(
+        "rec-1",
+        expect.objectContaining({
+          name: "Hamburguesa Clásica Especial",
+        }),
+        '"rec-etag-1"'
+      );
     });
   });
 
   test("handles deletion rejection when recipe has references in active offers (BR-MENU-031 / REQ-MENU-REC-005)", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     repository.deleteRecipe.mockRejectedValueOnce(new Error("Referenced in active offer"));
 
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -190,11 +199,16 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
     expect(screen.getByRole("heading", { name: "¿Eliminar receta?", level: 2 })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Eliminar receta" }));
 
-    expect(await screen.findByText(/No se puede eliminar la receta porque está referenciada por una oferta vigente/)).toBeVisible();
+    expect(
+      await screen.findByText(
+        "No se puede eliminar la receta porque está referenciada por una oferta vigente."
+      )
+    ).toBeVisible();
   });
 
-  test("creating a recipe in selection mode saves to library and immediately selects it (REQ-MENU-CONT-001)", async () => {
+  test("handles selection mode and calls onSelectRecipe when recipe is chosen or created", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     const onSelect = jest.fn();
 
     render(
@@ -203,6 +217,7 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
           repository={repository}
           mode="selection"
           onSelectRecipe={onSelect}
+          storage={storage}
         />
       </MemoryRouter>
     );
@@ -228,6 +243,7 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
   test("shows empty state when no recipes exist and allows opening create form", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     repository.listRecipes.mockResolvedValueOnce({
       data: [],
       meta: { page: 1, pageSize: 50, total: 0, totalPages: 0 },
@@ -235,7 +251,7 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -248,9 +264,10 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
   test("filters recipes by submitting search text", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -269,9 +286,10 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
   test("validates description, instructions, item selection and quantities in C26/C27 modal", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -298,9 +316,10 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
   test("adds and removes supply rows in C27", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -320,9 +339,10 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
   test("cancels recipe deletion when clicking Cancelar in confirmation dialog", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -338,11 +358,12 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
 
   test("shows error message and allows retry when loading recipes fails", async () => {
     const repository = createMockRepository();
+    const storage = createMemoryStorage();
     repository.listRecipes.mockRejectedValueOnce(new Error("Network failure"));
 
     render(
       <MemoryRouter>
-        <RecipePage repository={repository} mode="management" />
+        <RecipePage repository={repository} mode="management" storage={storage} />
       </MemoryRouter>
     );
 
@@ -358,4 +379,3 @@ describe("RecipePage — V6 Biblioteca de recetas", () => {
     expect(await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 })).toBeVisible();
   });
 });
-

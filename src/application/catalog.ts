@@ -256,9 +256,9 @@ export interface MenuRepository {
   setOfferStatus(id: string, status: OfferStatus): Promise<void>;
   deleteInactiveOffer(id: string): Promise<void>;
   listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>>;
-  getRecipe(id: string, signal?: AbortSignal): Promise<RecipeDetail>;
-  createRecipe(draft: RecipeDraft): Promise<RecipeDetail>;
-  updateRecipe(id: string, draft: RecipeDraft): Promise<RecipeDetail>;
+  getRecipe(id: string, signal?: AbortSignal): Promise<VersionedResource<RecipeDetail>>;
+  createRecipe(draft: RecipeDraft, idempotencyKey: string): Promise<RecipeDetail>;
+  updateRecipe(id: string, draft: RecipeDraft, etag: string): Promise<RecipeDetail>;
   deleteRecipe(id: string): Promise<void>;
   listInventoryItems(query?: InventoryQuery, signal?: AbortSignal): Promise<Page<InventoryItem>>;
 }

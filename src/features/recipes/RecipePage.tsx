@@ -8,9 +8,14 @@ import type {
   RecipeDraft,
   RecipeSummary,
 } from "../../application/catalog";
+import type {
+  PendingOperationChainRecord,
+  PendingOperationStorageAdapter,
+} from "../../application/operationAttempt";
 import { SearchField } from "../../shared/SearchField";
+import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
-import { RecipeFormDialog } from "./RecipeFormDialog";
+import { RecipeFormDialog, buildRecipeCreateScope } from "./RecipeFormDialog";
 
 export type RecipeRepository = Pick<
   MenuRepository,
@@ -22,6 +27,8 @@ export interface RecipePageProps {
   mode?: "management" | "selection";
   onSelectRecipe?: (recipe: RecipeSummary) => void;
   onClose?: () => void;
+  storage?: PendingOperationStorageAdapter;
+  nestedContext?: Readonly<Record<string, unknown>>;
 }
 
 export function RecipePage({
@@ -29,6 +36,8 @@ export function RecipePage({
   mode: propMode,
   onSelectRecipe,
   onClose,
+  storage = createIndexedDbPendingOperationStorage(),
+  nestedContext,
 }: Readonly<RecipePageProps>) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -53,12 +62,32 @@ export function RecipePage({
   const [retry, setRetry] = useState(0);
 
   const [editingRecipe, setEditingRecipe] = useState<RecipeDetail | RecipeSummary | "new" | null>(null);
+  const [initialPendingRecord, setInitialPendingRecord] =
+    useState<PendingOperationChainRecord<RecipeDraft> | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
   const [actionError, setActionError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    storage
+      .getRecord<RecipeDraft>(buildRecipeCreateScope())
+      .then((record) => {
+        if (cancelled || !record) return;
+        const currentStage = record.stages[record.currentStageIndex];
+        if (currentStage && currentStage.status !== "succeeded") {
+          setInitialPendingRecord(record);
+          setEditingRecipe("new");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [storage]);
 
   useEffect(() => {
     setDraftSearch(urlQ);
@@ -133,35 +162,39 @@ export function RecipePage({
 
   async function handleOpenEdit(recipe: RecipeSummary) {
     try {
-      const detail = await repository.getRecipe(recipe.id);
-      setEditingRecipe(detail);
+      const versioned = await repository.getRecipe(recipe.id);
+      setEditingRecipe(versioned.data);
     } catch {
       setEditingRecipe(recipe);
     }
   }
 
-  async function handleSaveRecipe(draft: RecipeDraft) {
-    if (!editingRecipe) return;
+  function handleRecipeCreated(created: RecipeDetail) {
+    setNotice("Receta creada exitosamente.");
+    setEditingRecipe(null);
+    setInitialPendingRecord(null);
+    setRetry((r) => r + 1);
 
-    if (editingRecipe === "new") {
-      const created = await repository.createRecipe(draft);
-      setNotice("Receta creada exitosamente.");
-      setEditingRecipe(null);
-      setRetry((r) => r + 1);
-
-      if (mode === "selection") {
-        if (onSelectRecipe) {
-          onSelectRecipe(created);
-        } else {
-          await navigate(returnTo, { state: { selectedRecipe: created } });
-        }
+    if (mode === "selection") {
+      if (onSelectRecipe) {
+        onSelectRecipe(created);
+      } else {
+        void navigate(returnTo, { state: { selectedRecipe: created } });
       }
-    } else {
-      await repository.updateRecipe(editingRecipe.id, draft);
-      setNotice("Receta actualizada exitosamente.");
-      setEditingRecipe(null);
-      setRetry((r) => r + 1);
     }
+  }
+
+  function handleRecipeCreatedWithPendingEdits(created: RecipeDetail) {
+    setNotice("Receta creada exitosamente. Continuando con las ediciones locales.");
+    setEditingRecipe(created);
+    setRetry((r) => r + 1);
+  }
+
+  function handleRecipeUpdated() {
+    setNotice("Receta actualizada exitosamente.");
+    setEditingRecipe(null);
+    setInitialPendingRecord(null);
+    setRetry((r) => r + 1);
   }
 
   async function handleConfirmDelete() {
@@ -300,11 +333,24 @@ export function RecipePage({
 
       {editingRecipe && (
         <RecipeFormDialog
-          key={editingRecipe === "new" ? "new" : editingRecipe.id}
+          key={
+            editingRecipe === "new"
+              ? (initialPendingRecord ? initialPendingRecord.storageKey : "new")
+              : editingRecipe.id
+          }
           recipe={editingRecipe === "new" ? undefined : editingRecipe}
           inventoryItems={inventoryItems}
-          onClose={() => setEditingRecipe(null)}
-          onSubmit={handleSaveRecipe}
+          repository={repository}
+          storage={storage}
+          initialPendingRecord={initialPendingRecord}
+          nestedContext={nestedContext}
+          onClose={() => {
+            setEditingRecipe(null);
+            setInitialPendingRecord(null);
+          }}
+          onCreated={handleRecipeCreated}
+          onCreatedWithPendingEdits={handleRecipeCreatedWithPendingEdits}
+          onUpdated={handleRecipeUpdated}
         />
       )}
 

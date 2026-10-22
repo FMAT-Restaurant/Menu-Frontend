@@ -769,7 +769,7 @@ test("lists recipes with query parameters and server pagination", async () => {
   expect(requests).toEqual(["/api/v1/menu/recipes?q=Hamb&page=1&pageSize=20"]);
 });
 
-test("gets recipe details by id", async () => {
+test("gets a recipe by id with its HTTP ETag", async () => {
   const recipeDetail = {
     id: "recipe-1",
     name: "Hamburguesa",
@@ -793,22 +793,27 @@ test("gets recipe details by id", async () => {
   const api = createMenuApi(axios.create({ adapter }));
   const result = await api.getRecipe("recipe-1");
 
-  expect(result).toEqual(recipeDetail);
+  expect(result).toEqual({
+    data: recipeDetail,
+    etag: '"rec-1"',
+  });
 });
 
-test("creates a recipe with JSON body", async () => {
-  const requests: { method?: string; url?: string; data?: unknown }[] = [];
+test("creates a recipe with JSON body and Idempotency-Key", async () => {
+  const requests: { method?: string; url?: string; data?: unknown; idempotencyKey?: string }[] = [];
   const draft = {
     name: "Salsa especial",
     description: "Casera",
     instructions: "Mezclar todo",
     supplies: [{ inventoryItemId: "item-2", quantity: 50 }],
   };
+  const idempotencyKey = "22222222-2222-4222-8222-222222222222";
   const adapter: AxiosAdapter = async (config) => {
     requests.push({
       method: config.method,
       url: config.url,
       data: typeof config.data === "string" ? JSON.parse(config.data) : undefined,
+      idempotencyKey: config.headers?.get("Idempotency-Key")?.toString(),
     });
     return {
       config,
@@ -819,15 +824,15 @@ test("creates a recipe with JSON body", async () => {
     };
   };
   const api = createMenuApi(axios.create({ adapter }));
-  const created = await api.createRecipe(draft);
+  const created = await api.createRecipe(draft, idempotencyKey);
 
   expect(created.id).toBe("recipe-new");
   expect(requests).toEqual([
-    { method: "post", url: "/menu/recipes", data: draft },
+    { method: "post", url: "/menu/recipes", data: draft, idempotencyKey },
   ]);
 });
 
-test("updates a recipe using If-Match from current recipe ETag", async () => {
+test("updates a recipe using opening ETag directly without pre-GET", async () => {
   const requests: {
     method?: string;
     url?: string;
@@ -850,27 +855,177 @@ test("updates a recipe using If-Match from current recipe ETag", async () => {
     return {
       config,
       data: { data: { id: "recipe-1", ...draft, supplies: [] } },
-      headers: { etag: '"rec-etag-1"' },
+      headers: { etag: '"rec-etag-2"' },
       status: 200,
       statusText: "OK",
     };
   };
   const api = createMenuApi(axios.create({ adapter }));
-  await api.updateRecipe("recipe-1", draft);
+  await api.updateRecipe("recipe-1", draft, '"rec-etag-1"');
 
   expect(requests).toEqual([
-    {
-      method: "get",
-      url: "/menu/recipes/recipe-1",
-      data: undefined,
-      ifMatch: undefined,
-    },
     {
       method: "patch",
       url: "/menu/recipes/recipe-1",
       data: draft,
       ifMatch: '"rec-etag-1"',
     },
+  ]);
+});
+
+test("handles concurrent recipe modification with 412 Precondition Failed, preserving draft and requiring explicit review (A09 recipe)", async () => {
+  const serverVersion = "v2";
+  const requests: { method?: string; url?: string; ifMatch?: string }[] = [];
+  const draft = {
+    name: "Salsa con borrador preservado",
+    description: "Casera v1 editada",
+    instructions: "Mezclar todo cuidadosamente",
+    supplies: [{ inventoryItemId: "item-2", quantity: 75 }],
+  };
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      ifMatch: config.headers?.get("If-Match")?.toString(),
+    });
+
+    if (config.method === "get") {
+      return {
+        config,
+        data: {
+          data: {
+            id: "recipe-1",
+            name: "Salsa en servidor",
+            description: "Modificada por otro usuario",
+            instructions: "Paso del servidor",
+            supplies: [],
+          },
+        },
+        headers: { etag: `"${serverVersion}"` },
+        status: 200,
+        statusText: "OK",
+      };
+    }
+
+    if (config.method === "patch") {
+      const ifMatch = config.headers?.get("If-Match")?.toString();
+      if (ifMatch !== `"${serverVersion}"`) {
+        const error = new Error("Precondition Failed") as Error & { response?: unknown };
+        error.response = {
+          status: 412,
+          data: { error: { code: "PRECONDITION_FAILED", message: "Versión desactualizada" } },
+        };
+        throw error;
+      }
+      return {
+        config,
+        data: { data: { id: "recipe-1", ...draft } },
+        headers: { etag: '"v3"' },
+        status: 200,
+        statusText: "OK",
+      };
+    }
+
+    throw new Error(`Unexpected request: ${config.method}`);
+  };
+
+  const api = createMenuApi(axios.create({ adapter }));
+
+  // 1. First attempt with opening etag "v1" produces 412
+  await expect(api.updateRecipe("recipe-1", draft, '"v1"')).rejects.toMatchObject({
+    response: { status: 412 },
+  });
+
+  // 2. Draft is preserved and user explicitly reviews server version
+  const serverResource = await api.getRecipe("recipe-1");
+  expect(serverResource.etag).toBe('"v2"');
+  expect(serverResource.data.name).toBe("Salsa en servidor");
+
+  // 3. User retries with reviewed etag "v2" and the preserved draft
+  const updated = await api.updateRecipe("recipe-1", draft, serverResource.etag!);
+  expect(updated.name).toBe("Salsa con borrador preservado");
+
+  // Verify full sequence of HTTP calls: PATCH(v1) -> GET -> PATCH(v2), with no silent auto-PATCH
+  expect(requests).toEqual([
+    { method: "patch", url: "/menu/recipes/recipe-1", ifMatch: '"v1"' },
+    { method: "get", url: "/menu/recipes/recipe-1", ifMatch: undefined },
+    { method: "patch", url: "/menu/recipes/recipe-1", ifMatch: '"v2"' },
+  ]);
+});
+
+test("handles concurrent category modification with 412 Precondition Failed, preserving draft and requiring explicit review (A09 category)", async () => {
+  const serverVersion = "v2";
+  const requests: { method?: string; url?: string; ifMatch?: string }[] = [];
+  const draft = {
+    name: "Categoría borrador preservado",
+    description: "Editada localmente",
+  };
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      ifMatch: config.headers?.get("If-Match")?.toString(),
+    });
+
+    if (config.method === "get") {
+      return {
+        config,
+        data: {
+          data: {
+            id: "cat-1",
+            name: "Categoría en servidor",
+            description: "Modificada por otro usuario",
+            entryCount: 5,
+          },
+        },
+        headers: { etag: `"${serverVersion}"` },
+        status: 200,
+        statusText: "OK",
+      };
+    }
+
+    if (config.method === "patch") {
+      const ifMatch = config.headers?.get("If-Match")?.toString();
+      if (ifMatch !== `"${serverVersion}"`) {
+        const error = new Error("Precondition Failed") as Error & { response?: unknown };
+        error.response = {
+          status: 412,
+          data: { error: { code: "PRECONDITION_FAILED", message: "Versión desactualizada" } },
+        };
+        throw error;
+      }
+      return {
+        config,
+        data: { data: { id: "cat-1", ...draft, entryCount: 5 } },
+        headers: { etag: '"v3"' },
+        status: 200,
+        statusText: "OK",
+      };
+    }
+
+    throw new Error(`Unexpected request: ${config.method}`);
+  };
+
+  const api = createMenuApi(axios.create({ adapter }));
+
+  // 1. PATCH with "v1" produces 412
+  await expect(api.updateCategory("cat-1", draft, '"v1"')).rejects.toMatchObject({
+    response: { status: 412 },
+  });
+
+  // 2. Draft is preserved and user explicitly reviews server version
+  const serverResource = await api.getCategory("cat-1");
+  expect(serverResource.etag).toBe('"v2"');
+  expect(serverResource.data.name).toBe("Categoría en servidor");
+
+  // 3. User retries with reviewed etag "v2" and preserved draft
+  const updated = await api.updateCategory("cat-1", draft, serverResource.etag!);
+  expect(updated.name).toBe("Categoría borrador preservado");
+
+  expect(requests).toEqual([
+    { method: "patch", url: "/menu/categories/cat-1", ifMatch: '"v1"' },
+    { method: "get", url: "/menu/categories/cat-1", ifMatch: undefined },
+    { method: "patch", url: "/menu/categories/cat-1", ifMatch: '"v2"' },
   ]);
 });
 

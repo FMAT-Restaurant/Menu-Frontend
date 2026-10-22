@@ -6,6 +6,11 @@ import type {
   MenuRepository,
   RecipeSummary,
 } from "../../application/catalog";
+import type {
+  OperationFlowScope,
+  PendingOperationChainRecord,
+  PendingOperationStorageAdapter,
+} from "../../application/operationAttempt";
 import { OfferFormPage } from "./OfferFormPage";
 
 const mockEntry: MenuEntryDetail = {
@@ -88,16 +93,51 @@ function createMockRepository(): jest.Mocked<OfferFormRepository> {
   };
 }
 
+function createMemoryStorage(): PendingOperationStorageAdapter {
+  const map = new Map<string, unknown>();
+  return {
+    async saveRecord<TDraft = unknown>(record: PendingOperationChainRecord<TDraft>) {
+      map.set(record.storageKey, record);
+    },
+    async getRecord<TDraft = unknown>(scopeOrKey: OperationFlowScope | string) {
+      const key =
+        typeof scopeOrKey === "string"
+          ? scopeOrKey
+          : `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
+      return (map.get(key) as PendingOperationChainRecord<TDraft> | undefined) ?? null;
+    },
+    async deleteRecord(scopeOrKey: OperationFlowScope | string) {
+      const key =
+        typeof scopeOrKey === "string"
+          ? scopeOrKey
+          : `${scopeOrKey.tabId}:${scopeOrKey.formKind}:${scopeOrKey.resourceKey}`;
+      map.delete(key);
+    },
+    async listByTab(tabId: string) {
+      return Array.from(map.values()).filter(
+        (r: unknown) => (r as { scope: { tabId: string } }).scope.tabId === tabId,
+      ) as PendingOperationChainRecord[];
+    },
+  };
+}
+
 function renderComponent(
   repository: OfferFormRepository,
   path = "/entries/entry-1/offers/new",
-  state?: unknown
+  state?: unknown,
+  storage?: PendingOperationStorageAdapter,
 ) {
   return render(
     <MemoryRouter initialEntries={[{ pathname: path, state }]}>
       <Routes>
-        <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
-        <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
+        <Route
+          path="/entries/:entryId/offers/new"
+          element={<OfferFormPage repository={repository} storage={storage} />}
+        />
+        <Route
+          path="/entries/:entryId/offers/:offerId/edit"
+          element={<OfferFormPage repository={repository} storage={storage} />}
+        />
         <Route path="/entries/:entryId/offers" element={<div>Vista de ofertas</div>} />
       </Routes>
     </MemoryRouter>
@@ -807,5 +847,137 @@ describe("OfferFormPage (V4)", () => {
     fireEvent(dialog, new Event("cancel"));
 
     expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+  });
+
+  test("preserves option modal input when opening and canceling recipe picker (O13 single source)", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    // Open option modal for "Plato principal"
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
+
+    // Type a custom display name in OptionModal
+    const nameInput = screen.getByLabelText("Nombre mostrado (opcional)");
+    fireEvent.change(nameInput, { target: { value: "Mi Opción Personalizada" } });
+    expect(nameInput).toHaveValue("Mi Opción Personalizada");
+
+    // Open recipe picker
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+    expect(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
+
+    // Cancel recipe picker
+    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+
+    // The display name must remain preserved in OptionModal
+    expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Mi Opción Personalizada");
+  });
+
+  test("assigns chosen recipe while preserving previously typed display name", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+
+    await screen.findByRole("button", { name: "Guardar Oferta" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
+
+    const nameInput = screen.getByLabelText("Nombre mostrado (opcional)");
+    fireEvent.change(nameInput, { target: { value: "Etiqueta Especial" } });
+
+    // Open recipe picker
+    fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
+
+    // Choose the recipe from list
+    await screen.findByRole("heading", { name: "Receta Hamburguesa", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
+
+    // Recipe dialog closes and option modal has the recipe assigned, keeping the custom name
+    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Etiqueta Especial");
+    expect(screen.getByText("Receta asignada: Receta Hamburguesa")).toBeVisible();
+  });
+
+  test("restores nested parent context from pending recipe operation on mount", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+
+    // Pre-populate storage with an interrupted recipe creation having nested offer context
+    await storage.saveRecord({
+      storageKey: "global-tab:recipe-form:recipe-create",
+      scope: { tabId: "global-tab", formKind: "recipe-form", resourceKey: "recipe-create" },
+      createdAt: Date.now() - 5000,
+      updatedAt: Date.now() - 5000,
+      currentStageIndex: 0,
+      stages: [
+        {
+          attemptId: "att-1",
+          operationKind: "recipe.create",
+          method: "POST",
+          endpointPath: "/menu/recipes",
+          idempotencyKey: "11111111-1111-4111-8111-111111111111",
+          payload: { kind: "json", serializedBody: "{}", payloadSnapshot: {} },
+          createdAt: Date.now() - 5000,
+          firstSentAt: Date.now() - 5000,
+          firstConfirmedAt: null,
+          lastAttemptAt: Date.now() - 5000,
+          attemptCount: 1,
+          status: "uncertain",
+          submittedDraftVersion: 1,
+          retryAfterSeconds: null,
+          retryAfterUntil: null,
+          retryAfterInvalid: false,
+          possibleWriteApplied: true,
+          lastErrorCode: "TIMEOUT",
+          lastErrorMessage: "Tiempo de espera agotado",
+        },
+      ],
+      confirmedImageId: null,
+      ifMatch: null,
+      editableDraft: {
+        name: "Receta Recuperada",
+        description: "Desc recuperada",
+        instructions: "Inst recuperadas",
+        supplies: [],
+      },
+      submittedDraftVersion: 1,
+      currentDraftVersion: 1,
+      nestedContext: {
+        entryId: "entry-1",
+        presentationTag: "Super Promo Anidada",
+        basePrice: "250",
+        desiredStatus: "ACTIVE",
+        slots: [
+          {
+            slotId: "slot-anidado",
+            name: "Plato Fuerte",
+            quantity: 1,
+            course: null,
+            options: [],
+          },
+        ],
+        targetSlotIndex: 0,
+        editingOptionIndex: null,
+        currentOptionDraft: {
+          displayName: "Opción con borrador preservado",
+          status: "ACTIVE",
+          sourceType: "RECIPE",
+        },
+        optionModalOpen: true,
+        recipePickerOpen: true,
+      },
+    });
+
+    renderComponent(repository, "/entries/entry-1/offers/new", undefined, storage);
+
+    // The parent commercial fields are restored
+    expect(await screen.findByDisplayValue("Super Promo Anidada")).toBeVisible();
+    expect(screen.getByDisplayValue("250")).toBeVisible();
+
+    // The nested recipe picker dialog and RecipeFormDialog are reopened automatically
+    expect(await screen.findByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    expect(screen.getByDisplayValue("Receta Recuperada")).toBeVisible();
   });
 });

@@ -8,9 +8,13 @@ import type {
   OfferCreateDraft,
   OfferStatus,
   OfferUpdateDraft,
+  RecipeDraft,
   RecipeSummary,
 } from "../../application/catalog";
+import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
+import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipePage } from "../recipes/RecipePage";
+import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
 import { CompositionEditor } from "./CompositionEditor";
 import { OfferCommercialInfo } from "./OfferCommercialInfo";
 import { type OptionDraft, OptionModal } from "./OptionModal";
@@ -58,12 +62,13 @@ function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
     })),
   }));
 }
+
 function validateOfferForm(
   basePrice: string,
   isEditing: boolean,
   selectedFile: File | null,
   imageError: string,
-  slots: SlotDraft[]
+  slots: SlotDraft[],
 ): string | null {
   const priceNumber = Number(basePrice);
   if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
@@ -150,7 +155,7 @@ function buildUpdateDraft(
   presentationTag: string,
   basePrice: number,
   status: OfferStatus,
-  slots: SlotDraft[]
+  slots: SlotDraft[],
 ): OfferUpdateDraft {
   return {
     presentationTag: presentationTag.trim(),
@@ -191,9 +196,13 @@ export type OfferFormRepository = Pick<
 
 export interface OfferFormPageProps {
   repository: OfferFormRepository;
+  storage?: PendingOperationStorageAdapter;
 }
 
-export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
+export function OfferFormPage({
+  repository,
+  storage = createIndexedDbPendingOperationStorage(),
+}: Readonly<OfferFormPageProps>) {
   const { entryId = "", offerId } = useParams();
   const isEditing = Boolean(offerId);
 
@@ -236,6 +245,60 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
   const recipeDialogRef = useRef<HTMLDialogElement>(null);
 
   const imageValidationId = useRef(0);
+  const restoredFromStorageRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    storage
+      .getRecord<RecipeDraft>(buildRecipeCreateScope())
+      .then((record) => {
+        if (cancelled || !record) return;
+        const currentStage = record.stages[record.currentStageIndex];
+        if (currentStage && currentStage.status !== "succeeded" && record.nestedContext) {
+          const ctx = record.nestedContext as {
+            entryId?: string;
+            offerId?: string;
+            presentationTag?: string;
+            basePrice?: string;
+            desiredStatus?: OfferStatus;
+            slots?: SlotDraft[];
+            targetSlotIndex?: number | null;
+            editingOptionIndex?: number | null;
+            currentOptionDraft?: OptionDraft | null;
+            optionModalOpen?: boolean;
+            recipePickerOpen?: boolean;
+            offerFile?: {
+              blob: Blob;
+              name: string;
+              type: string;
+            } | null;
+          };
+
+          if (ctx.entryId === entryId) {
+            restoredFromStorageRef.current = true;
+            if (ctx.presentationTag !== undefined) setPresentationTag(ctx.presentationTag);
+            if (ctx.basePrice !== undefined) setBasePrice(ctx.basePrice);
+            if (ctx.desiredStatus !== undefined) setDesiredStatus(ctx.desiredStatus);
+            if (ctx.slots) setSlots(ctx.slots);
+            if (ctx.targetSlotIndex !== undefined) setTargetSlotIndex(ctx.targetSlotIndex);
+            if (ctx.editingOptionIndex !== undefined) setEditingOptionIndex(ctx.editingOptionIndex);
+            if (ctx.currentOptionDraft !== undefined) setCurrentOptionDraft(ctx.currentOptionDraft);
+            if (ctx.optionModalOpen) setOptionModalOpen(true);
+            if (ctx.recipePickerOpen) setRecipePickerOpen(true);
+            if (ctx.offerFile) {
+              const file = new File([ctx.offerFile.blob], ctx.offerFile.name, {
+                type: ctx.offerFile.type,
+              });
+              setSelectedFile(file);
+            }
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [entryId, storage]);
 
   useEffect(() => {
     if (!recipePickerOpen) return;
@@ -268,7 +331,7 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
       .then(([entryData, offerData]) => {
         if (controller.signal.aborted) return;
         setEntry(entryData);
-        if (offerData) {
+        if (offerData && !restoredFromStorageRef.current) {
           setPresentationTag(offerData.presentationTag || "");
           setBasePrice(String(offerData.basePrice ?? ""));
           setDesiredStatus(offerData.status);
@@ -501,6 +564,27 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
   const currentSlotName =
     targetSlotIndex !== null && slots[targetSlotIndex] ? slots[targetSlotIndex].name : "";
 
+  const nestedRecipeContext = {
+    entryId,
+    offerId,
+    presentationTag,
+    basePrice,
+    desiredStatus,
+    slots,
+    targetSlotIndex,
+    editingOptionIndex,
+    currentOptionDraft,
+    optionModalOpen: true,
+    recipePickerOpen: true,
+    offerFile: selectedFile
+      ? {
+          blob: selectedFile,
+          name: selectedFile.name,
+          type: selectedFile.type,
+        }
+      : null,
+  };
+
   return (
     <div className="app-shell offer-form-view">
       <nav className="global-nav" aria-label="Navegación principal">
@@ -602,8 +686,14 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
           isOpen={optionModalOpen}
           slotName={currentSlotName}
           initialData={currentOptionDraft}
+          onChangeDraft={(updated) => setCurrentOptionDraft(updated)}
           onSave={handleSaveOption}
-          onClose={() => setOptionModalOpen(false)}
+          onClose={() => {
+            setOptionModalOpen(false);
+            setTargetSlotIndex(null);
+            setEditingOptionIndex(null);
+            setCurrentOptionDraft(null);
+          }}
           onOpenRecipePicker={handleOpenRecipePicker}
         />
 
@@ -620,6 +710,8 @@ export function OfferFormPage({ repository }: Readonly<OfferFormPageProps>) {
             <RecipePage
               repository={repository}
               mode="selection"
+              storage={storage}
+              nestedContext={nestedRecipeContext}
               onSelectRecipe={handleSelectRecipe}
               onClose={() => setRecipePickerOpen(false)}
             />

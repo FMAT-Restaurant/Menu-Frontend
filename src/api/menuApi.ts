@@ -596,23 +596,30 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       return recipePage(response.data);
     },
 
-    async getRecipe(id: string, signal?: AbortSignal): Promise<RecipeDetail> {
+    async getRecipe(
+      id: string,
+      signal?: AbortSignal,
+    ): Promise<VersionedResource<RecipeDetail>> {
       const response = await client.get<unknown>(recipePath(id), {
         signal,
         timeout: READ_REQUEST_TIMEOUT_MS,
       });
-      return recipeDetailResponse(response.data);
+      const data = recipeDetailResponse(response.data);
+      const etag = extractHeaderEtag(response.headers);
+      return Object.freeze({
+        data,
+        ...(etag !== undefined ? { etag } : {}),
+      });
     },
 
     async createRecipe(
       draft: RecipeDraft,
-      options?: IdempotentWriteCallOptions,
+      idempotencyKey: string,
     ): Promise<RecipeDetail> {
-      const idempotencyKey = resolveIdempotencyKey(options?.idempotencyKey);
+      const validatedKey = assertValidIdempotencyKey(idempotencyKey);
       const response = await client.post<unknown>("/menu/recipes", draft, {
-        headers: { "Idempotency-Key": idempotencyKey },
+        headers: { "Idempotency-Key": validatedKey },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
-        ...(options?.signal ? { signal: options.signal } : {}),
       });
       return validateWriteSuccessResponse(
         response.data,
@@ -621,10 +628,17 @@ export function createMenuApi(client: AxiosInstance): MenuRepository {
       );
     },
 
-    async updateRecipe(id: string, draft: RecipeDraft): Promise<RecipeDetail> {
-      const current = await currentRecipe(id);
-      const response = await client.patch<unknown>(current.path, draft, {
-        headers: { "If-Match": current.etag },
+    async updateRecipe(
+      id: string,
+      draft: RecipeDraft,
+      etag: string,
+    ): Promise<RecipeDetail> {
+      const strongEtag = assertStrongEtag(
+        etag,
+        "No se recibió la versión de la receta (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.",
+      );
+      const response = await client.patch<unknown>(recipePath(id), draft, {
+        headers: { "If-Match": strongEtag },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
       });
       return validateWriteSuccessResponse(
