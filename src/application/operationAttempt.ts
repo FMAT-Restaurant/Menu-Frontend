@@ -83,6 +83,8 @@ export interface PendingOperationChainRecord<TDraft = unknown> {
   readonly confirmedImageId: string | null;
   readonly ifMatch: string | null;
   readonly editableDraft: TDraft;
+  readonly submittedDraft?: TDraft;
+  readonly confirmedResult?: unknown;
   readonly submittedDraftVersion: number;
   readonly currentDraftVersion: number;
   readonly compositionIdentityMap?: Readonly<Record<string, string>>;
@@ -115,6 +117,7 @@ export class OperationRetryBlockedError extends Error {
   readonly code:
     | "RETRY_IN_FLIGHT"
     | "RETRY_AFTER_ACTIVE"
+    | "RETRY_AFTER_INVALID"
     | "ATTEMPT_WINDOW_EXPIRED"
     | "REQUIRES_NEW_KEY"
     | "PRECONDITION_CONFLICT"
@@ -125,6 +128,7 @@ export class OperationRetryBlockedError extends Error {
     code:
       | "RETRY_IN_FLIGHT"
       | "RETRY_AFTER_ACTIVE"
+      | "RETRY_AFTER_INVALID"
       | "ATTEMPT_WINDOW_EXPIRED"
       | "REQUIRES_NEW_KEY"
       | "PRECONDITION_CONFLICT"
@@ -224,6 +228,28 @@ export function getOrCreateTabId(
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function equalDraft(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a instanceof Blob || b instanceof Blob) return false;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((value, index) => equalDraft(value, b[index]));
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    return [...keys].every(key => equalDraft(a[key], b[key]));
+  }
+  return false;
+}
+
+function snapshotDraft<T>(draft: T): T {
+  if (draft instanceof Blob) return draft;
+  if (Array.isArray(draft)) return Object.freeze(draft.map(snapshotDraft)) as T;
+  if (isPlainObject(draft)) {
+    return Object.freeze(Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, snapshotDraft(value)]))) as T;
+  }
+  return draft;
 }
 
 export function canonicalizeJsonValue(value: unknown): unknown {
@@ -366,6 +392,7 @@ export interface ManualRetryEligibility {
   readonly reason?:
     | "in_flight"
     | "retry_after_active"
+    | "retry_after_invalid"
     | "window_expired"
     | "requires_new_key"
     | "precondition_conflict"
@@ -391,6 +418,9 @@ export function canManualRetryAttempt(
   }
   if (attempt.status === "expired" || isAttemptWindowExpired(attempt, now)) {
     return { allowed: false, reason: "window_expired", remainingRetryAfterMs: 0 };
+  }
+  if (attempt.retryAfterInvalid) {
+    return { allowed: false, reason: "retry_after_invalid", remainingRetryAfterMs: 0 };
   }
   if (attempt.retryAfterUntil !== null && now < attempt.retryAfterUntil) {
     return {
@@ -525,6 +555,10 @@ export interface SingleOrTwoStageFlowConfig<TDraft, TResult> {
   readonly compositionIdentityMap?: Readonly<Record<string, string>>;
   readonly nestedContext?: Readonly<Record<string, unknown>>;
   readonly now?: () => number;
+  /** Retain confirmed writes until the consumer durably reconciles its editable draft. */
+  readonly retainConfirmedResult?: boolean;
+  readonly executeImageUpload?: (attempt: SealedOperationAttempt) => Promise<{ id: string }>;
+  readonly getImageFile?: () => File | null;
   readonly stage1ImageUpload?: {
     readonly endpointPath?: string;
     readonly file: Blob;
@@ -571,10 +605,13 @@ export interface OperationAttemptController<TDraft, TResult> {
     ifMatch?: string | null;
     confirmExpiredWindow?: boolean;
     forceDiscardUncertain?: boolean;
+    preserveConfirmedImage?: boolean;
   }): Promise<PendingOperationChainRecord<TDraft>>;
   abandonFlow(): Promise<void>;
   detachForReload(): void;
 }
+
+const pendingStorageWrites = new WeakMap<PendingOperationStorageAdapter, Map<string, Promise<unknown>>>();
 
 export function createOperationAttemptController<TDraft, TResult>(
   config: SingleOrTwoStageFlowConfig<TDraft, TResult>,
@@ -589,17 +626,32 @@ export function createOperationAttemptController<TDraft, TResult>(
   let currentNestedContext = config.nestedContext;
   let inFlightPromise: Promise<OperationExecutionResult<TDraft, TResult>> | null = null;
   let detached = false;
+  let abandoned = false;
+  // Serialize storage mutations so an older draft cannot overwrite a newer one or resurrect
+  // a voluntarily abandoned operation after an in-flight request completes.
+  let storageQueue: Promise<unknown> = Promise.resolve();
+  function store(record: PendingOperationChainRecord<TDraft>): Promise<void> {
+    const write = storageQueue.then(() => {
+      if (!abandoned) return config.storage.saveRecord(record);
+    });
+    storageQueue = write.catch(() => {});
+    let queues = pendingStorageWrites.get(config.storage);
+    if (!queues) { queues = new Map(); pendingStorageWrites.set(config.storage, queues); }
+    queues.set(storageKey, storageQueue);
+    return write;
+  }
 
   function buildInitialRecord(now: number): PendingOperationChainRecord<TDraft> {
     const submittedVersion = currentDraftVersion;
-    if (config.stage1ImageUpload) {
+    const imageFile = config.getImageFile?.() ?? config.stage1ImageUpload?.file;
+    if (imageFile) {
       const stage1Attempt = createSealedAttempt({
         operationKind: "image.upload",
         method: "POST",
-        endpointPath: config.stage1ImageUpload.endpointPath ?? "/api/v1/media/images",
+        endpointPath: config.stage1ImageUpload?.endpointPath ?? "/media/images",
         payload: sealMultipartFilePayload(
-          config.stage1ImageUpload.file,
-          config.stage1ImageUpload.fileName,
+          imageFile,
+          config.stage1ImageUpload?.fileName,
         ),
         submittedDraftVersion: submittedVersion,
         now,
@@ -614,6 +666,7 @@ export function createOperationAttemptController<TDraft, TResult>(
         confirmedImageId: null,
         ifMatch: currentIfMatch,
         editableDraft,
+        submittedDraft: snapshotDraft(editableDraft),
         submittedDraftVersion: submittedVersion,
         currentDraftVersion,
         ...(currentCompositionMap !== undefined
@@ -640,8 +693,9 @@ export function createOperationAttemptController<TDraft, TResult>(
       currentStageIndex: 0,
       stages: [finalAttempt],
       confirmedImageId: null,
-      ifMatch: currentIfMatch,
+      ifMatch: finalAttempt.payload.kind === "json" ? finalAttempt.payload.ifMatch ?? currentIfMatch : currentIfMatch,
       editableDraft,
+      submittedDraft: snapshotDraft(editableDraft),
       submittedDraftVersion: submittedVersion,
       currentDraftVersion,
       ...(currentCompositionMap !== undefined
@@ -672,7 +726,7 @@ export function createOperationAttemptController<TDraft, TResult>(
     record: PendingOperationChainRecord<TDraft>,
   ): Promise<void> {
     try {
-      await config.storage.saveRecord(record);
+      await store(record);
     } catch (error) {
       throw new PreSendStorageError(PRE_SEND_STORAGE_ERROR_MESSAGE, error);
     }
@@ -683,7 +737,7 @@ export function createOperationAttemptController<TDraft, TResult>(
     isPostStage1Transition = false,
   ): Promise<PendingOperationChainRecord<TDraft>> {
     try {
-      await config.storage.saveRecord(record);
+      await store(record);
       return record;
     } catch {
       if (isPostStage1Transition) {
@@ -704,7 +758,7 @@ export function createOperationAttemptController<TDraft, TResult>(
       currentRecord = freshRecord;
     } else {
       const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
-      if (activeStage.firstSentAt === null && currentRecord.confirmedImageId === null) {
+      if (activeStage.firstSentAt === null) {
         await persistPreSendOrThrow(currentRecord);
       }
     }
@@ -726,7 +780,7 @@ export function createOperationAttemptController<TDraft, TResult>(
       const stageIndex = currentRecord.currentStageIndex;
       const stage = currentRecord.stages[stageIndex];
 
-      if (isAttemptWindowExpired(stage, now)) {
+      if (stage.status !== "succeeded" && isAttemptWindowExpired(stage, now)) {
         const expiredStage = markAttemptExpired(stage);
         currentRecord = await persistBestEffortAfterProgress(
           replaceCurrentStage(currentRecord, expiredStage, now),
@@ -740,6 +794,12 @@ export function createOperationAttemptController<TDraft, TResult>(
 
       const eligibility = canManualRetryAttempt(stage, now);
       if (!eligibility.allowed && stage.attemptCount > 0) {
+        if (eligibility.reason === "retry_after_invalid") {
+          throw new OperationRetryBlockedError(
+            "RETRY_AFTER_INVALID",
+            "La cabecera Retry-After no es válida. La operación permanece pausada; revisa su estado antes de continuar.",
+          );
+        }
         if (eligibility.reason === "retry_after_active") {
           throw new OperationRetryBlockedError(
             "RETRY_AFTER_ACTIVE",
@@ -769,25 +829,38 @@ export function createOperationAttemptController<TDraft, TResult>(
 
       const inFlightStage = applyAttemptSendStart(stage, now);
       currentRecord = replaceCurrentStage(currentRecord, inFlightStage, now);
-      if (stage.firstSentAt === null && currentRecord.confirmedImageId === null) {
+      // Every send, including stage two and retries, must have durable bytes/key first.
+      try {
         await persistPreSendOrThrow(currentRecord);
-      } else {
-        currentRecord = await persistBestEffortAfterProgress(currentRecord);
+      } catch (error) {
+        currentRecord = replaceCurrentStage(currentRecord, stage, now);
+        throw error;
       }
+      if (detached) continue;
 
       const isStage1Upload =
-        Boolean(config.stage1ImageUpload) &&
         stageIndex === 0 &&
         inFlightStage.operationKind === "image.upload";
 
-      if (isStage1Upload && config.stage1ImageUpload) {
+      if (isStage1Upload) {
         try {
-          const uploaded = await config.stage1ImageUpload.executeUpload(inFlightStage);
+          const upload = config.executeImageUpload ?? config.stage1ImageUpload?.executeUpload;
+          if (!upload) throw new Error("No se configuró el ejecutor de carga de imagen.");
+          const uploaded = await upload(inFlightStage);
+          if (abandoned) throw new Error("La operación fue abandonada.");
+          if (detached) {
+            return {
+              status: "failed",
+              outcome: { kind: "uncertain_outcome", message: "La carga quedó pausada al salir de la página." },
+              record: currentRecord,
+              hasDraftChangesSinceSubmission: currentDraftVersion > currentRecord.submittedDraftVersion,
+            };
+          }
           const stage1SuccessNow = getNow();
           const completedStage1 = applyAttemptSuccess(inFlightStage, stage1SuccessNow);
           const stage2Attempt = createSealedAttempt(
             config.buildFinalStageInput({
-              draft: currentRecord.editableDraft,
+              draft: currentRecord.submittedDraft ?? currentRecord.editableDraft,
               confirmedImageId: uploaded.id,
               ifMatch: currentRecord.ifMatch,
               submittedDraftVersion: currentRecord.submittedDraftVersion,
@@ -800,6 +873,7 @@ export function createOperationAttemptController<TDraft, TResult>(
             currentStageIndex: 1,
             stages: [completedStage1, stage2Attempt],
             confirmedImageId: uploaded.id,
+            ifMatch: stage2Attempt.payload.kind === "json" ? stage2Attempt.payload.ifMatch ?? currentRecord.ifMatch : currentRecord.ifMatch,
           };
           currentRecord = await persistBestEffortAfterProgress(nextRecordWithStage2, true);
           if (detached) {
@@ -841,13 +915,16 @@ export function createOperationAttemptController<TDraft, TResult>(
         const successNow = getNow();
         const succeededStage = applyAttemptSuccess(inFlightStage, successNow);
         let finalRecord = replaceCurrentStage(currentRecord, succeededStage, successNow);
-        try {
-          await config.storage.deleteRecord(storageKey);
-        } catch {
-          finalRecord = {
-            ...finalRecord,
-            postSuccessStorageCleanupFailed: true,
-          };
+        if (config.retainConfirmedResult) {
+          finalRecord = { ...finalRecord, confirmedResult: finalResult };
+          finalRecord = await persistBestEffortAfterProgress(finalRecord);
+        } else {
+          try {
+            await storageQueue;
+            await config.storage.deleteRecord(storageKey);
+          } catch {
+            finalRecord = { ...finalRecord, postSuccessStorageCleanupFailed: true };
+          }
         }
         currentRecord = finalRecord;
         return {
@@ -890,11 +967,11 @@ export function createOperationAttemptController<TDraft, TResult>(
 
   return {
     getRecord() {
-      return currentRecord;
+      return abandoned ? null : currentRecord;
     },
 
     getCurrentAttempt() {
-      if (!currentRecord) return null;
+      if (!currentRecord || abandoned) return null;
       return currentRecord.stages[currentRecord.currentStageIndex] ?? null;
     },
 
@@ -904,8 +981,9 @@ export function createOperationAttemptController<TDraft, TResult>(
     },
 
     async updateEditableDraft(nextDraft, options) {
+      const changed = !equalDraft(editableDraft, nextDraft);
       editableDraft = nextDraft;
-      currentDraftVersion += 1;
+      if (changed) currentDraftVersion += 1;
       if (options?.compositionIdentityMap !== undefined) {
         currentCompositionMap = options.compositionIdentityMap;
       }
@@ -927,19 +1005,20 @@ export function createOperationAttemptController<TDraft, TResult>(
         ...(currentNestedContext !== undefined ? { nestedContext: currentNestedContext } : {}),
       };
       if (!detached) {
-        currentRecord = await persistBestEffortAfterProgress(currentRecord);
+        await persistBestEffortAfterProgress(currentRecord);
       }
       return currentRecord;
     },
 
     async restoreFromStorage() {
+      await pendingStorageWrites.get(config.storage)?.get(storageKey);
       const stored = await config.storage.getRecord<TDraft>(storageKey);
       if (!stored) {
         return null;
       }
       const now = getNow();
       const restoredStages = stored.stages.map((stage) => {
-        if (isAttemptWindowExpired(stage, now)) {
+        if (stage.status !== "succeeded" && isAttemptWindowExpired(stage, now)) {
           return markAttemptExpired(stage);
         }
         if (stage.status === "in_flight") {
@@ -961,6 +1040,9 @@ export function createOperationAttemptController<TDraft, TResult>(
       currentNestedContext = stored.nestedContext;
       currentRecord = {
         ...stored,
+        // Legacy records without later edits still contain the original submitted draft.
+        ...(stored.submittedDraft === undefined && stored.currentDraftVersion === stored.submittedDraftVersion
+          ? { submittedDraft: stored.editableDraft } : {}),
         updatedAt: now,
         stages: restoredStages,
       };
@@ -989,8 +1071,8 @@ export function createOperationAttemptController<TDraft, TResult>(
       const now = getNow();
       if (currentRecord) {
         const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
-        const expired =
-          activeStage.status === "expired" || isAttemptWindowExpired(activeStage, now);
+        const expired = activeStage.status !== "succeeded" &&
+          (activeStage.status === "expired" || isAttemptWindowExpired(activeStage, now));
         if (expired && !options?.confirmExpiredWindow) {
           throw new OperationRetryBlockedError(
             "ATTEMPT_WINDOW_EXPIRED",
@@ -1012,7 +1094,8 @@ export function createOperationAttemptController<TDraft, TResult>(
         currentIfMatch = options.ifMatch;
       }
 
-      const confirmedImageIdToPreserve = currentRecord?.confirmedImageId ?? null;
+      const confirmedImageIdToPreserve = options?.preserveConfirmedImage === false
+        ? null : currentRecord?.confirmedImageId ?? null;
       const submittedVersion = currentDraftVersion;
 
       if (confirmedImageIdToPreserve !== null) {
@@ -1037,6 +1120,7 @@ export function createOperationAttemptController<TDraft, TResult>(
           confirmedImageId: confirmedImageIdToPreserve,
           ifMatch: currentIfMatch,
           editableDraft,
+          submittedDraft: snapshotDraft(editableDraft),
           submittedDraftVersion: submittedVersion,
           currentDraftVersion,
           ...(currentCompositionMap !== undefined
@@ -1056,7 +1140,9 @@ export function createOperationAttemptController<TDraft, TResult>(
     },
 
     async abandonFlow() {
-      currentRecord = null;
+      detached = true;
+      abandoned = true;
+      await storageQueue;
       await config.storage.deleteRecord(storageKey);
     },
 

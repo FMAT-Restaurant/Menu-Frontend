@@ -69,6 +69,9 @@ export interface RecipeSlotOptionInput {
   sourceType: "RECIPE";
   recipeId: string;
   displayName: string;
+  inventoryItemId?: never;
+  quantity?: never;
+  unit?: never;
 }
 
 export interface InventoryItemSlotOptionInput {
@@ -77,6 +80,7 @@ export interface InventoryItemSlotOptionInput {
   quantity: number;
   unit: string;
   displayName: string;
+  recipeId?: never;
 }
 
 export type SlotOptionInput = RecipeSlotOptionInput | InventoryItemSlotOptionInput;
@@ -122,6 +126,7 @@ export interface CompositionDetail {
 }
 
 export interface MenuOfferDetail {
+  etag?: string;
   id: string;
   entryId: string;
   presentationTag: string;
@@ -139,24 +144,52 @@ export interface OfferCreateDraft {
   };
 }
 
-export type RecipeSlotOptionUpdate = {
-  optionId?: string;
+type RecipeOptionSource = {
+  sourceType: "RECIPE";
+  inventoryItemId?: never;
+  quantity?: never;
+  unit?: never;
+};
+
+type InventoryOptionSource = {
+  sourceType: "INVENTORY_ITEM";
+  recipeId?: never;
+};
+
+export type NewRecipeSlotOptionUpdate = RecipeOptionSource & {
+  optionId?: never;
+  displayName: string;
+  status: OfferStatus;
+  recipeId: string;
+};
+
+export type ExistingRecipeSlotOptionUpdate = RecipeOptionSource & {
+  optionId: string;
   displayName?: string;
   status?: OfferStatus;
-  sourceType: "RECIPE";
   recipeId?: string;
 };
 
-export type InventoryItemSlotOptionUpdate = {
-  optionId?: string;
+export type NewInventoryItemSlotOptionUpdate = InventoryOptionSource & {
+  optionId?: never;
+  displayName: string;
+  status: OfferStatus;
+  inventoryItemId: string;
+  quantity: number;
+  unit: string;
+};
+
+export type ExistingInventoryItemSlotOptionUpdate = InventoryOptionSource & {
+  optionId: string;
   displayName?: string;
   status?: OfferStatus;
-  sourceType: "INVENTORY_ITEM";
   inventoryItemId?: string;
   quantity?: number;
   unit?: string;
 };
 
+export type RecipeSlotOptionUpdate = NewRecipeSlotOptionUpdate | ExistingRecipeSlotOptionUpdate;
+export type InventoryItemSlotOptionUpdate = NewInventoryItemSlotOptionUpdate | ExistingInventoryItemSlotOptionUpdate;
 export type SlotOptionUpdate = RecipeSlotOptionUpdate | InventoryItemSlotOptionUpdate;
 
 export interface OfferUpdateDraft {
@@ -232,6 +265,7 @@ export interface RecipeSummary {
 }
 
 export interface RecipeDetail extends RecipeSummary {
+  etag?: string;
   instructions: string;
 }
 

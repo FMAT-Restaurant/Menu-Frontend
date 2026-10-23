@@ -3,7 +3,7 @@ import type {
   OfferCourse,
   SlotOptionDetail,
 } from "../../application/catalog";
-import type { OptionDraft } from "./OptionModal";
+import type { OptionDraft } from "./optionDraft";
 import type { SlotDraft } from "./SlotCard";
 
 export function generateLocalId(): string {
@@ -37,6 +37,17 @@ export function ensureSlotLocalIds(slots: SlotDraft[]): SlotDraft[] {
       options: optionsWithLocalId,
     };
   });
+}
+
+/** A later selection of the same recipe is a new intent and must survive recovery. */
+export function consumeConfirmedRecipeAssignments(current: SlotDraft[], sent: SlotDraft[]): SlotDraft[] {
+  const sentOptions = new Map(sent.flatMap(slot => slot.options.map(option => [option.localId, option] as const)));
+  return current.map(slot => ({ ...slot, options: slot.options.map(option => {
+    const submitted = option.localId ? sentOptions.get(option.localId) : undefined;
+    const consumed = submitted?.hasRecipeAssignmentIntent && submitted.recipeId === option.recipeId &&
+      submitted.recipeAssignmentToken === option.recipeAssignmentToken;
+    return { ...option, hasRecipeAssignmentIntent: consumed ? false : option.hasRecipeAssignmentIntent };
+  }) }));
 }
 
 export interface ReconcileCompositionParams {
@@ -208,6 +219,7 @@ export function reconcileComposition({
       return {
         ...currentOpt,
         optionId: newOptionId,
+        originalSourceType: matchedOpt?.sourceType ?? currentOpt.originalSourceType,
       };
     });
 

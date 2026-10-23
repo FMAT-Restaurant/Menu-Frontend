@@ -1,5 +1,5 @@
 import type { OfferCourse } from "../../application/catalog";
-import type { OptionDraft } from "./OptionModal";
+import type { OptionDraft } from "./optionDraft";
 import { SlotOptionItem } from "./SlotOptionItem";
 
 export interface SlotDraft {

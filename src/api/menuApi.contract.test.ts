@@ -503,7 +503,7 @@ test("updates an offer with If-Match and Idempotency-Key from opening ETag direc
 
   await expect(
     api.updateOffer("offer-1", updateDraft, openingEtag, idempotencyKey),
-  ).resolves.toEqual(offerDetail);
+  ).resolves.toEqual({ ...offerDetail, etag: '"offer-rev-5"' });
 
   expect(requests).toHaveLength(1);
   expect(requests[0]).toMatchObject({

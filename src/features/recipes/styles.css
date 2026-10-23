@@ -21,6 +21,7 @@
 }
 
 .recipe-card {
+  min-width: 0;
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -30,9 +31,16 @@
 
 .recipe-card__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.recipe-card__header > div:first-child {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .recipe-card h3 {
@@ -52,12 +60,15 @@
 
 .recipe-card__actions {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
 }
 
 .recipe-card__supplies {
+  overflow-wrap: anywhere;
   margin-top: 14px;
   padding: 10px 14px;
   border-radius: 6px;
@@ -138,11 +149,13 @@
   min-height: 0;
   overflow-y: auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   padding: 24px;
 }
 
 .recipe-form-dialog__field {
+  min-width: 0;
   display: grid;
   gap: 6px;
 }
@@ -170,6 +183,7 @@
 }
 
 .recipe-supplies-section {
+  min-width: 0;
   margin: 8px 0 0;
   padding: 16px;
   border: 1px solid var(--border);
@@ -179,6 +193,8 @@
 
 .recipe-supplies-section__header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
@@ -213,6 +229,7 @@
 .recipe-supplies-table td select,
 .recipe-supplies-table td input {
   width: 100%;
+  min-width: 0;
   padding: 6px 8px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -240,4 +257,49 @@
   padding: 16px 24px;
   border-top: 1px solid var(--border);
   background: #f8fafc;
+}
+
+.recipe-inventory-controls input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 520px) {
+  .recipe-supplies-table thead {
+    display: none;
+  }
+
+  .recipe-supplies-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .recipe-supplies-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .recipe-supplies-table td {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .recipe-supplies-table td:first-child,
+  .recipe-supplies-table td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .recipe-supplies-table td::before {
+    content: attr(data-label);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+  }
 }

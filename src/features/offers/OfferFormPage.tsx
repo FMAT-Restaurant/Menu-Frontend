@@ -1,3 +1,4 @@
+import { isStrongEtag } from "../../application/entryVersion";
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { contractErrorResponse } from "../../api/catalogResponse";
@@ -12,26 +13,27 @@ import type {
   OfferUpdateDraft,
   RecipeDraft,
   RecipeSummary,
-  RecipeSlotOptionUpdate,
-  InventoryItemSlotOptionUpdate,
-  SlotOptionInput,
-  SlotOptionUpdate,
   VersionedResource,
 } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import {
   createOperationAttemptController,
+  isAttemptWindowExpired,
+  getOrCreateTabId,
+  type OperationExecutionResult,
   sealJsonPayload,
   type OperationAttemptController,
   type OperationFlowScope,
   type PendingOperationStorageAdapter,
 } from "../../application/operationAttempt";
+import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipePage } from "../recipes/RecipePage";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
 import { CompositionEditor } from "./CompositionEditor";
 import { OfferCommercialInfo } from "./OfferCommercialInfo";
-import { type OptionDraft, OptionModal } from "./OptionModal";
+import { OptionModal } from "./OptionModal";
+import { optionRequest, validateOptionDraft, type OptionDraft } from "./optionDraft";
 import { type SlotDraft } from "./SlotCard";
 import { type SlotModalData, SlotModal } from "./SlotModal";
 import { validateOfferImage } from "./offerImage";
@@ -41,9 +43,10 @@ import {
   ensureSlotLocalIds,
   generateLocalId,
   reconcileComposition,
+  consumeConfirmedRecipeAssignments,
 } from "./compositionReconciliation";
 
-export function buildOfferCreateScope(entryId: string, tabId = "singleton"): OperationFlowScope {
+export function buildOfferCreateScope(entryId: string, tabId = getOrCreateTabId()): OperationFlowScope {
   return {
     tabId,
     formKind: "offer-form",
@@ -51,7 +54,7 @@ export function buildOfferCreateScope(entryId: string, tabId = "singleton"): Ope
   };
 }
 
-export function buildOfferUpdateScope(offerId: string, tabId = "singleton"): OperationFlowScope {
+export function buildOfferUpdateScope(offerId: string, tabId = getOrCreateTabId()): OperationFlowScope {
   return {
     tabId,
     formKind: "offer-form",
@@ -64,6 +67,7 @@ export interface OfferFormDraftState {
   basePrice: string;
   desiredStatus: OfferStatus;
   slots: SlotDraft[];
+  imageFile?: File | null;
 }
 
 function safeReturnPath(state: unknown, fallback: string): string {
@@ -100,6 +104,7 @@ function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
         displayName: o.displayName,
         status: o.status ?? "ACTIVE",
         sourceType: o.sourceType,
+        originalSourceType: o.sourceType,
         recipeId: isRecipe ? o.recipeId : undefined,
         recipeName: isRecipe ? o.displayName : undefined,
         hasRecipeAssignmentIntent: false,
@@ -149,71 +154,11 @@ function validateOfferForm(
       return `La cantidad de rondas del grupo "${slot.name}" debe ser al menos 1.`;
     }
     for (const opt of slot.options) {
-      if (!opt.sourceType) {
-        return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" debe tener un origen seleccionado.`;
-      }
-      if (opt.sourceType === "RECIPE") {
-        if (!opt.optionId && !opt.recipeId) {
-          return `La nueva opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere una receta asignada.`;
-        }
-      } else if (opt.sourceType === "INVENTORY_ITEM") {
-        if (!opt.inventoryItemId) {
-          return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere un artículo de inventario.`;
-        }
-        if (typeof opt.quantity !== "number" || !Number.isFinite(opt.quantity) || opt.quantity <= 0) {
-          return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere una cantidad válida mayor a cero.`;
-        }
-        if (!opt.unit || !opt.unit.trim()) {
-          return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}" requiere una unidad autoritativa.`;
-        }
-      }
+      const result = validateOptionDraft(opt, isEditing ? "update" : "create");
+      if (!result.valid) return `La opción "${opt.displayName || "sin nombre"}" en "${slot.name}": ${result.message}`;
     }
   }
   return null;
-}
-
-function mapOptionCreate(o: OptionDraft): SlotOptionInput {
-  if (o.sourceType === "RECIPE") {
-    return {
-      sourceType: "RECIPE",
-      recipeId: o.recipeId!,
-      displayName: o.displayName || o.recipeName || "Receta",
-    };
-  }
-  return {
-    sourceType: "INVENTORY_ITEM",
-    inventoryItemId: o.inventoryItemId!,
-    quantity: o.quantity ?? 1,
-    unit: o.unit || "u",
-    displayName: o.displayName || o.inventoryItemName || "Insumo",
-  };
-}
-
-function mapOptionUpdate(o: OptionDraft): SlotOptionUpdate {
-  if (o.sourceType === "RECIPE") {
-    const isNew = !o.optionId;
-    const shouldIncludeRecipeId = isNew || Boolean(o.hasRecipeAssignmentIntent);
-
-    const recipeOption: RecipeSlotOptionUpdate = {
-      ...(o.optionId ? { optionId: o.optionId } : {}),
-      displayName: o.displayName || o.recipeName || "Receta",
-      status: o.status,
-      sourceType: "RECIPE",
-      ...(shouldIncludeRecipeId && o.recipeId ? { recipeId: o.recipeId } : {}),
-    };
-    return recipeOption;
-  }
-
-  const inventoryOption: InventoryItemSlotOptionUpdate = {
-    ...(o.optionId ? { optionId: o.optionId } : {}),
-    displayName: o.displayName || o.inventoryItemName || "Insumo",
-    status: o.status,
-    sourceType: "INVENTORY_ITEM",
-    inventoryItemId: o.inventoryItemId!,
-    quantity: o.quantity ?? 1,
-    unit: o.unit || "u",
-  };
-  return inventoryOption;
 }
 
 function buildCreateDraft(presentationTag: string, basePrice: number, slots: SlotDraft[]): OfferCreateDraft {
@@ -225,7 +170,7 @@ function buildCreateDraft(presentationTag: string, basePrice: number, slots: Slo
         name: s.name,
         quantity: s.quantity,
         course: s.course,
-        options: s.options.map(mapOptionCreate),
+        options: s.options.map(option => optionRequest(option, "create")),
       })),
     },
   };
@@ -247,7 +192,7 @@ function buildUpdateDraft(
         name: s.name,
         quantity: s.quantity,
         course: s.course,
-        options: s.options.map(mapOptionUpdate),
+        options: s.options.map(option => optionRequest(option, "update")),
       })),
     },
   };
@@ -298,10 +243,14 @@ export interface OfferFormPageProps {
 
 export function OfferFormPage({
   repository,
-  storage = createIndexedDbPendingOperationStorage(),
+  storage: providedStorage,
 }: Readonly<OfferFormPageProps>) {
+  const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
+  const storage = providedStorage ?? fallbackStorage;
   const { entryId = "", offerId } = useParams();
-  const isEditing = Boolean(offerId);
+  const [confirmedOfferId, setConfirmedOfferId] = useState<string>();
+  const confirmedOfferIdRef = useRef<string | undefined>(undefined);
+  const isEditing = Boolean(offerId || confirmedOfferId);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -333,14 +282,14 @@ export function OfferFormPage({
   const [, setOpeningEtag] = useState<string | undefined>(undefined);
   const openingEtagRef = useRef<string | undefined>(undefined);
   const confirmedImageIdRef = useRef<string | null>(null);
-  const sentSlotsRef = useRef<SlotDraft[]>([]);
+
   const [conflictNotice, setConflictNotice] = useState("");
   const [ambiguousNotice, setAmbiguousNotice] = useState("");
   const [ambiguousResponse, setAmbiguousResponse] = useState<MenuOfferDetail | null>(null);
   const [uncertainStage, setUncertainStage] = useState<"upload" | "persist" | null>(null);
-  const [retryCountdownMs, setRetryCountdownMs] = useState(0);
   const [reviewedOffer, setReviewedOffer] = useState<VersionedResource<MenuOfferDetail> | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [newOperationAuthorized, setNewOperationAuthorized] = useState(false);
 
   const controllerRef = useRef<OperationAttemptController<
     OfferFormDraftState,
@@ -371,13 +320,11 @@ export function OfferFormPage({
   useEffect(() => {
     if (wasOptionModalOpenRef.current && !optionModalOpen) {
       const slotName = previousTargetSlotNameRef.current;
-      const fallback = slotName
-        ? document.querySelector<HTMLElement>(`button[aria-label="Agregar opción a ${slotName}"]`)
-        : null;
       const target =
         optionModalTriggerRef.current && optionModalTriggerRef.current !== document.body && optionModalTriggerRef.current.isConnected
           ? optionModalTriggerRef.current
-          : fallback;
+          : Array.from(document.querySelectorAll<HTMLButtonElement>("button[aria-label]"))
+            .find(button => button.getAttribute("aria-label") === `Agregar opción a ${slotName}`);
       const restoreFocus = () => {
         target?.focus();
       };
@@ -409,11 +356,27 @@ export function OfferFormPage({
   const isSubmittingRef = useRef(false);
   const activeContextRef = useRef({ entryId, offerId });
   activeContextRef.current = { entryId, offerId };
+  const mountedRef = useRef(true);
+  const selectedFileRef = useRef(selectedFile);
+  selectedFileRef.current = selectedFile;
+  const draftRef = useRef<OfferFormDraftState>({ presentationTag, basePrice, desiredStatus, slots });
+  draftRef.current = { presentationTag, basePrice, desiredStatus, slots, imageFile: selectedFile ?? undefined };
+  const [recoveryReady, setRecoveryReady] = useState(false);
+  const [savedNotice, setSavedNotice] = useState("");
+
+  useEffect(() => {
+    function handleHistoryExit() {
+      if (window.location.pathname !== location.pathname) abandonEditor();
+    }
+    window.addEventListener("popstate", handleHistoryExit);
+    return () => window.removeEventListener("popstate", handleHistoryExit);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!recipePickerOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        if (recipeDialogRef.current?.querySelector("dialog[open]")) return;
         event.preventDefault();
         event.stopPropagation();
         setRecipePickerOpen(false);
@@ -429,7 +392,11 @@ export function OfferFormPage({
     controllerRef.current = null;
     confirmedImageIdRef.current = null;
     openingEtagRef.current = undefined;
-    sentSlotsRef.current = [];
+    confirmedOfferIdRef.current = undefined;
+    setConfirmedOfferId(undefined);
+    setRecoveryReady(false);
+    setSavedNotice("");
+    mountedRef.current = true;
     restoredFromStorageRef.current = false;
     isSubmittingRef.current = false;
 
@@ -447,9 +414,10 @@ export function OfferFormPage({
     setAmbiguousNotice("");
     setAmbiguousResponse(null);
     setUncertainStage(null);
-    setRetryCountdownMs(0);
+
     setReviewedOffer(null);
     setReviewLoading(false);
+    setNewOperationAuthorized(false);
     setSlotModalOpen(false);
     setEditingSlotIndex(null);
     setOptionModalOpen(false);
@@ -458,13 +426,22 @@ export function OfferFormPage({
     setCurrentOptionDraft(null);
     setRecipePickerOpen(false);
     setSaving(false);
+    return () => {
+      mountedRef.current = false;
+      imageValidationId.current += 1;
+      const controller = controllerRef.current;
+      controller?.detachForReload();
+      if (activeContextRef.current.entryId !== entryId || activeContextRef.current.offerId !== offerId) {
+        void controller?.abandonFlow().catch(() => {});
+      }
+    };
   }, [entryId, offerId]);
 
   function getOrInitController(
     overrideFile?: File | null,
   ): OperationAttemptController<OfferFormDraftState, MenuOfferDetail> {
-    const activeFile = overrideFile !== undefined ? overrideFile : selectedFile;
-    const scope = isEditing
+    if (overrideFile !== undefined) selectedFileRef.current = overrideFile;
+    const scope = offerId
       ? buildOfferUpdateScope(offerId!)
       : buildOfferCreateScope(entryId);
 
@@ -480,44 +457,29 @@ export function OfferFormPage({
           basePrice,
           desiredStatus,
           slots: ensureSlotLocalIds(slots),
+          imageFile: selectedFileRef.current ?? undefined,
         },
-        stage1ImageUpload:
-          activeFile && !confirmedImageIdRef.current
-            ? {
-                endpointPath: "/media/images",
-                file: activeFile,
-                fileName: activeFile.name,
-                executeUpload: async (stageAttempt) => {
-                  const uploadKey = stageAttempt.idempotencyKey;
-                  const fileToUpload =
-                    stageAttempt.payload.kind === "multipart-file"
-                      ? new File(
-                          [stageAttempt.payload.fileBlob],
-                          stageAttempt.payload.fileName,
-                          { type: stageAttempt.payload.mimeType },
-                        )
-                      : activeFile;
-                  const id = await repository.uploadEntryImage(fileToUpload, uploadKey);
-                  confirmedImageIdRef.current = id;
-                  return { id };
-                },
-              }
-            : undefined,
+        retainConfirmedResult: true,
+        getImageFile: () => selectedFileRef.current,
+        executeImageUpload: async (attempt) => {
+          if (attempt.payload.kind !== "multipart-file") throw new Error("Se requiere una imagen sellada.");
+          const p = attempt.payload;
+          const id = await repository.uploadEntryImage(
+            new File([p.fileBlob], p.fileName, { type: p.mimeType }), attempt.idempotencyKey,
+          );
+          return { id };
+        },
         buildFinalStageInput: ({
           draft: currentDraft,
-          confirmedImageId,
           submittedDraftVersion,
           now,
         }) => {
           const priceNumber = Number(currentDraft.basePrice);
           const slotsWithIds = ensureSlotLocalIds(currentDraft.slots);
-          sentSlotsRef.current = slotsWithIds;
 
-          if (confirmedImageId) {
-            confirmedImageIdRef.current = confirmedImageId;
-          }
 
-          if (!isEditing) {
+          const targetId = offerId ?? confirmedOfferIdRef.current;
+          if (!targetId) {
             const createDraft = buildCreateDraft(
               currentDraft.presentationTag,
               priceNumber,
@@ -548,20 +510,20 @@ export function OfferFormPage({
             return {
               operationKind: "offer.patch",
               method: "PATCH",
-              endpointPath: `/menu/offers/${encodeURIComponent(offerId!)}`,
+              endpointPath: `/menu/offers/${encodeURIComponent(targetId)}`,
               payload: sealJsonPayload(updateDraft, openingEtagRef.current),
               submittedDraftVersion,
               now,
             };
           }
         },
-        executeFinalStage: async ({ attempt }) => {
+        executeFinalStage: async ({ attempt, confirmedImageId }) => {
           if (attempt.payload.kind !== "json") {
             throw new Error("El intento requiere un payload JSON sellado.");
           }
-          if (!isEditing) {
+          if (attempt.operationKind === "offer.create") {
             const sealedDraft = attempt.payload.payloadSnapshot as OfferCreateDraft;
-            const imageId = confirmedImageIdRef.current;
+            const imageId = confirmedImageId;
             if (!imageId) {
               throw new Error("La imagen es obligatoria al crear una oferta.");
             }
@@ -573,16 +535,16 @@ export function OfferFormPage({
             );
           } else {
             const sealedDraft = attempt.payload.payloadSnapshot as OfferUpdateDraft;
-            const etag = attempt.payload.ifMatch || openingEtagRef.current;
+            const etag = attempt.payload.ifMatch;
             if (!etag) {
               throw new Error("No se dispone de la versión de apertura (If-Match) para la oferta.");
             }
             return await repository.updateOffer(
-              offerId!,
+              offerId ?? confirmedOfferIdRef.current!,
               sealedDraft,
               etag,
               attempt.idempotencyKey,
-              confirmedImageIdRef.current || undefined,
+              confirmedImageId || undefined,
             );
           }
         },
@@ -621,7 +583,7 @@ export function OfferFormPage({
             } | null;
           };
 
-          if (ctx.entryId === entryId) {
+          if (ctx.entryId === entryId && ctx.offerId === offerId) {
             restoredFromStorageRef.current = true;
             if (ctx.presentationTag !== undefined) setPresentationTag(ctx.presentationTag);
             if (ctx.basePrice !== undefined) setBasePrice(ctx.basePrice);
@@ -645,7 +607,7 @@ export function OfferFormPage({
     return () => {
       cancelled = true;
     };
-  }, [entryId, storage]);
+  }, [entryId, offerId, storage]);
 
   useEffect(() => {
     if (!recipePickerOpen) return;
@@ -679,11 +641,11 @@ export function OfferFormPage({
         if (controller.signal.aborted) return;
         if (activeContextRef.current.entryId !== entryId || activeContextRef.current.offerId !== offerId) return;
         setEntry(entryData);
+        if (offerData && offerData.data.entryId !== entryId) {
+          setLoadError("La oferta no pertenece a la entrada seleccionada.");
+          return;
+        }
         if (offerData && !restoredFromStorageRef.current) {
-          if (offerData.data.entryId && offerData.data.entryId !== entryId) {
-            setLoadError("La oferta no pertenece a la entrada seleccionada.");
-            return;
-          }
           setOpeningEtag(offerData.etag);
           openingEtagRef.current = offerData.etag;
           setPresentationTag(offerData.data.presentationTag || "");
@@ -711,12 +673,15 @@ export function OfferFormPage({
   // Restore own pending operation from storage (F5 reload scenario)
   useEffect(() => {
     const operationController = getOrInitController();
+    let recovered = false;
+    setRecoveryReady(false);
     operationController
       .restoreFromStorage()
       .then((restored) => {
-        if (!restored) return;
+        recovered = true;
+        if (!mountedRef.current || controllerRef.current !== operationController || !restored) return;
         const currentStage = restored.stages[restored.currentStageIndex];
-        if (!currentStage || currentStage.status === "succeeded") return;
+        if (!currentStage) return;
 
         if (restored.editableDraft) {
           restoredFromStorageRef.current = true;
@@ -726,21 +691,26 @@ export function OfferFormPage({
           setSlots(ensureSlotLocalIds(restored.editableDraft.slots));
         }
 
-        if (restored.stages[0]?.payload.kind === "multipart-file") {
+        if (restored.editableDraft.imageFile) {
+          const p = restored.editableDraft.imageFile;
+          setSelectedFile(p);
+        } else if (restored.stages[0]?.payload.kind === "multipart-file") {
           const p = restored.stages[0].payload;
           const restoredFile = new File([p.fileBlob], p.fileName, { type: p.mimeType });
           setSelectedFile(restoredFile);
         }
 
+        openingEtagRef.current = restored.ifMatch ?? undefined;
+        if (currentStage.status === "succeeded" && restored.confirmedResult) {
+          void handleConfirmedResult({ status: "succeeded", result: restored.confirmedResult as MenuOfferDetail,
+            record: restored, hasDraftChangesSinceSubmission: restored.currentDraftVersion > restored.submittedDraftVersion });
+        }
         if (restored.confirmedImageId) {
           confirmedImageIdRef.current = restored.confirmedImageId;
         }
 
         if (currentStage.status === "uncertain" || currentStage.status === "conflict_in_progress") {
           setUncertainStage(restored.currentStageIndex === 0 ? "upload" : "persist");
-          if (currentStage.retryAfterUntil) {
-            setRetryCountdownMs(Math.max(0, currentStage.retryAfterUntil - Date.now()));
-          }
         }
 
         if (currentStage.status === "precondition_conflict") {
@@ -753,8 +723,22 @@ export function OfferFormPage({
           setFormError(currentStage.lastErrorMessage);
         }
       })
-      .catch(() => {});
-  }, [entryId, offerId, isEditing]);
+      .catch(() => {
+        if (isCurrentController(operationController)) setFormError("No se pudo recuperar la operación guardada. Reintenta la carga antes de enviar.");
+      })
+      .finally(() => { if (recovered && isCurrentController(operationController)) setRecoveryReady(true); });
+  }, [entryId, offerId, retryCount]);
+
+  useEffect(() => {
+    const controller = controllerRef.current;
+    if (!recoveryReady || !controller?.getRecord()) return;
+    void controller.updateEditableDraft(draftRef.current);
+  }, [presentationTag, basePrice, desiredStatus, slots, selectedFile, recoveryReady]);
+
+  const currentAttempt = controllerRef.current?.getCurrentAttempt() ?? null;
+  const retryEligibility = useRetryEligibility(currentAttempt);
+  const recoveryExpired = Boolean(currentAttempt && currentAttempt.status !== "succeeded" && isAttemptWindowExpired(currentAttempt));
+  const requiresNewOperation = currentAttempt?.status === "requires_new_key" && !newOperationAuthorized;
 
   useEffect(() => {
     if (!selectedFile) {
@@ -767,14 +751,14 @@ export function OfferFormPage({
   }, [selectedFile]);
 
   async function processSelectedImage(file: File) {
+    if (isSubmittingRef.current) return;
     const currentRun = imageValidationId.current + 1;
     imageValidationId.current = currentRun;
     setSelectedFile(file);
     setImageError("");
     setImageValidating(true);
-    confirmedImageIdRef.current = null;
-    controllerRef.current = null;
-
+    selectedFileRef.current = file;
+    // This file belongs to the editable draft; an uncertain request keeps its sealed image.
     try {
       await validateOfferImage(file);
     } catch (err) {
@@ -918,6 +902,7 @@ export function OfferFormPage({
           recipeId: recipe.id,
           recipeName: recipe.name,
           hasRecipeAssignmentIntent: true,
+          recipeAssignmentToken: generateLocalId(),
         };
       }
       return {
@@ -927,6 +912,7 @@ export function OfferFormPage({
         recipeName: recipe.name,
         displayName: prev.displayName.trim() ? prev.displayName : recipe.name,
         hasRecipeAssignmentIntent: true,
+        recipeAssignmentToken: generateLocalId(),
         inventoryItemId: undefined,
         inventoryItemName: undefined,
         quantity: undefined,
@@ -941,247 +927,176 @@ export function OfferFormPage({
     slot.options.some((opt) => opt.status === "ACTIVE"),
   );
 
-  async function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isSubmittingRef.current || saving) {
+  function isCurrentController(controller: OperationAttemptController<OfferFormDraftState, MenuOfferDetail>) {
+    return mountedRef.current && controllerRef.current === controller;
+  }
+
+  async function handleConfirmedResult(attemptResult: OperationExecutionResult<OfferFormDraftState, MenuOfferDetail>) {
+    const controller = controllerRef.current;
+    if (!controller || !isCurrentController(controller)) return;
+    const result = attemptResult.result!;
+    const sent = attemptResult.record.submittedDraft;
+    const current = controller.getRecord()?.editableDraft ?? attemptResult.record.editableDraft;
+    const reconciliation = sent ? reconcileComposition({
+      currentSlots: current.slots, sentSlots: sent.slots,
+      responseSlots: result.composition?.slots ?? [],
+    }) : { status: "ambiguous" as const, reason: "No se recuperó la identidad del envío original." };
+    confirmedOfferIdRef.current = result.id;
+    setConfirmedOfferId(result.id);
+    setUncertainStage(null);
+    confirmedImageIdRef.current = attemptResult.record.confirmedImageId;
+    invalidateCatalogEntries(repository);
+    if (reconciliation.status === "ambiguous") {
+      setAmbiguousResponse(result);
+      setAmbiguousNotice(`El envío anterior se guardó correctamente, pero su composición requiere revisión (${reconciliation.reason}).`);
       return;
     }
-    if (imageValidating) {
-      setFormError("La imagen se está validando. Espera a que termine la validación.");
-      return;
-    }
-    isSubmittingRef.current = true;
-    setSaving(true);
-    setFormError("");
-    setConflictNotice("");
-    setAmbiguousNotice("");
-
-    const error = validateOfferForm(
-      basePrice,
-      isEditing,
-      selectedFile,
-      imageError,
-      slots,
-      confirmedImageIdRef.current,
-      imageValidating,
-    );
-    if (error) {
-      setFormError(error);
-      isSubmittingRef.current = false;
-      setSaving(false);
-      return;
-    }
-
-    if (ambiguousResponse) {
-      setFormError("Debes resolver la revisión de la composición guardada antes de guardar nuevos cambios.");
-      isSubmittingRef.current = false;
-      setSaving(false);
-      return;
-    }
-
-    const currentEntryId = entryId;
-    const currentOfferId = offerId;
-    const controller = getOrInitController();
-
-    try {
-      const slotsWithLocalIds = ensureSlotLocalIds(slots);
-      await controller.updateEditableDraft({
-        presentationTag,
-        basePrice,
-        desiredStatus,
-        slots: slotsWithLocalIds,
-      });
-
-      const isRetry =
-        controller.getRecord() !== null &&
-        (controller.getCurrentAttempt()?.status === "uncertain" ||
-          controller.getCurrentAttempt()?.status === "conflict_in_progress" ||
-          controller.getCurrentAttempt()?.status === "pending_retry");
-
-      const attemptResult = isRetry
-        ? await controller.retryPending()
-        : await controller.submit();
-
-      if (activeContextRef.current.entryId !== currentEntryId || activeContextRef.current.offerId !== currentOfferId) {
-        return;
-      }
-
-      if (attemptResult.status === "succeeded") {
-        const result = attemptResult.result!;
-        const reconciliation = reconcileComposition({
-          currentSlots: slotsWithLocalIds,
-          sentSlots: sentSlotsRef.current,
-          responseSlots: result.composition?.slots || [],
-        });
-
-        if (reconciliation.status === "success") {
-          invalidateCatalogEntries(repository);
-          const confirmedSlots = reconciliation.slots.map((slot) => ({
-            ...slot,
-            options: slot.options.map((opt) => ({
-              ...opt,
-              hasRecipeAssignmentIntent: false,
-            })),
-          }));
-          setSlots(confirmedSlots);
-          const scope = isEditing ? buildOfferUpdateScope(offerId!) : buildOfferCreateScope(entryId);
-          await storage.deleteRecord(scope);
-          await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
-        } else {
-          setAmbiguousNotice(
-            `El envío anterior se guardó correctamente en el servidor, pero la correspondencia de la composición requiere revisión (${reconciliation.reason}).`,
-          );
-          setAmbiguousResponse(result);
-        }
+    const confirmedSlots = consumeConfirmedRecipeAssignments(reconciliation.slots, sent?.slots ?? []);
+    setSlots(confirmedSlots);
+    if (attemptResult.hasDraftChangesSinceSubmission) {
+      await controller.updateEditableDraft({ ...current, slots: confirmedSlots });
+      if (!isCurrentController(controller)) return;
+      setSavedNotice("El envío anterior se guardó. Tus cambios posteriores se conservan; guárdalos explícitamente.");
+      if (isStrongEtag(result.etag)) {
+        openingEtagRef.current = result.etag;
+        setOpeningEtag(result.etag);
       } else {
-        const currentAttempt = controller.getCurrentAttempt();
-        if (currentAttempt?.status === "precondition_conflict") {
-          setConflictNotice(
-            "Los datos de la oferta cambiaron en el servidor desde que se abrieron. Revisa la versión actual para decidir si adoptarla.",
-          );
-        } else if (
-          currentAttempt?.status === "uncertain" ||
-          currentAttempt?.status === "conflict_in_progress"
-        ) {
-          const rec = controller.getRecord();
-          setUncertainStage(rec?.currentStageIndex === 0 ? "upload" : "persist");
-          if (currentAttempt.retryAfterUntil) {
-            setRetryCountdownMs(Math.max(0, currentAttempt.retryAfterUntil - Date.now()));
-          }
-          setFormError(currentAttempt.lastErrorMessage || "La operación no pudo confirmarse.");
-        } else if (currentAttempt?.lastErrorMessage) {
-          setFormError(currentAttempt.lastErrorMessage);
-        } else if (attemptResult.outcome?.message) {
-          setFormError(attemptResult.outcome.message);
-        }
+        setConflictNotice("No se recibió la versión de la oferta confirmada. Revisa su versión antes de guardar los cambios posteriores.");
       }
-    } catch (err) {
-      if (activeContextRef.current.entryId !== currentEntryId || activeContextRef.current.offerId !== currentOfferId) {
-        return;
-      }
-      const msg = extractStructuredErrorMessage(err);
-      if (err && typeof err === "object" && "response" in err) {
-        const res = (err as { response?: { status?: number } }).response;
-        if (res?.status === 412) {
-          setConflictNotice(
-            "Los datos de la oferta cambiaron en el servidor desde que se abrieron. Revisa la versión actual para decidir si adoptarla.",
-          );
-          return;
-        }
-      }
-      setFormError(msg);
-    } finally {
-      isSubmittingRef.current = false;
-      if (activeContextRef.current.entryId === currentEntryId && activeContextRef.current.offerId === currentOfferId) {
-        setSaving(false);
-      }
+    } else {
+      await controller.abandonFlow().catch(() => {});
+      if (!isCurrentController(controller)) return;
+      await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
     }
   }
 
-  async function handleManualRetry() {
-    if (isSubmittingRef.current || saving) return;
+  function handleAttemptFailure(controller: OperationAttemptController<OfferFormDraftState, MenuOfferDetail>) {
+    const attempt = controller.getCurrentAttempt();
+    setNewOperationAuthorized(false);
+    setFormError(attempt?.lastErrorMessage ?? "La operación no pudo confirmarse.");
+    if (attempt?.status === "precondition_conflict") {
+      setConflictNotice("Los datos de la oferta cambiaron en el servidor desde que se abrieron. Revisa la versión actual para decidir si adoptarla.");
+    } else if (attempt?.status === "uncertain" || attempt?.status === "conflict_in_progress") {
+      setUncertainStage(attempt.operationKind === "image.upload" ? "upload" : "persist");
+    } else {
+      setUncertainStage(null);
+    }
+  }
+
+  async function executeSave(action: "submit" | "retry") {
+    if (isSubmittingRef.current || saving || !recoveryReady) return;
+    if (ambiguousResponse || conflictNotice) return;
+    const controller = getOrInitController();
+    const pending = controller.getCurrentAttempt();
+    if (pending && pending.status !== "succeeded" && isAttemptWindowExpired(pending)) {
+      setFormError("La ventana de recuperación de 24 horas expiró. Revisa la oferta actual antes de iniciar otra operación.");
+      return;
+    }
+    if (pending?.status === "requires_new_key" && !newOperationAuthorized) {
+      setFormError("El envío fue rechazado. Pulsa «Iniciar nueva operación» antes de guardar tus cambios.");
+      return;
+    }
+    const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
+    if (!recovering) {
+      const error = validateOfferForm(basePrice, isEditing, selectedFile, imageError, slots, confirmedImageIdRef.current, imageValidating);
+      if (error) { setFormError(error); return; }
+    }
     isSubmittingRef.current = true;
     setSaving(true);
     setFormError("");
-    const currentEntryId = entryId;
-    const currentOfferId = offerId;
-    const controller = getOrInitController();
-
     try {
-      const attemptResult = await controller.retryPending();
-
-      if (activeContextRef.current.entryId !== currentEntryId || activeContextRef.current.offerId !== currentOfferId) {
-        return;
+      await controller.updateEditableDraft(draftRef.current);
+      if (pending?.status === "pre_commit_rejected" || pending?.status === "succeeded" || pending?.status === "precondition_conflict" ||
+        (pending?.status === "requires_new_key" && newOperationAuthorized)) {
+        await controller.startNewAttemptFromEditableDraft({ ifMatch: openingEtagRef.current,
+          preserveConfirmedImage: selectedFile === controller.getRecord()?.submittedDraft?.imageFile });
+        setNewOperationAuthorized(false);
       }
-
-      if (attemptResult.status === "succeeded") {
-        setUncertainStage(null);
-        const result = attemptResult.result!;
-        const reconciliation = reconcileComposition({
-          currentSlots: slots,
-          sentSlots: sentSlotsRef.current,
-          responseSlots: result.composition?.slots || [],
-        });
-
-        if (reconciliation.status === "success") {
-          invalidateCatalogEntries(repository);
-          const confirmedSlots = reconciliation.slots.map((slot) => ({
-            ...slot,
-            options: slot.options.map((opt) => ({
-              ...opt,
-              hasRecipeAssignmentIntent: false,
-            })),
-          }));
-          setSlots(confirmedSlots);
-          const scope = isEditing ? buildOfferUpdateScope(offerId!) : buildOfferCreateScope(entryId);
-          await storage.deleteRecord(scope);
-          await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
-        } else {
-          setAmbiguousNotice(
-            `El envío anterior se guardó correctamente en el servidor, pero la correspondencia de la composición requiere revisión (${reconciliation.reason}).`,
-          );
-          setAmbiguousResponse(result);
-        }
-      } else {
-        const currentAttempt = controller.getCurrentAttempt();
-        if (currentAttempt?.status === "precondition_conflict") {
-          setConflictNotice(
-            "Los datos de la oferta cambiaron en el servidor desde que se abrieron. Revisa la versión actual para decidir si adoptarla.",
-          );
-        } else if (
-          currentAttempt?.status === "uncertain" ||
-          currentAttempt?.status === "conflict_in_progress"
-        ) {
-          const rec = controller.getRecord();
-          setUncertainStage(rec?.currentStageIndex === 0 ? "upload" : "persist");
-          if (currentAttempt.retryAfterUntil) {
-            setRetryCountdownMs(Math.max(0, currentAttempt.retryAfterUntil - Date.now()));
-          }
-          setFormError(currentAttempt.lastErrorMessage || "La operación no pudo confirmarse.");
-        } else if (currentAttempt?.lastErrorMessage) {
-          setFormError(currentAttempt.lastErrorMessage);
-        }
-      }
+      const result = recovering ? await controller.retryPending() : await controller.submit();
+      if (!isCurrentController(controller)) return;
+      if (result.status === "succeeded") await handleConfirmedResult(result);
+      else handleAttemptFailure(controller);
     } catch (err) {
-      if (activeContextRef.current.entryId === currentEntryId && activeContextRef.current.offerId === currentOfferId) {
-        setFormError(extractStructuredErrorMessage(err));
-      }
+      if (isCurrentController(controller)) setFormError(extractStructuredErrorMessage(err));
     } finally {
-      isSubmittingRef.current = false;
-      if (activeContextRef.current.entryId === currentEntryId && activeContextRef.current.offerId === currentOfferId) {
-        setSaving(false);
-      }
+      if (isCurrentController(controller)) { isSubmittingRef.current = false; setSaving(false); }
     }
+  }
+
+  function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void executeSave("submit");
+  }
+
+  function handleManualRetry() { return executeSave("retry"); }
+
+  function handleStartNewOperation() {
+    const attempt = controllerRef.current?.getCurrentAttempt();
+    if (!recoveryReady || saving || reviewLoading || isSubmittingRef.current ||
+      attempt?.status !== "requires_new_key" || isAttemptWindowExpired(attempt)) return;
+    // Authorization is explicit; sealing waits for Save so later edits are included.
+    setNewOperationAuthorized(true);
+    setUncertainStage(null);
+    setFormError("");
+    setSavedNotice("Nueva operación preparada. Pulsa Guardar Oferta para enviar tus cambios.");
+  }
+
+  function abandonEditor() {
+    mountedRef.current = false;
+    imageValidationId.current += 1;
+    const controller = controllerRef.current;
+    controller?.detachForReload();
+    void controller?.abandonFlow().catch(() => {});
   }
 
   async function handleReviewCurrentOffer() {
-    if (!offerId) return;
+    const targetId = offerId ?? confirmedOfferIdRef.current;
+    if (!targetId) return;
+    const controller = controllerRef.current;
     setReviewLoading(true);
     setFormError("");
     try {
-      const versioned = await repository.getOffer(offerId);
+      const versioned = await repository.getOffer(targetId);
+      if (!mountedRef.current || controllerRef.current !== controller) return;
       setReviewedOffer(versioned);
     } catch (err) {
-      setFormError(extractStructuredErrorMessage(err));
+      if (mountedRef.current && controllerRef.current === controller) setFormError(extractStructuredErrorMessage(err));
     } finally {
-      setReviewLoading(false);
+      if (mountedRef.current && controllerRef.current === controller) setReviewLoading(false);
     }
   }
 
-  function handleAdoptReviewedOffer() {
-    if (!reviewedOffer) return;
+  async function handleAdoptReviewedOffer() {
+    if (!reviewedOffer || reviewLoading) return;
+    const controller = controllerRef.current;
+    const pending = controller?.getCurrentAttempt();
+    const reviewedSlots = ensureSlotLocalIds(mapOfferDetailToSlots(reviewedOffer.data));
+    if (controller && pending && pending.status !== "succeeded" && isAttemptWindowExpired(pending)) {
+      setReviewLoading(true);
+      try {
+        await controller.updateEditableDraft({ ...draftRef.current, slots: reviewedSlots });
+        openingEtagRef.current = reviewedOffer.etag;
+        await controller.startNewAttemptFromEditableDraft({ ifMatch: reviewedOffer.etag,
+          confirmExpiredWindow: true, forceDiscardUncertain: true,
+          preserveConfirmedImage: selectedFile === controller.getRecord()?.submittedDraft?.imageFile });
+        if (!isCurrentController(controller)) return;
+        setUncertainStage(null);
+        setFormError("");
+      } catch (err) {
+        if (isCurrentController(controller)) setFormError(extractStructuredErrorMessage(err));
+        return;
+      } finally {
+        if (isCurrentController(controller)) setReviewLoading(false);
+      }
+    }
     setOpeningEtag(reviewedOffer.etag);
     openingEtagRef.current = reviewedOffer.etag;
-    setSlots(ensureSlotLocalIds(mapOfferDetailToSlots(reviewedOffer.data)));
-    setPresentationTag(reviewedOffer.data.presentationTag || "");
-    setBasePrice(String(reviewedOffer.data.basePrice ?? ""));
-    setDesiredStatus(reviewedOffer.data.status);
-    setExistingImage(reviewedOffer.data.image);
+    setSlots(reviewedSlots);
+
     setConflictNotice("");
     setAmbiguousNotice("");
     setAmbiguousResponse(null);
     setReviewedOffer(null);
-    controllerRef.current = null;
     invalidateCatalogEntries(repository);
   }
 
@@ -1221,7 +1136,7 @@ export function OfferFormPage({
   return (
     <div className="app-shell offer-form-view">
       <nav className="global-nav" aria-label="Navegación principal">
-        <Link className="brand" to={returnTo} state={{ returnTo: catalogReturnTo }}>
+        <Link onClick={abandonEditor} className="brand" to={returnTo} state={{ returnTo: catalogReturnTo }}>
           <span className="brand__mark" aria-hidden="true">F</span>
           <span>FMAT <strong>Restaurant</strong></span>
         </Link>
@@ -1230,7 +1145,7 @@ export function OfferFormPage({
 
       <main className="offer-form-page">
         <header className="offer-form-page__heading">
-          <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
+          <Link onClick={abandonEditor} to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
             ← Volver a ofertas
           </Link>
           <p className="eyebrow">Administración / Menú / Ofertas</p>
@@ -1259,14 +1174,30 @@ export function OfferFormPage({
 
         {!loading && !loadError && (
           <form className="offer-form" onSubmit={handleSaveOffer} aria-busy={saving} noValidate>
+            {requiresNewOperation && !recoveryExpired && (
+              <div className="feedback feedback--warning" role="status">
+                Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
+                <button type="button" className="button button--small button--secondary" disabled={saving || reviewLoading}
+                  onClick={handleStartNewOperation}>Iniciar nueva operación</button>
+              </div>
+            )}
+            {recoveryExpired && (
+              <div className="feedback feedback--warning" role="alert">
+                La ventana de recuperación de 24 horas expiró. El envío anterior no se repetirá.
+                {(offerId || confirmedOfferIdRef.current) && <button type="button" className="button button--small button--secondary"
+                  disabled={reviewLoading} onClick={() => void handleReviewCurrentOffer()}>
+                  {reviewLoading ? "Consultando…" : "Revisar oferta actual"}
+                </button>}
+              </div>
+            )}
             {uncertainStage && (
               <div className="feedback feedback--warning" role="alert">
-                La operación anterior no pudo confirmarse. Puedes reintentar con los mismos datos guardados o cancelar para revisar el borrador.{" "}
+                La operación anterior no pudo confirmarse. Reintentar recupera el envío original; los cambios posteriores permanecen en el formulario.{" "}
                 <button
                   type="button"
                   className="button button--small button--primary"
                   onClick={() => void handleManualRetry()}
-                  disabled={saving || retryCountdownMs > 0}
+                  disabled={saving || retryEligibility?.allowed === false}
                 >
                   Reintentar
                 </button>
@@ -1301,7 +1232,8 @@ export function OfferFormPage({
                 <button
                   type="button"
                   className="button button--small button--primary"
-                  onClick={handleAdoptReviewedOffer}
+                  onClick={() => void handleAdoptReviewedOffer()}
+                  disabled={reviewLoading}
                 >
                   Adoptar composición del servidor
                 </button>
@@ -1319,7 +1251,8 @@ export function OfferFormPage({
                 <button
                   type="button"
                   className="button button--small button--primary"
-                  onClick={handleAdoptReviewedOffer}
+                  onClick={() => void handleAdoptReviewedOffer()}
+                  disabled={reviewLoading}
                 >
                   Adoptar versión del servidor
                 </button>
@@ -1333,9 +1266,11 @@ export function OfferFormPage({
               </div>
             )}
 
+            {savedNotice && <p className="feedback" role="status">{savedNotice}</p>}
             {formError && (
               <p className="feedback feedback--error" role="alert">
                 {formError}
+                {!recoveryReady && <button type="button" onClick={() => setRetryCount(count => count + 1)}>Reintentar recuperación</button>}
               </p>
             )}
 
@@ -1370,13 +1305,13 @@ export function OfferFormPage({
             />
 
             <div className="offer-form__actions">
-              <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="button button--secondary">
+              <Link onClick={abandonEditor} to={returnTo} state={{ returnTo: catalogReturnTo }} className="button button--secondary">
                 Cancelar
               </Link>
               <button
                 type="submit"
                 className="button button--primary"
-                disabled={saving || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
+                disabled={!recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
                 {saving ? "Guardando…" : "Guardar Oferta"}
               </button>
@@ -1417,6 +1352,7 @@ export function OfferFormPage({
             className="recipe-picker-modal"
             aria-label="Biblioteca de recetas"
             onCancel={(event) => {
+              if (event.target !== event.currentTarget) return;
               event.preventDefault();
               event.stopPropagation();
               setRecipePickerOpen(false);

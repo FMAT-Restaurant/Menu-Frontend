@@ -1,3 +1,4 @@
+import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type {
@@ -92,7 +93,6 @@ interface MockOptionInput {
   status: OfferStatus;
   sourceType: "RECIPE" | "INVENTORY_ITEM";
   recipeId?: string;
-  recipeRevision?: number;
   inventoryItemId?: string;
 }
 
@@ -136,7 +136,6 @@ function createMockRepository(): jest.Mocked<OfferFormRepository> {
               status: o.status,
               sourceType: o.sourceType,
               recipeId: o.recipeId,
-              recipeRevision: o.recipeRevision,
               inventoryItemId: o.inventoryItemId,
             })),
           })),
@@ -171,7 +170,6 @@ function createMockRepository(): jest.Mocked<OfferFormRepository> {
               status: o.status,
               sourceType: o.sourceType,
               recipeId: o.recipeId,
-              recipeRevision: o.recipeRevision,
               inventoryItemId: o.inventoryItemId,
             })),
           })),
@@ -1336,8 +1334,8 @@ describe("OfferFormPage (V4)", () => {
 
     // Pre-populate storage with an interrupted recipe creation having nested offer context
     await storage.saveRecord({
-      storageKey: "global-tab:recipe-form:recipe-create",
-      scope: { tabId: "global-tab", formKind: "recipe-form", resourceKey: "recipe-create" },
+      storageKey: buildOperationStorageKey(buildRecipeCreateScope()),
+      scope: buildRecipeCreateScope(),
       createdAt: Date.now() - 5000,
       updatedAt: Date.now() - 5000,
       currentStageIndex: 0,
@@ -1471,13 +1469,13 @@ describe("OfferFormPage (V4)", () => {
     const adoptButton = screen.getByRole("button", { name: "Adoptar versión del servidor" });
     fireEvent.click(adoptButton);
 
-    // Local form now has server values and ETag is updated
+    // Adoption updates composition/version while retaining the visible commercial draft.
     await waitFor(() => {
       expect(screen.getByLabelText(/Etiqueta de presentación/)).toHaveValue(
-        "Tag Actualizado en Servidor v2"
+        "Edición Local de Usuario"
       );
     });
-    expect(screen.getByLabelText(/Precio base/)).toHaveValue(999);
+    expect(screen.getByLabelText(/Precio base/)).toHaveValue(mockOffer.basePrice);
   });
 
   test("restores uncertain attempt on mount without auto-submitting and allows retry with same idempotency key (A01, A08)", async () => {

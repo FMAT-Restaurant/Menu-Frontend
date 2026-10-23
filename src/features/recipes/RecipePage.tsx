@@ -6,6 +6,7 @@ import type {
   RecipeDetail,
   RecipeDraft,
   RecipeSummary,
+  VersionedResource,
 } from "../../application/catalog";
 import type {
   PendingOperationChainRecord,
@@ -37,9 +38,11 @@ export function RecipePage({
   mode: propMode,
   onSelectRecipe,
   onClose,
-  storage = createIndexedDbPendingOperationStorage(),
+  storage: providedStorage,
   nestedContext,
 }: Readonly<RecipePageProps>) {
+  const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
+  const storage = providedStorage ?? fallbackStorage;
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -71,6 +74,7 @@ export function RecipePage({
   const [retry, setRetry] = useState(0);
 
   const [editingRecipe, setEditingRecipe] = useState<RecipeDetail | RecipeSummary | "new" | null>(null);
+  const [openingResource, setOpeningResource] = useState<VersionedResource<RecipeDetail>>();
   const [initialPendingRecord, setInitialPendingRecord] =
     useState<PendingOperationChainRecord<RecipeDraft> | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
@@ -104,7 +108,7 @@ export function RecipePage({
       .then((record) => {
         if (cancelled || !record) return;
         const currentStage = record.stages[record.currentStageIndex];
-        if (currentStage && currentStage.status !== "succeeded") {
+        if (currentStage && (currentStage.status !== "succeeded" || record.confirmedResult)) {
           setInitialPendingRecord(record);
           setEditingRecipe("new");
         }
@@ -212,6 +216,7 @@ export function RecipePage({
       const versioned = await repository.getRecipe(recipe.id, controller.signal);
       if (controller.signal.aborted || openingRecipeIdRef.current !== recipe.id) return;
       setEditingRecipe(versioned.data);
+      setOpeningResource(versioned);
     } catch {
       if (controller.signal.aborted || openingRecipeIdRef.current !== recipe.id) return;
       setActionError("No se pudo cargar el detalle completo de la receta.");
@@ -234,9 +239,8 @@ export function RecipePage({
     }
   }
 
-  function handleRecipeCreatedWithPendingEdits(created: RecipeDetail) {
+  function handleRecipeCreatedWithPendingEdits() {
     setNotice("Receta creada exitosamente. Continuando con las ediciones locales.");
-    setEditingRecipe(created);
     setRetry((r) => r + 1);
   }
 
@@ -468,6 +472,7 @@ export function RecipePage({
               : editingRecipe.id
           }
           recipe={editingRecipe === "new" ? undefined : editingRecipe}
+          openingResource={editingRecipe === "new" ? undefined : openingResource}
           repository={repository}
           storage={storage}
           initialPendingRecord={initialPendingRecord}

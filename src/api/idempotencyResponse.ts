@@ -281,7 +281,7 @@ export function analyzeIdempotentAttemptError(
       status: 409,
       errorCode: "IDEMPOTENCY_IN_PROGRESS_INVALID_RETRY_AFTER",
       message:
-        "La solicitud con esta clave de idempotencia sigue en proceso, pero el encabezado Retry-After falta o no es válido. Reintenta manualmente cuando desees consultar el resultado.",
+        "La solicitud sigue en proceso, pero el encabezado Retry-After falta o no es válido. La operación queda pausada; conserva el borrador y revisa su estado antes de continuar.",
       retryAfterSeconds: null,
       retryAfterInvalid: true,
       possibleWriteApplied: true,

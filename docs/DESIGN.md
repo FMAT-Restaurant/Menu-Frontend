@@ -88,6 +88,8 @@ spacing:
 
 A unified, minimalist visual component guide designed for restaurant software ecosystems, including point-of-sale (POS) touch interfaces, kitchen order displays (KDS), waiter service terminals, and back-office operations.
 
+**Scope:** This frontend is embedded in a host shell. This guide covers only the functional content of the current screen: task-specific controls, data, actions, and states. Each view starts directly with that content, uses the area provided by the shell, and leaves application-wide structure to its host.
+
 **Guiding Principles:** Minimalist · Clear · Consistent · Easy to implement
 
 ---
@@ -99,7 +101,7 @@ The design language establishes a calm, distraction-free, and highly functional 
 Rather than relying on dense decorative cards or competing accent colors, the interface enforces a strict **70 - 20 - 10 visual balance model**:
 
 ### The 70 - 20 - 10 Balance Model
-* **70% Clean White & Neutral Canvas:** Page canvas (`#F8FAFC`) and card surfaces (`#FFFFFF`). Delivers ample breathing room and eliminates visual noise.
+* **70% Clean White & Neutral Canvas:** Content canvas (`#F8FAFC`) and card surfaces (`#FFFFFF`). Delivers ample breathing room and eliminates visual noise.
 * **20% Structure, Typography & Dividers:** High-contrast headlines in Ink (`#111827`), readable body text in Slate (`#374151`), secondary descriptions in Muted Gray (`#6B7280`), and hairline borders (`#E5E7EB`).
 * **10% Focused Orange & Functional States:** Institutional Terracotta Orange (`#C2410C`), Accent Orange (`#F97316`), Soft Selection Tint (`#FFF7ED`), and clear semantic status indicators (Green, Amber, Red, Blue).
 * **Core Rule:** **Orange directs user attention.** It is reserved exclusively for the primary call-to-action per block, active row/card selection, and prominent focal points. It must never be applied as a solid background for full cards or used for decorative wallpaper.
@@ -109,19 +111,19 @@ Rather than relying on dense decorative cards or competing accent colors, the in
 ## 2. Color Palette & Roles
 
 ### Base Surfaces & Boundaries
-- **Canvas (`#F8FAFC`)**: Page background. A very light, cool neutral gray providing subtle separation behind pure white containers.
-- **Surface (`#FFFFFF`)**: Pure white background for cards, modal dialogs, data table containers, and form panels.
+- **Canvas (`#F8FAFC`)**: Screen content background. A very light, cool neutral gray providing subtle separation behind pure white containers.
+- **Surface (`#FFFFFF`)**: Pure white background for cards, data table containers, and form panels.
 - **Border (`#E5E7EB`)**: Structural 1px boundary lines, card borders, table dividers, and default input field strokes.
 
 ### Typography Hierarchy
-- **Ink (`#111827`)**: Primary titles (H1, H2, H3) and critical monetary totals requiring maximum contrast and instant scannability.
+- **Ink (`#111827`)**: Section and component titles and critical monetary totals requiring maximum contrast and instant scannability.
 - **Text (`#374151`)**: Standard interface copy, ingredient labels, form field titles, and table text.
 - **Muted (`#6B7280`)**: Secondary copy, order modifier instructions, table column metadata, dates, and placeholder hints.
 
 ### Primary Brand & Interactive Tokens
-- **Primary Terracotta (`#C2410C`)**: Main interactive brand color. Assigned strictly to primary action buttons ("Save changes", "Charge account", "Add"), active toggles, and primary navigation highlights.
+- **Primary Terracotta (`#C2410C`)**: Main interactive brand color. Assigned strictly to primary action buttons ("Save changes", "Charge account", "Add"), active toggles, and selected screen filters.
 - **Hover / Pressed (`#9A3412`)**: Darkened terracotta providing immediate tactile feedback upon hover or tap.
-- **Accent Orange (`#F97316`)**: Vibrant orange used for prominent icons, small detail accents, and notification indicators.
+- **Accent Orange (`#F97316`)**: Vibrant orange used for prominent icons, small detail accents, and inline status indicators.
 - **Soft Orange (`#FFF7ED`)**: Soft luminous tint used as the background fill for selected order cards, active table items, and primary tag containers.
 
 ### Semantic Status Colors
@@ -142,9 +144,9 @@ Every status is communicated through a distinct colored circular dot paired with
 Typography maintains strict scale discipline, using uniform line heights and clean sans-serif geometry to guarantee legibility across screen sizes.
 
 ### Typographic Scale
-- **H1 · Screen Title:** `28px` / Line-height: `36px` | Weight: `700 (Bold)` | Color: `#111827`. Designates the overarching screen view (e.g., "Catalog", "Sales Overview").
-- **H2 · Section Title:** `22px` / Line-height: `30px` | Weight: `700 (Bold)` | Color: `#111827`. Major visual block headers (e.g., "Products", "Orders", "Check #1234").
-- **H3 · Component & Card Header:** `18px` / Line-height: `26px` | Weight: `600 (Semi-Bold)` | Color: `#111827`. Identifies individual cards (e.g., "Classic Burger", "Table 04").
+- **Large Metric:** `28px` / Line-height: `36px` | Weight: `700 (Bold)` | Color: `#111827`. Emphasizes a primary numerical value within the screen content (e.g., total sales or order count).
+- **H2 · Section Title:** `22px` / Line-height: `30px` | Weight: `700 (Bold)` | Color: `#111827`. Identifies functional content sections (e.g., "Products", "Orders", "Check #1234").
+- **H3 · Component & Card Title:** `18px` / Line-height: `26px` | Weight: `600 (Semi-Bold)` | Color: `#111827`. Identifies individual cards (e.g., "Classic Burger", "Table 04").
 - **Body · Main Interface Text:** `16px` / Line-height: `24px` | Weight: `400 (Regular)` | Color: `#374151`. Product descriptions, table row values, and input text.
 - **Small · Auxiliary Text & Labels:** `14px` / Line-height: `20px` | Weight: `400 (Regular)` or `500 (Medium)` | Color: `#6B7280`. Form field labels, modifier notes, timestamps, and status chips.
 - **Caption · Micro Metadata:** `12px` / Line-height: `16px` | Weight: `400 (Regular)` | Color: `#6B7280`. Footnotes, sub-timestamps, and fine print.
@@ -167,7 +169,7 @@ Typography maintains strict scale discipline, using uniform line heights and cle
 - **Disabled:** Soft gray background (`#F3F4F6`), muted text (`#9CA3AF`), cursor `not-allowed`.
 - **Button Sizes:**
   - **SM (32px):** Compact filters and inline table actions.
-  - **MD (40px):** Standard toolbar buttons and form controls.
+  - **MD (40px):** Standard screen actions and form controls.
   - **LG (48px):** High-touch primary POS actions ("Charge account", "Send to kitchen").
 - **Icon-Only Buttons:** Minimum hit target of `40 × 40 px` with centered 16–20px icon.
 - **Copywriting Syntax:** `Verb + Object` formula (e.g., "Charge account", "Save changes", "Add product" rather than generic "Accept" or "OK").
@@ -197,40 +199,35 @@ Typography maintains strict scale discipline, using uniform line heights and cle
   - Bold price display (`$145.00`).
   - Full-width or right-aligned "Add" button at the base.
 - **Selectable Order Card:**
-  - Header with order identifier ("Order #2035") and status tag ("● Paid" or "● Pending").
+  - Order identifier ("Order #2035") and status tag ("● Paid" or "● Pending").
   - Subtitle with table and party size ("Table 20 · 4 guests").
   - Total monetary value right-aligned ("$230.00").
   - **Selected State:** Switches to Soft Orange background (`#FFF7ED`) with a 2px `#C2410C` perimeter stroke.
 - **Summary KPI Card:**
   - White surface with fine 1px border.
-  - Header label ("TODAY'S SALES", "ORDERS").
-  - Large H1 numerical metric (`$12,480`, `48`).
+  - Metric label ("TODAY'S SALES", "ORDERS").
+  - Large numerical metric (`$12,480`, `48`).
   - Trend variation or subtext ("+8.4%", "12 pending") with quick action link ("View orders").
 - **Horizontal Card:**
-  - Compact horizontal layout: left thumbnail, title, quantity ("Quantity: 2"), price ("$236.00"), and 3-dot overflow menu.
+  - Compact horizontal layout: left thumbnail, title, quantity ("Quantity: 2"), price ("$236.00"), and inline actions.
 
-### 4.4 Shell, Navigation & Filtering
-*Unified application shell where navigation is shared and individual modules supply content.*
-- **Topbar:** Dark (`#111827`) or white bar featuring brand mark and quick search bar ("Search product").
-- **Sidebar Navigation:**
-  - **Compact Variant:** 48–56px wide icon-only rail for high-density tablet views.
-  - **Expanded Variant:** Icon + descriptive label ("Home", "Catalog", "Orders", "Users").
-  - Active item highlighted with Soft Orange fill (`#FFF7ED`) and Terracotta icon/text (`#C2410C`).
-- **Breadcrumbs:** Scannable navigation trail: `Home / Inventory / Products`.
+### 4.4 Content Filtering & Pagination
+*Controls act on the data displayed in the current screen.*
 - **Category Filter Tabs:** Horizontal segmented tabs ("All", "Available", "Out of stock"). Active tab displays semi-bold text with a solid 2px bottom accent indicator in `#C2410C`.
 - **Pagination:** Numbered button cluster (1, 2, 3, 4, 5). Active page highlighted with solid `#C2410C` fill and white text.
 
 ### 4.5 Data Tables & Compact Lists
-*Light borders, right-aligned numbers, and secondary actions grouped inside dropdown menus.*
-- **Header:** Light neutral background (`#F8FAFC`), semi-bold labels, integrated search bar ("Search ingredient") and "+ Add" button.
+*Light borders, right-aligned numbers, and inline secondary actions.*
+- **Column Labels:** Light neutral background (`#F8FAFC`) and semi-bold labels.
+- **Table Controls:** Local search field ("Search ingredient") and "+ Add" button placed next to the table they affect.
 - **Alignment:** Names and categories align left; quantities, units, and monetary prices align right.
 - **Stock Badges:** "● In stock" (Green), "● Low stock" (Amber), "● Out of stock" (Red).
-- **Row Actions:** Three-dot menu (`...`) at the right of each row for secondary commands (Edit, Deactivate).
-- **Mobile Transformation:** Tables collapse automatically into compact scannable cards on mobile viewports.
+- **Row Actions:** Inline buttons at the right of each row for secondary commands (Edit, Deactivate).
+- **Mobile Transformation:** Tables collapse automatically into compact scannable cards when the available content width is below 768px.
 
-### 4.6 System Feedback, Empty States & Modals
-*The user always knows what happened and what can be done next.*
-- **Feedback Banners / Toasts:**
+### 4.6 Inline Feedback & Empty States
+*Feedback appears within the affected screen content so the user knows what happened and what can be done next.*
+- **Inline Status Messages:** Placed next to the relevant form, list, or action and kept within the normal content flow.
   - Success: "● Product saved successfully." (fill: `#F0FDF4`, border: `#BBF7D0`).
   - Warning: "● 4 units remaining in inventory." (fill: `#FFFBEB`, border: `#FDE68A`).
   - Error: "● Could not process payment." (fill: `#FEF2F2`, border: `#FECACA`).
@@ -240,12 +237,6 @@ Typography maintains strict scale discipline, using uniform line heights and cle
   - Clear H3 headline: "No products yet".
   - Guidance subtitle: "Add the first product to get started".
   - Dedicated primary CTA: "+ Add product".
-- **Confirmation Modal:**
-  - Centered dialog container over dark backdrop overlay (`rgba(17, 24, 39, 0.4)`).
-  - H2 title: "Confirm deletion".
-  - Explanatory copy: "“Classic Burger” will be deleted. This action cannot be undone."
-  - Highlighted warning banner: "Review the product before continuing."
-  - Action buttons: "Cancel" (tertiary on left) and "Delete" (solid destructive red on right).
 
 ### 4.7 Restaurant Operational Patterns
 Reusable interface patterns engineered for restaurant floor operations:
@@ -255,12 +246,12 @@ Reusable interface patterns engineered for restaurant floor operations:
   - Operational details: "4 guests · 32 min" or "Capacity: 4 guests".
   - Action button: Secondary "View table".
 - **Kitchen Order Ticket (KDS):**
-  - High-contrast header banner: "TABLE 04 · #184 12:41".
+  - High-contrast order identification: "TABLE 04 · #184 12:41".
   - Ordered items list with bold quantities (e.g., `2 Classic Burger`, `1 House Salad`, `3 Mineral Water`).
   - Cooking notes and customer modifiers in muted text (`No onion · Medium rare`, `Dressing on the side`).
   - Primary bottom CTA: "Mark as ready" (`#C2410C`).
 - **Check / Receipt Panel (POS Checkout):**
-  - Receipt header: "Check #1234", "Table 04 · 22/09/2026 · 18:45".
+  - Receipt identification: "Check #1234", "Table 04 · 22/09/2026 · 18:45".
   - Line items: `2 × Classic Burger $290.00`, `1 × House Salad $118.00`, `3 × Mineral Water $90.00`.
   - Prominent financial total in H2: "Total $498.00".
   - Full-width touch CTA: "Charge account" / "Pay check" (48px height, `#C2410C`).
@@ -275,13 +266,13 @@ All spatial increments are multiples of the **4px base unit (`--space-unit: 4px`
 - `8px`: Compact spacing (gap between form label and input, tight control margins).
 - `12px`: Element stack spacing (vertical distance between form rows).
 - `16px`: Standard spacing (card grid gutters, internal card padding).
-- `24px`: Canvas margin (outer screen margins, structural module gaps).
-- `32px` & `48px`: Major section gutters, modal dialog margins.
+- `24px`: Spacing between functional content sections.
+- `32px` & `48px`: Major section gutters within the available content area.
 
 ### Corner Radii Hierarchy
 - **4px (`--radius-sm`)**: Status badges, compact tags, and chips.
 - **8px (`--radius-control: 8px`)**: Interactive buttons, input fields, selects, and filter chips.
-- **12px (`--radius-card: 12px`)**: Product cards, order tickets, modals, and panel containers.
+- **12px (`--radius-card: 12px`)**: Product cards, order tickets, and panel containers.
 
 ### Touch Ergonomics & Hit Targets
 - **40px (`h-10`)**: Standard control height for mouse/pointer navigation.
@@ -289,23 +280,20 @@ All spatial increments are multiples of the **4px base unit (`--space-unit: 4px`
 - **40 × 40 px**: Absolute minimum boundary for icon-only touch buttons.
 
 ### Elevation & Depth
-- Primarily flat aesthetic. Shadows are used sparingly to separate overlapping layers (`box-shadow: 0 1px 3px rgba(0,0,0,0.05)`). Modales utilize soft diffused ambient drop shadows (`box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1)`). Neon halos, saturated glows, and backdrop blurs are prohibited.
+- Primarily flat aesthetic. Shadows are used sparingly to define card and panel boundaries (`box-shadow: 0 1px 3px rgba(0,0,0,0.05)`). Neon halos and saturated glows are prohibited.
 
 ---
 
 ## 6. Responsive Architecture
 
-Components rearrange across viewports without shrinking into illegibility:
+Components rearrange according to the content width provided by the shell, without shrinking into illegibility. The following ranges refer to that available width:
 - **Desktop (`≥ 1200 px` · 12-Column Grid):**
-  - Full experience with expanded sidebar.
-  - Workspace displays a 3 to 4 column card grid.
+  - Content displays a 3 to 4 column card grid.
 - **Tablet Landscape (`768–1199 px` · 8-Column Grid) — POS Standard:**
-  - Compact icon-only left sidebar (48–56px).
   - 2-column workspace (e.g., active orders list on left, receipt breakdown on right).
   - Touch-friendly 48px controls.
 - **Mobile (`< 768 px` · 4-Column Grid):**
   - Single stacked column layout.
-  - Sidebar collapses into a sticky bottom navigation bar.
   - Wide data tables transform into compact vertical card lists.
 
 ---
@@ -318,14 +306,15 @@ Components rearrange across viewports without shrinking into illegibility:
 - **NEVER** fill entire card backgrounds with orange or use orange as decorative screen wallpaper.
 - **NEVER** use red as a primary brand color; red is strictly reserved for destructive deletion and error states.
 - **NEVER** hide form input labels inside placeholder text.
-- **NEVER** duplicate topbars, sidebars, or global wrapper elements inside inner view modules.
+- **NEVER** add application-wide structure or unrelated elements to a screen's functional content.
 - **NEVER** add decorative neon drop shadows, radial gradients, or AI-generated visual clutter.
 - **NEVER** fabricate dummy uptime percentages, simulated server response times, or fake analytics not provided in specifications.
 
 ### Pre-Delivery Checklist
+- [x] View renders only its task-specific content within the area supplied by the shell
 - [x] Shared components and tokens strictly reused
 - [x] Loading (skeleton), empty, and error states defined
 - [x] Visible focus rings and accessible keyboard navigation
 - [x] Touch targets comply with minimum 44–48 px sizing
 - [x] No global style bleed
-- [x] Responsive verified across Desktop, Tablet, and Mobile
+- [x] Responsive verified across Desktop, Tablet, and Mobile content widths

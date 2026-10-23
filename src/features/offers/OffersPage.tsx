@@ -3,6 +3,8 @@ import { Link, useLocation, useParams, useSearchParams } from "react-router-dom"
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
+import { applyAttemptFailure, applyAttemptSendStart, canManualRetryAttempt, createSealedAttempt, isAttemptWindowExpired, markAttemptExpired, sealJsonPayload, type SealedOperationAttempt } from "../../application/operationAttempt";
+import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { OfferCard } from "./OfferCard";
 import "./styles.css";
 
@@ -100,6 +102,7 @@ interface OffersFeedbackProps {
   notice: string;
   dialogOpen: boolean;
   hasPendingStatusMutation: boolean;
+  retryStatusDisabled: boolean;
   onRetryEntry(): void;
   onRetryOffers(): void;
   onRetryStatus(): void;
@@ -113,6 +116,7 @@ function OffersFeedback({
   notice,
   dialogOpen,
   hasPendingStatusMutation,
+  retryStatusDisabled,
   onRetryEntry,
   onRetryOffers,
   onRetryStatus,
@@ -128,7 +132,7 @@ function OffersFeedback({
     </div>}
     {!dialogOpen && actionError && <div className="feedback feedback--error" role="alert">
       {actionError}{" "}
-      {hasPendingStatusMutation && <button type="button" onClick={onRetryStatus}>Reintentar cambio de estado</button>}
+      {hasPendingStatusMutation && <button type="button" disabled={retryStatusDisabled} onClick={onRetryStatus}>Reintentar cambio de estado</button>}
       <button type="button" onClick={onRetryOffers}>Actualizar datos</button>
     </div>}
     {notice && <output className="feedback feedback--success">{notice}</output>}
@@ -243,7 +247,10 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     draft: OfferStatusDraft;
     etag: string;
     idempotencyKey: string;
+    attempt: SealedOperationAttempt;
   } | null>(null);
+  const [statusAttempt, setStatusAttempt] = useState<SealedOperationAttempt | null>(null);
+  const statusRetry = useRetryEligibility(statusAttempt);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -282,11 +289,13 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setOfferToDelete(null);
     setNeedsReconcile(false);
     pendingStatusMutation.current = null;
+    setStatusAttempt(null);
     activeOperationId.current = null;
   }, [entryId, page]);
 
   const reloadOffers = useCallback(async (signal: AbortSignal) => {
     if (!entryId) return;
+    const pendingAtRead = pendingStatusMutation.current;
     setOffersLoading(true);
     setOffersError(false);
     setOffersErrorMessage("");
@@ -308,6 +317,12 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       }
       setResult(offers);
       setResultEntryId(entryId);
+      if (pendingAtRead && pendingStatusMutation.current === pendingAtRead && isAttemptWindowExpired(pendingAtRead.attempt)) {
+        pendingStatusMutation.current = null;
+        setStatusAttempt(null);
+        setActionError("");
+        invalidateCatalogEntries(repository);
+      }
     } catch (error: unknown) {
       if (!signal.aborted) {
         setOffersError(true);
@@ -437,6 +452,14 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
 
   async function changeStatus(offer: MenuOffer, status: OfferStatus) {
     if (busyId || isCardActionBlocked) return;
+    const pending = pendingStatusMutation.current;
+    if (pending && !canManualRetryAttempt(pending.attempt).allowed) {
+      if (isAttemptWindowExpired(pending.attempt)) {
+        setStatusAttempt(markAttemptExpired(pending.attempt));
+        setActionError("La ventana de recuperación de 24 horas expiró. Actualiza los datos para reconciliar la oferta antes de otro cambio de estado.");
+      }
+      return;
+    }
     const expectedContext = currentContextRef.current;
     const opId = crypto.randomUUID();
     activeOperationId.current = opId;
@@ -445,6 +468,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setActionError("");
     setNotice("");
     setPendingAction("Actualizando estado de la oferta…");
+    let sentAttempt: SealedOperationAttempt | null = null;
     try {
       let mutation = pendingStatusMutation.current;
       if (!mutation || mutation.offerId !== offer.id || mutation.draft.status !== status) {
@@ -453,18 +477,26 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         if (!versioned.etag) {
           throw new Error("No se recibió una versión fuerte de la oferta.");
         }
+        const draft = {
+          presentationTag: versioned.data.presentationTag ?? offer.presentationTag ?? "",
+          status,
+        };
+        const idempotencyKey = crypto.randomUUID();
         mutation = {
           offerId: offer.id,
-          draft: {
-            presentationTag: versioned.data.presentationTag ?? offer.presentationTag ?? "",
-            status,
-          },
+          draft,
           etag: versioned.etag,
-          idempotencyKey: crypto.randomUUID(),
+          idempotencyKey,
+          attempt: createSealedAttempt({ operationKind: "offer.patch", method: "PATCH",
+            endpointPath: `/menu/offers/${offer.id}`, idempotencyKey,
+            payload: sealJsonPayload(draft, versioned.etag) }),
         };
         pendingStatusMutation.current = mutation;
       }
 
+      sentAttempt = applyAttemptSendStart(mutation.attempt);
+      pendingStatusMutation.current = { ...mutation, attempt: sentAttempt };
+      setStatusAttempt(sentAttempt);
       await repository.setOfferStatus(
         mutation.offerId,
         mutation.draft,
@@ -473,6 +505,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       );
       if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       pendingStatusMutation.current = null;
+      setStatusAttempt(null);
 
       const updated = await reconcileOffers(new AbortController().signal, expectedContext, opId);
       if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
@@ -483,6 +516,11 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       const statusHttp = httpStatus(error);
       const errAnalysis = analyzeIdempotentAttemptError(error, "offer.patch");
+      if (sentAttempt && pendingStatusMutation.current?.idempotencyKey === sentAttempt.idempotencyKey) {
+        const failedAttempt = applyAttemptFailure(sentAttempt, errAnalysis);
+        pendingStatusMutation.current = { ...pendingStatusMutation.current, attempt: failedAttempt };
+        setStatusAttempt(failedAttempt);
+      }
 
       if (errAnalysis.kind === "key_reused_conflict" || errAnalysis.errorCode === "INVALID_IDEMPOTENCY_KEY") {
         pendingStatusMutation.current = null;
@@ -629,6 +667,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           notice={notice}
           dialogOpen={Boolean(offerToDelete)}
           hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
+          retryStatusDisabled={Boolean(busyId) || statusRetry?.allowed === false}
           onRetryEntry={() => setEntryRetry((current) => current + 1)}
           onRetryOffers={() => setOffersRetry((current) => current + 1)}
           onRetryStatus={retryPendingStatus}

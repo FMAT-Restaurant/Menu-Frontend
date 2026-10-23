@@ -1,20 +1,8 @@
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
-export interface OptionDraft {
-  localId?: string;
-  optionId?: string;
-  displayName: string;
-  status: OfferStatus;
-  sourceType: "RECIPE" | "INVENTORY_ITEM" | null;
-  recipeId?: string;
-  recipeName?: string;
-  hasRecipeAssignmentIntent?: boolean;
-  inventoryItemId?: string;
-  inventoryItemName?: string;
-  quantity?: number;
-  unit?: string;
-}
+import { validateOptionDraft, type OptionDraft, type ValidatedOptionDraft } from "./optionDraft";
+export type { OptionDraft } from "./optionDraft";
 
 export interface OptionModalProps {
   isOpen: boolean;
@@ -22,7 +10,7 @@ export interface OptionModalProps {
   initialData: OptionDraft | null;
   isCreateMode?: boolean;
   isNestedPickerOpen?: boolean;
-  onSave: (data: OptionDraft) => void;
+  onSave: (data: ValidatedOptionDraft) => void;
   onClose: () => void;
   onOpenRecipePicker: () => void;
   onChangeDraft?: (data: OptionDraft) => void;
@@ -131,9 +119,7 @@ export function OptionModal({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         if (isNestedPickerOpen) {
-          // Topmost dialog handles escape
-          event.preventDefault();
-          event.stopPropagation();
+          // Leave the native cancel event available to the topmost dialog.
           return;
         }
         event.preventDefault();
@@ -153,6 +139,7 @@ export function OptionModal({
       onChangeDraft({
         localId: initialData?.localId,
         optionId: initialData?.optionId,
+        originalSourceType: initialData?.originalSourceType,
         displayName: val,
         status: isCreateMode ? "ACTIVE" : status,
         sourceType,
@@ -161,6 +148,7 @@ export function OptionModal({
               recipeId,
               recipeName,
               hasRecipeAssignmentIntent,
+              recipeAssignmentToken: initialData?.recipeAssignmentToken,
             }
           : sourceType === "INVENTORY_ITEM"
             ? {
@@ -181,6 +169,7 @@ export function OptionModal({
       onChangeDraft({
         localId: initialData?.localId,
         optionId: initialData?.optionId,
+        originalSourceType: initialData?.originalSourceType,
         displayName,
         status: nextStatus,
         sourceType,
@@ -189,6 +178,7 @@ export function OptionModal({
               recipeId,
               recipeName,
               hasRecipeAssignmentIntent,
+              recipeAssignmentToken: initialData?.recipeAssignmentToken,
             }
           : sourceType === "INVENTORY_ITEM"
             ? {
@@ -204,59 +194,22 @@ export function OptionModal({
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!sourceType) {
-      setValidationError("Debes seleccionar un origen de contenido (receta o artículo de inventario).");
-      return;
-    }
-    if (sourceType === "RECIPE") {
-      const activeRecipeId = recipeId ?? initialData?.recipeId;
-      if (!activeRecipeId && !initialData?.optionId) {
-        setValidationError("Debes elegir una receta de la biblioteca.");
-        return;
-      }
-      if (!activeRecipeId) {
-        setValidationError("Debes elegir una receta de la biblioteca.");
-        return;
-      }
-
-      onSave({
-        localId: initialData?.localId,
-        optionId: initialData?.optionId,
-        displayName: displayName.trim(),
-        status: isCreateMode ? "ACTIVE" : status,
-        sourceType: "RECIPE",
-        recipeId: activeRecipeId,
-        recipeName: recipeName ?? initialData?.recipeName,
-        hasRecipeAssignmentIntent,
-      });
-      return;
-    }
-
-    if (sourceType === "INVENTORY_ITEM") {
-      const isPositiveFinite = typeof quantity === "number" && Number.isFinite(quantity) && quantity > 0;
-      const hasUnit = typeof unit === "string" && unit.trim().length > 0;
-      if (!inventoryItemId || !isPositiveFinite) {
-        setValidationError("El artículo de inventario requiere una cantidad positiva.");
-        return;
-      }
-      if (!hasUnit) {
-        setValidationError("El artículo de inventario requiere una unidad autoritativa.");
-        return;
-      }
-
-      onSave({
-        localId: initialData?.localId,
-        optionId: initialData?.optionId,
-        displayName: displayName.trim(),
-        status: isCreateMode ? "ACTIVE" : status,
-        sourceType: "INVENTORY_ITEM",
-        inventoryItemId,
-        inventoryItemName,
-        quantity,
-        unit: unit.trim(),
-      });
-      return;
-    }
+    const result = validateOptionDraft({
+      localId: initialData?.localId,
+      optionId: initialData?.optionId,
+      originalSourceType: initialData?.originalSourceType,
+      displayName,
+      status,
+      sourceType,
+      ...(sourceType === "RECIPE" ? {
+        recipeId, recipeName, hasRecipeAssignmentIntent,
+        recipeAssignmentToken: initialData?.recipeAssignmentToken,
+      } : sourceType === "INVENTORY_ITEM" ? {
+        inventoryItemId, inventoryItemName, quantity, unit,
+      } : {}),
+    }, isCreateMode ? "create" : "update");
+    if (!result.valid) { setValidationError(result.message); return; }
+    onSave(result.value);
   }
 
   const title = initialData?.optionId ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
@@ -267,7 +220,7 @@ export function OptionModal({
   } else if (sourceType === "RECIPE" && recipeId) {
     sourceSummary = `Receta asignada (ID: ${recipeId})`;
   } else if (sourceType === "INVENTORY_ITEM" && inventoryItemName) {
-    sourceSummary = `Artículo de inventario: ${inventoryItemName} (${quantity ?? 1} ${unit ?? "u"})`;
+    sourceSummary = `Artículo de inventario: ${inventoryItemName} (${quantity ?? "—"} ${unit ?? ""})`;
   } else if (sourceType === "INVENTORY_ITEM" && inventoryItemId) {
     sourceSummary = `Artículo de inventario (ID: ${inventoryItemId})`;
   }

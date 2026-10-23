@@ -13,6 +13,7 @@ import {
   OperationRetryBlockedError,
   PreSendStorageError,
   createOperationAttemptController,
+  getOrCreateTabId,
   sealJsonPayload,
   type OperationAttemptController,
   type OperationFlowScope,
@@ -32,11 +33,13 @@ import { useEntryResources } from "./useEntryResources";
 
 export function buildEntryCreateScope(): OperationFlowScope {
   return {
-    tabId: "singleton",
+    tabId: getOrCreateTabId(),
     formKind: "entry-form",
     resourceKey: "entry-create",
   };
 }
+
+interface EntryCreationDraft extends EntryCreateDraft { imageFile?: File | null }
 
 export type Stage = "idle" | "upload" | "persist";
 const emptyDraft: EntryUpdateDraft = {
@@ -84,12 +87,19 @@ export type EntryFormRepository = Pick<
 
 export function useEntryForm(
   repository: EntryFormRepository,
-  entryId: string | undefined,
+  routeEntryId: string | undefined,
   onSaved: () => Promise<void>,
-  storage: PendingOperationStorageAdapter = createIndexedDbPendingOperationStorage(),
+  providedStorage?: PendingOperationStorageAdapter,
 ) {
+  const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
+  const storage = providedStorage ?? fallbackStorage;
+  const [confirmedEntryId, setConfirmedEntryId] = useState<string>();
+  const entryId = routeEntryId ?? confirmedEntryId;
+  const [infoNotice, setInfoNotice] = useState("");
   const [draft, setDraft] = useState<EntryUpdateDraft>(emptyDraft);
   const [file, setFile] = useState<File | null>(null);
+  const fileRef = useRef<File | null>(null);
+  fileRef.current = file;
   const [imageError, setImageError] = useState("");
   const [imageValidating, setImageValidating] = useState(false);
   const [failure, setFailure] = useState<EntryFailure | null>(null);
@@ -111,7 +121,7 @@ export function useEntryForm(
   const reviewController = useRef<AbortController | null>(null);
   const lastRawErrorRef = useRef<unknown>(null);
   const controllerRef = useRef<OperationAttemptController<
-    EntryCreateDraft,
+    EntryCreationDraft,
     MenuEntryDetail
   > | null>(null);
 
@@ -121,52 +131,36 @@ export function useEntryForm(
       loaded.current = true;
     }
   }, []);
-  const resources = useEntryResources(repository, entryId, onLoaded);
+  const resources = useEntryResources(repository, routeEntryId, onLoaded);
 
   function getOrInitController(
     overrideFile?: File | null,
-  ): OperationAttemptController<EntryCreateDraft, MenuEntryDetail> {
-    const activeFile = overrideFile !== undefined ? overrideFile : file;
+  ): OperationAttemptController<EntryCreationDraft, MenuEntryDetail> {
+    if (overrideFile !== undefined) fileRef.current = overrideFile;
     if (!controllerRef.current) {
       controllerRef.current = createOperationAttemptController<
-        EntryCreateDraft,
+        EntryCreationDraft,
         MenuEntryDetail
       >({
         scope: buildEntryCreateScope(),
         storage,
+        retainConfirmedResult: true,
         initialDraft: {
           brandName: draft.brandName.trim(),
           description: draft.description.trim(),
           categoryIds: [...draft.categoryIds],
+          imageFile: fileRef.current,
         },
-        stage1ImageUpload: activeFile
-          ? {
-              endpointPath: "/media/images",
-              file: activeFile,
-              fileName: activeFile.name,
-              executeUpload: async (stageAttempt) => {
-                const uploadKey = stageAttempt.idempotencyKey;
-                const fileToUpload =
-                  stageAttempt.payload.kind === "multipart-file"
-                    ? new File(
-                        [stageAttempt.payload.fileBlob],
-                        stageAttempt.payload.fileName,
-                        { type: stageAttempt.payload.mimeType },
-                      )
-                    : activeFile;
-                try {
-                  const id = await repository.uploadEntryImage(fileToUpload, uploadKey);
-                  if (mounted.current) {
-                    setStage("persist");
-                  }
-                  return { id };
-                } catch (err) {
-                  lastRawErrorRef.current = err;
-                  throw err;
-                }
-              },
-            }
-          : undefined,
+        getImageFile: () => fileRef.current,
+        executeImageUpload: async (attempt) => {
+          if (attempt.payload.kind !== "multipart-file") throw new Error("Se requiere una imagen sellada.");
+          const p = attempt.payload;
+          try {
+            const id = await repository.uploadEntryImage(new File([p.fileBlob], p.fileName, { type: p.mimeType }), attempt.idempotencyKey);
+            if (mounted.current) setStage("persist");
+            return { id };
+          } catch (err) { lastRawErrorRef.current = err; throw err; }
+        },
         buildFinalStageInput: ({
           draft: currentDraft,
           confirmedImageId,
@@ -214,7 +208,7 @@ export function useEntryForm(
         .then((restored) => {
           if (!mounted.current || !restored) return;
           const currentStage = restored.stages[restored.currentStageIndex];
-          if (!currentStage || currentStage.status === "succeeded") return;
+          if (!currentStage) return;
 
           if (!userEdited.current) {
             setDraft({
@@ -225,7 +219,15 @@ export function useEntryForm(
             });
           }
 
-          if (restored.stages[0]?.payload.kind === "multipart-file") {
+          if (restored.editableDraft.imageFile) {
+            const f = restored.editableDraft.imageFile;
+            const restoredFile = f;
+            setFile(restoredFile);
+            fileRef.current = restoredFile;
+            if (restored.confirmedImageId && f === restored.submittedDraft?.imageFile) {
+              uploaded.current = { file: restoredFile, id: restored.confirmedImageId };
+            }
+          } else if (restored.stages[0]?.payload.kind === "multipart-file") {
             const p = restored.stages[0].payload;
             const restoredFile = new File([p.fileBlob], p.fileName, {
               type: p.mimeType,
@@ -246,6 +248,14 @@ export function useEntryForm(
           if (currentStage.lastErrorMessage) {
             setFailure(entryFailure(currentStage.lastErrorMessage));
           }
+          if (currentStage.status === "succeeded" && restored.confirmedResult) {
+            const confirmed = restored.confirmedResult as MenuEntryDetail;
+            loaded.current = true;
+            setConfirmedEntryId(confirmed.id);
+            resources.setEntry(confirmed);
+            setInfoNotice("La entrada ya fue creada. Conservamos el borrador posterior; revisa la versión actual antes de guardar los cambios.");
+            if (!isStrongEntryVersion(confirmed.etag)) setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
+          }
         })
         .catch(() => {});
     }
@@ -256,7 +266,14 @@ export function useEntryForm(
       reviewController.current?.abort();
       controllerRef.current?.detachForReload();
     };
-  }, [entryId]);
+  }, [routeEntryId]);
+
+  useEffect(() => {
+    const controller = controllerRef.current;
+    if (confirmedEntryId && controller?.getRecord()) {
+      void controller.updateEditableDraft({ ...draft, imageFile: file });
+    }
+  }, [confirmedEntryId, draft, file]);
 
   function clearField(field: EntryField) {
     setFailure((current) => clearFieldFailure(current, field));
@@ -273,6 +290,7 @@ export function useEntryForm(
             brandName: updated.brandName,
             description: updated.description,
             categoryIds: updated.categoryIds,
+            imageFile: fileRef.current,
           })
           .catch(() => {});
       }
@@ -293,6 +311,7 @@ export function useEntryForm(
             brandName: updated.brandName,
             description: updated.description,
             categoryIds: updated.categoryIds,
+            imageFile: fileRef.current,
           })
           .catch(() => {});
       }
@@ -317,11 +336,9 @@ export function useEntryForm(
     clearField("image");
 
     if (!entryId) {
-      if (controllerRef.current) {
-        void controllerRef.current.abandonFlow().catch(() => {});
-        controllerRef.current = null;
-      }
-      getOrInitController(selected);
+      const controller = getOrInitController(selected);
+      const current = controller.getRecord()?.editableDraft;
+      void controller.updateEditableDraft({ ...(current ?? draft), imageFile: selected });
     }
 
     validationPending.current = true;
@@ -413,7 +430,9 @@ export function useEntryForm(
       (entryId && failure?.kind === "conflict")
     )
       return;
-    const invalid = checkBeforeSave();
+    const attempt = controllerRef.current?.getCurrentAttempt();
+    const recovering = !entryId && (attempt?.status === "uncertain" || attempt?.status === "conflict_in_progress");
+    const invalid = recovering ? null : checkBeforeSave();
     if (invalid) {
       setFailure(invalid);
       setFailureEpoch((value) => value + 1);
@@ -440,6 +459,8 @@ export function useEntryForm(
       }
       if (!mounted.current) return;
       saveSucceeded.current = true;
+      await controllerRef.current?.abandonFlow().catch(() => {});
+      if (!mounted.current) return;
       invalidateCatalogEntries(repository);
         try {
           await onSaved();
@@ -457,7 +478,9 @@ export function useEntryForm(
       const currentAttempt = controller.getCurrentAttempt();
 
       if (currentAttempt?.status === "pre_commit_rejected") {
-        await controller.startNewAttemptFromEditableDraft();
+        await controller.startNewAttemptFromEditableDraft({
+          preserveConfirmedImage: fileRef.current === controller.getRecord()?.submittedDraft?.imageFile,
+        });
       }
 
       setStage(
@@ -478,6 +501,18 @@ export function useEntryForm(
       if (!mounted.current) return;
 
       if (result.status === "succeeded") {
+        if (result.hasDraftChangesSinceSubmission && result.result) {
+          loaded.current = true;
+          setConfirmedEntryId(result.result.id);
+          resources.setEntry(result.result);
+          setUncertain("idle");
+          setFailure(null);
+          setInfoNotice("El envío anterior se guardó. Los cambios posteriores se conservan; revisa la versión actual y guárdalos explícitamente.");
+          if (!isStrongEntryVersion(result.result.etag)) setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
+          if (file === result.record.submittedDraft?.imageFile) { setFile(null); uploaded.current = null; }
+          invalidateCatalogEntries(repository);
+          return;
+        }
         createdSuccessfully = true;
       } else {
         const activeStage = controller.getCurrentAttempt();
@@ -515,6 +550,8 @@ export function useEntryForm(
 
     if (createdSuccessfully && mounted.current) {
       saveSucceeded.current = true;
+      await controllerRef.current?.abandonFlow().catch(() => {});
+      if (!mounted.current) return;
       invalidateCatalogEntries(repository);
       try {
         await onSaved();
@@ -561,6 +598,8 @@ export function useEntryForm(
 
   return {
     ...resources,
+    editing: Boolean(entryId),
+    infoNotice,
     draft,
     file,
     imageError,

@@ -167,6 +167,14 @@ export function CategoryFormDialog({
         if (!activeRef.current || options?.signal?.aborted) {
           return null;
         }
+        // An opening read may finish after the user has edited the summary.
+        // Its version cannot authorize older fields without an explicit review.
+        if (userEditedRef.current) {
+          setOpeningEtag(undefined);
+          setReviewRequired(true);
+          setError("Los datos actuales llegaron después de tus cambios. Revisa la categoría actual antes de guardar.");
+          return null;
+        }
         setActiveCategory(versioned.data);
         if (!options?.preserveDraft && !userEditedRef.current) {
           setName(versioned.data.name);

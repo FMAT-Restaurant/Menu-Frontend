@@ -12,7 +12,7 @@ import { isStrongEtag } from "../../application/entryVersion";
 import {
   OperationRetryBlockedError,
   PreSendStorageError,
-  canManualRetryAttempt,
+  getOrCreateTabId,
   createOperationAttemptController,
   sealJsonPayload,
   type OperationAttemptController,
@@ -25,9 +25,11 @@ import {
   analyzeIdempotentAttemptError,
   analyzeNonIdempotentWriteError,
 } from "../../api/idempotencyResponse";
+import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 
 export interface RecipeFormDialogProps {
+  openingResource?: VersionedResource<RecipeDetail>;
   recipe?: RecipeDetail | RecipeSummary | null;
   inventoryItems?: InventoryItem[];
   repository?: Pick<
@@ -50,7 +52,7 @@ export interface SupplyRow {
   quantity: string | number;
 }
 
-export function buildRecipeCreateScope(tabId = "global-tab"): OperationFlowScope {
+export function buildRecipeCreateScope(tabId = getOrCreateTabId()): OperationFlowScope {
   return {
     tabId,
     formKind: "recipe-form",
@@ -59,6 +61,7 @@ export function buildRecipeCreateScope(tabId = "global-tab"): OperationFlowScope
 }
 
 export function RecipeFormDialog({
+  openingResource,
   recipe,
   inventoryItems,
   repository,
@@ -66,11 +69,13 @@ export function RecipeFormDialog({
   onCreated,
   onCreatedWithPendingEdits,
   onUpdated,
-  storage = createIndexedDbPendingOperationStorage(),
+  storage: providedStorage,
   initialPendingRecord,
   nestedContext,
   onSubmit,
 }: Readonly<RecipeFormDialogProps>) {
+  const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
+  const storage = providedStorage ?? fallbackStorage;
   const [activeRecipe, setActiveRecipe] = useState<RecipeDetail | RecipeSummary | undefined>(
     recipe ?? undefined,
   );
@@ -254,18 +259,8 @@ export function RecipeFormDialog({
       ? initialPendingRecord.stages[initialPendingRecord.currentStageIndex] ?? null
       : null,
   );
-  const [retryCountdownMs, setRetryCountdownMs] = useState<number>(() => {
-    if (!recipe && initialPendingRecord) {
-      const stage = initialPendingRecord.stages[initialPendingRecord.currentStageIndex];
-      if (stage?.retryAfterUntil) {
-        return Math.max(0, stage.retryAfterUntil - Date.now());
-      }
-    }
-    return 0;
-  });
-
   // Edit version & review state
-  const [openingEtag, setOpeningEtag] = useState<string | undefined>(undefined);
+  const [openingEtag, setOpeningEtag] = useState<string | undefined>(openingResource?.etag);
   const [reviewRequired, setReviewRequired] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
@@ -301,6 +296,7 @@ export function RecipeFormDialog({
       controllerRef.current = createOperationAttemptController<RecipeDraft, RecipeDetail>({
         scope: buildRecipeCreateScope(),
         storage,
+        retainConfirmedResult: true,
         initialDraft: initialDraft ?? getCurrentDraft(),
         nestedContext,
         buildFinalStageInput: ({ draft, submittedDraftVersion, now }) => ({
@@ -338,22 +334,19 @@ export function RecipeFormDialog({
   ) {
     if (!record) {
       setPendingAttempt(null);
-      setRetryCountdownMs(0);
+
       return;
     }
     const stage = record.stages[record.currentStageIndex] ?? null;
     setPendingAttempt(stage);
-    if (stage?.retryAfterUntil) {
-      const remaining = Math.max(0, stage.retryAfterUntil - Date.now());
-      setRetryCountdownMs(remaining);
-    } else {
-      setRetryCountdownMs(0);
-    }
+
   }
 
   useEffect(() => {
     activeRef.current = true;
     const dialog = dialogRef.current;
+    const trigger = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+      ? document.activeElement : null;
     if (typeof dialog?.showModal === "function") dialog.showModal();
     else dialog?.setAttribute("open", "");
     nameRef.current?.focus();
@@ -365,7 +358,7 @@ export function RecipeFormDialog({
         .then((restored) => {
           if (!activeRef.current || !restored) return;
           const stage = restored.stages[restored.currentStageIndex];
-          if (!stage || stage.status === "succeeded") return;
+          if (!stage) return;
           if (!userEditedRef.current) {
             setName(restored.editableDraft.name);
             setDescription(restored.editableDraft.description);
@@ -385,6 +378,12 @@ export function RecipeFormDialog({
             }
           }
           syncAttemptStateFromRecord(restored);
+          if (stage.status === "succeeded" && restored.confirmedResult) {
+            setActiveRecipe(restored.confirmedResult as RecipeDetail);
+            setOpeningEtag((restored.confirmedResult as RecipeDetail).etag);
+            setReviewRequired(!isStrongEtag((restored.confirmedResult as RecipeDetail).etag));
+            setInfoNotice("La receta ya fue creada. Conservamos tus cambios posteriores; revisa la versión actual antes de guardarlos.");
+          }
           if (stage.lastErrorMessage) {
             setError(
               stage.lastErrorMessage.includes("No se pudo guardar la receta") ||
@@ -397,15 +396,26 @@ export function RecipeFormDialog({
         .catch(() => {});
     }
 
-    if (activeRecipe && repository) {
+    if (activeRecipe && repository && !openingResource) {
       const loadPromise = repository
         .getRecipe(activeRecipe.id)
         .then((versioned) => {
           if (!activeRef.current) return null;
-          setOpeningEtag(versioned.etag);
-          if ("instructions" in versioned.data && !instructions) {
-            setInstructions(versioned.data.instructions);
+          // The version and every editable field must come from the same read.
+          if (userEditedRef.current) {
+            setReviewRequired(true);
+            return null;
           }
+          setOpeningEtag(versioned.etag);
+          setActiveRecipe(versioned.data);
+          setName(versioned.data.name);
+          setDescription(versioned.data.description);
+          setInstructions(versioned.data.instructions);
+          setSupplies(versioned.data.supplies.map((s, idx) => ({
+            key: `supply-row-opening-${idx + 1}`,
+            inventoryItemId: s.inventoryItemId,
+            quantity: s.quantity,
+          })));
           return versioned;
         })
         .catch(() => null);
@@ -416,19 +426,15 @@ export function RecipeFormDialog({
       activeRef.current = false;
       controllerRef.current?.detachForReload();
       if (dialog?.open && typeof dialog.close === "function") dialog.close();
+      if (trigger?.isConnected) trigger.focus();
     };
   }, []);
 
   useEffect(() => {
-    if (retryCountdownMs <= 0) return;
-    const interval = window.setInterval(() => {
-      setRetryCountdownMs((prev) => {
-        const next = Math.max(0, prev - 250);
-        return next;
-      });
-    }, 250);
-    return () => window.clearInterval(interval);
-  }, [retryCountdownMs]);
+    if (activeRecipe && controllerRef.current?.getRecord()?.confirmedResult) {
+      void controllerRef.current.updateEditableDraft(getCurrentDraft());
+    }
+  }, [name, description, instructions, supplies, activeRecipe]);
 
   function handleNameChange(val: string) {
     if (busy || isSubmittingRef.current) return;
@@ -645,24 +651,25 @@ export function RecipeFormDialog({
       controllerRef.current = null;
     }
     setPendingAttempt(null);
-    setRetryCountdownMs(0);
+
     setError("");
   }
 
   async function executeCreationFlow(action: "submit" | "retry") {
     if (isSubmittingRef.current) return;
-    const validation = validateDraft();
-    if (!validation.ok) {
+    const recovering = action === "retry" && repository && controllerRef.current?.getRecord();
+    const validation = recovering ? null : validateDraft();
+    if (validation && !validation.ok) {
       setError(validation.error!);
       return;
     }
 
-    const cleanDraft: RecipeDraft = {
+    const cleanDraft: RecipeDraft = validation ? {
       name: validation.cleanName!,
       description: validation.cleanDescription!,
       instructions: validation.cleanInstructions!,
       supplies: validation.parsedSupplies!,
-    };
+    } : getCurrentDraft();
 
     isSubmittingRef.current = true;
     setBusy(true);
@@ -686,6 +693,10 @@ export function RecipeFormDialog({
     try {
       const controller = getOrInitController();
 
+      if (controller.getCurrentAttempt()?.status === "pre_commit_rejected") {
+        await controller.startNewAttemptFromEditableDraft();
+      }
+
       const result =
         action === "retry" && controller.getRecord()
           ? await controller.retryPending()
@@ -697,30 +708,27 @@ export function RecipeFormDialog({
         setPendingAttempt(null);
         if (result.hasDraftChangesSinceSubmission) {
           setActiveRecipe(result.result);
-          setOpeningEtag(undefined);
+          setOpeningEtag(result.result.etag);
+          setReviewRequired(!isStrongEtag(result.result.etag));
           setInfoNotice(
             "La receta fue creada en el servidor mientras editabas. Los cambios nuevos están conservados; guárdalos explícitamente para actualizarla.",
           );
           onCreatedWithPendingEdits?.(result.result);
         } else {
+          await controller.abandonFlow().catch(() => {});
+          if (!activeRef.current) return;
           onCreated?.(result.result);
           onClose();
         }
       } else {
         const stage = controller.getCurrentAttempt() ?? result.record?.stages[result.record.currentStageIndex] ?? null;
         setPendingAttempt(stage);
-        if (stage?.retryAfterUntil) {
-          setRetryCountdownMs(Math.max(0, stage.retryAfterUntil - Date.now()));
-        }
         setError(stage?.lastErrorMessage || result.outcome?.message || "No se pudo crear la receta. Vuelve a intentarlo.");
       }
     } catch (err) {
       if (!activeRef.current) return;
       if (err instanceof PreSendStorageError || err instanceof OperationRetryBlockedError) {
         setError(err.message);
-        if (err instanceof OperationRetryBlockedError && err.remainingRetryAfterMs > 0) {
-          setRetryCountdownMs(err.remainingRetryAfterMs);
-        }
         return;
       }
       const message =
@@ -799,6 +807,8 @@ export function RecipeFormDialog({
       }
 
       const updated = await repository.updateRecipe(activeRecipe.id, cleanDraft, etagToUse);
+      if (!activeRef.current) return;
+      await controllerRef.current?.abandonFlow().catch(() => {});
       if (!activeRef.current) return;
       onUpdated?.(updated);
       onClose();
@@ -889,10 +899,8 @@ export function RecipeFormDialog({
     pendingAttempt !== null &&
     (pendingAttempt.status === "uncertain" ||
       pendingAttempt.status === "conflict_in_progress");
-  const retryEligibility =
-    pendingAttempt !== null
-      ? canManualRetryAttempt(pendingAttempt)
-      : { allowed: true, remainingRetryAfterMs: 0 };
+  const retryEligibility = useRetryEligibility(pendingAttempt) ?? { allowed: true, remainingRetryAfterMs: 0 };
+  const retryCountdownMs = retryEligibility.remainingRetryAfterMs;
   const retryDisabled = busy || retryCountdownMs > 0 || !retryEligibility.allowed;
 
   const requiresNewOperationAction =
@@ -1075,7 +1083,7 @@ export function RecipeFormDialog({
                   const unit = getUnitForItem(supply.inventoryItemId);
                   return (
                     <tr key={supply.key}>
-                      <td>
+                      <td data-label="Insumo seleccionado">
                         <select
                           aria-label={`Insumo ${index + 1}`}
                           value={supply.inventoryItemId}
@@ -1102,7 +1110,7 @@ export function RecipeFormDialog({
                           ))}
                         </select>
                       </td>
-                      <td>
+                      <td data-label="Cantidad">
                         <input
                           type="number"
                           step="any"
@@ -1116,8 +1124,8 @@ export function RecipeFormDialog({
                           required
                         />
                       </td>
-                      <td className="recipe-supplies-table__unit">{unit}</td>
-                      <td>
+                      <td data-label="U. Medida" className="recipe-supplies-table__unit">{unit}</td>
+                      <td data-label="Acción">
                         <button
                           type="button"
                           className="button button--quiet"

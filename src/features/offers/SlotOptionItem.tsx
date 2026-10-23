@@ -1,4 +1,4 @@
-import type { OptionDraft } from "./OptionModal";
+import type { OptionDraft } from "./optionDraft";
 
 export interface SlotOptionItemProps {
   option: OptionDraft;

@@ -36,7 +36,7 @@ import {
   uploadedImageResponse,
 } from "./catalogResponse";
 import { validateWriteSuccessResponse } from "./idempotencyResponse";
-import { assertStrongEtag } from "../application/entryVersion";
+import { assertStrongEtag, isStrongEtag } from "../application/entryVersion";
 import {
   assertValidIdempotencyKey,
   buildFormDataFromSealedFile,
@@ -106,6 +106,11 @@ function imageMultipart(image: File): FormData {
   const form = new FormData();
   form.append("file", image);
   return form;
+}
+
+function withWriteVersion<T extends object>(data: T, headers: unknown): T & { etag?: string } {
+  const etag = extractHeaderEtag(headers);
+  return isStrongEtag(etag) ? { ...data, etag } : data;
 }
 
 export async function collectCategoryPages(
@@ -411,7 +416,7 @@ export function createMenuApi(
       });
       return validateWriteSuccessResponse(
         response.data,
-        (raw) => entryDetailResponse(raw),
+        (raw) => withWriteVersion(entryDetailResponse(raw), response.headers),
         response.status,
       );
     },
@@ -490,7 +495,7 @@ export function createMenuApi(
       );
       return validateWriteSuccessResponse(
         response.data,
-        offerDetailResponse,
+        (raw) => withWriteVersion(offerDetailResponse(raw), response.headers),
         response.status,
       );
     },
@@ -520,7 +525,7 @@ export function createMenuApi(
       });
       return validateWriteSuccessResponse(
         response.data,
-        offerDetailResponse,
+        (raw) => withWriteVersion(offerDetailResponse(raw), response.headers),
         response.status,
       );
     },
@@ -611,7 +616,7 @@ export function createMenuApi(
       });
       return validateWriteSuccessResponse(
         response.data,
-        recipeDetailResponse,
+        (raw) => withWriteVersion(recipeDetailResponse(raw), response.headers),
         response.status,
       );
     },

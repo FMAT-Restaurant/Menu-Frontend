@@ -190,10 +190,20 @@ test("handles status PATCH 409 IDEMPOTENCY_IN_PROGRESS and KEY_REUSED with disti
   expect(repository.setOfferStatus).toHaveBeenCalledTimes(1);
   const firstKey = repository.setOfferStatus.mock.calls[0][3];
 
-  // Retry with same key
+  // Retry-After blocks sending until the server's deadline; reaching it never sends automatically.
+  expect(screen.getByRole("button", { name: "Reintentar cambio de estado" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Reintentar cambio de estado" }));
+  expect(repository.setOfferStatus).toHaveBeenCalledTimes(1);
+  const clock = jest.spyOn(Date, "now").mockReturnValue(Date.now() + 6000);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Reintentar cambio de estado" })).toBeEnabled());
+  expect(repository.setOfferStatus).toHaveBeenCalledTimes(1);
+  clock.mockRestore();
+  // Keep time beyond the deadline while explicitly retrying.
+  const retryClock = jest.spyOn(Date, "now").mockReturnValue(Date.now() + 6000);
   fireEvent.click(screen.getByRole("button", { name: "Reintentar cambio de estado" }));
   await waitFor(() => expect(repository.setOfferStatus).toHaveBeenCalledTimes(2));
   expect(repository.getOffer).toHaveBeenCalledTimes(1); // No new getOffer
+  retryClock.mockRestore();
   expect(repository.setOfferStatus.mock.calls[1][3]).toBe(firstKey); // Preserved idempotency key
 
   // Now simulate KEY_REUSED

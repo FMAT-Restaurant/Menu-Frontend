@@ -203,7 +203,7 @@ test.describe("T16 Layout, Dimensions, and Accessibility Audit", () => {
     await expect(optionDialog).not.toBeVisible();
   });
 
-  test("R06 / 200% Zoom: dialogs remain reachable on desktop at 200% zoom", async ({ page }) => {
+  test("R06 additional checks: CSS zoom and reduced viewport keep dialog controls reachable", async ({ page }) => {
     await setupRoutes(page);
     // Desktop 1366x768 at 200% zoom simulates effective 683x384 viewport
     await page.setViewportSize({ width: 1366, height: 768 });

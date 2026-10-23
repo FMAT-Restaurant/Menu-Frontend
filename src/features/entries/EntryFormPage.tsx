@@ -91,9 +91,10 @@ function EntryFormEditor({
   onSaved?: () => Promise<void>;
 }>) {
   const navigate = useNavigate();
-  const editing = Boolean(entryId);
+
   const defaultOnSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
   const model = useEntryForm(repository, entryId, customOnSaved ?? defaultOnSaved, storage);
+  const editing = model.editing;
   const summary = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLElement>(null);
   const busy = model.stage !== "idle";
