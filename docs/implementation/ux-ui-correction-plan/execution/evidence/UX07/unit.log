@@ -1,0 +1,8 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run jest --runInBand src/features/entries/EntryFormPage.test.tsx src/features/entries/EntryFormPage.ux.test.tsx src/features/entries/entryError.test.ts
+
+Test Suites: 3 passed, 3 total
+Tests:       75 passed, 75 total
+Snapshots:   0 total
+Time:        9.151 s
+Ran all test suites matching src/features/entries/EntryFormPage.test.tsx|src/features/entries/EntryFormPage.ux.test.tsx|src/features/entries/entryError.test.ts.

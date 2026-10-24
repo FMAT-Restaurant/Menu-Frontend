@@ -1,0 +1,242 @@
+[
+  {
+    "viewport": 1440,
+    "moduleWidth": 320,
+    "formWidth": 288,
+    "columns": 1,
+    "controls": [
+      {
+        "height": 48,
+        "width": 254
+      },
+      {
+        "height": 48,
+        "width": 220
+      },
+      {
+        "height": 58,
+        "width": 123
+      }
+    ],
+    "scrollWidth": 286,
+    "clientWidth": 286,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 390,
+    "formWidth": 358,
+    "columns": 1,
+    "controls": [
+      {
+        "height": 48,
+        "width": 324
+      },
+      {
+        "height": 48,
+        "width": 290
+      },
+      {
+        "height": 48,
+        "width": 158
+      }
+    ],
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 600,
+    "formWidth": 568,
+    "columns": 1,
+    "controls": [
+      {
+        "height": 48,
+        "width": 534
+      },
+      {
+        "height": 48,
+        "width": 500
+      },
+      {
+        "height": 48,
+        "width": 263
+      }
+    ],
+    "scrollWidth": 566,
+    "clientWidth": 566,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 740,
+    "formWidth": 708,
+    "columns": 1,
+    "controls": [
+      {
+        "height": 48,
+        "width": 674
+      },
+      {
+        "height": 48,
+        "width": 640
+      },
+      {
+        "height": 48,
+        "width": 333
+      }
+    ],
+    "scrollWidth": 706,
+    "clientWidth": 706,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 767,
+    "formWidth": 735,
+    "columns": 1,
+    "controls": [
+      {
+        "height": 48,
+        "width": 701
+      },
+      {
+        "height": 48,
+        "width": 667
+      },
+      {
+        "height": 48,
+        "width": 346.5
+      }
+    ],
+    "scrollWidth": 733,
+    "clientWidth": 733,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 768,
+    "formWidth": 720,
+    "columns": 1,
+    "controls": [
+      {
+        "height": 48,
+        "width": 686
+      },
+      {
+        "height": 48,
+        "width": 652
+      },
+      {
+        "height": 48,
+        "width": 339
+      }
+    ],
+    "scrollWidth": 718,
+    "clientWidth": 718,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1024,
+    "formWidth": 976,
+    "columns": 2,
+    "controls": [
+      {
+        "height": 48,
+        "width": 526.15625
+      },
+      {
+        "height": 48,
+        "width": 492.15625
+      },
+      {
+        "height": 48,
+        "width": 141.859375
+      }
+    ],
+    "scrollWidth": 974,
+    "clientWidth": 974,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1199,
+    "formWidth": 1040,
+    "columns": 2,
+    "controls": [
+      {
+        "height": 48,
+        "width": 563.484375
+      },
+      {
+        "height": 48,
+        "width": 529.484375
+      },
+      {
+        "height": 48,
+        "width": 141.859375
+      }
+    ],
+    "scrollWidth": 1038,
+    "clientWidth": 1038,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1200,
+    "formWidth": 1040,
+    "columns": 2,
+    "controls": [
+      {
+        "height": 40,
+        "width": 563.484375
+      },
+      {
+        "height": 42,
+        "width": 529.484375
+      },
+      {
+        "height": 43,
+        "width": 141.859375
+      }
+    ],
+    "scrollWidth": 1038,
+    "clientWidth": 1038,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1440,
+    "formWidth": 1040,
+    "columns": 2,
+    "controls": [
+      {
+        "height": 40,
+        "width": 563.484375
+      },
+      {
+        "height": 42,
+        "width": 529.484375
+      },
+      {
+        "height": 43,
+        "width": 141.859375
+      }
+    ],
+    "scrollWidth": 1038,
+    "clientWidth": 1038,
+    "radius": "12px",
+    "fieldRadius": "8px"
+  }
+]

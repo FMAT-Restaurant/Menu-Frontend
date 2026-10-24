@@ -1,0 +1,2 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run depcruise src --ts-config tsconfig.json --ts-pre-compilation-deps -T json -f docs/implementation/ux-ui-correction-plan/execution/evidence/UX07/dependencies.json

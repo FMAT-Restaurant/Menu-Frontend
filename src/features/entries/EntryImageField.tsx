@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { MenuEntryDetail } from "../../application/catalog";
+import { Icon } from "../../shared/Icon";
 
 interface Props {
   file: File | null;
@@ -48,7 +49,7 @@ export function EntryImageField({ file, entry, validating, error, disabled, onSe
     <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} data-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
       <span className="entry-image-field__preview">
         {source && !broken && <img src={source} alt="Vista previa de la imagen de la entrada" onError={() => setBroken(true)} />}
-        {(!source || broken) && <ImageContent source={source} broken={broken} reference={entry?.imageRef} />}
+        {(!source || broken) && <span className="entry-image-field__placeholder"><Icon name="image" /><ImageContent source={source} broken={broken} reference={entry?.imageRef} /></span>}
       </span>
       <span className="entry-image-field__action">{labels.action}</span>
     </button>

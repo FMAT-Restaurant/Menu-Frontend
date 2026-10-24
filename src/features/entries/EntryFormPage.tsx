@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { EntryStatus, MenuRepository } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
+import { Icon } from "../../shared/Icon";
 import { EntryCategorySelector } from "./EntryCategorySelector";
 import { EntryImageField } from "./EntryImageField";
 import { EntryFormFeedback } from "./EntryFormFeedback";
@@ -100,6 +101,8 @@ function EntryFormEditor({
   const busy = model.stage !== "idle";
   const disabled = busy || !model.editingReady;
   const conflict = editing && model.failure?.kind === "conflict";
+  const missing = editing && model.entryLoadFailure?.kind === "notFound";
+  const catalogReturnTo = returnTo === "/" || returnTo.startsWith("/?") ? returnTo : "/";
   const saveDisabled = disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
   let saveLabel = progressLabels[model.stage];
   if (editing && !busy) saveLabel = "Guardar cambios";
@@ -109,13 +112,17 @@ function EntryFormEditor({
   return <div className="app-shell entry-form-shell">
     <main className="menu-page menu-page--form entry-form-page">
       <header className="task-header entry-form-page__heading">
-        <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}>← Volver a entradas</Link>
+        <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}>{missing ? "Volver al catálogo" : "← Volver a entradas"}</Link>
         <div className="task-header__content">
-          <h1 data-route-heading tabIndex={-1}>{editing ? "Editar entrada" : "Nueva entrada"}</h1>
-          <p className="task-header__intro">Nombre, descripción, categorías e imagen de referencia.</p>
+          <h1 data-route-heading tabIndex={-1}>{missing ? "Entrada no encontrada" : editing ? "Editar entrada" : "Nueva entrada"}</h1>
+          <p className="task-header__intro">{missing ? "No pudimos abrir la entrada que intentas editar." : "Nombre, descripción, categorías e imagen de referencia."}</p>
         </div>
       </header>
-      <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
+      {missing ? <section className="entry-missing" role="alert" aria-label="Entrada no encontrada">
+        <span className="entry-missing__icon"><Icon name="image" /></span>
+        <p>La entrada solicitada ya no existe.</p>
+        <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
+      </section> : <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
         const control = event.target;
         requestAnimationFrame(() => { if (document.activeElement === control) revealFocusedControl(control, actions.current); });
       }}>
@@ -137,7 +144,7 @@ function EntryFormEditor({
           <button className="button button--secondary" type="button" disabled={busy} onClick={() => { model.abandon(); void navigate(returnTo); }}>Cancelar</button>
           <button className="button button--primary" type="submit" disabled={saveDisabled}>{saveLabel}</button>
         </footer>
-      </form>
+      </form>}
     </main>
   </div>;
 }

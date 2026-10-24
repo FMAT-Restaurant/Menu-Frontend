@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import type { MenuCategory, MenuEntryDetail, MenuRepository } from "../../application/catalog";
 import { cachedCategories, previousCategories } from "../../application/catalogCache";
 import { loadEntryCategories } from "../../application/entryCategories";
-import { entryFailure } from "./entryError";
+import { entryFailure, type EntryFailure } from "./entryError";
 
 export type EntryResourcesRepository = Pick<MenuRepository, "listCategories" | "getEntry">;
 
 export function useEntryResources(repository: EntryResourcesRepository, entryId: string | undefined, onLoaded: (entry: MenuEntryDetail) => void) {
   const [entry, setEntry] = useState<MenuEntryDetail | null>(null);
   const [entryLoading, setEntryLoading] = useState(Boolean(entryId));
-  const [entryError, setEntryError] = useState("");
+  const [entryLoadFailure, setEntryLoadFailure] = useState<EntryFailure | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>(() => previousCategories(repository) ?? []);
   const [categoriesLoading, setCategoriesLoading] = useState(!cachedCategories(repository));
   const [categoriesError, setCategoriesError] = useState("");
@@ -35,13 +35,13 @@ export function useEntryResources(repository: EntryResourcesRepository, entryId:
     if (!entryId) return;
     const controller = new AbortController();
     setEntryLoading(true);
-    setEntryError("");
+    setEntryLoadFailure(null);
     repository.getEntry(entryId, controller.signal).then((current) => {
       if (controller.signal.aborted) return;
       setEntry(current);
       onLoaded(current);
     }).catch((error: unknown) => {
-      if (!controller.signal.aborted) setEntryError(entryFailure(error).message);
+      if (!controller.signal.aborted) setEntryLoadFailure(entryFailure(error));
     }).finally(() => {
       if (!controller.signal.aborted) setEntryLoading(false);
     });
@@ -49,7 +49,7 @@ export function useEntryResources(repository: EntryResourcesRepository, entryId:
   }, [repository, entryId, entryRetry, onLoaded]);
 
   return {
-    entry, setEntry, entryLoading, entryError,
+    entry, setEntry, entryLoading, entryLoadFailure, entryError: entryLoadFailure?.message ?? "",
     categories, categoriesLoading, categoriesError, continuing,
     categoriesReady: continuing || (!categoriesLoading && !categoriesError),
     retryEntry: () => setEntryRetry((value) => value + 1),

@@ -1,0 +1,2 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run eslint src/features/entries/EntryFormPage.tsx src/features/entries/useEntryResources.ts src/features/entries/EntryImageField.tsx src/features/entries/EntryCategorySelector.tsx src/features/entries/EntryFormPage.ux.test.tsx e2e/ux-ui-07.demo.spec.ts e2e/ux-ui-07.spec.ts

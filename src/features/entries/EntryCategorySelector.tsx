@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { MenuCategory } from "../../application/catalog";
+import { Icon } from "../../shared/Icon";
 
 interface Props {
   categories: MenuCategory[];
@@ -73,11 +74,14 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
     <p className="entry-form__muted">Puedes asignar varias o guardar sin clasificación.</p>
     <CategoryLoadState loading={loading} error={error} continuing={continuing} onRetry={onRetry} onContinue={onContinue} />
     <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" data-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
-      <span>{selectionLabel(selected.length)}</span><span aria-hidden="true">⌄</span>
+      <span>{selectionLabel(selected.length)}</span><span className="entry-category-selector__chevron" aria-hidden="true" />
     </button>
     {open && <div id="entry-category-panel" className="entry-category-selector__panel">
-      <label className="sr-only" htmlFor="entry-category-search">Buscar categorías</label>
-      <input ref={search} id="entry-category-search" type="search" placeholder="Buscar categorías…" value={query} onChange={(event) => setQuery(event.target.value)} disabled={disabled} />
+      <label className="entry-category-selector__search-label" htmlFor="entry-category-search">Buscar categorías</label>
+      <div className="entry-category-selector__search">
+        <Icon name="search" />
+        <input ref={search} id="entry-category-search" type="search" placeholder="Nombre de categoría" value={query} onChange={(event) => setQuery(event.target.value)} disabled={disabled} />
+      </div>
       <fieldset className="entry-category-selector__list">
         <legend className="sr-only">Categorías disponibles</legend>
         {filtered.map((category) => <label className="entry-category-selector__option" key={category.id}>
@@ -89,7 +93,7 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
       </fieldset>
     </div>}
     {selected.length > 0 && <ul className="entry-category-selector__selection" aria-label="Categorías seleccionadas">
-      {selected.map((id) => <li key={id}><span>{nameFor(id)}</span><button type="button" aria-label={`Retirar categoría ${nameFor(id)}`} disabled={disabled} onClick={() => toggle(id)}>×</button></li>)}
+      {selected.map((id) => <li key={id}><span>{nameFor(id)}</span><button type="button" aria-label={`Retirar categoría ${nameFor(id)}`} disabled={disabled} onClick={() => toggle(id)}><Icon name="close" /></button></li>)}
     </ul>}
     <p id="entry-categoryIds-error" className="entry-form__error">{fieldError}</p>
   </fieldset>;
