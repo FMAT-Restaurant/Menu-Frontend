@@ -1,0 +1,6 @@
+
+Test Suites: 2 passed, 2 total
+Tests:       55 passed, 55 total
+Snapshots:   0 total
+Time:        6.338 s
+Ran all test suites within paths "src/features/offers/OfferComponents.test.tsx", "src/features/offers/OffersPage.test.tsx".

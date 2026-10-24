@@ -1,0 +1,110 @@
+[
+  {
+    "Case": "ux-ui-01.demo-U01-failed-i-77011-d-text-separation-at-1440px-chromium",
+    "Width": 1440,
+    "ImageHeight": 112,
+    "IntrinsicWidth": null,
+    "IntrinsicHeight": null,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-failed-i-e1d4c-nd-text-separation-at-390px-chromium",
+    "Width": 390,
+    "ImageHeight": 112,
+    "IntrinsicWidth": null,
+    "IntrinsicHeight": null,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-Individu-05aa0-below-their-image-at-1440px-chromium",
+    "Width": 1440,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 225,
+    "IntrinsicHeight": 150,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-Individu-05aa0-below-their-image-at-1440px-chromium",
+    "Width": 1440,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 225,
+    "IntrinsicHeight": 150,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-Individu-1f49a--below-their-image-at-390px-chromium",
+    "Width": 390,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 225,
+    "IntrinsicHeight": 150,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-Individu-1f49a--below-their-image-at-390px-chromium",
+    "Width": 390,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 225,
+    "IntrinsicHeight": 150,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-landscap-7cd85-sentation-or-price-at-390px-chromium",
+    "Width": 390,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 1600,
+    "IntrinsicHeight": 320,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-landscap-f0275-entation-or-price-at-1440px-chromium",
+    "Width": 1440,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 1600,
+    "IntrinsicHeight": 320,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-portrait-69813-entation-or-price-at-1440px-chromium",
+    "Width": 1440,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 320,
+    "IntrinsicHeight": 1600,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-portrait-84155-sentation-or-price-at-390px-chromium",
+    "Width": 390,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 320,
+    "IntrinsicHeight": 1600,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-square-u-08bd5-sentation-or-price-at-390px-chromium",
+    "Width": 390,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 800,
+    "IntrinsicHeight": 800,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  },
+  {
+    "Case": "ux-ui-01.demo-U01-square-u-5d527-entation-or-price-at-1440px-chromium",
+    "Width": 1440,
+    "ImageHeight": 112,
+    "IntrinsicWidth": 800,
+    "IntrinsicHeight": 800,
+    "TitleGap": 12.0,
+    "ImageOverflow": 0
+  }
+]

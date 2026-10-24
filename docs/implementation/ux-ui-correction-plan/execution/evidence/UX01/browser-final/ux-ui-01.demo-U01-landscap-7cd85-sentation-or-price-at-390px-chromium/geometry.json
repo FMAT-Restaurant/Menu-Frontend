@@ -1,0 +1,80 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "geometry": {
+    "card": {
+      "x": 16,
+      "y": 446.09375,
+      "width": 358,
+      "height": 446,
+      "top": 446.09375,
+      "right": 374,
+      "bottom": 892.09375,
+      "left": 16
+    },
+    "image": {
+      "x": 37,
+      "y": 459.09375,
+      "width": 316,
+      "height": 112,
+      "top": 459.09375,
+      "right": 353,
+      "bottom": 571.09375,
+      "left": 37
+    },
+    "renderedImage": {
+      "x": 38,
+      "y": 460.09375,
+      "width": 314,
+      "height": 110,
+      "top": 460.09375,
+      "right": 352,
+      "bottom": 570.09375,
+      "left": 38
+    },
+    "intrinsicImage": {
+      "width": 1600,
+      "height": 320
+    },
+    "text": [
+      {
+        "selector": "h2",
+        "text": "PresentaciónExtraordinariamenteLargaSinSeparadores para compartir con bebida y acompañamientos",
+        "x": 37,
+        "y": 583.09375,
+        "width": 316,
+        "height": 66,
+        "top": 583.09375,
+        "right": 353,
+        "bottom": 649.09375,
+        "left": 37
+      },
+      {
+        "selector": ".offer-card__entry",
+        "text": "Hamburguesa clásica",
+        "x": 37,
+        "y": 653.09375,
+        "width": 316,
+        "height": 18,
+        "top": 653.09375,
+        "right": 353,
+        "bottom": 671.09375,
+        "left": 37
+      },
+      {
+        "selector": ".offer-card__price",
+        "text": "$ 123456789.5",
+        "x": 37,
+        "y": 685.09375,
+        "width": 316,
+        "height": 24,
+        "top": 685.09375,
+        "right": 353,
+        "bottom": 709.09375,
+        "left": 37
+      }
+    ]
+  }
+}
