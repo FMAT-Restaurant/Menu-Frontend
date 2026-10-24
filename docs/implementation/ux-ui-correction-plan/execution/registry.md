@@ -15,15 +15,15 @@ Base inicial: `21bd45a822c2345e695ddae419f5a0dcd715aec0`, rama `feature/ux-ui-im
 
 ## Tickets y reservas
 
-U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y UX12. U02 a U28 siguen abiertos. La integración de un ticket no cierra automáticamente hallazgos compartidos.
+U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y UX12. U26 acreditado en oleada2; U28 y la base compartida están parcialmente acreditados. Los demás hallazgos siguen abiertos. La integración de un ticket no cierra automáticamente hallazgos compartidos.
 
 | Ticket | Agente y rol | Base/requisitos | Reserva | Estado | Hallazgos y evidencia | Pendientes |
 | --- | --- | --- | --- | --- | --- | --- |
 | UX00 | `/root/ux00_baseline`, preparación; root integra | Base inicial | Evidencia retenida; salidas liberadas | Integrada | V18; tipos/lint/build pasan; Jest y cobertura 33 suites/498 tests; demo 2 tests; normal preview 46 pasan; Compose4173 37 pasan y 9 fallan | Fallos Compose previos investigados aparte; shell excluido; dispositivo/lector sin acreditar. Logs evidence/UX00. |
 | UX01 | `/root/ux01_images`, contención de imagen | e785b41, revisión integrada sobre oleada 1 | Liberada | Integrada | U01/V01; 10 PNG/10 JSON; gap12px, overflow0 | Repetir condición UX09/UX12 |
 | UX02 | `/root/ux02_foundation`, base visual | 8c95f64 | Liberada y transferida parcialmente a UX03 | Integrada | U03/U07/U08/U22 abiertos; 19 PNG/2 JSON, controles40/48 | Adopciones de consumidores y contenedores modales |
-| UX03 | `/root/ux02_foundation`, ciclo modal | 8c95f64, UX02 integrada | BASE; confirmaciones CAT/OFE/REC; CategoryFormDialog, RecipeFormDialog, SlotModal, OptionModal, selector OfferFormPage; estilos de cinco áreas; hooks/shared nuevos; tests propios/focalizados y e2e/ux-ui-03.demo.spec.ts; evidence/UX03 | En ejecución | U26/U28; V03/V16/V17/V18 | Un solo fondo, foco y scroll; conservar U01 y preparar ancho propio; U27 corresponde UX10 |
-| UX04 | `/root/ux01_images`, cabeceras; solo preparación de lectura | UX01 integrada; UX03 pendiente | Solo evidence/UX04/preparation.md; ninguna edición de aplicación autorizada todavía | Pendiente | U05/U06 | Esperar integración UX03; selector final UX10; shell real excluido |
+| UX03 | `/root/ux02_foundation`, ciclo modal; root integra | f7330b0 | Liberada | Integrada | U26 acreditado; U28 parcial; cinco pruebas de ciclo, 154 de consumidores, 47 E2E normales y 20 demo | Repetir pasos en UX10; U27 abierto |
+| UX04 | `/root/ux01_images`, cabeceras locales | f7330b0, UX01 y UX03 integradas | App y páginas de seis áreas, BASE y estilos de cabeceras, tres tests incompatibles documentados, e2e/ux-ui-04.demo.spec.ts, evidence/UX04 | En ejecución | U05/U06; aportes U07/U08/U24 | Selector final UX10; shell real excluido |
 | UX05 | Por asignar | UX04 | Ninguna activa | Pendiente | Aporte U04 | Validación categorías |
 | UX06 | Por asignar | UX04 | Ninguna activa | Pendiente | U11 y aportes | Catálogo |
 | UX07 | Por asignar | UX04 | Ninguna activa | Pendiente | U14 y aportes | Entradas |
@@ -51,6 +51,8 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 Se registrarán asignaciones, ampliaciones, resultados, referencia de integración y liberación al recibir cada entrega. Las ediciones compartidas se integran por turnos. El historial de auditoría permanece intacto.
 
 Oleada 1: revisión favorable [reviews/oleada-01.md](evidence/reviews/oleada-01.md), 14 E2E en 29,3 s, 64 unitarias en 9,558 s y tipos/lint globales aprobados. Selección demo descubre los 14 casos; configuración normal excluye los nuevos `.demo.spec.ts`. Root inspeccionó capturas comparables de U01 y medidas reales. Las reservas UX01/UX02 quedan liberadas; UX03 recibe sus contratos y archivos actuales, sin copiar versiones previas.
+
+Oleada 2: revisión favorable [reviews/oleada-02.md](evidence/reviews/oleada-02.md). Dos defectos de foco se corrigieron en código conservando las aserciones: vuelta de Tab en confirmaciones y Tab/Shift+Tab durante DELETE con todos los controles deshabilitados. La última verificación pasa build y lint globales, 47 E2E normales sobre preview en17,2s y 20 demo en40,0s. Evidencias negativa y positiva de operación pendiente conservadas en UX03. El documento se restaura desde scrollY1626 y los formularios usan controles de48px en contenedor propio estrecho. No acredita aún el flujo final de UX10 ni integración con backend real.
 
 ### Incidencias durante oleada 1
 

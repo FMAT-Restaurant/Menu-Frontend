@@ -33,9 +33,9 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U23 | UX09 | Abierto | Sin entrega | Cambiar imagen visible sin hover, teclado y tacto |
 | U24 | UX15; UX04/06/09 | Abierto | Contrato de marcadores documentado en UX02 | Foco, retorno, títulos, anuncios y lector; shell real excluido |
 | U25 | UX16 | Abierto | Sin entrega | Cargas locales, demoras y conservación de datos |
-| U26 | UX03; conservación UX10/UX11 | Abierto | UX03 en ejecución | Un fondo nativo, foco seguro y limpieza |
+| U26 | UX03; conservación UX10/UX11 | Acreditado en oleada 2 | [Revisión UX03](evidence/reviews/oleada-02.md); 20 demo y 47 normales, fondo único y foco Cancelar | Conservar tras UX10/UX11 y repetir en base final |
 | U27 | UX10 | Abierto | Sin entrega | Opción, selección y creación en un diálogo |
-| U28 | UX03; repetición UX10/UX17 | Abierto | UX03 en ejecución | Scroll, posición y estilos; shell real excluido |
+| U28 | UX03; repetición UX10/UX17 | Parcialmente acreditado | Scroll visual bloqueado, restaura1626px y estilos; controles48px propios | Repetición con pasos finales de UX10; shell real excluido |
 
 ## Entornos y puertas
 
