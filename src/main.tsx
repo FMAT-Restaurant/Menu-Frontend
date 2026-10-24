@@ -4,6 +4,8 @@ import { App } from "./App";
 import "./styles.css";
 
 async function bootstrap() {
+  // This entry point owns the standalone document. Embedding App does not reset a host document.
+  document.documentElement.dataset.menuStandalone = "";
   const repository = import.meta.env.DEV && import.meta.env.MODE === "demo"
     ? (await import("./demo/repository")).createDemoRepository()
     : undefined;

@@ -84,31 +84,33 @@ const defaultRepository = createMenuApi(
 export function App({ repository = defaultRepository }: Readonly<{ repository?: MenuRepository }> = {}) {
   return (
     <BrowserRouter>
-      <Suspense
-        fallback={
-          <div
-            className="app-shell loading-shell"
-            role="status"
-            aria-live="polite"
-            style={{ padding: "2rem", textAlign: "center" }}
-          >
-            <p>Cargando página…</p>
-          </div>
-        }
-      >
-        <Routes>
-          <Route path="/" element={<CatalogPage repository={repository} />} />
-          <Route path="/menu" element={<Navigate to="/" replace />} />
-          <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
-          <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
-          <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
-          <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
-          <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
-          <Route path="/categories" element={<CategoryPage repository={repository} />} />
-          <Route path="/recipes" element={<RecipePage repository={repository} />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
+      <div className="menu-module" data-menu-module>
+        <Suspense
+          fallback={
+            <div
+              className="app-shell loading-shell"
+              role="status"
+              aria-live="polite"
+              style={{ padding: "2rem", textAlign: "center" }}
+            >
+              <p>Cargando página…</p>
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<CatalogPage repository={repository} />} />
+            <Route path="/menu" element={<Navigate to="/" replace />} />
+            <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
+            <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
+            <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
+            <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
+            <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
+            <Route path="/categories" element={<CategoryPage repository={repository} />} />
+            <Route path="/recipes" element={<RecipePage repository={repository} />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </div>
     </BrowserRouter>
   );
 }

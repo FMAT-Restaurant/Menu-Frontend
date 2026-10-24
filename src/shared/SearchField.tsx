@@ -1,4 +1,5 @@
 import type { SubmitEvent } from "react";
+import { Icon } from "./Icon";
 
 interface SearchFieldProps {
   value: string;
@@ -26,7 +27,7 @@ export function SearchField({
     <form role="search" className="search-field" onSubmit={submit}>
       <label htmlFor={id}>{label}</label>
       <div className="search-field__control">
-        <span aria-hidden="true">⌕</span>
+        <span className="search-field__icon"><Icon name="search" /></span>
         <input
           id={id}
           type="search"

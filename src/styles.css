@@ -1,7 +1,12 @@
 @import "./shared/primitives.css";
 
-:root {
+.menu-module {
+  container: menu-module / inline-size;
+  min-width: 0;
+  min-height: 100dvh;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
   color: #111827;
   background: #f8fafc;
   font-synthesis: none;
@@ -16,39 +21,109 @@
   --brand-hover: #9a3412;
   --soft-brand: #fff7ed;
   --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+  --information: #2563eb;
+  --radius-sm: 4px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --space-unit: 4px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --text-h1: 28px;
+  --leading-h1: 36px;
+  --text-h2: 22px;
+  --leading-h2: 30px;
+  --text-h3: 18px;
+  --leading-h3: 26px;
+  --text-body: 16px;
+  --leading-body: 24px;
+  --text-small: 14px;
+  --leading-small: 20px;
+  --text-caption: 12px;
+  --leading-caption: 16px;
+  --control-height: 40px;
 }
 
-* {
+:where(.menu-module), :where(.menu-module) *, :where(.menu-module) *::before, :where(.menu-module) *::after {
   box-sizing: border-box;
 }
 
-body {
+html[data-menu-standalone] body {
   min-width: 0;
   min-height: 100vh;
   margin: 0;
 }
 
-button,
-input,
-select,
-textarea {
+:where(.menu-module) :is(h1, .text-h1) {
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+:where(.menu-module) :is(h2, .text-h2) {
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+:where(.menu-module) :is(h3, .text-h3) {
+  font-size: var(--text-h3);
+  line-height: var(--leading-h3);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+:where(.menu-module) .text-body {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+:where(.menu-module) .text-small {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+:where(.menu-module) .text-caption {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+}
+
+:where(.menu-module) .menu-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+:where(.menu-module) button,
+:where(.menu-module) input,
+:where(.menu-module) select,
+:where(.menu-module) textarea {
   font: inherit;
 }
 
-button {
+:where(.menu-module) button {
   cursor: pointer;
 }
 
-a {
+:where(.menu-module) a {
   color: inherit;
 }
 
-:is(a, button, input, select, textarea):focus-visible {
+:where(.menu-module) :is(a, button, input, select, textarea):focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
-.sr-only {
+:where(.menu-module) .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -63,7 +138,7 @@ a {
    Global Navigation
    ========================================================= */
 
-.global-nav {
+:where(.menu-module) .global-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -73,7 +148,7 @@ a {
   background: var(--surface);
 }
 
-.brand {
+:where(.menu-module) .brand {
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -81,7 +156,7 @@ a {
   text-decoration: none;
 }
 
-.brand__mark {
+:where(.menu-module) .brand__mark {
   display: grid;
   width: 40px;
   height: 40px;
@@ -92,20 +167,20 @@ a {
   font-weight: 700;
 }
 
-.brand strong {
+:where(.menu-module) .brand strong {
   color: var(--brand);
 }
 
-.global-nav__section {
+:where(.menu-module) .global-nav__section {
   color: var(--muted);
   font-size: 14px;
 }
 
 @media (max-width: 700px) {
-  .global-nav {
+  :where(.menu-module) .global-nav {
     padding: 12px 16px;
   }
-  .global-nav__section {
+  :where(.menu-module) .global-nav__section {
     display: none;
   }
 }
@@ -114,14 +189,14 @@ a {
    Shared Button Primitives
    ========================================================= */
 
-.button {
+:where(.menu-module) .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 8px 16px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text);
   font-size: 14px;
@@ -132,100 +207,117 @@ a {
   white-space: nowrap;
 }
 
-.button--primary {
+:where(.menu-module) .button--primary {
   background: var(--brand);
   color: #fff;
 }
 
-.button--primary:hover {
+:where(.menu-module) .button--primary:hover {
   background: var(--brand-hover);
 }
 
-.button--secondary {
+:where(.menu-module) .button--secondary {
   border-color: #d1d5db;
   background: var(--surface);
 }
 
-.button--secondary:hover,
-.button--quiet:hover {
+:where(.menu-module) .button--secondary:hover,
+:where(.menu-module) .button--quiet:hover {
   background: #f3f4f6;
 }
 
-.button--quiet {
+:where(.menu-module) .button--quiet {
   color: var(--text);
 }
 
-.button--danger-link {
+:where(.menu-module) .button--danger-link {
   color: var(--danger);
 }
 
-.button--danger-link:hover {
+:where(.menu-module) .button--danger-link:hover {
   background: #fef2f2;
 }
 
-.button--danger {
+:where(.menu-module) .button--danger {
   background: var(--danger);
   color: #fff;
 }
 
-.button--danger:hover {
+:where(.menu-module) .button--danger:hover {
   background: #b91c1c;
 }
 
-.button--small {
-  min-height: 32px;
-  padding: 4px 10px;
-  font-size: 13px;
+:where(.menu-module) .button--small {
+  min-height: var(--control-height);
+  padding: 4px 12px;
+  font-size: 14px;
 }
 
-.button:disabled {
+:where(.menu-module) .button--icon {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 8px;
+}
+
+:where(.menu-module) .button:disabled {
   background: #f3f4f6;
   color: #4b5563;
   cursor: not-allowed;
 }
 
-@media (max-width: 700px) {
-  .button {
-    min-height: 44px;
+@container menu-module (width < 1200px) {
+  :where(.menu-module) > * {
+    --control-height: 48px;
   }
+}
+
+@media (any-pointer: coarse) {
+  .menu-module {
+    --control-height: 48px;
+  }
+}
+
+.menu-module[data-input-mode="touch"] {
+  --control-height: 48px;
 }
 
 /* =========================================================
    Shared Status Badges
    ========================================================= */
 
-.status {
+:where(.menu-module) .status {
   position: absolute;
   top: 12px;
   right: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border-radius: 4px;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
   background: #fff;
   color: var(--text);
   font-size: 12px;
+  line-height: 16px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
 }
 
-.status__dot {
+:where(.menu-module) .status__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #6b7280;
 }
 
-.status--active .status__dot {
+:where(.menu-module) .status--active .status__dot {
   background: #16a34a;
 }
 
-.status--inactive .status__dot {
+:where(.menu-module) .status--inactive .status__dot {
   background: #d97706;
 }
 
-.status--archived .status__dot {
+:where(.menu-module) .status--archived .status__dot {
   background: #6b7280;
 }
 
@@ -233,7 +325,7 @@ a {
    Shared Feedback & Alert Primitives
    ========================================================= */
 
-.feedback {
+:where(.menu-module) .feedback {
   display: block;
   padding: 16px;
   border: 1px solid #bfdbfe;
@@ -242,26 +334,26 @@ a {
   color: #1e40af;
 }
 
-.feedback--error {
+:where(.menu-module) .feedback--error {
   border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
-.feedback--success {
+:where(.menu-module) .feedback--success {
   margin-bottom: 16px;
   border-color: #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
-.feedback--warning {
+:where(.menu-module) .feedback--warning {
   border-color: #fed7aa;
   background: #fff7ed;
   color: #9a3412;
 }
 
-.feedback button {
+:where(.menu-module) .feedback button {
   border: 0;
   background: transparent;
   color: inherit;
@@ -273,44 +365,61 @@ a {
    Shared Form Field Primitives
    ========================================================= */
 
-.form-field {
+:where(.menu-module) .form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.form-field label,
-.field-label {
+:where(.menu-module) .form-field label,
+:where(.menu-module) .field-label {
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
 }
 
-.form-field input[type="text"],
-.form-field input[type="number"],
-.form-field select,
-.form-field textarea {
+:where(.menu-module) .form-field input[type="text"],
+:where(.menu-module) .form-field input[type="number"],
+:where(.menu-module) .form-field select,
+:where(.menu-module) .form-field textarea {
+  min-height: var(--control-height);
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  font-size: 16px;
+  line-height: 24px;
   background: #fff;
   color: var(--ink);
 }
 
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
-  outline: none;
-  border-color: #4b5563;
+:where(.menu-module) .form-field :is(input[type="text"], input[type="number"], select) {
+  height: var(--control-height);
+  padding-block: 0;
 }
 
-.form-field :is(input, select, textarea):focus-visible {
+:where(.menu-module) .form-field input:focus,
+:where(.menu-module) .form-field select:focus,
+:where(.menu-module) .form-field textarea:focus {
+  border-color: var(--brand);
+}
+
+:where(.menu-module) .form-field :is(input, select, textarea)[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+}
+
+:where(.menu-module) .field-error {
+  margin: 0;
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module) .form-field :is(input, select, textarea):focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
-.field-hint {
+:where(.menu-module) .field-hint {
   margin: 0;
   color: #6b7280;
   font-size: 12px;

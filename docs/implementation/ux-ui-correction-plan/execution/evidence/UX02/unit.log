@@ -1,0 +1,8 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run jest --runInBand src/App.test.tsx src/shared/SearchField.test.tsx
+
+Test Suites: 2 passed, 2 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        6.015 s
+Ran all test suites matching src/App.test.tsx|src/shared/SearchField.test.tsx.

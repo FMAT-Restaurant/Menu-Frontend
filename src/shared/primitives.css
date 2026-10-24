@@ -1,16 +1,17 @@
-/* Shared screen, search, pagination and confirmation primitives. Loaded once by the app. */
+/* Shared primitives stay inside the module; area-specific adoption follows in UX04–UX09. */
 
-.eyebrow {
+:where(.menu-module) .eyebrow {
   margin: 0 0 8px;
   color: var(--brand);
   font-size: 12px;
+  line-height: 16px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
-.search-field,
-.select-field {
+:where(.menu-module) .search-field,
+:where(.menu-module) .select-field {
   display: grid;
   gap: 8px;
   color: var(--text);
@@ -18,48 +19,51 @@
   font-weight: 600;
 }
 
-.search-field__control {
+:where(.menu-module) .search-field__control {
   display: flex;
   align-items: center;
   min-width: 0;
-  height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  min-height: var(--control-height);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   background: #fff;
 }
 
-.search-field__control > span {
+:where(.menu-module) .search-field__icon {
+  display: inline-flex;
+  align-items: center;
   padding-left: 12px;
   color: var(--muted);
-  font-size: 22px;
-  line-height: 1;
 }
 
-.search-field input {
+:where(.menu-module) .search-field input {
   width: 100%;
   min-width: 0;
-  height: 100%;
+  min-height: var(--control-height);
   padding: 0 8px;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--ink);
+  font-size: 16px;
+  line-height: 24px;
   font-weight: 400;
 }
 
-.search-field input:focus-visible {
+:where(.menu-module) .search-field input:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: -2px;
 }
 
-.search-field__control .button {
-  min-height: 38px;
+:where(.menu-module) .search-field__control .button {
+  align-self: stretch;
+  min-height: var(--control-height);
   border: 0;
   border-left: 1px solid var(--border);
-  border-radius: 0 7px 7px 0;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
 
-.pagination {
+:where(.menu-module) .pagination {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -67,32 +71,32 @@
   margin-top: 24px;
 }
 
-.pagination__number {
-  min-width: 40px;
-  min-height: 40px;
+:where(.menu-module) .pagination__number {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: #fff;
   color: var(--text);
 }
 
-.pagination__number--current {
+:where(.menu-module) .pagination__number--current {
   border-color: var(--brand);
   background: var(--brand);
   color: #fff;
 }
 
-.pagination__ellipsis {
+:where(.menu-module) .pagination__ellipsis {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
   color: #6b7280;
   user-select: none;
 }
 
-.dialog-backdrop {
+:where(.menu-module) .dialog-backdrop {
   position: fixed;
   z-index: 10;
   inset: 0;
@@ -102,7 +106,7 @@
   background: rgb(17 24 39 / 45%);
 }
 
-.confirm-dialog {
+:where(.menu-module) .confirm-dialog {
   width: min(100%, 440px);
   margin: auto;
   padding: 24px;
@@ -112,28 +116,28 @@
   box-shadow: 0 10px 25px rgb(0 0 0 / 12%);
 }
 
-.confirm-dialog h2 {
+:where(.menu-module) .confirm-dialog h2 {
   margin: 0;
   font-size: 22px;
 }
 
-.confirm-dialog p {
+:where(.menu-module) .confirm-dialog p {
   color: var(--text);
   line-height: 24px;
 }
 
-.confirm-dialog__actions {
+:where(.menu-module) .confirm-dialog__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
-.category-screen {
+:where(.menu-module) .category-screen {
   min-height: 100vh;
   background: var(--canvas);
 }
 
-.category-screen__header {
+:where(.menu-module) .category-screen__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -143,37 +147,37 @@
   color: #fff;
 }
 
-.category-screen__header .eyebrow {
+:where(.menu-module) .category-screen__header .eyebrow {
   color: #fdba74;
 }
 
-.category-screen__header h1 {
+:where(.menu-module) .category-screen__header h1 {
   color: #fff;
   font-size: 24px;
   line-height: 32px;
 }
 
-.category-screen__header p:last-child {
+:where(.menu-module) .category-screen__header p:last-child {
   margin: 6px 0 0;
   color: #e5e7eb;
   font-size: 14px;
 }
 
-.category-screen__header .category-screen__back {
+:where(.menu-module) .category-screen__header .category-screen__back {
   border: 1px solid #9ca3af;
   color: #fff;
 }
 
-.category-screen__header .category-screen__back:hover {
+:where(.menu-module) .category-screen__header .category-screen__back:hover {
   background: #374151;
 }
 
-.category-screen__main {
+:where(.menu-module) .category-screen__main {
   width: min(100% - 48px, 1040px);
   margin: 32px auto 72px;
 }
 
-.category-panel {
+:where(.menu-module) .category-panel {
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -181,7 +185,7 @@
   box-shadow: 0 2px 10px rgb(17 24 39 / 4%);
 }
 
-.category-panel__heading {
+:where(.menu-module) .category-panel__heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -189,50 +193,50 @@
   margin-bottom: 24px;
 }
 
-.category-panel__heading h2 {
+:where(.menu-module) .category-panel__heading h2 {
   margin: 0;
   color: var(--ink);
   font-size: 20px;
   line-height: 28px;
 }
 
-.category-panel__heading p {
+:where(.menu-module) .category-panel__heading p {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 14px;
 }
 
-@media (max-width: 700px) {
-  .category-screen__header {
+@container menu-module (width < 768px) {
+  :where(.menu-module) .category-screen__header {
     align-items: flex-start;
     flex-direction: column;
     padding: 20px 16px;
   }
-  .category-screen__main {
+  :where(.menu-module) .category-screen__main {
     width: min(100% - 32px, 1040px);
     margin-top: 20px;
   }
-  .category-panel {
+  :where(.menu-module) .category-panel {
     padding: 16px;
   }
-  .category-panel__heading {
+  :where(.menu-module) .category-panel__heading {
     align-items: flex-start;
     flex-direction: column;
     gap: 16px;
   }
-  .category-panel__heading .button {
+  :where(.menu-module) .category-panel__heading .button {
     width: 100%;
   }
 }
 
-.catalog-header__intro {
+:where(.menu-module) .catalog-header__intro {
   margin: 8px 0 0;
   color: var(--muted);
   font-size: 14px;
   line-height: 20px;
 }
 
-.empty-state {
+:where(.menu-module) .empty-state {
   display: grid;
   justify-items: center;
   gap: 12px;
@@ -243,7 +247,7 @@
   text-align: center;
 }
 
-.empty-state__icon {
+:where(.menu-module) .empty-state__icon {
   display: grid;
   width: 52px;
   height: 52px;
@@ -254,12 +258,12 @@
   font-size: 30px;
 }
 
-.empty-state h2 {
+:where(.menu-module) .empty-state h2 {
   margin: 0;
   font-size: 18px;
 }
 
-.empty-state p {
+:where(.menu-module) .empty-state p {
   max-width: 440px;
   margin: 0 0 8px;
   color: var(--muted);
@@ -267,13 +271,13 @@
   line-height: 20px;
 }
 
-.back-link {
+:where(.menu-module) .back-link {
   display: inline-block;
   margin-bottom: 24px;
   color: var(--brand);
   font-weight: 600;
 }
 
-.category-empty {
+:where(.menu-module) .category-empty {
   margin-top: 8px;
 }
