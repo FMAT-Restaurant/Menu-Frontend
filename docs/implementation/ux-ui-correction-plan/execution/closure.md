@@ -1,6 +1,7 @@
 # Verificación de cierre UX/UI
 
 Estado provisional. La implementación completa todavía no está acreditada. Este documento distingue la integración de tickets del resultado por hallazgo; UX17 completará la comprobación final sobre una misma base.
+Trabajo detenido por solicitud del usuario después de integrar UX04 en810f5d9. La referencia y condiciones de reanudación están en [checkpoint.md](checkpoint.md).
 
 Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario. Shell real excluido de la implementación actual. Presentación MXN con dos decimales y cantidad de grupo como rondas de selección, según respuestas del usuario.
 
@@ -12,8 +13,8 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U02 | UX09 | Abierto | Sin entrega | Composición vertical y ancho útil |
 | U03 | UX02; UX03/05/06/07/08/09 | Parcialmente acreditado | 8c95f64; [base UX02](evidence/UX02/entrega.md), controles compartidos40/48px | Adopción de todos los consumidores y verificación final |
 | U04 | UX08; UX05/UX07 | Abierto | Sin entrega | Validación accesible, foco y cero escrituras inválidas |
-| U05 | UX04 | Abierto | Sin entrega | Retirar marca interna en todas las rutas; shell real excluido |
-| U06 | UX04; UX10 | Abierto | Sin entrega | Cabeceras locales y selector sin estructura administrativa |
+| U05 | UX04 | Acreditado en autónomo | 810f5d9; nueve rutas, 18 capturas y geometría; [revisión](evidence/reviews/oleada-03.md) | Conservar en base final; shell real excluido |
+| U06 | UX04; UX10 | Parcialmente acreditado | Cabeceras locales neutralizadas en810f5d9 | Selector sin estructura administrativa corresponde UX10 |
 | U07 | UX02; UX04 a UX09 | Parcialmente acreditado | 8c95f64 define roles; medidas de áreas conservadas en UX02 | Adopción tipográfica por área |
 | U08 | UX02; UX03 a UX09 | Parcialmente acreditado | 8c95f64 define geometría | Radios y espacios en consumidores finales |
 | U09 | UX09; UX02/06/07/08 | Abierto | Base de estados disponible | Estados con punto y texto, sin franjas decorativas |
@@ -44,3 +45,5 @@ La [línea base UX00](evidence/UX00/entrega.md) y la [investigación del entorno
 Oleada 1, base integrada hasta `8c95f64`: tipos y lint globales pasan; cuatro suites unitarias, 64 pruebas; demo Chromium, 14 pruebas en29,3s; [revisión](evidence/reviews/oleada-01.md). Estos resultados acreditan el alcance de la oleada, no los 28 hallazgos ni todo V01 a V18.
 
 Faltan comandos completos sobre la base final y casos de interacción V01 a V18. El usuario pidió expresamente registrar dispositivo táctil físico con teclado virtual y lector de pantalla como validación manual pendiente. Se entregarán sus recorridos sin presentarlos como aprobados ni bloquear por ellos la implementación de agentes. Las pruebas de viewport y gesto emulado se identificarán como emulación. Las pruebas HTTP con mocks no acreditan backend real. No se afirma verificación del shell real excluido por el usuario.
+
+En el checkpoint UX04 pasan24 pruebas demo y47 E2E normales sobre preview, además de tipos, build, lint y las suites focalizadas descritas en la revisión. Estos resultados incluyen regresiones U01 y UX03. UX05 a UX17 siguen sin implementar. Los recorridos de validación manual están en [manual-validation.md](manual-validation.md).
