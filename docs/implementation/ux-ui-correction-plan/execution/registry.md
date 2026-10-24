@@ -23,7 +23,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX01 | `/root/ux01_images`, contención de imagen | e785b41, revisión integrada sobre oleada 1 | Liberada | Integrada | U01/V01; 10 PNG/10 JSON; gap12px, overflow0 | Repetir condición UX09/UX12 |
 | UX02 | `/root/ux02_foundation`, base visual | 8c95f64 | Liberada y transferida parcialmente a UX03 | Integrada | U03/U07/U08/U22 abiertos; 19 PNG/2 JSON, controles40/48 | Adopciones de consumidores y contenedores modales |
 | UX03 | `/root/ux02_foundation`, ciclo modal | 8c95f64, UX02 integrada | BASE; confirmaciones CAT/OFE/REC; CategoryFormDialog, RecipeFormDialog, SlotModal, OptionModal, selector OfferFormPage; estilos de cinco áreas; hooks/shared nuevos; tests propios/focalizados y e2e/ux-ui-03.demo.spec.ts; evidence/UX03 | En ejecución | U26/U28; V03/V16/V17/V18 | Un solo fondo, foco y scroll; conservar U01 y preparar ancho propio; U27 corresponde UX10 |
-| UX04 | Por asignar | UX01/UX03 | Ninguna activa | Pendiente | U05/U06 | UX10 y D01 para cierre |
+| UX04 | `/root/ux01_images`, cabeceras; solo preparación de lectura | UX01 integrada; UX03 pendiente | Solo evidence/UX04/preparation.md; ninguna edición de aplicación autorizada todavía | Pendiente | U05/U06 | Esperar integración UX03; selector final UX10; shell real excluido |
 | UX05 | Por asignar | UX04 | Ninguna activa | Pendiente | Aporte U04 | Validación categorías |
 | UX06 | Por asignar | UX04 | Ninguna activa | Pendiente | U11 y aportes | Catálogo |
 | UX07 | Por asignar | UX04 | Ninguna activa | Pendiente | U14 y aportes | Entradas |
