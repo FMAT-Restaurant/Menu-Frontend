@@ -1,0 +1,4 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run depcruise-fmt -T text --focus ^src/shared/useTaskDialog\.ts$|^src/shared/useModalScrollLock\.ts$ docs/implementation/ux-ui-correction-plan/execution/evidence/UX03/dependencies.json
+src/shared/useTaskDialog.ts → src/shared/useModalScrollLock.ts
+src/shared/useTaskDialog.ts → node_modules/react/index.js

@@ -109,10 +109,6 @@
   overflow: hidden;
 }
 
-.recipe-form-dialog::backdrop {
-  background: rgb(17 24 39 / 60%);
-}
-
 .recipe-form-dialog__header {
   flex-shrink: 0;
   display: flex;

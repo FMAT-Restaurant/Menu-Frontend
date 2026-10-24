@@ -1,3 +1,4 @@
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../../application/catalog";
@@ -113,21 +114,16 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     }
   }, []);
 
+  useTaskDialog(deleteDialogRef, Boolean(entryToDelete), cancelDeleteRef);
+
   useEffect(() => {
     if (!entryToDelete) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const dialog = deleteDialogRef.current;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    cancelDeleteRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !actionInProgress.current) closeDeleteDialog();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
-      previouslyFocused?.focus();
     };
   }, [entryToDelete]);
 
@@ -373,7 +369,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
           <div className="dialog-backdrop">
             <dialog
               ref={deleteDialogRef}
-              className="confirm-dialog"
+              className="confirm-dialog menu-task-dialog"
               aria-modal="true"
               aria-labelledby="delete-title"
               aria-describedby="delete-description"

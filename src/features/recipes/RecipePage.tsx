@@ -1,3 +1,4 @@
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type {
@@ -156,12 +157,10 @@ export function RecipePage({
     return () => controller.abort();
   }, [repository, confirmedQuery, currentPage, retry]);
 
+  useTaskDialog(deleteDialogRef, Boolean(recipeToDelete), cancelDeleteRef);
+
   useEffect(() => {
     if (!recipeToDelete) return;
-    const dialog = deleteDialogRef.current;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    cancelDeleteRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -177,7 +176,6 @@ export function RecipePage({
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
     };
   }, [recipeToDelete, isDeleting]);
 
@@ -492,7 +490,7 @@ export function RecipePage({
         <div className="dialog-backdrop">
           <dialog
             ref={deleteDialogRef}
-            className="confirm-dialog"
+            className="confirm-dialog menu-task-dialog"
             aria-labelledby="confirm-delete-title"
             onCancel={(event) => {
               if (isDeleting) {

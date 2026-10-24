@@ -1,3 +1,5 @@
+import { Icon } from "../../shared/Icon";
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
@@ -88,22 +90,7 @@ export function OptionModal({
     setValidationError("");
   }, [initialData, isOpen, isCreateMode]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const dialog = dialogRef.current;
-    if (typeof dialog?.showModal === "function") {
-      if (!dialog.open) dialog.showModal();
-    } else {
-      dialog?.setAttribute("open", "");
-    }
-    return () => {
-      if (dialog?.open && typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog?.removeAttribute("open");
-      }
-    };
-  }, [isOpen]);
+  useTaskDialog(dialogRef, isOpen);
 
   // Focus restoration when nested picker closes
   useEffect(() => {
@@ -228,7 +215,7 @@ export function OptionModal({
   return (
     <dialog
       ref={dialogRef}
-      className="option-modal-dialog"
+      className="option-modal-dialog menu-task-dialog"
       aria-labelledby="option-modal-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -245,7 +232,7 @@ export function OptionModal({
           onClick={onClose}
           aria-label="Cerrar modal de opción"
         >
-          ✕
+          <Icon name="close" />
         </button>
       </header>
 

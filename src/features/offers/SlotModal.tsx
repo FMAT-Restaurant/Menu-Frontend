@@ -1,3 +1,5 @@
+import { Icon } from "../../shared/Icon";
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type { OfferCourse } from "../../application/catalog";
 
@@ -49,22 +51,7 @@ export function SlotModal({
     setValidationError("");
   }, [initialData, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const dialog = dialogRef.current;
-    if (typeof dialog?.showModal === "function") {
-      if (!dialog.open) dialog.showModal();
-    } else {
-      dialog?.setAttribute("open", "");
-    }
-    return () => {
-      if (dialog?.open && typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog?.removeAttribute("open");
-      }
-    };
-  }, [isOpen]);
+  useTaskDialog(dialogRef, isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,7 +90,7 @@ export function SlotModal({
   return (
     <dialog
       ref={dialogRef}
-      className="slot-modal-dialog"
+      className="slot-modal-dialog menu-task-dialog"
       aria-labelledby="slot-modal-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -118,7 +105,7 @@ export function SlotModal({
           onClick={onClose}
           aria-label="Cerrar modal de grupo"
         >
-          ✕
+          <Icon name="close" />
         </button>
       </header>
 

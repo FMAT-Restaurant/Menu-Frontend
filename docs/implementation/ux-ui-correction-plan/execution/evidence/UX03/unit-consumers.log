@@ -1,0 +1,8 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run jest --runInBand src/features/catalog/CatalogPage.test.tsx src/features/catalog/CatalogPage.remediation.test.tsx src/features/categories/CategoryPage.test.tsx src/features/offers/OffersPage.test.tsx src/features/offers/OfferComponents.test.tsx src/features/offers/OfferFormPage.test.tsx src/features/recipes/RecipePage.test.tsx src/features/recipes/RecipeFormDialog.test.tsx
+
+Test Suites: 7 passed, 7 total
+Tests:       154 passed, 154 total
+Snapshots:   0 total
+Time:        18.375 s
+Ran all test suites matching src/features/catalog/CatalogPage.test.tsx|src/features/catalog/CatalogPage.remediation.test.tsx|src/features/categories/CategoryPage.test.tsx|src/features/offers/OffersPage.test.tsx|src/features/offers/OfferComponents.test.tsx|src/features/offers/OfferFormPage.test.tsx|src/features/recipes/RecipePage.test.tsx|src/features/recipes/RecipeFormDialog.test.tsx.

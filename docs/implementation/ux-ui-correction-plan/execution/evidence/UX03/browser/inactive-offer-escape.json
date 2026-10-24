@@ -1,0 +1,19 @@
+{
+  "original": {
+    "scrollY": 746,
+    "style": null,
+    "rootStyle": null,
+    "anchorY": -565.953125
+  },
+  "lockedY": 0,
+  "measures": [
+    {
+      "name": "Eliminar oferta inactiva",
+      "modal": true,
+      "backdrop": "rgba(17, 24, 39, 0.4)",
+      "covered": false,
+      "width": 352,
+      "height": 230
+    }
+  ]
+}

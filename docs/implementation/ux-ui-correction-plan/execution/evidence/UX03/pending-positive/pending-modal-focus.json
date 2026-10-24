@@ -1,0 +1,28 @@
+{
+  "environment": "production preview with retained HTTP fixture, not demo",
+  "writes": 1,
+  "states": [
+    {
+      "step": "all controls disabled after DELETE",
+      "activeTag": "BODY",
+      "activeName": "Administración del menúBiblioteca de recetasConsulta y administra las recetas base y sus insumos.← Volver al menúRecetas de la bibliotecaLas recetas definen los insumos de inventario y preparación.+ Nueva recetaBuscar recetasBuscarReceta pendiente UX03Caso HTTP controladoEditarEliminarInsumos: Ninguno¿Eliminar receta?¿Estás seguro de que deseas eliminar la receta \"Receta pendiente UX03\"? Esta acción no se puede deshacer.CancelarEliminando…",
+      "focusWithin": false,
+      "modalOpen": true
+    },
+    {
+      "step": "Tab",
+      "activeTag": "H2",
+      "activeName": "¿Eliminar receta?",
+      "focusWithin": true,
+      "modalOpen": true
+    },
+    {
+      "step": "Shift+Tab",
+      "activeTag": "H2",
+      "activeName": "¿Eliminar receta?",
+      "focusWithin": true,
+      "modalOpen": true
+    }
+  ],
+  "errors": []
+}

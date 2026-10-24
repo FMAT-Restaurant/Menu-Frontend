@@ -97,13 +97,45 @@
 }
 
 :where(.menu-module) .dialog-backdrop {
-  position: fixed;
-  z-index: 10;
-  inset: 0;
-  display: grid;
+  display: contents;
+}
+
+/* The native top layer owns the only backdrop, for confirmations and task forms. */
+:where(.menu-module) .menu-task-dialog {
+  container: menu-dialog / inline-size;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-card);
+}
+
+:where(.menu-module) .menu-task-dialog::backdrop {
+  background: rgb(17 24 39 / 40%);
+}
+
+:where(.menu-module) .menu-task-dialog[data-modal-covered]::backdrop {
+  background: transparent;
+}
+
+:where(.menu-module) .menu-task-dialog :is(button, input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: var(--control-height);
+}
+
+:where(.menu-module) .menu-task-dialog :is(.modal-close, .category-form-dialog__close, .recipe-form-dialog__close) {
+  display: inline-grid;
   place-items: center;
-  padding: 24px;
-  background: rgb(17 24 39 / 45%);
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 8px;
+  border-radius: var(--radius-control);
+}
+
+:where(.menu-module) .menu-task-dialog :is(.modal-body, .category-form-dialog__fields, .recipe-form-dialog__fields) {
+  overscroll-behavior: contain;
+}
+
+@container menu-dialog (width < 1200px) {
+  :where(.menu-module) .menu-task-dialog > * {
+    --control-height: 48px;
+  }
 }
 
 :where(.menu-module) .confirm-dialog {

@@ -774,11 +774,6 @@
   overflow: hidden;
 }
 
-.slot-modal-dialog::backdrop,
-.option-modal-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.65);
-}
-
 .modal-header {
   flex-shrink: 0;
   display: flex;
@@ -941,10 +936,6 @@
 
 .recipe-picker-modal .category-screen {
   min-height: 0;
-}
-
-.recipe-picker-modal::backdrop {
-  background: rgb(17 24 39 / 60%);
 }
 
 .offer-form__actions {

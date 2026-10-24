@@ -1,3 +1,5 @@
+import { Icon } from "../../shared/Icon";
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type {
   InventoryItem,
@@ -269,6 +271,7 @@ export function RecipeFormDialog({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  useTaskDialog(dialogRef, true, nameRef);
   const activeRef = useRef(true);
   const userEditedRef = useRef(false);
   const openingLoadPromiseRef = useRef<Promise<VersionedResource<RecipeDetail> | null> | null>(
@@ -344,12 +347,6 @@ export function RecipeFormDialog({
 
   useEffect(() => {
     activeRef.current = true;
-    const dialog = dialogRef.current;
-    const trigger = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
-      ? document.activeElement : null;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    nameRef.current?.focus();
 
     if (!activeRecipe) {
       const controller = getOrInitController();
@@ -427,8 +424,6 @@ export function RecipeFormDialog({
       controllerRef.current?.detachForReload();
       // Effect setup may run again with the same refs in StrictMode.
       controllerRef.current = null;
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
-      if (trigger?.isConnected) trigger.focus();
     };
   }, []);
 
@@ -924,7 +919,7 @@ export function RecipeFormDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="recipe-form-dialog"
+      className="recipe-form-dialog menu-task-dialog"
       aria-labelledby="recipe-form-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -944,7 +939,7 @@ export function RecipeFormDialog({
           }}
           aria-label="Cerrar formulario"
         >
-          ×
+          <Icon name="close" />
         </button>
       </div>
 
@@ -1135,7 +1130,7 @@ export function RecipeFormDialog({
                           disabled={busy || supplies.length <= 1}
                           aria-label={`Eliminar insumo ${index + 1}`}
                         >
-                          ×
+                          <Icon name="close" />
                         </button>
                       </td>
                     </tr>

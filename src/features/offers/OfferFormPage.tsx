@@ -1,3 +1,4 @@
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { isStrongEtag } from "../../application/entryVersion";
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -609,22 +610,7 @@ export function OfferFormPage({
     };
   }, [entryId, offerId, storage]);
 
-  useEffect(() => {
-    if (!recipePickerOpen) return;
-    const dialog = recipeDialogRef.current;
-    if (typeof dialog?.showModal === "function") {
-      if (!dialog.open) dialog.showModal();
-    } else {
-      dialog?.setAttribute("open", "");
-    }
-    return () => {
-      if (dialog?.open && typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog?.removeAttribute("open");
-      }
-    };
-  }, [recipePickerOpen]);
+  useTaskDialog(recipeDialogRef, recipePickerOpen);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1349,7 +1335,7 @@ export function OfferFormPage({
         {recipePickerOpen && (
           <dialog
             ref={recipeDialogRef}
-            className="recipe-picker-modal"
+            className="recipe-picker-modal menu-task-dialog"
             aria-label="Biblioteca de recetas"
             onCancel={(event) => {
               if (event.target !== event.currentTarget) return;

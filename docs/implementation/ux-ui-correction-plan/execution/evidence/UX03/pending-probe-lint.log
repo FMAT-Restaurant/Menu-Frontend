@@ -1,0 +1,2 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run eslint e2e/ux-ui-03-modal-pending.spec.ts

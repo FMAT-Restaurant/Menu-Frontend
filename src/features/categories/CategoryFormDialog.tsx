@@ -1,3 +1,5 @@
+import { Icon } from "../../shared/Icon";
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import {
   analyzeIdempotentAttemptError,
@@ -96,6 +98,7 @@ export function CategoryFormDialog({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  useTaskDialog(dialogRef, true, nameRef);
   const activeRef = useRef(true);
   const userEditedRef = useRef(false);
   const openingLoadPromiseRef = useRef<Promise<VersionedResource<MenuCategory> | null> | null>(
@@ -215,10 +218,6 @@ export function CategoryFormDialog({
 
   useEffect(() => {
     activeRef.current = true;
-    const dialog = dialogRef.current;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    nameRef.current?.focus();
 
     const abortController = new AbortController();
 
@@ -261,7 +260,6 @@ export function CategoryFormDialog({
       controllerRef.current?.detachForReload();
       // Effect setup may run again with the same refs in StrictMode.
       controllerRef.current = null;
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
     };
   }, []);
 
@@ -560,7 +558,7 @@ export function CategoryFormDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="category-form-dialog"
+      className="category-form-dialog menu-task-dialog"
       aria-labelledby="category-form-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -580,7 +578,7 @@ export function CategoryFormDialog({
           }}
           aria-label="Cerrar formulario"
         >
-          ×
+          <Icon name="close" />
         </button>
       </div>
       <form onSubmit={(event) => void save(event)}>

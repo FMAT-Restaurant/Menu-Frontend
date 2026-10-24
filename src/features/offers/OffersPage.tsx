@@ -1,3 +1,4 @@
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
@@ -340,14 +341,11 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     return () => controller.abort();
   }, [reloadOffers, offersRetry]);
 
+  useTaskDialog(dialogRef, Boolean(offerToDelete), cancelRef);
+
   useEffect(() => {
     if (!offerToDelete) return;
-    const dialog = dialogRef.current;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    cancelRef.current?.focus();
     return () => {
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
       if (!document.contains(deleteTriggerRef.current)) {
         document.querySelector<HTMLElement>(".offers-page h1")?.focus();
       } else {
@@ -700,7 +698,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         {offerToDelete && <div className="dialog-backdrop">
           <dialog
             ref={dialogRef}
-            className="confirm-dialog"
+            className="confirm-dialog menu-task-dialog"
             aria-modal="true"
             aria-labelledby="offer-delete-title"
             aria-describedby="offer-delete-description"
