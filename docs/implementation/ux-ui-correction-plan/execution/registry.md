@@ -43,7 +43,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 - Capacidad: cuatro agentes incluido root. Oleada 1 integrada tras revisión por root y revisor de lectura. Un ejecutor reutilizado para UX03. No hay ediciones paralelas sobre sus archivos.
 - Root coordina E2E, `test-results`, `playwright-report`, puertos 5174 y 4173 y sus contextos. Demo escalada sesión 86947 terminó con 2 pruebas aprobadas. Intento sandbox 74998 se detuvo tras comprobar Vite vivo sin puerto; no se presenta como resultado de tests. Producción sesión 12292 terminó con 46 pruebas aprobadas en 17,9 s. Los casos HTTP usan fixtures de las pruebas, no acreditan servicios reales.
 - Docker 29.9.2 disponible mediante ejecución autorizada fuera del sandbox. Proyecto Compose aislado previsto `menu-ux-ui-baseline`, sin contenedores previos en ese proyecto. No detener contenedores ajenos.
-- Shell real excluido del alcance actual por el usuario. Dispositivo físico con teclado virtual y lector de pantalla aún sin evidencia. La emulación no los acredita.
+- Shell real excluido del alcance actual por el usuario. Para dispositivo físico con teclado virtual y lector de pantalla, el usuario indicó expresamente "Registrar validación manual pendiente". Se entregarán recorridos y pendientes identificados, sin sustituirlos por evidencia emulada ni exigirlos para terminar la implementación de agentes.
 - Los agentes escriben su evidencia individual, nunca este registro ni `audit/`. Nuevos archivos E2E se incorporarán expresamente a la selección demo y se comprobarán con `--list`.
 
 ## Revisión y continuidad
