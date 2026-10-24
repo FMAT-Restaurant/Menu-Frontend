@@ -15,14 +15,14 @@ Base inicial: `21bd45a822c2345e695ddae419f5a0dcd715aec0`, rama `feature/ux-ui-im
 
 ## Tickets y reservas
 
-Todos los hallazgos U01 a U28 siguen abiertos. La integración de un ticket no cierra automáticamente hallazgos compartidos.
+U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y UX12. U02 a U28 siguen abiertos. La integración de un ticket no cierra automáticamente hallazgos compartidos.
 
 | Ticket | Agente y rol | Base/requisitos | Reserva | Estado | Hallazgos y evidencia | Pendientes |
 | --- | --- | --- | --- | --- | --- | --- |
 | UX00 | `/root/ux00_baseline`, preparación; root integra | Base inicial | Evidencia retenida; salidas liberadas | Integrada | V18; tipos/lint/build pasan; Jest y cobertura 33 suites/498 tests; demo 2 tests; normal preview 46 pasan; Compose4173 37 pasan y 9 fallan | Fallos Compose previos investigados aparte; shell excluido; dispositivo/lector sin acreditar. Logs evidence/UX00. |
-| UX01 | `/root/ux01_images`, contención de imagen | c7b5482 + autorización explícita | OfferCard.tsx, offers/styles.css completo, e2e/ux-ui-01.demo.spec.ts, evidence/UX01 | En ejecución | U01, V01 | Reactivado tras confirmar alcance; exige evidencia geométrica/visual |
-| UX02 | `/root/ux02_foundation`, base visual | c7b5482 + autorización explícita | src/styles.css, shared/primitives.css, SearchField.tsx, Icon.tsx nuevo, App.tsx/App.test.tsx, main.tsx si necesario, shared tests nuevos, e2e/ux-ui-02.demo.spec.ts, evidence/UX02 | En ejecución | U03/U07/U08/U22; V02/V03/V13/V18 | Reactivado; conserva parcial y lo completa antes de revisión |
-| UX03 | Por asignar | UX02 | Ninguna activa | Pendiente | U26/U28 | D01 para cierre integrado |
+| UX01 | `/root/ux01_images`, contención de imagen | e785b41, revisión integrada sobre oleada 1 | Liberada | Integrada | U01/V01; 10 PNG/10 JSON; gap12px, overflow0 | Repetir condición UX09/UX12 |
+| UX02 | `/root/ux02_foundation`, base visual | 8c95f64 | Liberada y transferida parcialmente a UX03 | Integrada | U03/U07/U08/U22 abiertos; 19 PNG/2 JSON, controles40/48 | Adopciones de consumidores y contenedores modales |
+| UX03 | `/root/ux02_foundation`, ciclo modal | 8c95f64, UX02 integrada | BASE; confirmaciones CAT/OFE/REC; CategoryFormDialog, RecipeFormDialog, SlotModal, OptionModal, selector OfferFormPage; estilos de cinco áreas; hooks/shared nuevos; tests propios/focalizados y e2e/ux-ui-03.demo.spec.ts; evidence/UX03 | En ejecución | U26/U28; V03/V16/V17/V18 | Un solo fondo, foco y scroll; conservar U01 y preparar ancho propio; U27 corresponde UX10 |
 | UX04 | Por asignar | UX01/UX03 | Ninguna activa | Pendiente | U05/U06 | UX10 y D01 para cierre |
 | UX05 | Por asignar | UX04 | Ninguna activa | Pendiente | Aporte U04 | Validación categorías |
 | UX06 | Por asignar | UX04 | Ninguna activa | Pendiente | U11 y aportes | Catálogo |
@@ -40,7 +40,7 @@ Todos los hallazgos U01 a U28 siguen abiertos. La integración de un ticket no c
 
 ## Recursos
 
-- Capacidad: cuatro agentes incluido root. UX00 revisada sobre la base inicial sin cambios de aplicación; habilita UX01 y UX02.
+- Capacidad: cuatro agentes incluido root. Oleada 1 integrada tras revisión por root y revisor de lectura. Un ejecutor reutilizado para UX03. No hay ediciones paralelas sobre sus archivos.
 - Root coordina E2E, `test-results`, `playwright-report`, puertos 5174 y 4173 y sus contextos. Demo escalada sesión 86947 terminó con 2 pruebas aprobadas. Intento sandbox 74998 se detuvo tras comprobar Vite vivo sin puerto; no se presenta como resultado de tests. Producción sesión 12292 terminó con 46 pruebas aprobadas en 17,9 s. Los casos HTTP usan fixtures de las pruebas, no acreditan servicios reales.
 - Docker 29.9.2 disponible mediante ejecución autorizada fuera del sandbox. Proyecto Compose aislado previsto `menu-ux-ui-baseline`, sin contenedores previos en ese proyecto. No detener contenedores ajenos.
 - Shell real excluido del alcance actual por el usuario. Dispositivo físico con teclado virtual y lector de pantalla aún sin evidencia. La emulación no los acredita.
@@ -49,6 +49,8 @@ Todos los hallazgos U01 a U28 siguen abiertos. La integración de un ticket no c
 ## Revisión y continuidad
 
 Se registrarán asignaciones, ampliaciones, resultados, referencia de integración y liberación al recibir cada entrega. Las ediciones compartidas se integran por turnos. El historial de auditoría permanece intacto.
+
+Oleada 1: revisión favorable [reviews/oleada-01.md](evidence/reviews/oleada-01.md), 14 E2E en 29,3 s, 64 unitarias en 9,558 s y tipos/lint globales aprobados. Selección demo descubre los 14 casos; configuración normal excluye los nuevos `.demo.spec.ts`. Root inspeccionó capturas comparables de U01 y medidas reales. Las reservas UX01/UX02 quedan liberadas; UX03 recibe sus contratos y archivos actuales, sin copiar versiones previas.
 
 ### Incidencias durante oleada 1
 
