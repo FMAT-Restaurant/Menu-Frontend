@@ -65,7 +65,7 @@ test("V2 aligns navigation, keeps actions reachable and bounds 100 categories ac
     await list.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await expect(page.getByRole("checkbox").last()).toBeVisible();
     await page.getByRole("searchbox", { name: "Buscar categorías" }).press("Escape");
-    const nav = await page.locator(".entry-form-nav").boundingBox();
+    const nav = await page.locator(".entry-form-page__heading").boundingBox();
     const main = await page.locator(".entry-form-page").boundingBox();
     expect(Math.abs(nav!.x - main!.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(nav!.width - main!.width)).toBeLessThanOrEqual(1);

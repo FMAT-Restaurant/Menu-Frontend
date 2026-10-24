@@ -2,30 +2,6 @@
    Offers Feature Styles
    ========================================================= */
 
-.offers-page {
-  width: min(100% - 48px, 1152px);
-  min-width: 0;
-  margin: 0 auto;
-  padding: 16px 0 72px;
-}
-
-.offers-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #d1d5db;
-}
-
-.offers-header h1 {
-  font-size: 20px;
-  line-height: 28px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
 .offers-header__action {
   flex: 0 0 auto;
 }
@@ -288,25 +264,6 @@
 /* =========================================================
    Offer Form & Commercial Info (R05)
    ========================================================= */
-
-.offer-form-page {
-  width: min(calc(100% - 32px), 1152px);
-  margin: 0 auto;
-  padding: 16px 0 72px;
-  box-sizing: border-box;
-}
-
-.offer-form-page__heading {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #d1d5db;
-}
-
-.offer-form-page__subtitle {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 14px;
-}
 
 .offer-form {
   display: flex;
@@ -958,39 +915,7 @@
   }
 }
 
-@media (max-width: 700px) {
-  .offers-page {
-    width: min(100% - 32px, 1200px);
-    padding-top: 24px;
-  }
-  .offers-header {
-    align-items: flex-start;
-  }
-  .offers-header__action {
-    width: auto;
-  }
-}
-
 @media (max-width: 520px) {
-  .offers-page {
-    width: calc(100% - 32px);
-    padding-top: 16px;
-  }
-  .offers-header {
-    gap: 8px;
-  }
-  .offers-header > div {
-    min-width: 0;
-  }
-  .offers-header h1 {
-    overflow-wrap: anywhere;
-    font-size: 18px;
-    line-height: 24px;
-  }
-  .offers-header__action {
-    max-width: 120px;
-    white-space: normal;
-  }
   .offers-page__context {
     overflow-wrap: anywhere;
   }
@@ -1000,10 +925,6 @@
 }
 
 @media (max-width: 480px) {
-  .offer-form-page {
-    width: calc(100% - 16px);
-    padding: 12px 0 48px;
-  }
   .offer-commercial-info,
   .composition-editor {
     padding: 12px;

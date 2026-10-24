@@ -2,38 +2,6 @@
    Catalog Feature Styles
    ========================================================= */
 
-.catalog-page {
-  width: min(100% - 32px, 1200px);
-  margin: 0 auto;
-  padding: 14px 0 72px;
-}
-
-.catalog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.catalog-header > div {
-  min-width: 0;
-}
-
-.catalog-header h1 {
-  margin: 0;
-  color: var(--ink);
-  font-size: 28px;
-  line-height: 36px;
-  letter-spacing: -.02em;
-}
-
-.catalog-header__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .catalog-header__later small {
   margin-left: 6px;
   color: var(--muted);
@@ -267,10 +235,6 @@
 }
 
 @media (max-width: 1100px) {
-  .catalog-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -280,19 +244,6 @@
 }
 
 @media (max-width: 700px) {
-  .catalog-page {
-    width: min(100% - 32px, 1200px);
-    padding-top: 14px;
-  }
-  .catalog-header {
-    margin-bottom: 12px;
-  }
-  .catalog-header__actions {
-    width: 100%;
-  }
-  .catalog-header__actions .button {
-    flex: 0 1 auto;
-  }
   .catalog-header__later {
     display: none;
   }
@@ -349,15 +300,6 @@
 }
 
 @media (max-width: 375px) {
-  .catalog-header__actions .button {
-    min-height: 36px;
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-  .catalog-header h1 {
-    font-size: 24px;
-    line-height: 29px;
-  }
   .filters__toggle,
   .filters__clear {
     padding-inline: 8px;

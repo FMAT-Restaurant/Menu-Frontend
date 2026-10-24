@@ -169,7 +169,7 @@ test("full journey: catalog -> create category -> new entry with category -> cat
 
   // 2. Navigate to Categories via in-app link
   await page.getByRole("link", { name: "Categorías" }).click();
-  await expect(page.getByRole("heading", { name: "Categorías del menú" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Catálogo de categorías", level: 1 })).toBeVisible();
 
   // Open category creation dialog
   await page.getByRole("button", { name: /Nueva categoría|Crear categoría/ }).click();

@@ -46,17 +46,19 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
   useEffect(() => {
     if (!open) return;
     search.current?.focus();
-    function outside(event: PointerEvent) {
+    function outside(event: MouseEvent) {
       if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
     }
     function escape(event: KeyboardEvent) {
       if (event.key !== "Escape" || !(event.target instanceof Node) || !root.current?.contains(event.target)) return;
       event.preventDefault(); setOpen(false); trigger.current?.focus();
     }
-    document.addEventListener("pointerdown", outside);
+    // Collapsing this in-flow panel on pointerdown can move a submit button
+    // before pointerup, preventing its click. Dismiss after the click is delivered.
+    document.addEventListener("click", outside);
     document.addEventListener("keydown", escape);
     return () => {
-      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("click", outside);
       document.removeEventListener("keydown", escape);
     };
   }, [open]);

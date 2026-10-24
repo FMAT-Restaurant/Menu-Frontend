@@ -1,0 +1,172 @@
+FAIL src/features/entries/EntryCategorySelector.test.tsx
+  ● an outside submit keeps the panel stable until click and submits the selected categories once
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "searchbox" and name "Buscar categorías"
+
+    Here are the accessible roles:
+
+      group:
+
+      Name "Categorías":
+      <fieldset
+        class="entry-category-selector"
+      />
+
+      --------------------------------------------------
+      paragraph:
+
+      Name "":
+      <p
+        class="entry-form__muted"
+      />
+
+      Name "":
+      <p
+        class="entry-form__error"
+        id="entry-categoryIds-error"
+      />
+
+      --------------------------------------------------
+      button:
+
+      Name "1 categoría seleccionada":
+      <button
+        aria-controls="entry-category-panel"
+        aria-describedby="entry-categoryIds-error"
+        aria-expanded="false"
+        class="entry-category-selector__trigger"
+        data-invalid="false"
+        id="entry-categoryIds"
+        type="button"
+      />
+
+      Name "Retirar categoría Platos fuertes":
+      <button
+        aria-label="Retirar categoría Platos fuertes"
+        type="button"
+      />
+
+      Name "Guardar entrada":
+      <button
+        type="submit"
+      />
+
+      Name "Acción exterior":
+      <button
+        type="button"
+      />
+
+      --------------------------------------------------
+      list:
+
+      Name "Categorías seleccionadas":
+      <ul
+        aria-label="Categorías seleccionadas"
+        class="entry-category-selector__selection"
+      />
+
+      --------------------------------------------------
+      listitem:
+
+      Name "":
+      <li />
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <form>
+          <fieldset
+            class="entry-category-selector"
+          >
+            <legend>
+              Categorías
+            </legend>
+            <p
+              class="entry-form__muted"
+            >
+              Puedes asignar varias o guardar sin clasificación.
+            </p>
+            <button
+              aria-controls="entry-category-panel"
+              aria-describedby="entry-categoryIds-error"
+              aria-expanded="false"
+              class="entry-category-selector__trigger"
+              data-invalid="false"
+              id="entry-categoryIds"
+              type="button"
+            >
+              <span>
+                1 categoría seleccionada
+              </span>
+              <span
+                aria-hidden="true"
+              >
+                ⌄
+              </span>
+            </button>
+            <ul
+              aria-label="Categorías seleccionadas"
+              class="entry-category-selector__selection"
+            >
+              <li>
+                <span>
+                  Platos fuertes
+                </span>
+                <button
+                  aria-label="Retirar categoría Platos fuertes"
+                  type="button"
+                >
+                  ×
+                </button>
+              </li>
+            </ul>
+            <p
+              class="entry-form__error"
+              id="entry-categoryIds-error"
+            />
+          </fieldset>
+          <button
+            type="submit"
+          >
+            Guardar entrada
+          </button>
+        </form>
+        <button
+          type="button"
+        >
+          Acción exterior
+        </button>
+      </div>
+    </body>
+
+      52 |   expect(screen.queryByRole("searchbox", { name: "Buscar categorías" })).not.toBeInTheDocument();
+      53 | });
+    > 54 |
+         | ^
+      55 | test("Escape closes the panel and returns keyboard focus to its current selection trigger", () => {
+      56 |   renderSelector();
+      57 |   fireEvent.click(screen.getByRole("button", { name: "Seleccionar categorías" }));
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/features/entries/EntryCategorySelector.test.tsx:54:25)
+
+  ● clicking outside closes the panel while an inside selection keeps it open
+
+    expect(element).not.toBeInTheDocument()
+
+    expected document not to contain element, found <input id="entry-category-search" placeholder="Buscar categorías…" type="search" value="" /> instead
+
+
+
+      at Object.<anonymous> (src/features/entries/EntryCategorySelector.test.tsx:87:11)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 1 passed, 3 total
+Snapshots:   0 total
+Time:        3.614 s
+Ran all test suites within paths "src/features/entries/EntryCategorySelector.test.tsx".

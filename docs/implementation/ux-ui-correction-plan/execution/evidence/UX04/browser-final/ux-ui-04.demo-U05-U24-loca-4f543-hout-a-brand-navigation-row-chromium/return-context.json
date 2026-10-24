@@ -1,0 +1,5 @@
+{
+  "returnTo": "/?q=Hamburguesa&status=ACTIVE&page=1&pageSize=12",
+  "finalUrl": "http://127.0.0.1:5174/?q=Hamburguesa&status=ACTIVE&page=1&pageSize=12",
+  "selectedQuery": "Hamburguesa"
+}

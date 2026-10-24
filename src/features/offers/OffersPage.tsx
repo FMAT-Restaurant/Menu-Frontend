@@ -642,19 +642,16 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
 
   return (
     <div className="app-shell">
-      <nav className="global-nav" aria-label="Navegación principal">
-        <Link className="brand" to="/"><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
-        <span className="global-nav__section">Administración del menú</span>
-      </nav>
-      <main className="offers-page" aria-busy={entryLoading || offersLoading || updatingOffers}>
-        <Link className="back-link" to={backTo}>← Volver a entradas</Link>
-        <header className="offers-header">
-          <div>
-            <p className="eyebrow">Administración / Menú / Ofertas</p>
-            <h1 tabIndex={-1}>Ofertas de {visibleEntry?.brandName ?? "la entrada"}</h1>
-            <p className="catalog-header__intro">Presentaciones vendibles de la misma identidad comercial.</p>
+      <main className="menu-page offers-page" aria-busy={entryLoading || offersLoading || updatingOffers}>
+        <header className="task-header offers-header">
+          <Link className="back-link" to={backTo}>← Volver a entradas</Link>
+          <div className="task-header__row">
+            <div className="task-header__content">
+              <h1 data-route-heading tabIndex={-1}>Ofertas de {visibleEntry?.brandName ?? "la entrada"}</h1>
+              <p className="task-header__intro">Presentaciones vendibles de la misma identidad comercial.</p>
+            </div>
+            {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
           </div>
-          {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
         <OffersFeedback

@@ -267,7 +267,7 @@ test.describe("T16 Layout, Dimensions, and Accessibility Audit", () => {
 
     // Navigate to Categories
     await page.goto("/categories");
-    await expect(page.getByRole("heading", { name: "Categorías del Menú" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Catálogo de categorías", level: 1 })).toBeVisible();
     await page.screenshot({ path: "test-results/t16-after/02-categories-desktop.png" });
 
     // Navigate to Entry Form

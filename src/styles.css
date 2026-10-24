@@ -135,57 +135,6 @@ html[data-menu-standalone] body {
 }
 
 /* =========================================================
-   Global Navigation
-   ========================================================= */
-
-:where(.menu-module) .global-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 72px;
-  padding: 12px max(24px, calc((100% - 1200px) / 2));
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-:where(.menu-module) .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 16px;
-  text-decoration: none;
-}
-
-:where(.menu-module) .brand__mark {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--ink);
-  color: var(--surface);
-  font-weight: 700;
-}
-
-:where(.menu-module) .brand strong {
-  color: var(--brand);
-}
-
-:where(.menu-module) .global-nav__section {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-@media (max-width: 700px) {
-  :where(.menu-module) .global-nav {
-    padding: 12px 16px;
-  }
-  :where(.menu-module) .global-nav__section {
-    display: none;
-  }
-}
-
-/* =========================================================
    Shared Button Primitives
    ========================================================= */
 

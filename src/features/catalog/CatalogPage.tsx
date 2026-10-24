@@ -346,20 +346,17 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
 
   return (
     <div className="app-shell">
-      <nav className="global-nav" aria-label="Navegación principal">
-        <Link className="brand" to="/"><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
-        <span className="global-nav__section">Administración del menú</span>
-      </nav>
-      <main className="catalog-page">
-        <header className="catalog-header">
-          <div>
-            <p className="eyebrow">Administración / Menú</p>
-            <h1>Entradas del menú</h1>
-          </div>
-          <div className="catalog-header__actions">
-            <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
-            <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
-            <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
+      <main className="menu-page catalog-page">
+        <header className="task-header catalog-header">
+          <div className="task-header__row">
+            <div className="task-header__content">
+              <h1 data-route-heading tabIndex={-1}>Entradas del menú</h1>
+            </div>
+            <div className="task-header__actions catalog-header__actions">
+              <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
+              <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
+              <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
+            </div>
           </div>
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedOpen={advancedOpen} onToggleAdvanced={() => setAdvancedOpen((value) => !value)} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={clearFilters} />

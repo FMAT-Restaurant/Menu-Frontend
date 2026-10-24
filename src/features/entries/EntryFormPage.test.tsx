@@ -685,10 +685,12 @@ test("duplicate submits cannot overlap upload or persistence, and navigation is 
   fireEvent.submit(document.querySelector("form")!); fireEvent.submit(document.querySelector("form")!);
   expect(await screen.findByRole("button", { name: "Subiendo imagen…" })).toBeDisabled();
   fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
-  fireEvent.click(screen.getByRole("link", { name: /FMAT Restaurant/ }));
   expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
   await act(async () => { upload.resolve("uploaded-1"); });
   expect(screen.getByRole("button", { name: "Guardando entrada…" })).toBeDisabled();
+  // The local back link remains blocked throughout persistence after the shell brand is removed.
+  fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
+  expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
   fireEvent.submit(document.querySelector("form")!);
   await act(async () => { write.resolve(entry); });
   expect(api.uploadEntryImage).toHaveBeenCalledTimes(1); expect(api.createEntry).toHaveBeenCalledTimes(1);

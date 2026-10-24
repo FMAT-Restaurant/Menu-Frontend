@@ -1121,24 +1121,15 @@ export function OfferFormPage({
 
   return (
     <div className="app-shell offer-form-view">
-      <nav className="global-nav" aria-label="Navegación principal">
-        <Link onClick={abandonEditor} className="brand" to={returnTo} state={{ returnTo: catalogReturnTo }}>
-          <span className="brand__mark" aria-hidden="true">F</span>
-          <span>FMAT <strong>Restaurant</strong></span>
-        </Link>
-        <span className="global-nav__section">Administración del menú</span>
-      </nav>
-
-      <main className="offer-form-page">
-        <header className="offer-form-page__heading">
+      <main className="menu-page offer-form-page">
+        <header className="task-header offer-form-page__heading">
           <Link onClick={abandonEditor} to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
             ← Volver a ofertas
           </Link>
-          <p className="eyebrow">Administración / Menú / Ofertas</p>
-          <h1>{isEditing ? "Editar oferta" : "Nueva oferta"}</h1>
-          <p className="offer-form-page__subtitle">
-            Entrada: <strong>{entry?.brandName || "Cargando…"}</strong>
-          </p>
+          <div className="task-header__content">
+            <h1 data-route-heading tabIndex={-1}>{isEditing ? "Editar oferta" : "Nueva oferta"}</h1>
+            <p className="task-header__intro offer-form-page__subtitle">Entrada: <strong>{entry?.brandName || "Cargando…"}</strong></p>
+          </div>
         </header>
 
         {loading && (

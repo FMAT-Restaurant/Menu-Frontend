@@ -91,25 +91,18 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
 
   return (
     <div className="category-screen">
-      <header className="category-screen__header">
-        <div>
-          <p className="eyebrow">Administración del menú</p>
-          <h1>Catálogo de categorías</h1>
-          <p>Organiza las entradas del menú por categorías.</p>
-        </div>
-        <Link className="button category-screen__back" to={returnTo}>← Volver al menú</Link>
-      </header>
-
-      <main className="category-screen__main">
-        <section className="category-panel" aria-labelledby="category-list-title">
-          <div className="category-panel__heading">
-            <div>
-              <h2 id="category-list-title">Categorías del menú</h2>
-              <p>Una entrada puede pertenecer a varias categorías del mismo menú.</p>
+      <main className="menu-page category-screen__main">
+        <header className="task-header category-screen__header">
+          <Link className="back-link" to={returnTo}>← Volver al menú</Link>
+          <div className="task-header__row">
+            <div className="task-header__content">
+              <h1 id="category-page-title" data-route-heading tabIndex={-1}>Catálogo de categorías</h1>
+              <p className="task-header__intro">Organiza las entradas del menú por categorías. Una entrada puede pertenecer a varias categorías.</p>
             </div>
             <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Nueva categoría</button>
           </div>
-
+        </header>
+        <section className="category-panel" aria-labelledby="category-page-title">
           {notice && <output className="feedback feedback--success">{notice}</output>}
           {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
           {loading && <output className="feedback">Cargando categorías…</output>}

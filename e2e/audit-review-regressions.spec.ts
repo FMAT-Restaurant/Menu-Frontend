@@ -53,10 +53,11 @@ test("RV13: recetas carga sus primitivas al entrar directamente y conserva estil
     background: getComputedStyle(el).backgroundColor,
   }));
   const direct = await styles();
-  expect(direct.display).toBe("flex");
-  expect(direct.background).toBe("rgb(17, 24, 39)");
+  expect(direct.display).toBe("grid");
+  expect(direct.background).toBe("rgba(0, 0, 0, 0)");
   expect(direct.padding).not.toBe("0px");
-  await expect(page.getByRole("link", { name: /Volver al menú/ })).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(page.getByRole("link", { name: /Volver al menú/ })).toHaveCSS("color", "rgb(194, 65, 12)");
+  await expect(page.getByRole("heading", { name: "Biblioteca de recetas", exact: true })).toHaveCSS("font-size", "28px");
   await expect(page.locator(".search-field__control")).toHaveCSS("display", "flex");
   await page.screenshot({ path: test.info().outputPath("recipes-direct-fixed.png"), fullPage: true });
   await page.getByRole("link", { name: /Volver al menú/ }).click();
@@ -66,7 +67,7 @@ test("RV13: recetas carga sus primitivas al entrar directamente y conserva estil
   expect(await styles()).toEqual(direct);
   for (const width of [375, 320]) {
     await page.setViewportSize({ width, height: 568 });
-    await expect(page.locator(".category-screen__header")).toHaveCSS("flex-direction", "column");
+    await expect(page.locator(".category-screen__header .task-header__row")).toHaveCSS("flex-direction", "column");
     const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: document.documentElement.clientWidth }));
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width + 1);
   }

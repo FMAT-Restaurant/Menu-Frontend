@@ -107,13 +107,14 @@ function EntryFormEditor({
   useEffect(() => { if (model.failureEpoch) summary.current?.focus(); }, [model.failureEpoch]);
 
   return <div className="app-shell entry-form-shell">
-    <nav className="global-nav" aria-label="Navegación principal"><div className="entry-form-nav">
-      <Link className="brand" to={returnTo} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
-      <span className="global-nav__section">Administración del menú</span>
-    </div></nav>
-    <main className="entry-form-page">
-      <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}>← Volver a entradas</Link>
-      <header className="entry-form-page__heading"><p className="eyebrow">Administración / Menú</p><h1>{editing ? "Editar entrada" : "Nueva entrada"}</h1><p>Nombre, descripción, categorías e imagen de referencia.</p></header>
+    <main className="menu-page menu-page--form entry-form-page">
+      <header className="task-header entry-form-page__heading">
+        <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}>← Volver a entradas</Link>
+        <div className="task-header__content">
+          <h1 data-route-heading tabIndex={-1}>{editing ? "Editar entrada" : "Nueva entrada"}</h1>
+          <p className="task-header__intro">Nombre, descripción, categorías e imagen de referencia.</p>
+        </div>
+      </header>
       <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
         const control = event.target;
         requestAnimationFrame(() => { if (document.activeElement === control) revealFocusedControl(control, actions.current); });

@@ -314,35 +314,25 @@ export function RecipePage({
 
   return (
     <div className="category-screen recipe-screen">
-      <header className="category-screen__header">
-        <div>
-          <p className="eyebrow">Administración del menú</p>
-          <h1>{title}</h1>
-          <p>{subtitle}</p>
-        </div>
+      <main className="menu-page category-screen__main">
+      <header className="task-header category-screen__header">
         {onClose ? (
           <button
             type="button"
-            className="button category-screen__back"
+            className="button button--quiet category-screen__back"
             onClick={onClose}
           >
             {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
           </button>
         ) : (
-          <Link className="button category-screen__back" to={returnTo}>
+          <Link className="back-link category-screen__back" to={returnTo}>
             {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
           </Link>
         )}
-      </header>
-
-      <main className="category-screen__main">
-        <section className="category-panel" aria-labelledby="recipe-list-heading">
-          <div className="category-panel__heading">
-            <div>
-              <h2 id="recipe-list-heading">
-                {mode === "selection" ? "Recetas disponibles" : "Recetas de la biblioteca"}
-              </h2>
-              <p>Las recetas definen los insumos de inventario y preparación.</p>
+          <div className="task-header__row">
+            <div className="task-header__content">
+              <h1 id="recipe-page-title" data-route-heading={onClose ? undefined : true} tabIndex={-1}>{title}</h1>
+              <p className="task-header__intro">{subtitle}</p>
             </div>
             <button
               className="button button--primary"
@@ -355,7 +345,8 @@ export function RecipePage({
               + Nueva receta
             </button>
           </div>
-
+      </header>
+        <section className="category-panel" aria-labelledby="recipe-page-title">
           <div className="recipe-toolbar">
             <SearchField
               id="recipe-search"

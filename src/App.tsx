@@ -26,35 +26,13 @@ const RecipePage = lazy(() =>
 export function NotFoundPage() {
   return (
     <div className="app-shell not-found-page">
-      <nav className="global-nav" aria-label="Navegación principal">
-        <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden="true">
-            F
-          </span>
-          <span>
-            FMAT <strong>Restaurant</strong>
-          </span>
-        </Link>
-        <span className="global-nav__section">Administración del menú</span>
-      </nav>
-      <main
-        className="not-found-page__content"
-        style={{
-          padding: "3rem 1.5rem",
-          maxWidth: "600px",
-          margin: "0 auto",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Página no encontrada</h1>
-        <p
-          style={{
-            color: "var(--color-text-muted, #64748b)",
-            marginBottom: "2rem",
-          }}
-        >
-          La ruta solicitada no existe o fue movida. Verifica la dirección o regresa al catálogo de entradas.
-        </p>
+      <main className="menu-page menu-page--message not-found-page__content">
+        <header className="task-header">
+          <div className="task-header__content">
+            <h1 data-route-heading tabIndex={-1}>Página no encontrada</h1>
+            <p className="task-header__intro">La ruta solicitada no existe o fue movida. Verifica la dirección o regresa al catálogo de entradas.</p>
+          </div>
+        </header>
         <Link to="/" className="button button--primary">
           Volver al catálogo
         </Link>
