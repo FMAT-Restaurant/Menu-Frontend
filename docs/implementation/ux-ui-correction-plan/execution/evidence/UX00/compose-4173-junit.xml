@@ -1,0 +1,438 @@
+<testsuites id="" name="" tests="46" failures="6" skipped="0" errors="3" time="41.595441">
+<testsuite name="app-routes.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="3" failures="0" skipped="0" time="3.944" errors="0">
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › unknown route shows accessible 404 message and allows returning to the catalog (R01)" classname="app-routes.spec.ts" time="1.207">
+</testcase>
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › alias /menu redirects to catalog root / (R01, R04)" classname="app-routes.spec.ts" time="1.056">
+</testcase>
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › loads editor chunks on demand and avoids downloading them on initial catalog load (R02)" classname="app-routes.spec.ts" time="1.681">
+</testcase>
+</testsuite>
+<testsuite name="audit-closure-layout.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="3" failures="0" skipped="0" time="11.724" errors="0">
+<testcase name="R05/R06: recipe fields and supply controls fit inside the dialog at all required sizes" classname="audit-closure-layout.spec.ts" time="5.9">
+</testcase>
+<testcase name="R05: populated recipe cards keep title and management actions inside 320px" classname="audit-closure-layout.spec.ts" time="1.488">
+</testcase>
+<testcase name="R06: nested recipe picker obeys 90% height, scrolls and returns focus at all required sizes" classname="audit-closure-layout.spec.ts" time="4.336">
+</testcase>
+</testsuite>
+<testsuite name="audit-layout.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="4" failures="0" skipped="0" time="7.689" errors="0">
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R05: at 320x568 px CSS commercial panel and inputs are not cut off and horizontal overflow &lt;= 1px" classname="audit-layout.spec.ts" time="0.934">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R06: both SlotModal and OptionModal obey 90% max height and have reachable controls at 390x320 px" classname="audit-layout.spec.ts" time="1.452">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R06 additional checks: CSS zoom and reduced viewport keep dialog controls reachable" classname="audit-layout.spec.ts" time="1.29">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R07: area stylesheets load without style leakage across navigations" classname="audit-layout.spec.ts" time="4.013">
+</testcase>
+</testsuite>
+<testsuite name="audit-review-regressions.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="4" failures="1" skipped="0" time="11.878" errors="0">
+<testcase name="RV09: cada pestaña conserva su receta pendiente, también al cancelar en otra pestaña" classname="audit-review-regressions.spec.ts" time="2.919">
+</testcase>
+<testcase name="RV13: recetas carga sus primitivas al entrar directamente y conserva estilos después de navegar" classname="audit-review-regressions.spec.ts" time="1.286">
+</testcase>
+<testcase name="RV04: F5 durante una carga incierta conserva bytes y clave sin enviar automáticamente" classname="audit-review-regressions.spec.ts" time="1.503">
+</testcase>
+<testcase name="RV07: una receta confirmada conserva la edición posterior y su versión después de F5" classname="audit-review-regressions.spec.ts" time="6.17">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|audit-review-regressions-R-348bf--y-su-versión-después-de-F5-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|audit-review-regressions-R-348bf--y-su-versión-después-de-F5-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toBeEnabled() failed" type="expect.toBeEnabled">
+<![CDATA[  [chromium] › audit-review-regressions.spec.ts:114:1 › RV07: una receta confirmada conserva la edición posterior y su versión después de F5 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  getByRole('button', { name: 'Guardar cambios', exact: true })
+    Expected: enabled
+    Received: disabled
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeEnabled" getByRole('button', { name: 'Guardar cambios', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Guardar cambios', exact: true })
+        10 × locator resolved to <button disabled type="submit" class="button button--primary">Guardar cambios</button>
+           - unexpected value "disabled"
+
+
+      135 |   await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("Edición posterior");
+      136 |   await page.reload();
+    > 137 |   await expect(page.getByRole("button", { name: "Guardar cambios", exact: true })).toBeEnabled();
+          |                                                                                    ^
+      138 |   await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("Edición posterior");
+      139 |   expect(posts).toBe(2);
+      140 |   await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\audit-review-regressions.spec.ts:137:84
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\audit-review-regressions-R-348bf--y-su-versión-después-de-F5-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\audit-review-regressions-R-348bf--y-su-versión-después-de-F5-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="catalog-remediation.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="3" failures="1" skipped="0" time="8.592" errors="0">
+<testcase name="keeps catalog cards contained and controls reachable at desktop, mobile and zoom" classname="catalog-remediation.spec.ts" time="1.011">
+</testcase>
+<testcase name="preserves image reserved dimensions at 320px before and after image load failure (C16)" classname="catalog-remediation.spec.ts" time="1.228">
+</testcase>
+<testcase name="confirms delete in native dialog with inert backdrop, escape support and actionable recovery inside modal (C06, C11, C13)" classname="catalog-remediation.spec.ts" time="6.353">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|catalog-remediation-confir-79d0b-y-inside-modal-C06-C11-C13--chromium\test-failed-1.png]]
+
+[[ATTACHMENT|catalog-remediation-confir-79d0b-y-inside-modal-C06-C11-C13--chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(received).toBe(expected) // Object.is equality" type="expect.toBe">
+<![CDATA[  [chromium] › catalog-remediation.spec.ts:67:1 › confirms delete in native dialog with inert backdrop, escape support and actionable recovery inside modal (C06, C11, C13) 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      121 |   await confirmBtn.click();
+      122 |
+    > 123 |   await expect.poll(() => deleteAttempts).toBe(1);
+          |                                           ^
+      124 |
+      125 |   // Recovery message and button are inside the active modal (C06, C11, C13)
+      126 |   const alert = dialog.getByRole("alert");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\catalog-remediation.spec.ts:123:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\catalog-remediation-confir-79d0b-y-inside-modal-C06-C11-C13--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\catalog-remediation-confir-79d0b-y-inside-modal-C06-C11-C13--chromium\error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="catalog-traffic.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="2" failures="0" skipped="0" time="3.038" errors="0">
+<testcase name="filters and pagination request only entries and returning to V1 reuses fresh data" classname="catalog-traffic.spec.ts" time="1.573">
+</testcase>
+<testcase name="full journey: catalog -&gt; create category -&gt; new entry with category -&gt; catalog reflects updates within TTL without F5 (C07, Instruction 8)" classname="catalog-traffic.spec.ts" time="1.465">
+</testcase>
+</testsuite>
+<testsuite name="categories.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="1" failures="0" skipped="0" time="30.058" errors="1">
+<testcase name="opens V5 from the menu and creates, edits and cancels categories" classname="categories.spec.ts" time="30.058">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|categories-opens-V5-from-t-f8c8c-dits-and-cancels-categories-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|categories-opens-V5-from-t-f8c8c-dits-and-cancels-categories-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 30000ms exceeded." type="Error">
+<![CDATA[  [chromium] › categories.spec.ts:3:1 › opens V5 from the menu and creates, edits and cancels categories 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog', { name: 'Editar categoría' }).getByRole('button', { name: 'Guardar cambios' })
+        - locator resolved to <button disabled type="submit" class="button button--primary">Guardar cambios</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        55 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+
+
+      47 |   await expect(dialog.getByRole("textbox", { name: "Descripción" })).toHaveValue("Frías");
+      48 |   await dialog.getByRole("textbox", { name: "Descripción" }).fill("Frías y preparadas");
+    > 49 |   await dialog.getByRole("button", { name: "Guardar cambios" }).click();
+         |                                                                 ^
+      50 |   await expect(page.getByText("Frías y preparadas")).toBeVisible();
+      51 |
+      52 |   await page.getByRole("button", { name: "Nueva categoría" }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\categories.spec.ts:49:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\categories-opens-V5-from-t-f8c8c-dits-and-cancels-categories-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\categories-opens-V5-from-t-f8c8c-dits-and-cancels-categories-chromium\error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="closure-review-regressions.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="3" failures="0" skipped="0" time="4.207" errors="0">
+<testcase name="RC02: quoted group names preserve editor, draft and focus after option cancellation" classname="closure-review-regressions.spec.ts" time="1.525">
+</testcase>
+<testcase name="RC04: each Escape closes only the top dialog and restores focus across all three layers" classname="closure-review-regressions.spec.ts" time="1.022">
+</testcase>
+<testcase name="RC04: Escape cannot dismiss a nested recipe while its POST is pending" classname="closure-review-regressions.spec.ts" time="1.66">
+</testcase>
+</testsuite>
+<testsuite name="entry-form-remediation.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="4" failures="0" skipped="0" time="35.599" errors="1">
+<testcase name="V2 aligns navigation, keeps actions reachable and bounds 100 categories across six viewports" classname="entry-form-remediation.spec.ts" time="3.752">
+</testcase>
+<testcase name="category search and image zone work with keyboard without per-keystroke queries" classname="entry-form-remediation.spec.ts" time="0.859">
+</testcase>
+<testcase name="a server rejection preserves the draft and a retry reuses the successful upload" classname="entry-form-remediation.spec.ts" time="0.934">
+</testcase>
+<testcase name="an edit conflict requires review before using a new ETag and never refreshes it silently" classname="entry-form-remediation.spec.ts" time="30.054">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|entry-form-remediation-an--d8320-never-refreshes-it-silently-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|entry-form-remediation-an--d8320-never-refreshes-it-silently-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 30000ms exceeded." type="Error">
+<![CDATA[  [chromium] › entry-form-remediation.spec.ts:164:1 › an edit conflict requires review before using a new ETag and never refreshes it silently 
+
+    Test timeout of 30000ms exceeded.
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\entry-form-remediation-an--d8320-never-refreshes-it-silently-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\entry-form-remediation-an--d8320-never-refreshes-it-silently-chromium\error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="entry-form.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="1" failures="0" skipped="0" time="30.055" errors="1">
+<testcase name="creates and edits an entry with separate image upload and JSON writes" classname="entry-form.spec.ts" time="30.055">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|entry-form-creates-and-edi-82654-mage-upload-and-JSON-writes-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|entry-form-creates-and-edi-82654-mage-upload-and-JSON-writes-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 30000ms exceeded." type="Error">
+<![CDATA[  [chromium] › entry-form.spec.ts:5:1 › creates and edits an entry with separate image upload and JSON writes 
+
+    Test timeout of 30000ms exceeded.
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\entry-form-creates-and-edi-82654-mage-upload-and-JSON-writes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\entry-form-creates-and-edi-82654-mage-upload-and-JSON-writes-chromium\error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="menu.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.39" errors="0">
+<testcase name="searches the administrative entries and opens their management routes" classname="menu.spec.ts" time="1.39">
+</testcase>
+</testsuite>
+<testsuite name="offer-form.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="2" failures="1" skipped="0" time="7.608" errors="0">
+<testcase name="creates and deletes an offer updating catalog offerCount within cache TTL without page reload (O18)" classname="offer-form.spec.ts" time="6.609">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|offer-form-creates-and-del-63cf0-TL-without-page-reload-O18--chromium\test-failed-1.png]]
+
+[[ATTACHMENT|offer-form-creates-and-del-63cf0-TL-without-page-reload-O18--chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toBeVisible() failed" type="expect.toBeVisible">
+<![CDATA[  [chromium] › offer-form.spec.ts:3:1 › creates and deletes an offer updating catalog offerCount within cache TTL without page reload (O18) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Oferta eliminada.')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Oferta eliminada.') with timeout 5000ms
+      - waiting for getByText('Oferta eliminada.')
+
+
+      221 |   await deleteDialog.getByRole("button", { name: "Eliminar oferta", exact: true }).click();
+      222 |
+    > 223 |   await expect(page.getByText("Oferta eliminada.")).toBeVisible();
+          |                                                     ^
+      224 |   await expect(page.getByText("No hay ofertas configuradas.")).toBeVisible();
+      225 |
+      226 |   // Step 9: Return to catalog within 30s TTL without F5 -> verifies offerCount decremented to 0
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\offer-form.spec.ts:223:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\offer-form-creates-and-del-63cf0-TL-without-page-reload-O18--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\offer-form-creates-and-del-63cf0-TL-without-page-reload-O18--chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="manages multi-modal Escape hierarchy preserving option draft and restoring focus without losing composition (O19, O34)" classname="offer-form.spec.ts" time="0.999">
+</testcase>
+</testsuite>
+<testsuite name="offers.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="5" failures="2" skipped="0" time="13.83" errors="0">
+<testcase name="opens an entry&apos;s offers and returns to the catalog without losing the query" classname="offers.spec.ts" time="1.354">
+</testcase>
+<testcase name="keeps the offers view inside narrow screens and reconciles an out-of-range last page" classname="offers.spec.ts" time="5.62">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|offers-keeps-the-offers-vi-41423-s-an-out-of-range-last-page-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|offers-keeps-the-offers-vi-41423-s-an-out-of-range-last-page-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(page).toHaveURL(expected) failed" type="expect.toHaveURL">
+<![CDATA[  [chromium] › offers.spec.ts:41:1 › keeps the offers view inside narrow screens and reconciles an out-of-range last page 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/entries\/entry-1\/offers\?page=1$/
+    Received string:  "http://127.0.0.1:4173/entries/entry-1/offers?page=2"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        14 × locator resolved to <html lang="es">…</html>
+           - unexpected value "http://127.0.0.1:4173/entries/entry-1/offers?page=2"
+
+
+      67 |   await page.getByRole("button", { name: "Eliminar oferta Familiar" }).click();
+      68 |   await page.getByRole("dialog").getByRole("button", { name: "Eliminar oferta", exact: true }).click();
+    > 69 |   await expect(page).toHaveURL(/\/entries\/entry-1\/offers\?page=1$/);
+         |                      ^
+      70 |   await expect(page.getByRole("heading", { name: "Presentación 1", exact: true })).toBeVisible();
+      71 |
+      72 |   for (const [width, height] of [[1366, 768], [1024, 600], [390, 844], [320, 568]]) {
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\offers.spec.ts:69:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\offers-keeps-the-offers-vi-41423-s-an-out-of-range-last-page-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\offers-keeps-the-offers-vi-41423-s-an-out-of-range-last-page-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="keeps the single empty-state CTA visible at 1024x600 and prevents horizontal overflow at 320x568" classname="offers.spec.ts" time="0.554">
+</testcase>
+<testcase name="separately verifies delete dialog cancel button and Escape key restore focus to trigger without mutating" classname="offers.spec.ts" time="0.64">
+</testcase>
+<testcase name="handles delete error with single alert and recovery reachable inside the modal dialog" classname="offers.spec.ts" time="5.662">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|offers-handles-delete-erro-a3c20-ble-inside-the-modal-dialog-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|offers-handles-delete-erro-a3c20-ble-inside-the-modal-dialog-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toContainText(expected) failed" type="expect.toContainText">
+<![CDATA[  [chromium] › offers.spec.ts:141:1 › handles delete error with single alert and recovery reachable inside the modal dialog 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('dialog').getByRole('alert')
+    Expected substring: "Los datos cambiaron"
+    Received string:    "No se pudo eliminar la oferta. "
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('dialog').getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('dialog').getByRole('alert')
+        13 × locator resolved to <div role="alert" class="feedback feedback--error dialog-feedback">No se pudo eliminar la oferta. </div>
+           - unexpected value "No se pudo eliminar la oferta. "
+
+
+      183 |
+      184 |   // O26: Single alert, rendered inside active modal dialog
+    > 185 |   await expect(dialog.getByRole("alert")).toContainText("Los datos cambiaron");
+          |                                           ^
+      186 |   await expect(page.getByRole("alert")).toHaveCount(1);
+      187 |
+      188 |   // O24: Delete button disabled, "Actualizar lista" button visible inside modal
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\offers.spec.ts:185:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\offers-handles-delete-erro-a3c20-ble-inside-the-modal-dialog-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\offers-handles-delete-erro-a3c20-ble-inside-the-modal-dialog-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="operation-recovery.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="5" failures="1" skipped="0" time="11.303" errors="0">
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › category creation recovery: uncertain POST, real browser reload (F5) restores dialog without POST, manual retry sends same Idempotency-Key and recovers category" classname="operation-recovery.spec.ts" time="1.215">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › nested recipe creation recovery in offer form: uncertain POST, reload restores parent and nested picker, retry recovers recipe and assigns it to option" classname="operation-recovery.spec.ts" time="1.59">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › entry creation recovery: two-stage flow with image upload and entry create across real reload (F5)" classname="operation-recovery.spec.ts" time="1.197">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer creation recovery: uncertain POST, real browser reload (F5) restores form without POST, manual retry sends same Idempotency-Key (A01, A08)" classname="operation-recovery.spec.ts" time="1.61">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer update recovery: uncertain PATCH, real browser reload (F5) restores form with opening If-Match, manual retry sends same Idempotency-Key and If-Match (A01, A08)" classname="operation-recovery.spec.ts" time="5.691">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|operation-recovery-Operati-c8fbe-y-Key-and-If-Match-A01-A08--chromium\test-failed-1.png]]
+
+[[ATTACHMENT|operation-recovery-Operati-c8fbe-y-Key-and-If-Match-A01-A08--chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › operation-recovery.spec.ts:547:3 › Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer update recovery: uncertain PATCH, real browser reload (F5) restores form with opening If-Match, manual retry sends same Idempotency-Key and If-Match (A01, A08) 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel(/Etiqueta de presentación/)
+    Expected: "Familiar Original"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel(/Etiqueta de presentación/) with timeout 5000ms
+      - waiting for getByLabel(/Etiqueta de presentación/)
+
+
+      641 |     await page.goto("/entries/entry-1/offers/offer-update-1/edit");
+      642 |     await expect(page.getByRole("heading", { name: "Editar oferta", level: 1 })).toBeVisible();
+    > 643 |     await expect(page.getByLabel(/Etiqueta de presentación/)).toHaveValue("Familiar Original");
+          |                                                               ^
+      644 |
+      645 |     // 2. Edit price
+      646 |     await page.getByLabel(/Precio base/).fill("350");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\operation-recovery.spec.ts:643:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\operation-recovery-Operati-c8fbe-y-Key-and-If-Match-A01-A08--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\operation-recovery-Operati-c8fbe-y-Key-and-If-Match-A01-A08--chromium\error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="recipes.spec.ts" timestamp="2026-10-24T05:05:50.819Z" hostname="chromium" tests="5" failures="0" skipped="0" time="4.031" errors="0">
+<testcase name="Recipe Library and Selector Flow (T13) › allows searching, paginating recipes, and managing recipes in administration mode" classname="recipes.spec.ts" time="0.794">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › creates recipe with inventory selection and paginating inventory in dialog" classname="recipes.spec.ts" time="0.803">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › isolates inventory error with independent retry without wiping the recipe draft" classname="recipes.spec.ts" time="0.748">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › supports selection mode with Asignar buttons and no management actions" classname="recipes.spec.ts" time="0.549">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › locks delete confirmation against Escape during in-flight DELETE and restores focus (P12, P11)" classname="recipes.spec.ts" time="1.137">
+</testcase>
+</testsuite>
+</testsuites>

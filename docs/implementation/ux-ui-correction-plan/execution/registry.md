@@ -19,9 +19,9 @@ Todos los hallazgos U01 a U28 siguen abiertos. La integración de un ticket no c
 
 | Ticket | Agente y rol | Base/requisitos | Reserva | Estado | Hallazgos y evidencia | Pendientes |
 | --- | --- | --- | --- | --- | --- | --- |
-| UX00 | `/root/ux00_baseline`, preparación; root integra | Base inicial | Evidencia retenida; salidas liberadas al terminar limpieza | Integrada | V18; tipos/lint/build pasan; Jest y cobertura 33 suites/498 tests; demo 2 tests; E2E normal 46 tests | Shell excluido; dispositivo/lector aún sin acreditar. Logs en evidence/UX00. |
-| UX01 | `/root/ux01_images`, contención de imagen | 21bd45a + UX00 integrada | OfferCard.tsx, offers/styles.css completo, e2e/ux-ui-01.demo.spec.ts, evidence/UX01 | En ejecución | U01, V01 | Revisión geométrica y visual; conservar para UX09/UX12 |
-| UX02 | `/root/ux02_foundation`, base visual | 21bd45a + UX00 integrada | src/styles.css, shared/primitives.css, SearchField.tsx, Icon.tsx nuevo, App.tsx/App.test.tsx, main.tsx si necesario, shared tests nuevos, e2e/ux-ui-02.demo.spec.ts, evidence/UX02 | En ejecución | U03/U07/U08/U22; V02/V03/V13/V18 | Adopciones posteriores; no editar módulos ni CSS ofertas |
+| UX00 | `/root/ux00_baseline`, preparación; root integra | Base inicial | Evidencia retenida; salidas liberadas | Integrada | V18; tipos/lint/build pasan; Jest y cobertura 33 suites/498 tests; demo 2 tests; normal preview 46 pasan; Compose4173 37 pasan y 9 fallan | Fallos Compose previos investigados aparte; shell excluido; dispositivo/lector sin acreditar. Logs evidence/UX00. |
+| UX01 | `/root/ux01_images`, contención de imagen | c7b5482 + autorización explícita | OfferCard.tsx, offers/styles.css completo, e2e/ux-ui-01.demo.spec.ts, evidence/UX01 | En ejecución | U01, V01 | Reactivado tras confirmar alcance; exige evidencia geométrica/visual |
+| UX02 | `/root/ux02_foundation`, base visual | c7b5482 + autorización explícita | src/styles.css, shared/primitives.css, SearchField.tsx, Icon.tsx nuevo, App.tsx/App.test.tsx, main.tsx si necesario, shared tests nuevos, e2e/ux-ui-02.demo.spec.ts, evidence/UX02 | En ejecución | U03/U07/U08/U22; V02/V03/V13/V18 | Reactivado; conserva parcial y lo completa antes de revisión |
 | UX03 | Por asignar | UX02 | Ninguna activa | Pendiente | U26/U28 | D01 para cierre integrado |
 | UX04 | Por asignar | UX01/UX03 | Ninguna activa | Pendiente | U05/U06 | UX10 y D01 para cierre |
 | UX05 | Por asignar | UX04 | Ninguna activa | Pendiente | Aporte U04 | Validación categorías |
@@ -49,3 +49,11 @@ Todos los hallazgos U01 a U28 siguen abiertos. La integración de un ticket no c
 ## Revisión y continuidad
 
 Se registrarán asignaciones, ampliaciones, resultados, referencia de integración y liberación al recibir cada entrega. Las ediciones compartidas se integran por turnos. El historial de auditoría permanece intacto.
+
+### Incidencias durante oleada 1
+
+- Autorización aclarada explícitamente por el usuario: "Sí, implementar los tickets", en respuesta a si autoriza UX00 a UX17 sustituyendo "no solucionar". Se reactivan UX01 y UX02; la restricción anterior queda sustituida para este objetivo. No se eludió el rechazo automático.
+- UX01 recibió rechazo de revisión automática antes de aplicar el primer parche de código y regresión. La razón cita la instrucción original de auditar sin solucionar, frente al objetivo actual de realizar la orquestación cuya guía exige implementación. Root informó el rechazo y solicitó confirmación explícita del alcance. Hasta la respuesta, UX01 y UX02 detienen nuevas ediciones de código y conservan las ya realizadas. Continúa el análisis documental independiente.
+- La primera ejecución Compose heredó puerto 5173 del entorno, mientras las 46 pruebas normales usaron preview en 4173. Ese resultado demuestra preview de producción, no el contenedor. Root repitió la suite con FRONTEND_PORT=4173 y la imagen inicial sin reconstruir sobre ediciones parciales. Logs separados `compose-4173-*`. Se investigan diferencias contractuales y recuperación como condiciones de línea base, sin atribuirlas a UX01/UX02.
+- Repetición Compose4173 finalizada: 37 pruebas pasan y 9 fallan en 41,6 s; JUnit y logs conservados. Contenedor y red propios detenidos/eliminados. No se modificaron tests para ocultar estos fallos. La preparación UX00 admite fallos previos documentados y sigue habilitando trabajo independiente cuando el alcance quede confirmado.
+- Contraste controlado sobre la misma imagen inicial, puerto 4173 y API_BASE_URL vacío únicamente en el proceso de prueba: 46 pruebas aprobadas. La configuración anterior usaba API absoluta de otro origen, comprobado sin registrar su valor. La diferencia explica ETag no expuesto por los mocks cross-origin; no se cambia el contrato productivo ni las pruebas para ocultarla. Logs `compose-same-origin-*`; proyecto propio detenido al terminar.
