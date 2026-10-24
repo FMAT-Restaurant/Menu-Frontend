@@ -1,0 +1,29 @@
+npm notice run menu-frontend@0.1.0 build
+npm notice run tsc --noEmit && vite build
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 125 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                    0.51 kB │ gzip:   0.32 kB
+dist/assets/CategoryPage-Dn8thWN2.css              2.16 kB │ gzip:   0.71 kB
+dist/assets/RecipePage-CqUGRXhI.css                4.12 kB │ gzip:   1.16 kB
+dist/assets/CatalogPage-Cuy9T-Bg.css               4.59 kB │ gzip:   1.40 kB
+dist/assets/EntryFormPage-DUkJ1ULv.css             7.24 kB │ gzip:   1.87 kB
+dist/assets/index-C7Z4v9ij.css                     7.48 kB │ gzip:   2.17 kB
+dist/assets/styles-B0bn42MY.css                   13.63 kB │ gzip:   3.15 kB
+dist/assets/useRetryEligibility-CqyFL_h3.js        0.31 kB │ gzip:   0.23 kB
+dist/assets/imageValidation-Cy8HQLLX.js            0.48 kB │ gzip:   0.33 kB
+dist/assets/SearchField-Btjyu4WY.js                0.70 kB │ gzip:   0.42 kB
+dist/assets/entryCategories-BkGYtunr.js            1.01 kB │ gzip:   0.54 kB
+dist/assets/catalogCache-DLVmrIQg.js               1.07 kB │ gzip:   0.51 kB
+dist/assets/pendingOperationStorage-PqgeQSmi.js    8.46 kB │ gzip:   2.48 kB
+dist/assets/CategoryPage-Djcs6Jxb.js              14.32 kB │ gzip:   4.55 kB
+dist/assets/OffersPage-DPt7_PB2.js                17.33 kB │ gzip:   5.85 kB
+dist/assets/CatalogPage-7PNnBELl.js               17.60 kB │ gzip:   5.57 kB
+dist/assets/EntryFormPage-DxVWeYcs.js             29.05 kB │ gzip:   9.14 kB
+dist/assets/RecipePage-C8ZSkGb6.js                29.93 kB │ gzip:   8.45 kB
+dist/assets/OfferFormPage-C1cWYH4b.js             50.45 kB │ gzip:  13.51 kB
+dist/assets/index-DZ-cqRwA.js                    349.45 kB │ gzip: 111.59 kB
+
+✓ built in 1.82s

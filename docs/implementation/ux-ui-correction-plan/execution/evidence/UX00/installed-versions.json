@@ -1,0 +1,114 @@
+{
+  "axios": {
+    "name": "axios",
+    "version": "1.20.0"
+  },
+  "react": {
+    "name": "react",
+    "version": "19.3.0"
+  },
+  "react-dom": {
+    "name": "react-dom",
+    "version": "19.3.0"
+  },
+  "react-router-dom": {
+    "name": "react-router-dom",
+    "version": "7.18.4"
+  },
+  "@babel/core": {
+    "name": "@babel/core",
+    "version": "7.29.7"
+  },
+  "@babel/preset-env": {
+    "name": "@babel/preset-env",
+    "version": "7.29.7"
+  },
+  "@babel/preset-react": {
+    "name": "@babel/preset-react",
+    "version": "7.29.7"
+  },
+  "@babel/preset-typescript": {
+    "name": "@babel/preset-typescript",
+    "version": "7.29.7"
+  },
+  "@eslint/js": {
+    "name": "@eslint/js",
+    "version": "10.0.1"
+  },
+  "@playwright/test": {
+    "name": "@playwright/test",
+    "version": "1.64.0"
+  },
+  "@testing-library/jest-dom": {
+    "name": "@testing-library/jest-dom",
+    "version": "7.0.1"
+  },
+  "@testing-library/react": {
+    "name": "@testing-library/react",
+    "version": "16.3.3"
+  },
+  "@types/jest": {
+    "name": "@types/jest",
+    "version": "30.0.0"
+  },
+  "@types/node": {
+    "name": "@types/node",
+    "version": "26.6.5"
+  },
+  "@types/react": {
+    "name": "@types/react",
+    "version": "19.3.0"
+  },
+  "@types/react-dom": {
+    "name": "@types/react-dom",
+    "version": "19.3.0"
+  },
+  "@typescript/native": {
+    "name": "typescript",
+    "version": "7.0.2"
+  },
+  "@vitejs/plugin-react": {
+    "name": "@vitejs/plugin-react",
+    "version": "6.1.2"
+  },
+  "babel-jest": {
+    "name": "babel-jest",
+    "version": "30.5.2"
+  },
+  "dependency-cruiser": {
+    "name": "dependency-cruiser",
+    "version": "18.7.0"
+  },
+  "eslint": {
+    "name": "eslint",
+    "version": "10.12.0"
+  },
+  "globals": {
+    "name": "globals",
+    "version": "17.13.0"
+  },
+  "jest": {
+    "name": "jest",
+    "version": "30.5.2"
+  },
+  "jest-environment-jsdom": {
+    "name": "jest-environment-jsdom",
+    "version": "30.5.2"
+  },
+  "ts-morph": {
+    "name": "ts-morph",
+    "version": "28.0.0"
+  },
+  "typescript": {
+    "name": "@typescript/typescript6",
+    "version": "6.0.2"
+  },
+  "typescript-eslint": {
+    "name": "typescript-eslint",
+    "version": "8.71.1"
+  },
+  "vite": {
+    "name": "vite",
+    "version": "8.3.4"
+  }
+}

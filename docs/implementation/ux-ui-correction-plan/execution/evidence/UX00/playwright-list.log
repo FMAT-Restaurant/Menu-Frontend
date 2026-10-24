@@ -1,0 +1,6 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts --list
+Listing tests:
+  [chromium] › demo-mode.e2e.ts:28:1 › categories and recipes can be created and edited through their real dialogs without a backend
+  [chromium] › demo-mode.e2e.ts:66:1 › entry uploads, editing, offer composition and state changes work without API calls
+Total: 2 tests in 1 file

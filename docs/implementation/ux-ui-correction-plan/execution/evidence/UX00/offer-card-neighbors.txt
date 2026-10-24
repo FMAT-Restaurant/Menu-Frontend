@@ -1,0 +1,5 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run depcruise-fmt -T text --focus ^src/features/offers/OfferCard\.tsx$ docs/implementation/ux-ui-correction-plan/execution/evidence/UX00/dependencies.json
+src/features/offers/OfferCard.tsx → src/application/catalog.ts
+src/features/offers/OfferCard.tsx → node_modules/react/index.js
+src/features/offers/OfferCard.tsx → node_modules/react-router-dom/dist/index.d.ts

@@ -1,0 +1,2 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run depcruise src e2e public scripts vite.config.ts playwright.config.ts playwright.demo.config.ts eslint.config.js jest.config.cjs babel.config.cjs .dependency-cruiser.cjs --config .dependency-cruiser.cjs --ts-config tsconfig.json --ts-pre-compilation-deps -T json -f docs/implementation/ux-ui-correction-plan/execution/evidence/UX00/dependencies.json
