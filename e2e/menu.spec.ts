@@ -46,8 +46,7 @@ test("searches the administrative entries and opens their management routes", as
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
 
-  const card = await page.getByRole("article").boundingBox();
-  await page.mouse.click(card!.x + 24, card!.y + 24);
+  await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana", exact: true }).click();
   await expect(page).toHaveURL(/\/entries\/entry-1\/offers$/);
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
 });

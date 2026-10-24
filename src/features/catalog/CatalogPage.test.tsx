@@ -69,7 +69,7 @@ test("shows administrative identity, classification and navigation without claim
   expect(screen.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/offers");
   expect(card.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
   expect(card.getAllByRole("button")).toHaveLength(1);
-  expect(card.queryByText("Ver ofertas")).not.toBeInTheDocument();
+  expect(card.getByText("Ver ofertas", { exact: true })).toBeVisible();
   expect(screen.getByRole("link", { name: "Nueva entrada" })).toHaveAttribute("href", "/entries/new");
   expect(screen.getByRole("link", { name: "Categorías" })).toHaveAttribute("href", "/categories");
   expect(screen.getByRole("link", { name: /Biblioteca de recetas/ })).toHaveAttribute("href", "/recipes");

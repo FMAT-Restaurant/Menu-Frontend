@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import type { EntryQuery, MenuEntry, Page } from "../../application/catalog";
 import { EntryCard } from "./EntryCard";
+import { Icon } from "../../shared/Icon";
 
 export interface DisplayedPage { key: string; query: EntryQuery; result: Page<MenuEntry> }
 
@@ -27,7 +28,7 @@ function EmptyEntries({ hasFilters, returnTo, onClear }: Readonly<Pick<ResultsPr
     description = "Prueba otra búsqueda o limpia los filtros para recuperar la lista.";
   }
   return <section className="empty-state">
-    <span className="empty-state__icon" aria-hidden="true">⌕</span>
+    <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
     <h2>{title}</h2><p>{description}</p>
     {hasFilters ? <button className="button button--primary" type="button" onClick={onClear}>Limpiar filtros</button> : <Link className="button button--primary" to="/entries/new" state={{ returnTo }}>Nueva entrada</Link>}
   </section>;
