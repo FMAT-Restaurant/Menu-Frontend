@@ -206,7 +206,7 @@ export function useEntryForm(
       void controller
         .restoreFromStorage()
         .then((restored) => {
-          if (!mounted.current || !restored) return;
+          if (!mounted.current || controllerRef.current !== controller || !restored) return;
           const currentStage = restored.stages[restored.currentStageIndex];
           if (!currentStage) return;
 
@@ -265,6 +265,8 @@ export function useEntryForm(
       validationRun.current += 1;
       reviewController.current?.abort();
       controllerRef.current?.detachForReload();
+      // A subsequent effect setup needs a live controller, including StrictMode.
+      controllerRef.current = null;
     };
   }, [routeEntryId]);
 

@@ -259,6 +259,8 @@ export function CategoryFormDialog({
       activeRef.current = false;
       abortController.abort();
       controllerRef.current?.detachForReload();
+      // Effect setup may run again with the same refs in StrictMode.
+      controllerRef.current = null;
       if (dialog?.open && typeof dialog.close === "function") dialog.close();
     };
   }, []);

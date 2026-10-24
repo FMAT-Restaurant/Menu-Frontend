@@ -356,7 +356,7 @@ export function RecipeFormDialog({
       void controller
         .restoreFromStorage()
         .then((restored) => {
-          if (!activeRef.current || !restored) return;
+          if (!activeRef.current || controllerRef.current !== controller || !restored) return;
           const stage = restored.stages[restored.currentStageIndex];
           if (!stage) return;
           if (!userEditedRef.current) {
@@ -425,6 +425,8 @@ export function RecipeFormDialog({
     return () => {
       activeRef.current = false;
       controllerRef.current?.detachForReload();
+      // Effect setup may run again with the same refs in StrictMode.
+      controllerRef.current = null;
       if (dialog?.open && typeof dialog.close === "function") dialog.close();
       if (trigger?.isConnected) trigger.focus();
     };
