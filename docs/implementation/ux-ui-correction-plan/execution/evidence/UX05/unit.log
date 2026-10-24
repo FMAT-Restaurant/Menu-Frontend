@@ -1,0 +1,6 @@
+
+Test Suites: 2 passed, 2 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        32.986 s
+Ran all test suites within paths "src/features/categories/CategoryPage.test.tsx", "src/features/categories/CategoryFormDialog.ux.test.tsx".

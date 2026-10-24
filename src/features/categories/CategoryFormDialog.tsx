@@ -69,6 +69,7 @@ export function CategoryFormDialog({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [nameError, setNameError] = useState("");
   const [infoNotice, setInfoNotice] = useState("");
 
   // Creation attempt recovery state
@@ -282,6 +283,7 @@ export function CategoryFormDialog({
     if (busy) return;
     userEditedRef.current = true;
     setName(nextName);
+    if (nameError && nextName.trim()) setNameError("");
     if (!activeCategory) {
       const controller = getOrInitController();
       void controller.updateEditableDraft({ name: nextName, description });
@@ -318,12 +320,8 @@ export function CategoryFormDialog({
   }
 
   async function executeCreationFlow(mode: "submit" | "retry") {
-    const trimmedName = name.trim();
-    if (mode === "submit" && !trimmedName) {
-      setError("Indica el nombre de la categoría.");
-      nameRef.current?.focus();
-      return;
-    }
+    // A retry sends the original sealed payload, independently of later draft edits.
+    if (mode === "submit" && !validateName()) return;
 
     const controller = getOrInitController();
     const currentStage = controller.getCurrentAttempt();
@@ -429,15 +427,11 @@ export function CategoryFormDialog({
 
   async function executeEditSave() {
     if (!activeCategory) return;
+    if (!validateName()) return;
     const draft: CategoryDraft = {
       name: name.trim(),
       description: description.trim(),
     };
-    if (!draft.name) {
-      setError("Indica el nombre de la categoría.");
-      nameRef.current?.focus();
-      return;
-    }
 
     setBusy(true);
     setError("");
@@ -502,11 +496,22 @@ export function CategoryFormDialog({
     if (!keepDraft) {
       setName(reviewedResource.data.name);
       setDescription(reviewedResource.data.description ?? "");
+      setNameError("");
     }
     setReviewedResource(null);
     setReviewRequired(false);
     setReviewError("");
     setError("");
+  }
+
+  function validateName(): boolean {
+    if (name.trim()) {
+      setNameError("");
+      return true;
+    }
+    setNameError("Indica el nombre de la categoría.");
+    nameRef.current?.focus();
+    return false;
   }
 
   async function save(event: SubmitEvent<HTMLFormElement>) {
@@ -581,10 +586,19 @@ export function CategoryFormDialog({
           <Icon name="close" />
         </button>
       </div>
-      <form onSubmit={(event) => void save(event)}>
+      <form noValidate onSubmit={(event) => void save(event)}>
         <div className="category-form-dialog__fields">
+          {nameError && (
+            <div className="category-form-dialog__validation" role="alert">
+              <p>Revisa el nombre de la categoría.</p>
+              <button className="button button--quiet" type="button" onClick={() => nameRef.current?.focus()}>
+                Ir al nombre
+              </button>
+            </div>
+          )}
           <div className="category-form-dialog__field">
             <label htmlFor="category-name">Nombre</label>
+            <p className="field-hint" id="category-name-hint">Obligatorio. Hasta 255 caracteres.</p>
             <input
               ref={nameRef}
               id="category-name"
@@ -593,11 +607,15 @@ export function CategoryFormDialog({
               onChange={(event) => handleNameChange(event.target.value)}
               maxLength={255}
               required
+              aria-invalid={Boolean(nameError)}
+              aria-describedby={`category-name-hint${nameError ? " category-name-error" : ""}`}
               placeholder="Ej. Postres"
             />
+            {nameError && <p className="field-error" id="category-name-error">{nameError}</p>}
           </div>
           <div className="category-form-dialog__field">
             <label htmlFor="category-description">Descripción</label>
+            <p className="field-hint" id="category-description-hint">Opcional. Hasta 255 caracteres.</p>
             <textarea
               id="category-description"
               value={description}
@@ -605,6 +623,7 @@ export function CategoryFormDialog({
               onChange={(event) => handleDescriptionChange(event.target.value)}
               maxLength={255}
               rows={3}
+              aria-describedby="category-description-hint"
               placeholder="Describe qué entradas agrupa"
             />
           </div>
