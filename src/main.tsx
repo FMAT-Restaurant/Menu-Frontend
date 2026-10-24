@@ -3,8 +3,18 @@ import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import "./styles.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+async function bootstrap() {
+  const repository = import.meta.env.DEV && import.meta.env.MODE === "demo"
+    ? (await import("./demo/repository")).createDemoRepository()
+    : undefined;
+
+  if (repository) document.title = "[DEMO] Menú | FMAT Restaurant";
+
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <App repository={repository} />
+    </React.StrictMode>,
+  );
+}
+
+void bootstrap();

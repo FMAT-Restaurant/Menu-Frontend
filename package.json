@@ -10,13 +10,15 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:mock": "vite --mode demo --host 127.0.0.1 --port 5174 --strictPort",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
     "test:unit": "jest --ci --runInBand --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test --config playwright.demo.config.ts"
   },
   "dependencies": {
     "axios": "1.20.0",
