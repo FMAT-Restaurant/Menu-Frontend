@@ -3,6 +3,8 @@
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
+Checkpoint posterior de oleada4: [checkpoint-ux07.md](checkpoint-ux07.md). UX05 a UX07 están integradas y todos los ejecutores terminaron. UX08 a UX17 no se han iniciado.
+Parada confirmada por el usuario con "Checkpoint actual y parar". No se despliegan nuevos tickets; se conserva el punto seguro después de la oleada4.
 Base inicial: `21bd45a822c2345e695ddae419f5a0dcd715aec0`, rama `feature/ux-ui-improvement`, directorio limpio. El nombre actual de la rama difiere del resumen anterior; se conserva el checkout real. Todos los archivos iniciales quedan inventariados en [tracked-sha256.json](evidence/initial/tracked-sha256.json). No se restablece ni elimina trabajo previo.
 
 ## Decisiones
@@ -26,9 +28,9 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX02 | `/root/ux02_foundation`, base visual | 8c95f64 | Liberada y transferida parcialmente a UX03 | Integrada | U03/U07/U08/U22 abiertos; 19 PNG/2 JSON, controles40/48 | Adopciones de consumidores y contenedores modales |
 | UX03 | `/root/ux02_foundation`, ciclo modal; root integra | f7330b0 | Liberada | Integrada | U26 acreditado; U28 parcial; cinco pruebas de ciclo, 154 de consumidores, 47 E2E normales y 20 demo | Repetir pasos en UX10; U27 abierto |
 | UX04 | `/root/ux01_images`, cabeceras locales; root integra | 810f5d9 | Liberada | Integrada | U05 acreditado en autónomo; U06 parcial; 24 demo y 47 normales pasan | Selector final UX10; shell real excluido |
-| UX05 | `/root/ux00_baseline`, validación de categorías | 0e375aa, UX04 integrada | categories/CategoryFormDialog.tsx, categories/styles.css, pruebas de categorías, e2e/ux-ui-05*, evidence/UX05 | En ejecución | Aporte U04/U03/U07/U08/U22 | No editar BASE ni catálogo/entradas |
-| UX06 | `/root/ux01_images`, catálogo y tarjetas | 0e375aa, UX04 integrada | catalog/*.tsx, catalog/styles.css, pruebas de catálogo, e2e/ux-ui-06*, evidence/UX06 | En ejecución | U11 y aportes U03/U07/U08/U09/U10/U19/U22/U24 | No editar BASE ni categorías/entradas |
-| UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | 0e375aa, UX04 integrada | entries/*.tsx, useEntryResources.ts, entryError.ts, pruebas y estilos de entradas, e2e/ux-ui-07*, evidence/UX07 | En ejecución | U14 y aportes U03/U07/U08/U09/U19/U22 | No editar BASE ni catálogo/categorías; ampliar antes de tocar useEntryForm |
+| UX05 | `/root/ux00_baseline`, validación de categorías | 6e09554 | Liberada | Integrada | Aporte U04/U03/U07/U08/U22; 16 focalizadas, 2 demo y 2 HTTP | U04 espera recetas UX08 |
+| UX06 | `/root/ux01_images`, catálogo y tarjetas | 487340e | Liberada | Integrada | U11 acreditado; aportes U03/U07/U08/U09/U10/U19/U22/U24; 32 focalizadas y 3 demo | Responsive conjunto espera UX08/UX09; contexto de rutas UX15 |
+| UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | bf7d6cb | Liberada | Integrada | U14 acreditado; 75 focalizadas, 3 demo y 3 HTTP | UX11/UX13 conservan sus propios pendientes |
 | UX08 | Por asignar | UX05 | Ninguna activa | Pendiente | U04/U13 y aportes | Recetas |
 | UX09 | Por asignar | UX06/UX07 | Ninguna activa | Pendiente | U02/U09/U10/U19/U21/U23 | Repetir U01 |
 | UX10 | Por asignar | UX08/UX09 | Ninguna activa | Pendiente | U16/U27 | Flujo único |
@@ -42,7 +44,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 
 ## Recursos
 
-- Capacidad: cuatro agentes incluido root. Los tres ejecutores de oleada4 poseen áreas distintas. Root conserva registro, configuración compartida, build, cobertura, test-results, puertos4173/5174 y sesiones de navegador. Las pruebas focalizadas usan logs por ticket; las ejecuciones E2E se coordinan por turnos.
+- Capacidad: cuatro agentes incluido root. Los tres subagentes terminaron sus turnos de oleada4, incluidas las revisiones y documentación. No hay reservas de implementación activas. Root cierra el registro y el checkpoint; UX08 a UX17 no se han iniciado.
 - Root coordina E2E, `test-results`, `playwright-report`, puertos 5174 y 4173 y sus contextos. Demo escalada sesión 86947 terminó con 2 pruebas aprobadas. Intento sandbox 74998 se detuvo tras comprobar Vite vivo sin puerto; no se presenta como resultado de tests. Producción sesión 12292 terminó con 46 pruebas aprobadas en 17,9 s. Los casos HTTP usan fixtures de las pruebas, no acreditan servicios reales.
 - Docker 29.9.2 disponible mediante ejecución autorizada fuera del sandbox. Proyecto Compose aislado previsto `menu-ux-ui-baseline`, sin contenedores previos en ese proyecto. No detener contenedores ajenos.
 - Shell real excluido del alcance actual por el usuario. Para dispositivo físico con teclado virtual y lector de pantalla, el usuario indicó expresamente "Registrar validación manual pendiente". Se entregarán recorridos y pendientes identificados, sin sustituirlos por evidencia emulada ni exigirlos para terminar la implementación de agentes.
@@ -57,6 +59,8 @@ Oleada 1: revisión favorable [reviews/oleada-01.md](evidence/reviews/oleada-01.
 Oleada 2: revisión favorable [reviews/oleada-02.md](evidence/reviews/oleada-02.md). Dos defectos de foco se corrigieron en código conservando las aserciones: vuelta de Tab en confirmaciones y Tab/Shift+Tab durante DELETE con todos los controles deshabilitados. La última verificación pasa build y lint globales, 47 E2E normales sobre preview en17,2s y 20 demo en40,0s. Evidencias negativa y positiva de operación pendiente conservadas en UX03. El documento se restaura desde scrollY1626 y los formularios usan controles de48px en contenedor propio estrecho. No acredita aún el flujo final de UX10 ni integración con backend real.
 
 Oleada3, cierre del trabajo activo antes de pausar: revisión favorable [reviews/oleada-03.md](evidence/reviews/oleada-03.md), implementación810f5d9. Se retiraron las cabeceras del shell y se corrigió la pérdida del clic Guardar al colapsar el selector en pointerdown. Cinco expectativas de tests incompatibles se documentaron y adaptaron conservando sus garantías. El fallo de guardado se corrigió en código y se contrastó con registros de eventos negativos y positivos. Pasan tipos, build, lint, 24 demo en35,1s y 47 normales sobre preview en18,6s. Se comprobaron171 pruebas de páginas y luego57 de entrada/selector, con solapamiento. No se inició UX05 ni otra tarea después de la petición de pausa.
+
+Oleada4 integrada: [revisión conjunta](evidence/reviews/oleada-04.md), [revisión de catálogo](evidence/reviews/ux06-wave04.md) y [revisión de entradas](evidence/reviews/ux07-wave04.md). Pasan tipos, lint, build, 32 demo en43,3s y 52 E2E sobre preview en18,6s. Las focalizadas de categorías/catálogo/entradas pasan16/32/75 casos. Los controles de una línea se normalizaron a40/48px tras detectar42/43px en revisión; el texto envuelto puede crecer sin recorte. Se documentó la adaptación de la expectativa que prohibía Ver ofertas y los dos accesos por coordenadas al enlace invisible retirado. Se preservan los flujos y contratos anteriores. El usuario solicitó otro checkpoint y parar; no hay nuevos ejecutores ni tickets desplegados después de esa petición.
 
 ### Incidencias durante oleada 1
 
