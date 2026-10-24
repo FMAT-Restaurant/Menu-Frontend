@@ -1,0 +1,652 @@
+{
+  "catalog": {
+    "controls": [
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Biblioteca de recetas",
+        "w": 164.625
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Categorías",
+        "w": 101
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Nueva entrada",
+        "w": 126.875
+      },
+      {
+        "font": "14px",
+        "h": 38.400001525878906,
+        "radius": "0px",
+        "text": null,
+        "w": 405.125
+      },
+      {
+        "font": "14px",
+        "h": 38,
+        "radius": "0px 7px 7px 0px",
+        "text": "Buscar",
+        "w": 74.5374984741211
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Todas las categoríasSin categoríaPlatos fuertesBebidasPostres",
+        "w": 253.1999969482422
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Todos los estadosActivaInactivaArchivada",
+        "w": 253.21250915527344
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Limpiar filtros",
+        "w": 121.5875015258789
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "61224",
+        "w": 76
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Editar",
+        "w": 177.8625030517578
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Eliminar",
+        "w": 177.8625030517578
+      },
+      {
+        "font": "14px",
+        "h": 40,
+        "radius": "8px",
+        "text": "Editar",
+        "w": 177.8625030517578
+      }
+    ],
+    "h1": [
+      {
+        "font": "700 28px / 36px Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, Arial, sans-serif",
+        "line": "36px",
+        "text": "Entradas del menú"
+      }
+    ],
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  "categoryDialog": [
+    {
+      "font": "24px",
+      "h": 32,
+      "r": "6px",
+      "text": "×"
+    },
+    {
+      "font": "14px",
+      "h": 40,
+      "r": "8px",
+      "text": "category-name"
+    },
+    {
+      "font": "14px",
+      "h": 76.80000305175781,
+      "r": "8px",
+      "text": "category-description"
+    },
+    {
+      "font": "14px",
+      "h": 40,
+      "r": "8px",
+      "text": "Cancelar"
+    },
+    {
+      "font": "14px",
+      "h": 40,
+      "r": "8px",
+      "text": "Guardar categoría"
+    }
+  ],
+  "recipeMobile": {
+    "controls": [
+      {
+        "h": 32,
+        "name": "Cerrar formulario",
+        "w": 32
+      },
+      {
+        "h": 40,
+        "name": "recipe-name",
+        "w": 274
+      },
+      {
+        "h": 44,
+        "name": "+ Agregar insumo",
+        "w": 128.8249969482422
+      },
+      {
+        "h": 26.80000114440918,
+        "name": "Buscar insumos de inventario",
+        "w": 188
+      },
+      {
+        "h": 44,
+        "name": "Buscar insumos",
+        "w": 112.9875030517578
+      },
+      {
+        "h": 32.79999923706055,
+        "name": "Insumo 1",
+        "w": 222.8000030517578
+      },
+      {
+        "h": 31.200000762939453,
+        "name": "Cantidad del insumo 1",
+        "w": 107.4000015258789
+      },
+      {
+        "h": 44,
+        "name": "Eliminar insumo 1",
+        "w": 222.8000030517578
+      },
+      {
+        "h": 44,
+        "name": "Cancelar",
+        "w": 87.95000457763672
+      },
+      {
+        "h": 44,
+        "name": "Guardar receta",
+        "w": 127.5625
+      }
+    ],
+    "dialog": [
+      {
+        "clientHeight": 760,
+        "rect": {
+          "bottom": 801.8000373840332,
+          "height": 759.6000366210938,
+          "left": 19,
+          "right": 356.20001220703125,
+          "top": 42.20000076293945,
+          "width": 337.20001220703125,
+          "x": 19,
+          "y": 42.20000076293945
+        },
+        "scrollHeight": 760
+      }
+    ],
+    "doc": 375,
+    "width": 390
+  },
+  "offers": [
+    {
+      "elementAtTitle": {
+        "alt": "Imagen de la oferta Individual",
+        "cls": "",
+        "tag": "IMG"
+      },
+      "imageBox": {
+        "bottom": 490.3999938964844,
+        "height": 112,
+        "left": 164.8000030517578,
+        "right": 393.2000122070313,
+        "top": 378.3999938964844,
+        "width": 228.40000915527344,
+        "x": 164.8000030517578,
+        "y": 378.3999938964844
+      },
+      "img": {
+        "bottom": 530.4000091552734,
+        "height": 151.1999969482422,
+        "left": 165.60000610351562,
+        "right": 392.40000915527344,
+        "top": 379.2000122070313,
+        "width": 226.8000030517578,
+        "x": 165.60000610351562,
+        "y": 379.2000122070313
+      },
+      "priceStyle": {
+        "align": "center",
+        "font": "18px / 24px Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, Arial, sans-serif"
+      },
+      "title": "Individual",
+      "titleBox": {
+        "bottom": 524.3999938964844,
+        "height": 22,
+        "left": 164.8000030517578,
+        "right": 393.2000122070313,
+        "top": 502.3999938964844,
+        "width": 228.40000915527344,
+        "x": 164.8000030517578,
+        "y": 502.3999938964844
+      }
+    },
+    {
+      "elementAtTitle": {
+        "alt": "Imagen de la oferta Combo con bebida",
+        "cls": "",
+        "tag": "IMG"
+      },
+      "imageBox": {
+        "bottom": 490.3999938964844,
+        "height": 112,
+        "left": 458.8000183105469,
+        "right": 687.2000274658203,
+        "top": 378.3999938964844,
+        "width": 228.40000915527344,
+        "x": 458.8000183105469,
+        "y": 378.3999938964844
+      },
+      "img": {
+        "bottom": 530.4000091552734,
+        "height": 151.1999969482422,
+        "left": 459.6000061035156,
+        "right": 686.4000091552734,
+        "top": 379.2000122070313,
+        "width": 226.8000030517578,
+        "x": 459.6000061035156,
+        "y": 379.2000122070313
+      },
+      "priceStyle": {
+        "align": "center",
+        "font": "18px / 24px Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, Arial, sans-serif"
+      },
+      "title": "Combo con bebida",
+      "titleBox": {
+        "bottom": 524.3999938964844,
+        "height": 22,
+        "left": 458.8000183105469,
+        "right": 687.2000274658203,
+        "top": 502.3999938964844,
+        "width": 228.40000915527344,
+        "x": 458.8000183105469,
+        "y": 502.3999938964844
+      }
+    }
+  ],
+  "compositionMobile": {
+    "container": [
+      {
+        "clientWidth": 349,
+        "rect": {
+          "bottom": 1502.0750732421875,
+          "height": 364,
+          "left": 20.80000114440918,
+          "right": 369.60001945495605,
+          "top": 1138.0750732421875,
+          "width": 348.8000183105469,
+          "x": 20.80000114440918,
+          "y": 1138.0750732421875
+        },
+        "scrollWidth": 792
+      }
+    ],
+    "controls": [
+      {
+        "font": "14px",
+        "h": 36,
+        "text": "offer-tag-input",
+        "w": 348.8000183105469
+      },
+      {
+        "font": "14px",
+        "h": 36,
+        "text": "offer-price-input",
+        "w": 311.1125183105469
+      },
+      {
+        "font": "14px",
+        "h": 13,
+        "text": "",
+        "w": 13
+      },
+      {
+        "font": "14px",
+        "h": 13,
+        "text": "",
+        "w": 13
+      },
+      {
+        "font": "16px",
+        "h": 0,
+        "text": "offer-image-input",
+        "w": 0
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Editar grupo Plato principal",
+        "w": 55.86249923706055
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Eliminar grupo Plato principal",
+        "w": 69.2249984741211
+      },
+      {
+        "font": "11px",
+        "h": 20,
+        "text": "Cambiar estado de Hamburguesa clásica",
+        "w": 48.150001525878906
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Editar opción Hamburguesa clásica",
+        "w": 55.86249923706055
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Eliminar opción Hamburguesa clásica",
+        "w": 32.22500228881836
+      },
+      {
+        "font": "14px",
+        "h": 44,
+        "text": "Agregar opción a Plato principal",
+        "w": 145.85000610351562
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Editar grupo Bebida",
+        "w": 55.86249923706055
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Eliminar grupo Bebida",
+        "w": 69.2249984741211
+      },
+      {
+        "font": "11px",
+        "h": 20,
+        "text": "Cambiar estado de Agua mineral",
+        "w": 48.150001525878906
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Editar opción Agua mineral",
+        "w": 55.86249923706055
+      },
+      {
+        "font": "13px",
+        "h": 44,
+        "text": "Eliminar opción Agua mineral",
+        "w": 32.22500228881836
+      },
+      {
+        "font": "14px",
+        "h": 44,
+        "text": "Agregar opción a Bebida",
+        "w": 145.85000610351562
+      }
+    ],
+    "doc": 390,
+    "footer": {
+      "bottom": 1606.0750732421875,
+      "height": 52,
+      "left": 8,
+      "right": 382.3999938964844,
+      "top": 1554.0750732421875,
+      "width": 374.3999938964844,
+      "x": 8,
+      "y": 1554.0750732421875
+    },
+    "viewport": 390
+  },
+  "slotModal": [
+    {
+      "h": 32,
+      "name": "Cerrar modal de grupo",
+      "r": "0px",
+      "w": 22.712499618530273
+    },
+    {
+      "h": 36,
+      "name": "slot-name-input",
+      "r": "4px",
+      "w": 297.20001220703125
+    },
+    {
+      "h": 40,
+      "name": "slot-quantity-input",
+      "r": "4px",
+      "w": 297.20001220703125
+    },
+    {
+      "h": 40,
+      "name": "slot-course-select",
+      "r": "4px",
+      "w": 297.20001220703125
+    },
+    {
+      "h": 44,
+      "name": "Cancelar",
+      "r": "8px",
+      "w": 87.95000457763672
+    },
+    {
+      "h": 44,
+      "name": "Guardar grupo",
+      "r": "8px",
+      "w": 127.26250457763672
+    }
+  ],
+  "nested": {
+    "active": "<button type=\"button\" class=\"button category-screen__back\">✕ Cancelar</button>",
+    "dialogs": [
+      {
+        "bounds": {
+          "bottom": 767.3999862670898,
+          "height": 690.7999877929688,
+          "left": 19,
+          "right": 356.20001220703125,
+          "top": 76.5999984741211,
+          "width": 337.20001220703125,
+          "x": 19,
+          "y": 76.5999984741211
+        },
+        "label": null,
+        "labelledby": "option-modal-title"
+      },
+      {
+        "bounds": {
+          "bottom": 801.8000373840332,
+          "height": 759.6000366210938,
+          "left": 16,
+          "right": 359.20001220703125,
+          "top": 42.20000076293945,
+          "width": 343.20001220703125,
+          "x": 16,
+          "y": 42.20000076293945
+        },
+        "label": "Biblioteca de recetas",
+        "labelledby": null
+      }
+    ]
+  },
+  "catalog320": {
+    "buttons": [
+      {
+        "h": 36,
+        "text": "Biblioteca de recetas",
+        "w": 133.91250610351562
+      },
+      {
+        "h": 36,
+        "text": "Categorías",
+        "w": 79.375
+      },
+      {
+        "h": 36,
+        "text": "Nueva entrada",
+        "w": 101.5500030517578
+      },
+      {
+        "h": 38,
+        "text": "Buscar",
+        "w": 74.5374984741211
+      },
+      {
+        "h": 44,
+        "text": "Filtros",
+        "w": 150.1750030517578
+      },
+      {
+        "h": 44,
+        "text": "Limpiar filtros",
+        "w": 93.0250015258789
+      },
+      {
+        "h": 40,
+        "text": "61224",
+        "w": 51.337501525878906
+      }
+    ],
+    "clientWidth": 305,
+    "firstCard": {
+      "bottom": 837.6000061035156,
+      "height": 398.6000061035156,
+      "left": 16,
+      "right": 288.8000183105469,
+      "top": 439,
+      "width": 272.8000183105469,
+      "x": 16,
+      "y": 439
+    },
+    "scrollWidth": 305,
+    "viewport": 320
+  },
+  "catalog740": {
+    "columns": "346px 346px",
+    "mainWidth": 708
+  },
+  "recipeValidation": {
+    "active": "<input id=\"recipe-name\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"\">",
+    "errors": [
+      {
+        "rect": {
+          "bottom": 732.4000015258789,
+          "height": 46.400001525878906,
+          "left": 168.40000915527344,
+          "right": 825.1999969482422,
+          "top": 686,
+          "width": 656.7999877929688,
+          "x": 168.40000915527344,
+          "y": 686
+        },
+        "text": "Indica el nombre de la receta."
+      }
+    ],
+    "fields": [
+      {
+        "describedby": null,
+        "id": "recipe-name",
+        "invalid": null,
+        "label": null
+      },
+      {
+        "describedby": null,
+        "id": "recipe-description",
+        "invalid": null,
+        "label": null
+      },
+      {
+        "describedby": null,
+        "id": "recipe-instructions",
+        "invalid": null,
+        "label": null
+      },
+      {
+        "describedby": null,
+        "id": "",
+        "invalid": null,
+        "label": "Buscar insumos de inventario"
+      },
+      {
+        "describedby": null,
+        "id": "",
+        "invalid": null,
+        "label": "Insumo 1"
+      },
+      {
+        "describedby": null,
+        "id": "",
+        "invalid": null,
+        "label": "Cantidad del insumo 1"
+      }
+    ]
+  },
+  "unsavedRecipe": {
+    "value": ""
+  },
+  "routeFocus": {
+    "activeTag": "BODY",
+    "activeText": "\n    FFMAT RestaurantAdministración del menúAdministración / MenúEntradas del me",
+    "skipLinks": [],
+    "title": "[DEMO] Menú | FMAT Restaurant"
+  },
+  "imageKeyboard": {
+    "active": "Seleccionar o arrastrar imagen de la oferta",
+    "overlayOpacity": "0"
+  },
+  "audit": {
+    "date": "2026-10-23",
+    "mode": "demo",
+    "baseURL": "http://127.0.0.1:5174",
+    "viewportSizes": [
+      {
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "width": 1024,
+        "height": 768
+      },
+      {
+        "width": 740,
+        "height": 900
+      },
+      {
+        "width": 600,
+        "height": 900
+      },
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 320,
+        "height": 800
+      }
+    ],
+    "method": "IAB, viewport CSS; sin emulación táctil ni lector de pantalla",
+    "e2e": "2 passed (5.9s)"
+  }
+}
