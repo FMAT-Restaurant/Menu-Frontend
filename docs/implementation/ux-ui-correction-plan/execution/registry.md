@@ -2,6 +2,7 @@
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
+Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
 Base inicial: `21bd45a822c2345e695ddae419f5a0dcd715aec0`, rama `feature/ux-ui-improvement`, directorio limpio. El nombre actual de la rama difiere del resumen anterior; se conserva el checkout real. Todos los archivos iniciales quedan inventariados en [tracked-sha256.json](evidence/initial/tracked-sha256.json). No se restablece ni elimina trabajo previo.
 
 ## Decisiones
@@ -25,9 +26,9 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX02 | `/root/ux02_foundation`, base visual | 8c95f64 | Liberada y transferida parcialmente a UX03 | Integrada | U03/U07/U08/U22 abiertos; 19 PNG/2 JSON, controles40/48 | Adopciones de consumidores y contenedores modales |
 | UX03 | `/root/ux02_foundation`, ciclo modal; root integra | f7330b0 | Liberada | Integrada | U26 acreditado; U28 parcial; cinco pruebas de ciclo, 154 de consumidores, 47 E2E normales y 20 demo | Repetir pasos en UX10; U27 abierto |
 | UX04 | `/root/ux01_images`, cabeceras locales; root integra | 810f5d9 | Liberada | Integrada | U05 acreditado en autónomo; U06 parcial; 24 demo y 47 normales pasan | Selector final UX10; shell real excluido |
-| UX05 | Por asignar | UX04 | Ninguna activa | Pendiente | Aporte U04 | Validación categorías |
-| UX06 | Por asignar | UX04 | Ninguna activa | Pendiente | U11 y aportes | Catálogo |
-| UX07 | Por asignar | UX04 | Ninguna activa | Pendiente | U14 y aportes | Entradas |
+| UX05 | `/root/ux00_baseline`, validación de categorías | 0e375aa, UX04 integrada | categories/CategoryFormDialog.tsx, categories/styles.css, pruebas de categorías, e2e/ux-ui-05*, evidence/UX05 | En ejecución | Aporte U04/U03/U07/U08/U22 | No editar BASE ni catálogo/entradas |
+| UX06 | `/root/ux01_images`, catálogo y tarjetas | 0e375aa, UX04 integrada | catalog/*.tsx, catalog/styles.css, pruebas de catálogo, e2e/ux-ui-06*, evidence/UX06 | En ejecución | U11 y aportes U03/U07/U08/U09/U10/U19/U22/U24 | No editar BASE ni categorías/entradas |
+| UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | 0e375aa, UX04 integrada | entries/*.tsx, useEntryResources.ts, entryError.ts, pruebas y estilos de entradas, e2e/ux-ui-07*, evidence/UX07 | En ejecución | U14 y aportes U03/U07/U08/U09/U19/U22 | No editar BASE ni catálogo/categorías; ampliar antes de tocar useEntryForm |
 | UX08 | Por asignar | UX05 | Ninguna activa | Pendiente | U04/U13 y aportes | Recetas |
 | UX09 | Por asignar | UX06/UX07 | Ninguna activa | Pendiente | U02/U09/U10/U19/U21/U23 | Repetir U01 |
 | UX10 | Por asignar | UX08/UX09 | Ninguna activa | Pendiente | U16/U27 | Flujo único |
@@ -41,7 +42,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 
 ## Recursos
 
-- Capacidad: cuatro agentes incluido root. Los tres subagentes terminaron sus turnos y no hay trabajos activos. Las reservas de aplicación, salidas y navegador quedaron liberadas al preparar el checkpoint.
+- Capacidad: cuatro agentes incluido root. Los tres ejecutores de oleada4 poseen áreas distintas. Root conserva registro, configuración compartida, build, cobertura, test-results, puertos4173/5174 y sesiones de navegador. Las pruebas focalizadas usan logs por ticket; las ejecuciones E2E se coordinan por turnos.
 - Root coordina E2E, `test-results`, `playwright-report`, puertos 5174 y 4173 y sus contextos. Demo escalada sesión 86947 terminó con 2 pruebas aprobadas. Intento sandbox 74998 se detuvo tras comprobar Vite vivo sin puerto; no se presenta como resultado de tests. Producción sesión 12292 terminó con 46 pruebas aprobadas en 17,9 s. Los casos HTTP usan fixtures de las pruebas, no acreditan servicios reales.
 - Docker 29.9.2 disponible mediante ejecución autorizada fuera del sandbox. Proyecto Compose aislado previsto `menu-ux-ui-baseline`, sin contenedores previos en ese proyecto. No detener contenedores ajenos.
 - Shell real excluido del alcance actual por el usuario. Para dispositivo físico con teclado virtual y lector de pantalla, el usuario indicó expresamente "Registrar validación manual pendiente". Se entregarán recorridos y pendientes identificados, sin sustituirlos por evidencia emulada ni exigirlos para terminar la implementación de agentes.
