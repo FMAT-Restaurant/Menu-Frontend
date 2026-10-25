@@ -1,0 +1,69 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts e2e/ux-ui-10.demo.spec.ts --grep at 390px --workers=1
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:14868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:24496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px (14.2s)
+
+
+  1) [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px 
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator: getByRole('button', { name: /^Elegir receta/ })
+    Expected: focused
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeFocused" getByRole('button', { name: /^Elegir receta/ }) with timeout 5000ms
+      - waiting for getByRole('button', { name: /^Elegir receta/ })
+
+
+      103 |     await writeFile(eventLog, JSON.stringify(await page.evaluate(() => (window as unknown as { ux10Events: unknown[] }).ux10Events), null, 2));
+      104 |     await info.attach("native-events", { path: eventLog, contentType: "application/json" });
+    > 105 |     await expect(page.getByRole("button", { name: /^Elegir receta/ })).toBeFocused();
+          |                                                                        ^
+      106 |     expect(await node!.evaluate(el => el === document.querySelector("dialog[open]:modal"))).toBe(true);
+      107 |     await page.keyboard.press("Escape");
+      108 |     await page.getByRole("button", { name: "Continuar editando", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-10.demo.spec.ts:105:72
+
+    attachment #1: selector-390 (application/json) ─────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\attachments\selector-390-e09e6d7ab76771d3168374a26782a83cd59d95b9.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: selector-390-image (image/png) ──────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\attachments\selector-390-image-8ec69b76a94caa941954a883022fb648d5bccafc.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: create-390 (application/json) ───────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\attachments\create-390-02a212708366cd5e102f2f7c611bb74377e54d2b.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: create-390-image (image/png) ────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\attachments\create-390-image-a8e2fa6549150f9ff22e89206266201fdabf0588.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: native-events (application/json) ────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\attachments\native-events-13e7e1ade0e6d7102d7a67f5dc6cc53832b77025.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\error-context.md
+
+    attachment #7: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px 

@@ -1,0 +1,9 @@
+
+C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\src\features\offers\OptionModal.tsx
+  60:5  error  Definition for rule 'react-hooks/exhaustive-deps' was not found  react-hooks/exhaustive-deps
+
+C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\src\features\recipes\RecipeSelectionTask.tsx
+  52:5  error  Definition for rule 'react-hooks/exhaustive-deps' was not found  react-hooks/exhaustive-deps
+
+✖ 2 problems (2 errors, 0 warnings)
+

@@ -1,6 +1,7 @@
 # Verificación de cierre UX/UI
 
 Estado provisional. La implementación completa todavía no está acreditada. Este documento distingue la integración de tickets del resultado por hallazgo; UX17 completará la comprobación final sobre una misma base.
+Estado actual: UX10 integrado en81fc2fe con42 demo,55 HTTP y121 focalizadas aprobadas. UX11 a UX17 siguen pendientes; las referencias posteriores a checkpoints son históricas.
 Reanudación actual: UX08 y UX09 integradas en3beabea y6318581. Los párrafos de parada siguientes son históricos. Pasan38 demo y52 HTTP sobre preview. UX10 a UX17 siguen pendientes.
 Trabajo detenido por solicitud del usuario después de integrar UX04 en810f5d9. La referencia y condiciones de reanudación están en [checkpoint.md](checkpoint.md).
 Tras la reanudación se integró también la oleada4 hasta bf7d6cb. El usuario volvió a solicitar checkpoint y parada. UX00 a UX07 están integradas; UX08 a UX17 siguen sin iniciar.
@@ -16,17 +17,17 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U03 | UX02; UX03/05/06/07/08/09 | Parcialmente acreditado | 8c95f64; [base UX02](evidence/UX02/entrega.md), controles compartidos40/48px | Adopción de todos los consumidores y verificación final |
 | U04 | UX08; UX05/UX07 | Acreditado en alcance probado | Categorías6e09554 y recetas3beabea: errores asociados, resumen y foco, cero escrituras inválidas; entrada conserva resumen | Repetir recetas en pasos UX10 y base final |
 | U05 | UX04 | Acreditado en autónomo | 810f5d9; nueve rutas, 18 capturas y geometría; [revisión](evidence/reviews/oleada-03.md) | Conservar en base final; shell real excluido |
-| U06 | UX04; UX10 | Parcialmente acreditado | Cabeceras locales neutralizadas en810f5d9 | Selector sin estructura administrativa corresponde UX10 |
+| U06 | UX04; UX10 | Acreditado en autónomo/demo | 810f5d9 y81fc2fe; selector con título de tarea y sin banda administrativa duplicada | Conservar base final; shell excluido |
 | U07 | UX02; UX04 a UX09 | Parcialmente acreditado | 8c95f64 define roles; medidas de áreas conservadas en UX02 | Adopción tipográfica por área |
 | U08 | UX02; UX03 a UX09 | Parcialmente acreditado | 8c95f64 define geometría | Radios y espacios en consumidores finales |
 | U09 | UX09; UX02/06/07/08 | Parcialmente acreditado | 6318581 separa indicador y acción, punto+texto y elimina franjas; aportes previos y capturas oleada5 | Conservar adopción conjunta y revisar base final |
 | U10 | UX09; UX06/UX08/UX03 | Parcialmente acreditado | Catálogo, recetas y ofertas reducen eliminar; confirmación/restricciones conservadas; retirada de borrador explicada | Verificación conjunta final UX17 |
 | U11 | UX06 | Acreditado en oleada4 | 487340e; destinos visibles distintos, teclado y retorno; [revisión](evidence/reviews/ux06-wave04.md) | Conservar en base final |
 | U12 | UX12 | Abierto | D02 resuelta | MXN, dos decimales, sin cambiar datos almacenados |
-| U13 | UX08; UX10 | Parcialmente acreditado | 3beabea distingue vacío y consulta fallida, mantiene término y limpiar; administración y selección probadas | Repetir selector final UX10 |
+| U13 | UX08; UX10 | Acreditado en alcance probado | 3beabea y81fc2fe; vacío y consulta fallida distintos, término y limpiar con foco; selector final probado | Conservar base final |
 | U14 | UX07 | Acreditado en demo y HTTP controlado | bf7d6cb;404 sin formulario,503 recuperable y categorías independientes; [revisión](evidence/reviews/ux07-wave04.md) | Conservar en base final; no acredita servicio real |
 | U15 | UX11; UX10 | Abierto | D04 adoptada | Escape, cancelar, navegación, atrás y recarga conservan política y recuperación |
-| U16 | UX10 | Abierto | Sin entrega | Selector orientado a la tarea |
+| U16 | UX10 | Acreditado en demo/HTTP | 81fc2fe; búsqueda y primer resultado sin cabecera administrativa, query/página conservadas | Conservar con UX11 y base final |
 | U17 | UX13 | Abierto | Sin entrega | Guardado en formulario largo, poca altura, zoom y teclado virtual |
 | U18 | UX13 | Abierto | Sin entrega | Éxito confirmado anunciado una vez en destino; incertidumbre sin falso éxito |
 | U19 | UX09; UX02/06/07/08 | Parcialmente acreditado | Matrices por viewport, módulo y formulario en UX06/07/08/09, controles48 en paneles y tabla por contenedor | Repetir composición final y demás consumidores UX17 |
@@ -37,7 +38,7 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U24 | UX15; UX04/06/09 | Abierto | Contrato de marcadores documentado en UX02 | Foco, retorno, títulos, anuncios y lector; shell real excluido |
 | U25 | UX16 | Abierto | Sin entrega | Cargas locales, demoras y conservación de datos |
 | U26 | UX03; conservación UX10/UX11 | Acreditado en oleada 2 | [Revisión UX03](evidence/reviews/oleada-02.md); 20 demo y 47 normales, fondo único y foco Cancelar | Conservar tras UX10/UX11 y repetir en base final |
-| U27 | UX10 | Abierto | Sin entrega | Opción, selección y creación en un diálogo |
+| U27 | UX10 | Acreditado en alcance probado | 81fc2fe; mismo nodo,1modal/fondo,0final, Escape local y foco; rechazo/incertidumbre/F5 y borradores | Conservar con UX11; físico y lector manual pendientes |
 | U28 | UX03; repetición UX10/UX17 | Parcialmente acreditado | Scroll visual bloqueado, restaura1626px y estilos; controles48px propios | Repetición con pasos finales de UX10; shell real excluido |
 
 ## Entornos y puertas

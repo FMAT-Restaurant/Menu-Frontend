@@ -1,0 +1,93 @@
+<testsuites id="" name="" tests="13" failures="0" skipped="0" errors="1" time="14.593223">
+<testsuite name="audit-closure-layout.spec.ts" timestamp="2026-10-25T06:24:42.876Z" hostname="chromium" tests="3" failures="0" skipped="0" time="8.164" errors="0">
+<testcase name="R05/R06: recipe fields and supply controls fit inside the dialog at all required sizes" classname="audit-closure-layout.spec.ts" time="4.105">
+</testcase>
+<testcase name="R05: populated recipe cards keep title and management actions inside 320px" classname="audit-closure-layout.spec.ts" time="0.78">
+</testcase>
+<testcase name="R06: nested recipe picker obeys 90% height, scrolls and returns focus at all required sizes" classname="audit-closure-layout.spec.ts" time="3.279">
+</testcase>
+</testsuite>
+<testsuite name="offer-form.spec.ts" timestamp="2026-10-25T06:24:42.876Z" hostname="chromium" tests="2" failures="0" skipped="0" time="2.399" errors="0">
+<testcase name="creates and deletes an offer updating catalog offerCount within cache TTL without page reload (O18)" classname="offer-form.spec.ts" time="1.552">
+</testcase>
+<testcase name="manages single-dialog Escape steps preserving option draft and restoring focus without losing composition (O19, O34)" classname="offer-form.spec.ts" time="0.847">
+</testcase>
+</testsuite>
+<testsuite name="operation-recovery.spec.ts" timestamp="2026-10-25T06:24:42.876Z" hostname="chromium" tests="5" failures="0" skipped="0" time="8.292" errors="1">
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › category creation recovery: uncertain POST, real browser reload (F5) restores dialog without POST, manual retry sends same Idempotency-Key and recovers category" classname="operation-recovery.spec.ts" time="1.189">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › nested recipe creation recovery in offer form: uncertain POST, reload restores parent and nested picker, retry recovers recipe and assigns it to option" classname="operation-recovery.spec.ts" time="3.057">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|operation-recovery-Operati-37223-pe-and-assigns-it-to-option-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|operation-recovery-Operati-37223-pe-and-assigns-it-to-option-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="locator.fill: Error: strict mode violation: getByRole(&apos;dialog&apos;, { name: &apos;Nueva receta&apos; }).getByLabel(&apos;Nombre&apos;) resolved to 2 elements:" type="Error">
+<![CDATA[  [chromium] › operation-recovery.spec.ts:101:3 › Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › nested recipe creation recovery in offer form: uncertain POST, reload restores parent and nested picker, retry recovers recipe and assigns it to option 
+
+    Error: locator.fill: Error: strict mode violation: getByRole('dialog', { name: 'Nueva receta' }).getByLabel('Nombre') resolved to 2 elements:
+        1) <input type="text" value="Papas Rústicas" id="option-display-name" placeholder="Ej. Coca-Cola o Papas a la francesa"/> aka getByPlaceholder('Ej. Coca-Cola o Papas a la')
+        2) <input value="" required="" maxlength="255" id="recipe-name" aria-invalid="false" placeholder="Ej. Hamburguesa Hawaiana"/> aka getByRole('textbox', { name: 'Nombre' })
+
+    Call log:
+      - waiting for getByRole('dialog', { name: 'Nueva receta' }).getByLabel('Nombre')
+
+
+      192 |     await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
+      193 |
+    > 194 |     await recipeDialog.getByLabel("Nombre").fill("Papas al Horno");
+          |                                             ^
+      195 |     await recipeDialog.getByLabel("Descripción").fill("Al romero y sal marina");
+      196 |     await recipeDialog.getByLabel("Instrucciones").fill("Hornear 30 minutos a 200C");
+      197 |     await recipeDialog.getByLabel("Insumo 1", { exact: true }).selectOption("inv-papas");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\operation-recovery.spec.ts:194:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\operation-recovery-Operati-37223-pe-and-assigns-it-to-option-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\operation-recovery-Operati-37223-pe-and-assigns-it-to-option-chromium\error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › entry creation recovery: two-stage flow with image upload and entry create across real reload (F5)" classname="operation-recovery.spec.ts" time="1.542">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer creation recovery: uncertain POST, real browser reload (F5) restores form without POST, manual retry sends same Idempotency-Key (A01, A08)" classname="operation-recovery.spec.ts" time="1.309">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer update recovery: uncertain PATCH, real browser reload (F5) restores form with opening If-Match, manual retry sends same Idempotency-Key and If-Match (A01, A08)" classname="operation-recovery.spec.ts" time="1.195">
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-10.spec.ts" timestamp="2026-10-25T06:24:42.876Z" hostname="chromium" tests="3" failures="0" skipped="0" time="4.259" errors="0">
+<testcase name="UX10 creation HTTP 422 preserves option and controls manual recovery in one modal" classname="ux-ui-10.spec.ts" time="1.294">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-1334b-anual-recovery-in-one-modal-chromium\attachments\rejected-dff9f33abf08ed6ba45af015a5c3aba03ef27851.png]]
+
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-1334b-anual-recovery-in-one-modal-chromium\attachments\http-contract-0fe2472bf071b68a99ea1e1573abf21cbc25274e.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX10 creation HTTP 503 preserves option and controls manual recovery in one modal" classname="ux-ui-10.spec.ts" time="1.222">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-a7ffe-anual-recovery-in-one-modal-chromium\attachments\rejected-1f258d97fa5dc4a30a746fd6b575a248e90d7588.png]]
+
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-a7ffe-anual-recovery-in-one-modal-chromium\attachments\http-contract-5f8d6d5efb29120e85839fb2142be8eed89a7469.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX10 pending recipe keeps one modal through repeated Escape after submit disables its trigger" classname="ux-ui-10.spec.ts" time="1.743">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-0-5eb659b301c1094e9092d414aeef00c11779511b.json]]
+
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-1-5eb659b301c1094e9092d414aeef00c11779511b.json]]
+
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-7aaf48b8e1575016f39fccaeb6f7e50b4bb1847f.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

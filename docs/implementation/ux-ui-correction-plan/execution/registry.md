@@ -1,7 +1,7 @@
 # Registro de ejecución UX/UI
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
-Estado actual: reanudado por el usuario con "Continua con el trabajo". UX08 y UX09 integradas en3beabea y6318581. Pasan38 demo,52 HTTP sobre preview, tipos/build/lint y focalizadas44/96. UX10 queda habilitado. Los checkpoints y las pausas siguientes son históricos.
+Estado actual: UX10 integrado en81fc2fe. Pasan42 demo,55 HTTP sobre preview,121 focalizadas y tipos/build/lint. UX11 queda habilitado; UX12 a UX17 pendientes. Los checkpoints y las pausas siguientes son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
 Checkpoint posterior de oleada4: [checkpoint-ux07.md](checkpoint-ux07.md). UX05 a UX07 están integradas y todos los ejecutores terminaron. UX08 a UX17 no se han iniciado.
@@ -34,8 +34,8 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | bf7d6cb | Liberada | Integrada | U14 acreditado; 75 focalizadas, 3 demo y 3 HTTP | UX11/UX13 conservan sus propios pendientes |
 | UX08 | `/root/ux08_recipes`, recetas; root integra | 3beabea | Liberada | Integrada | U04 acreditado con UX05; U13 y aportes;44 focalizadas y3 demo | Repetir selección y validación en UX10 |
 | UX09 | `/root/ux09_offers`, ofertas; root integra | 6318581 | Liberada | Integrada | U02/U21/U23 acreditados en demo; U09/U10/U19 aportes conjuntos;96 focalizadas,3 demo,U01 repetido | Conservar UX10/UX12/UX17; tacto físico pendiente |
-| UX10 | `/root/ux10_flow`, flujo de opción/receta | db2defc, UX08/09 integradas | OfferFormPage.tsx, OptionModal.tsx, RecipePage.tsx, RecipeFormDialog.tsx, nuevos Session/Content/Selector, estilos de ofertas/recetas y sus tests consumidores; e2e/offer-form.spec.ts, operation-recovery.spec.ts y ux-ui-10*; evidence/UX10 | En ejecución | U16/U27, U06/U13/U26/U28 y recuperación | Root conserva BASE/config/registro/build/navegador; UX11 sólo lectura |
-| UX11 | `/root/ux11_guard`, preparación de lectura | UX10 todavía pendiente | Sólo evidence/UX11/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U15 | Revalidar router y protección sobre UX10 integrado antes de implementar |
+| UX10 | `/root/ux10_finish`, continuación; root integra | 81fc2fe | Liberada | Integrada | U16/U27 y U06/U13 acreditados en demo/HTTP;121 focalizadas,42 demo,55 HTTP | UX11 conserva sesiones y Escape local; UX17 repite base final |
+| UX11 | `/root/ux11_execute`, actualización de lectura tras interrupción | UX10 bajo verificación final | Sólo evidence/UX11/preparation-refresh.md; ninguna edición de aplicación autorizada | Pendiente | U15 | Revalidar router y protección sobre UX10 integrado antes de implementar |
 | UX12 | `/root/ux09_offers`, preparación de lectura | UX11/D02 resuelta | Sólo evidence/UX12/preparation.md | Pendiente | U12 | Implementar sólo tras UX11; no editar ofertas durante UX10 |
 | UX13 | `/root/ux08_recipes`, preparación de lectura | UX11; turno libre UX12 | Sólo evidence/UX13/preparation.md | Pendiente | U17/U18 | Guardado y feedback; sin edición de aplicación antes de desbloqueo |
 | UX14 | Por asignar | UX13/D03 y D05 resueltas | Ninguna activa | Pendiente | U20 | Aplicar rondas de selección y ayuda10MiB |
@@ -45,6 +45,8 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 
 ## Recursos
 
+Tras la interrupción del25 de octubre, list_agents sólo mostraba root y la inspección de procesos del repositorio estaba vacía. UX10 continúa desde los archivos preservados con `/root/ux10_finish`; `/root/ux10_review` revisa sólo fuente, sin escrituras ni ejecuciones. Las preparaciones UX11/12/13 quedaron guardadas. Root mantiene navegador y salidas compartidas.
+
 - Capacidad: cuatro agentes incluido root. Dos ejecutores de oleada5 poseen recetas y ofertas respectivamente. Root conserva registro, BASE, configuración común, build, cobertura, test-results, puertos4173/5174 y navegador. No se permiten ediciones compartidas ni E2E simultáneos sobre las mismas salidas.
 - Root coordina E2E, `test-results`, `playwright-report`, puertos 5174 y 4173 y sus contextos. Demo escalada sesión 86947 terminó con 2 pruebas aprobadas. Intento sandbox 74998 se detuvo tras comprobar Vite vivo sin puerto; no se presenta como resultado de tests. Producción sesión 12292 terminó con 46 pruebas aprobadas en 17,9 s. Los casos HTTP usan fixtures de las pruebas, no acreditan servicios reales.
 - Docker 29.9.2 disponible mediante ejecución autorizada fuera del sandbox. Proyecto Compose aislado previsto `menu-ux-ui-baseline`, sin contenedores previos en ese proyecto. No detener contenedores ajenos.
@@ -52,6 +54,8 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 - Los agentes escriben su evidencia individual, nunca este registro ni `audit/`. Nuevos archivos E2E se incorporarán expresamente a la selección demo y se comprobarán con `--list`.
 
 ## Revisión y continuidad
+
+Oleada6 integrada en `81fc2fe`: [revisión](evidence/reviews/oleada-06.md). Pasan121 focalizadas, tipos/build/lint global y42 demo en1,0min,55 HTTP sobre preview en38,8s. La revisión encontró y corrigió pérdida de receta retenida al guardar opción y un cierre nativo no cancelable durante Escape. Se conservan sus negativos, eventos y positivos. Los tests históricos de tres capas se adaptaron antes de integrar, con foco, borradores, F5, claves/payload y bloqueo pendientes intactos. Se libera UX10 y se habilita UX11.
 
 Oleada5 integrada: UX08 `3beabea`, UX09 `6318581`; [revisión conjunta](evidence/reviews/oleada-05.md). Pasan38/38 demo en1,8min,52/52 HTTP sobre preview en45,4s, build/tipos y lint globales. Focalizadas44 recetas y96 ofertas. Se corrigieron dos fallos visuales reales sin relajar las aserciones: baseline inline en imagen y pérdida del nombre compartido del contenedor de receta. Evidencia negativa y positiva en evidence/resume-ux08. Root inspeccionó capturas y medidas. Se liberan ambas reservas; UX10 debe conservar el controlador de receta al volver entre pasos. UX11 sólo tiene preparación de lectura.
 
@@ -72,4 +76,3 @@ Oleada4 integrada: [revisión conjunta](evidence/reviews/oleada-04.md), [revisi�
 - La primera ejecución Compose heredó puerto 5173 del entorno, mientras las 46 pruebas normales usaron preview en 4173. Ese resultado demuestra preview de producción, no el contenedor. Root repitió la suite con FRONTEND_PORT=4173 y la imagen inicial sin reconstruir sobre ediciones parciales. Logs separados `compose-4173-*`. Se investigan diferencias contractuales y recuperación como condiciones de línea base, sin atribuirlas a UX01/UX02.
 - Repetición Compose4173 finalizada: 37 pruebas pasan y 9 fallan en 41,6 s; JUnit y logs conservados. Contenedor y red propios detenidos/eliminados. No se modificaron tests para ocultar estos fallos. La preparación UX00 admite fallos previos documentados y sigue habilitando trabajo independiente cuando el alcance quede confirmado.
 - Contraste controlado sobre la misma imagen inicial, puerto 4173 y API_BASE_URL vacío únicamente en el proceso de prueba: 46 pruebas aprobadas. La configuración anterior usaba API absoluta de otro origen, comprobado sin registrar su valor. La diferencia explica ETag no expuesto por los mocks cross-origin; no se cambia el contrato productivo ni las pruebas para ocultarla. Logs `compose-same-origin-*`; proyecto propio detenido al terminar.
-

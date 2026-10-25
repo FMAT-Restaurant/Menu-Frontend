@@ -1,0 +1,150 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts e2e/ux-ui-10.demo.spec.ts e2e/ux-ui-03.demo.spec.ts e2e/ux-ui-08.demo.spec.ts --workers=2
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:15212) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 13 tests using 2 workers
+
+(node:12948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:25060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  2 [chromium] › e2e\ux-ui-03.demo.spec.ts:46:3 › inactive offer: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session (9.0s)
+  ok  1 [chromium] › e2e\ux-ui-03.demo.spec.ts:46:3 › archived entry: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session (9.0s)
+  ok  3 [chromium] › e2e\ux-ui-03.demo.spec.ts:46:3 › recipe: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session (1.8s)
+  ok  4 [chromium] › e2e\ux-ui-03.demo.spec.ts:88:1 › narrow forms in a wide module use 48px controls and scroll internally while the document stays fixed (2.2s)
+  ok  5 [chromium] › e2e\ux-ui-03.demo.spec.ts:124:1 › nested existing recipe flow shares its lock and only its top native backdrop is colored (1.8s)
+  ok  6 [chromium] › e2e\ux-ui-03.demo.spec.ts:153:3 › touch emulation › a touch gesture on the backdrop leaves the long catalog in place (1.3s)
+  ok  7 [chromium] › e2e\ux-ui-08.demo.spec.ts:24:3 › UX08 management keeps unmatched query and restores its three recipes (1.3s)
+  ok  8 [chromium] › e2e\ux-ui-08.demo.spec.ts:24:3 › UX08 selection keeps unmatched query and restores its three recipes (1.3s)
+  ok  9 [chromium] › e2e\ux-ui-08.demo.spec.ts:46:1 › UX08 validates locally with summary links and adapts supplies to actual module width (2.7s)
+  x  10 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px (30.2s)
+(node:13676) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  11 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 1024px (30.2s)
+(node:21280) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  12 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 600px (30.2s)
+  x  13 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px (30.2s)
+
+
+  1) [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Elegir receta', exact: true })
+
+
+      41 |     const node = await dialog.elementHandle();
+      42 |     await page.getByLabel("Nombre mostrado (opcional)").fill("Mi opción conservada");
+    > 43 |     await page.getByRole("button", { name: "Elegir receta", exact: true }).click();
+         |                                                                            ^
+      44 |     const search = page.getByLabel("Buscar recetas", { exact: true });
+      45 |     await expect(search).toBeFocused();
+      46 |     await search.fill("sin coincidencias UX10");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-10.demo.spec.ts:43:76
+
+    Error Context: test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-10.demo-UX10-one-mod-3604e--and-option-drafts-at-390px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 1024px 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Elegir receta', exact: true })
+
+
+      41 |     const node = await dialog.elementHandle();
+      42 |     await page.getByLabel("Nombre mostrado (opcional)").fill("Mi opción conservada");
+    > 43 |     await page.getByRole("button", { name: "Elegir receta", exact: true }).click();
+         |                                                                            ^
+      44 |     const search = page.getByLabel("Buscar recetas", { exact: true });
+      45 |     await expect(search).toBeFocused();
+      46 |     await search.fill("sin coincidencias UX10");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-10.demo.spec.ts:43:76
+
+    Error Context: test-results\ux-ui-10.demo-UX10-one-mod-6ecd9-and-option-drafts-at-1024px-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-6ecd9-and-option-drafts-at-1024px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-10.demo-UX10-one-mod-6ecd9-and-option-drafts-at-1024px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 600px 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Elegir receta', exact: true })
+
+
+      41 |     const node = await dialog.elementHandle();
+      42 |     await page.getByLabel("Nombre mostrado (opcional)").fill("Mi opción conservada");
+    > 43 |     await page.getByRole("button", { name: "Elegir receta", exact: true }).click();
+         |                                                                            ^
+      44 |     const search = page.getByLabel("Buscar recetas", { exact: true });
+      45 |     await expect(search).toBeFocused();
+      46 |     await search.fill("sin coincidencias UX10");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-10.demo.spec.ts:43:76
+
+    Error Context: test-results\ux-ui-10.demo-UX10-one-mod-cd60c--and-option-drafts-at-600px-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-cd60c--and-option-drafts-at-600px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-10.demo-UX10-one-mod-cd60c--and-option-drafts-at-600px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Elegir receta', exact: true })
+
+
+      41 |     const node = await dialog.elementHandle();
+      42 |     await page.getByLabel("Nombre mostrado (opcional)").fill("Mi opción conservada");
+    > 43 |     await page.getByRole("button", { name: "Elegir receta", exact: true }).click();
+         |                                                                            ^
+      44 |     const search = page.getByLabel("Buscar recetas", { exact: true });
+      45 |     await expect(search).toBeFocused();
+      46 |     await search.fill("sin coincidencias UX10");
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-10.demo.spec.ts:43:76
+
+    Error Context: test-results\ux-ui-10.demo-UX10-one-mod-9b8ab--and-option-drafts-at-740px-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-9b8ab--and-option-drafts-at-740px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-10.demo-UX10-one-mod-9b8ab--and-option-drafts-at-740px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px 
+    [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 1024px 
+    [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 600px 
+    [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px 
+  9 passed (1.4m)
