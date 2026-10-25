@@ -99,6 +99,8 @@ export interface PendingOperationStorageAdapter {
     scopeOrKey: OperationFlowScope | string,
   ): Promise<PendingOperationChainRecord<TDraft> | null>;
   deleteRecord(scopeOrKey: OperationFlowScope | string): Promise<void>;
+  /** Atomically remove only this confirmed, unchanged final attempt. */
+  deleteRecordIfAttemptMatches?(storageKey: string, attemptId: string): Promise<boolean>;
   listByTab(tabId: string): Promise<PendingOperationChainRecord[]>;
 }
 

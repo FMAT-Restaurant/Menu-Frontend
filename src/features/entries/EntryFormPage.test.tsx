@@ -1091,3 +1091,27 @@ test("onSaved failure after successful creation does not mark write uncertain or
   fireEvent.submit(document.querySelector("form")!);
   expect(api.createEntry).toHaveBeenCalledTimes(1);
 });
+
+test("a confirmed creation survives reload after navigation failure and never restores a new POST", async () => {
+  const api = repository();
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+  const onSaved = jest.fn().mockRejectedValue(new Error("Navigation failed"));
+  const view = renderPage(api, "/entries/new", undefined, storage, onSaved);
+  await chooseValidImage(); fillIdentity();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+  await screen.findByRole("button", { name: "Volver al listado" });
+  expect(onSaved).toHaveBeenCalledTimes(1);
+  const confirmed = await storage.getRecord(buildEntryCreateScope());
+  expect(confirmed?.confirmedResult).toMatchObject({ id: entry.id });
+  expect(confirmed?.stages.at(-1)?.status).toBe("succeeded");
+  view.unmount();
+  renderPage(api, "/entries/new", undefined, storage, onSaved);
+  await screen.findByRole("button", { name: "Volver al listado" });
+  fireEvent.submit(document.querySelector("form")!);
+  expect(api.createEntry).toHaveBeenCalledTimes(1);
+  expect(onSaved).toHaveBeenCalledTimes(1);
+  expect(screen.getByLabelText("Nombre comercial")).toBeDisabled();
+  expect(screen.queryByText(/El servidor pudo haber recibido/)).not.toBeInTheDocument();
+  expect((await storage.getRecord(buildEntryCreateScope()))?.stages.at(-1)?.idempotencyKey).toBe(confirmed?.stages.at(-1)?.idempotencyKey);
+});

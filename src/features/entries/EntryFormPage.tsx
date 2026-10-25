@@ -1,3 +1,5 @@
+import { receiptState, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { useEditGuard } from "../../shared/editGuard";
 import { useCallback, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -25,16 +27,6 @@ function safeReturnPath(state: unknown) {
 }
 
 type Model = ReturnType<typeof useEntryForm>;
-
-function revealFocusedControl(control: HTMLElement, footer: HTMLElement | null) {
-  if (!footer || footer.contains(control)) return;
-  const actions = footer.getBoundingClientRect();
-  if (!actions.height) return;
-  const bounds = control.getBoundingClientRect();
-  const offset = bounds.bottom - actions.top + 12;
-  // A resized textarea or long summary may exceed the available height: keep its start readable.
-  if (offset > 0) window.scrollBy({ top: Math.min(offset, bounds.top - 12), behavior: "instant" });
-}
 
 function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolean }>) {
   const archived = model.entry?.status === "ARCHIVED";
@@ -76,7 +68,7 @@ export type EntryFormRepository = Pick<
 export interface EntryFormPageProps {
   repository: EntryFormRepository;
   storage?: PendingOperationStorageAdapter;
-  onSaved?: () => Promise<void>;
+  onSaved?: (receipt: LocalSaveReceipt) => Promise<void>;
 }
 
 function EntryFormEditor({
@@ -84,28 +76,32 @@ function EntryFormEditor({
   entryId,
   returnTo,
   storage,
+  returnState,
   onSaved: customOnSaved,
 }: Readonly<{
   repository: EntryFormRepository;
   entryId?: string;
   returnTo: string;
+  returnState: unknown;
   storage?: PendingOperationStorageAdapter;
-  onSaved?: () => Promise<void>;
+  onSaved?: (receipt: LocalSaveReceipt) => Promise<void>;
 }>) {
   const navigate = useNavigate();
 
-  const defaultOnSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
+  const defaultOnSaved = useCallback(async (receipt: LocalSaveReceipt) => { await navigate(returnTo, { replace: true, state: receiptState(returnState, receipt) }); }, [navigate, returnTo, returnState]);
   const model = useEntryForm(repository, entryId, customOnSaved ?? defaultOnSaved, storage);
   const guard = useEditGuard({ get dirty() { return model.dirty; }, get blocked() { return model.exitBlocked; } }, model.abandon);
   const editing = model.editing;
   const summary = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLElement>(null);
+  const form = useRef<HTMLFormElement>(null);
+  const actionLayout = useFormActionsLayout(form, actions);
   const busy = model.stage !== "idle";
-  const disabled = busy || !model.editingReady;
+  const disabled = busy || model.saveSucceeded || !model.editingReady;
   const conflict = editing && model.failure?.kind === "conflict";
   const missing = editing && model.entryLoadFailure?.kind === "notFound";
   const catalogReturnTo = returnTo === "/" || returnTo.startsWith("/?") ? returnTo : "/";
-  const saveDisabled = disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
+  const saveDisabled = !model.recoveryReady || disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
   let saveLabel = progressLabels[model.stage];
   if (editing && !busy) saveLabel = "Guardar cambios";
 
@@ -124,9 +120,9 @@ function EntryFormEditor({
         <span className="entry-missing__icon"><Icon name="image" /></span>
         <p>La entrada solicitada ya no existe.</p>
         <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
-      </section> : <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
+      </section> : <form ref={form} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
         const control = event.target;
-        requestAnimationFrame(() => { if (document.activeElement === control) revealFocusedControl(control, actions.current); });
+        requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actions.current); });
       }}>
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
         {model.entryLoading && <output className="feedback" aria-live="polite">Cargando la entrada…</output>}
@@ -139,7 +135,7 @@ function EntryFormEditor({
           </div>
           <aside className="entry-form__secondary">
             <EntryImageField file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
-            {editing && <EntryStatusField model={model} busy={busy} />}
+            {editing && <EntryStatusField model={model} busy={busy || model.saveSucceeded} />}
           </aside>
         </div>
         <footer ref={actions} className="entry-form__actions">
@@ -154,5 +150,5 @@ function EntryFormEditor({
 export function EntryFormPage({ repository, storage, onSaved }: Readonly<EntryFormPageProps>) {
   const { entryId } = useParams();
   const location = useLocation();
-  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} storage={storage} onSaved={onSaved} />;
+  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} returnState={location.state} storage={storage} onSaved={onSaved} />;
 }

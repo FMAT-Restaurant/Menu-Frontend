@@ -60,6 +60,31 @@ function createSampleRecord(
 }
 
 describe("pendingOperationStorage (IndexedDB adapter)", () => {
+  test("a receipt deletes only its unchanged confirmed final attempt and preserves a replacement chain", async () => {
+    const harness = createControllableIndexedDbHarness();
+    const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+    const sample = createSampleRecord();
+    const confirmed = { ...sample, currentDraftVersion: sample.submittedDraftVersion, confirmedResult: { id: "entry-1" },
+      stages: sample.stages.map(stage => ({ ...stage, status: "succeeded" as const })) };
+    const finalId = confirmed.stages[1].attemptId;
+    await storage.saveRecord(confirmed);
+    expect(await storage.deleteRecordIfAttemptMatches!(sample.storageKey, "old-receipt")).toBe(false);
+    expect(await storage.getRecord(sample.storageKey)).not.toBeNull();
+    await storage.saveRecord({ ...confirmed, currentDraftVersion: confirmed.submittedDraftVersion + 1 });
+    expect(await storage.deleteRecordIfAttemptMatches!(sample.storageKey, finalId)).toBe(false);
+    await storage.saveRecord({ ...confirmed, stages: [...confirmed.stages.slice(0, 1), { ...confirmed.stages[1], status: "uncertain" }] });
+    expect(await storage.deleteRecordIfAttemptMatches!(sample.storageKey, finalId)).toBe(false);
+    await storage.saveRecord(confirmed);
+    harness.setFailureConfig({ abortNextDeleteAfterRequestSuccess: true });
+    await expect(storage.deleteRecordIfAttemptMatches!(sample.storageKey, finalId)).rejects.toMatchObject({ code: "IDB_TRANSACTION_FAILED" });
+    expect(await storage.getRecord(sample.storageKey)).not.toBeNull();
+    expect(await storage.deleteRecordIfAttemptMatches!(sample.storageKey, finalId)).toBe(true);
+    expect(await storage.getRecord(sample.storageKey)).toBeNull();
+    await storage.saveRecord({ ...confirmed, stages: [...confirmed.stages.slice(0, 1), { ...confirmed.stages[1], attemptId: "33333333-4444-4555-8666-777777777777" }] });
+    expect(await storage.deleteRecordIfAttemptMatches!(sample.storageKey, finalId)).toBe(false);
+    expect((await storage.getRecord(sample.storageKey))?.stages[1].attemptId).toBe("33333333-4444-4555-8666-777777777777");
+  });
+
   test("persists and recovers JSON, Blob, confirmedImageId, ifMatch, editableDraft, compositionIdentityMap and nestedContext only on transaction.oncomplete", async () => {
     const harness = createControllableIndexedDbHarness();
     const storage1 = createIndexedDbPendingOperationStorage({

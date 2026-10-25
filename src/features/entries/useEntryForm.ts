@@ -1,3 +1,4 @@
+import { type LocalSaveReceipt, saveReceiptMessage } from "../../shared/localSaveReceipt";
 import { sameDraft } from "../../shared/editGuard";
 import { useCallback, useEffect, useRef, useState, type SubmitEvent } from "react";
 import type {
@@ -89,7 +90,7 @@ export type EntryFormRepository = Pick<
 export function useEntryForm(
   repository: EntryFormRepository,
   routeEntryId: string | undefined,
-  onSaved: () => Promise<void>,
+  onSaved: (receipt: LocalSaveReceipt) => Promise<void>,
   providedStorage?: PendingOperationStorageAdapter,
 ) {
   const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
@@ -116,6 +117,10 @@ export function useEntryForm(
   const mounted = useRef(true);
   const saving = useRef(false);
   const saveSucceeded = useRef(false);
+  const confirmedReceipt = useRef<LocalSaveReceipt | null>(null);
+  const [navigationFailed, setNavigationFailed] = useState(false);
+  const [recoveryReady, setRecoveryReady] = useState(Boolean(routeEntryId));
+  const [recoveryRetry, setRecoveryRetry] = useState(0);
   const userEdited = useRef(false);
   const validationRun = useRef(0);
   const validationPending = useRef(false);
@@ -205,12 +210,15 @@ export function useEntryForm(
   useEffect(() => {
     mounted.current = true;
 
-    if (!entryId) {
+    if (!routeEntryId) {
+      setRecoveryReady(false);
       const controller = getOrInitController();
       void controller
         .restoreFromStorage()
         .then((restored) => {
-          if (!mounted.current || controllerRef.current !== controller || !restored) return;
+          if (!mounted.current || controllerRef.current !== controller) return;
+          setRecoveryReady(true);
+          if (!restored) return;
           const currentStage = restored.stages[restored.currentStageIndex];
           if (!currentStage) return;
 
@@ -259,11 +267,18 @@ export function useEntryForm(
             loaded.current = true;
             setConfirmedEntryId(confirmed.id);
             resources.setEntry(confirmed);
+            if (restored.currentDraftVersion === restored.submittedDraftVersion) {
+              saveSucceeded.current = true;
+              confirmedReceipt.current = { receiptId: currentStage.idempotencyKey, entity: "entry", entityId: confirmed.id, label: confirmed.brandName, action: "created" };
+              setInfoNotice(saveReceiptMessage(confirmedReceipt.current));
+              setNavigationFailed(true);
+              return;
+            }
             setInfoNotice("La entrada ya fue creada. Conservamos el borrador posterior; revisa la versión actual antes de guardar los cambios.");
             if (!isStrongEntryVersion(confirmed.etag)) setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
           }
         })
-        .catch(() => {});
+        .catch(() => { if (mounted.current && controllerRef.current === controller) setFailure(entryFailure(new Error("No pudimos comprobar el envío anterior. Reintenta la recuperación antes de guardar."))); });
     }
 
     return () => {
@@ -274,11 +289,11 @@ export function useEntryForm(
       // A subsequent effect setup needs a live controller, including StrictMode.
       controllerRef.current = null;
     };
-  }, [routeEntryId]);
+  }, [routeEntryId, recoveryRetry]);
 
   useEffect(() => {
     const controller = controllerRef.current;
-    if (confirmedEntryId && controller?.getRecord()) {
+    if (!saveSucceeded.current && confirmedEntryId && controller?.getRecord()) {
       void controller.updateEditableDraft({ ...draft, imageFile: file });
     }
   }, [confirmedEntryId, draft, file]);
@@ -429,6 +444,30 @@ export function useEntryForm(
     }
   }
 
+  async function finishNavigation(receipt: LocalSaveReceipt) {
+    saveSucceeded.current = true;
+    confirmedReceipt.current = receipt;
+    setNavigationFailed(false);
+    setInfoNotice(saveReceiptMessage(receipt));
+    const controller = controllerRef.current;
+    const record = controller?.getRecord();
+    if (controller && record) {
+      // Flush already queued edits before detaching. Later effects cannot persist this terminal form.
+      await controller.updateEditableDraft(record.editableDraft);
+      controller.detachForReload();
+    }
+    try {
+      await onSaved(receipt);
+      if (record) {
+        if (storage.deleteRecordIfAttemptMatches) {
+          await storage.deleteRecordIfAttemptMatches(record.storageKey, record.stages[record.currentStageIndex].attemptId).catch(() => false);
+        } else if (mounted.current) setInfoNotice(`${saveReceiptMessage(receipt)} La limpieza segura del envío no está disponible; conservamos su confirmación.`);
+      }
+    } catch {
+      if (mounted.current) setNavigationFailed(true);
+    }
+  }
+
   async function save(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
@@ -446,6 +485,7 @@ export function useEntryForm(
       setFailureEpoch((value) => value + 1);
       return;
     }
+    if (!recoveryReady) return;
     saving.current = true;
     setFailure(null);
 
@@ -467,19 +507,13 @@ export function useEntryForm(
       }
       if (!mounted.current) return;
       saveSucceeded.current = true;
-      await controllerRef.current?.abandonFlow().catch(() => {});
-      if (!mounted.current) return;
       invalidateCatalogEntries(repository);
-        try {
-          await onSaved();
-        } catch {
-          // Failure of onSaved callback must not invalidate the successful write
-        }
+      await finishNavigation({ receiptId: crypto.randomUUID(), entity: "entry", entityId: entryId, label: draft.brandName.trim(), action: "updated" });
       return;
     }
 
     // Creation flow (idempotent, multi-stage controller)
-    let createdSuccessfully = false;
+    let createdReceipt: LocalSaveReceipt | null = null;
     try {
       lastRawErrorRef.current = null;
       const controller = getOrInitController();
@@ -521,7 +555,7 @@ export function useEntryForm(
           invalidateCatalogEntries(repository);
           return;
         }
-        createdSuccessfully = true;
+        if (result.result) createdReceipt = { receiptId: result.record.stages[result.record.currentStageIndex].idempotencyKey, entity: "entry", entityId: result.result.id, label: result.result.brandName, action: "created" };
       } else {
         const activeStage = controller.getCurrentAttempt();
         const attempted =
@@ -556,16 +590,9 @@ export function useEntryForm(
       if (mounted.current) setStage("idle");
     }
 
-    if (createdSuccessfully && mounted.current) {
-      saveSucceeded.current = true;
-      await controllerRef.current?.abandonFlow().catch(() => {});
-      if (!mounted.current) return;
+    if (createdReceipt && mounted.current) {
       invalidateCatalogEntries(repository);
-      try {
-        await onSaved();
-      } catch {
-        // Failure of onSaved callback must not invalidate the successful write or enable another creation
-      }
+      await finishNavigation(createdReceipt);
     }
   }
 
@@ -611,6 +638,10 @@ export function useEntryForm(
     get exitBlocked() { return !saveSucceeded.current && (saving.current || stage !== "idle" || uncertain !== "idle" || Boolean(controllerRef.current?.getCurrentAttempt()?.possibleWriteApplied && controllerRef.current.getCurrentAttempt()?.status !== "succeeded")); },
     editing: Boolean(entryId),
     infoNotice,
+    navigationFailed,
+    recoveryReady,
+    retryRecovery: () => setRecoveryRetry(value => value + 1),
+    finishNavigation: () => { if (confirmedReceipt.current) return finishNavigation(confirmedReceipt.current); },
     draft,
     file,
     imageError,

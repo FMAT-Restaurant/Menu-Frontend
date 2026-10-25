@@ -65,9 +65,11 @@ function UncertainSave({ model, editing, returnTo }: Readonly<Pick<Props, "model
 export function EntryFormFeedback({ model, editing, returnTo, summaryRef }: Readonly<Props>) {
   const reviewNeeded = editing && model.versionReady && (model.failure?.kind === "conflict" || model.uncertain === "persist");
   return <>
+    {model.navigationFailed && <p className="feedback" role="status">La entrada se guardó. No pudimos abrir el listado. <button type="button" onClick={() => { void model.finishNavigation(); }}>Volver al listado</button></p>}
     {model.infoNotice && <p className="feedback" role="status">{model.infoNotice}</p>}
     {model.failure && <div ref={summaryRef} className="feedback feedback--error entry-form__summary" role="alert" aria-label="Error al guardar entrada" tabIndex={-1}>
       <p>{model.failure.message}</p>
+      {!model.recoveryReady && <button type="button" onClick={model.retryRecovery}>Reintentar recuperación</button>}
       {model.failure.violations.length > 0 && <ul>{model.failure.violations.map((item, index) => <li key={`${item.field ?? "general"}-${index}`}>
         {item.message}
         {item.field && <button type="button" onClick={() => document.getElementById(`entry-${item.field}`)?.focus()}>Ir al campo</button>}

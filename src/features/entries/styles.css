@@ -91,8 +91,8 @@
   outline-offset: 2px;
 }
 
-.entry-form :is(input, textarea, button, select) {
-  scroll-margin-block: 24px 112px;
+:where(.menu-module[data-menu-module]) .entry-form :is(input, textarea, button, select) {
+  scroll-margin-block: 24px calc(var(--form-actions-height, 0px) + 24px);
 }
 
 .entry-form__muted {
@@ -501,10 +501,9 @@
   color: var(--muted);
 }
 
-.entry-form__actions {
-  position: sticky;
-  z-index: 5;
-  bottom: 0;
+:where(.menu-module[data-menu-module]) .entry-form__actions {
+  position: relative;
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -544,3 +543,5 @@
     white-space: normal;
   }
 }
+
+:where(.menu-module[data-menu-module]) .entry-form[data-actions-persistent="true"] .entry-form__actions { position: sticky; bottom: 0; z-index: 5; }

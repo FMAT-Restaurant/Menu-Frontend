@@ -641,6 +641,50 @@ export function createIndexedDbPendingOperationStorage(
       });
     },
 
+    async deleteRecordIfAttemptMatches(storageKey: string, attemptId: string): Promise<boolean> {
+      const db = await openDatabase();
+      return new Promise<boolean>((resolve, reject) => {
+        let deleted = false;
+        let checked = false;
+        let settled = false;
+        const fail = (error: unknown) => {
+          if (settled) return;
+          settled = true;
+          db.close();
+          reject(new PendingOperationStorageError("IDB_TRANSACTION_FAILED", "No pudimos retirar el envío confirmado.", error));
+        };
+        try {
+          const tx = db.transaction(storeName, "readwrite");
+          tx.onabort = () => fail(tx.error);
+          tx.onerror = () => fail(tx.error);
+          tx.oncomplete = () => {
+            if (settled) return;
+            if (!checked) { fail(new Error("La transacción terminó sin comprobar la identidad.")); return; }
+            settled = true;
+            db.close();
+            resolve(deleted);
+          };
+          const store = tx.objectStore(storeName);
+          const request = store.get(storageKey);
+          request.onerror = () => fail(request.error);
+          request.onsuccess = () => {
+            checked = true;
+            const record = request.result;
+            if (!isPendingOperationChainRecord(record) || record.storageKey !== storageKey ||
+              record.currentStageIndex !== record.stages.length - 1 ||
+              record.currentDraftVersion !== record.submittedDraftVersion || !record.confirmedResult) return;
+            const final = record.stages[record.currentStageIndex];
+            if (final.attemptId !== attemptId || final.status !== "succeeded") return;
+            const removal = store.delete(storageKey);
+            // Resolve only after transaction completion, including a possible abort.
+            checked = false;
+            removal.onerror = () => fail(removal.error);
+            removal.onsuccess = () => { checked = true; deleted = true; };
+          };
+        } catch (error) { fail(error); }
+      });
+    },
+
     async deleteRecord(scopeOrKey: OperationFlowScope | string): Promise<void> {
       const key = resolveKey(scopeOrKey);
       const db = await openDatabase();
@@ -1024,7 +1068,7 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
                     req.result = backingStore.get(key);
                     invokeHandler(req.onsuccess);
                     queueMicrotask(() => {
-                      invokeHandler(tx.oncomplete);
+                      if (stagedWrites.size === 0) invokeHandler(tx.oncomplete);
                     });
                   });
 

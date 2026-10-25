@@ -1,3 +1,4 @@
+import { useLocalSaveReceipt } from "../../shared/localSaveReceipt";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
@@ -214,6 +215,7 @@ function OffersResults({ initialLoading, result, offersLoading, first, last, ...
 export function OffersPage({ repository }: Readonly<{ repository: Repository }>) {
   const { entryId } = useParams();
   const location = useLocation();
+  const saveMessage = useLocalSaveReceipt("offer", entryId);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = selectedPage(searchParams.get("page"));
   const currentContext = `${entryId ?? ""}:${page}`;
@@ -654,6 +656,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           </div>
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
+        {saveMessage && <p className="feedback feedback--success" role="status">{saveMessage}</p>}
         <OffersFeedback
           loadError={loadError}
           entryErrorMessage={entryErrorMessage}

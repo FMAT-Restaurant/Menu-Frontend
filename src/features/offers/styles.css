@@ -966,3 +966,7 @@
 @container menu-dialog (width < 1200px) {
   .option-modal-dialog > * { --control-height: 48px; }
 }
+
+:where(.menu-module[data-menu-module]) .offer-form__actions { flex-wrap: wrap; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); background: var(--surface); }
+:where(.menu-module[data-menu-module]) .offer-form[data-actions-persistent="true"] .offer-form__actions { position: sticky; bottom: 0; z-index: 5; border-top: 1px solid var(--border); }
+:where(.menu-module[data-menu-module]) .offer-form :is(input, textarea, select, button, [tabindex]) { scroll-margin-block: 24px calc(var(--form-actions-height, 0px) + 24px); }

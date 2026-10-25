@@ -1,3 +1,5 @@
+import { receiptState, saveReceiptMessage, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { formatMoney } from "../../shared/formatMoney";
 import { isStrongEtag } from "../../application/entryVersion";
@@ -265,6 +267,11 @@ export function OfferFormPage({
 
   const baseDraft = useRef<OfferFormDraftState>({ presentationTag: "", basePrice: "", desiredStatus: "INACTIVE", slots: [] });
   const exitSucceeded = useRef(false);
+  const confirmedReceipt = useRef<LocalSaveReceipt | null>(null);
+  const [navigationFailed, setNavigationFailed] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const actionsRef = useRef<HTMLElement>(null);
+  const actionLayout = useFormActionsLayout(formRef, actionsRef);
   const [presentationTag, setPresentationTag] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [desiredStatus, setDesiredStatus] = useState<OfferStatus>("INACTIVE");
@@ -671,7 +678,7 @@ export function OfferFormPage({
         openingEtagRef.current = restored.ifMatch ?? undefined;
         if (currentStage.status === "succeeded" && restored.confirmedResult) {
           void handleConfirmedResult({ status: "succeeded", result: restored.confirmedResult as MenuOfferDetail,
-            record: restored, hasDraftChangesSinceSubmission: restored.currentDraftVersion > restored.submittedDraftVersion });
+            record: restored, hasDraftChangesSinceSubmission: restored.currentDraftVersion > restored.submittedDraftVersion }, true);
         }
         if (restored.confirmedImageId) {
           confirmedImageIdRef.current = restored.confirmedImageId;
@@ -700,7 +707,7 @@ export function OfferFormPage({
   useEffect(() => {
     const controller = controllerRef.current;
     if (!recoveryReady || !controller?.getRecord()) return;
-    void controller.updateEditableDraft(draftRef.current);
+    if (!exitSucceeded.current) void controller.updateEditableDraft(draftRef.current);
   }, [presentationTag, basePrice, desiredStatus, slots, selectedFile, recoveryReady]);
 
   const currentAttempt = controllerRef.current?.getCurrentAttempt() ?? null;
@@ -899,7 +906,30 @@ export function OfferFormPage({
     return mountedRef.current && controllerRef.current === controller;
   }
 
-  async function handleConfirmedResult(attemptResult: OperationExecutionResult<OfferFormDraftState, MenuOfferDetail>) {
+  async function finishNavigation(receipt: LocalSaveReceipt) {
+    exitSucceeded.current = true;
+    confirmedReceipt.current = receipt;
+    setNavigationFailed(false);
+    setSavedNotice(saveReceiptMessage(receipt));
+    const controller = controllerRef.current;
+    const record = controller?.getRecord();
+    if (controller && record) {
+      await controller.updateEditableDraft(record.editableDraft);
+      controller.detachForReload();
+    }
+    try {
+      await navigate(returnTo, { replace: true, state: receiptState({ ...location.state, returnTo: catalogReturnTo }, receipt) });
+      if (record) {
+        if (storage.deleteRecordIfAttemptMatches) {
+          await storage.deleteRecordIfAttemptMatches(record.storageKey, record.stages[record.currentStageIndex].attemptId).catch(() => false);
+        } else if (mountedRef.current) setSavedNotice(`${saveReceiptMessage(receipt)} La limpieza segura del envío no está disponible; conservamos su confirmación.`);
+      }
+    } catch {
+      if (mountedRef.current) setNavigationFailed(true);
+    }
+  }
+
+  async function handleConfirmedResult(attemptResult: OperationExecutionResult<OfferFormDraftState, MenuOfferDetail>, restoredOnly = false) {
     const controller = controllerRef.current;
     if (!controller || !isCurrentController(controller)) return;
     const result = attemptResult.result!;
@@ -936,10 +966,16 @@ export function OfferFormPage({
         setConflictNotice("No se recibió la versión de la oferta confirmada. Revisa su versión antes de guardar los cambios posteriores.");
       }
     } else {
-      await controller.abandonFlow().catch(() => {});
-      if (!isCurrentController(controller)) return;
       exitSucceeded.current = true;
-      await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
+      const receipt: LocalSaveReceipt = { receiptId: attemptResult.record.stages[attemptResult.record.currentStageIndex].idempotencyKey,
+        entity: "offer", entityId: result.id, entryId, label: result.presentationTag,
+        action: offerId ? "updated" : "created" };
+      if (restoredOnly) {
+        confirmedReceipt.current = receipt;
+        controller.detachForReload();
+        setSavedNotice(saveReceiptMessage(receipt));
+        setNavigationFailed(true);
+      } else await finishNavigation(receipt);
     }
   }
 
@@ -957,7 +993,7 @@ export function OfferFormPage({
   }
 
   async function executeSave(action: "submit" | "retry") {
-    if (isSubmittingRef.current || saving || !recoveryReady) return;
+    if (exitSucceeded.current || isSubmittingRef.current || saving || !recoveryReady) return;
     if (ambiguousResponse || conflictNotice) return;
     const controller = getOrInitController();
     const pending = controller.getCurrentAttempt();
@@ -1144,7 +1180,7 @@ export function OfferFormPage({
         )}
 
         {!loading && !loadError && (
-          <form className="offer-form" onSubmit={handleSaveOffer} aria-busy={saving} noValidate>
+          <form ref={formRef} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="offer-form" onFocusCapture={(event) => { const control = event.target; requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actionsRef.current); }); }} onSubmit={handleSaveOffer} aria-busy={saving} noValidate>
             {requiresNewOperation && !recoveryExpired && (
               <div className="feedback feedback--warning" role="status">
                 Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
@@ -1238,6 +1274,7 @@ export function OfferFormPage({
               </div>
             )}
 
+            {navigationFailed && <p className="feedback" role="status">La oferta se guardó. No pudimos abrir el listado. <button type="button" onClick={() => { if (confirmedReceipt.current) void finishNavigation(confirmedReceipt.current); }}>Volver al listado</button></p>}
             {savedNotice && <p className="feedback" role="status">{savedNotice}</p>}
             {formError && (
               <p className="feedback feedback--error" role="alert">
@@ -1261,7 +1298,7 @@ export function OfferFormPage({
               onDropImage={handleDropImage}
               imageError={imageError}
               imageValidating={imageValidating}
-              disabled={saving}
+              disabled={saving || exitSucceeded.current}
             />
 
             <CompositionEditor
@@ -1273,21 +1310,21 @@ export function OfferFormPage({
               onEditOption={handleOpenEditOption}
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
-              disabled={saving}
+              disabled={saving || exitSucceeded.current}
             />
 
-            <div className="offer-form__actions">
+            <footer ref={actionsRef} className="offer-form__actions">
               <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="button button--secondary">
                 Cancelar
               </Link>
               <button
                 type="submit"
                 className="button button--primary"
-                disabled={!recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
+                disabled={exitSucceeded.current || !recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
                 {saving ? "Guardando…" : "Guardar Oferta"}
               </button>
-            </div>
+            </footer>
           </form>
         )}
 
