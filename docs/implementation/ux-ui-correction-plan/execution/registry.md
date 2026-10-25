@@ -37,7 +37,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX10 | `/root/ux10_flow`, flujo de opción/receta | db2defc, UX08/09 integradas | OfferFormPage.tsx, OptionModal.tsx, RecipePage.tsx, RecipeFormDialog.tsx, nuevos Session/Content/Selector, estilos de ofertas/recetas y sus tests consumidores; e2e/offer-form.spec.ts, operation-recovery.spec.ts y ux-ui-10*; evidence/UX10 | En ejecución | U16/U27, U06/U13/U26/U28 y recuperación | Root conserva BASE/config/registro/build/navegador; UX11 sólo lectura |
 | UX11 | `/root/ux11_guard`, preparación de lectura | UX10 todavía pendiente | Sólo evidence/UX11/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U15 | Revalidar router y protección sobre UX10 integrado antes de implementar |
 | UX12 | `/root/ux09_offers`, preparación de lectura | UX11/D02 resuelta | Sólo evidence/UX12/preparation.md | Pendiente | U12 | Implementar sólo tras UX11; no editar ofertas durante UX10 |
-| UX13 | Por asignar | UX11; turno libre UX12 | Ninguna activa | Pendiente | U17/U18 | Guardado |
+| UX13 | `/root/ux08_recipes`, preparación de lectura | UX11; turno libre UX12 | Sólo evidence/UX13/preparation.md | Pendiente | U17/U18 | Guardado y feedback; sin edición de aplicación antes de desbloqueo |
 | UX14 | Por asignar | UX13/D03 y D05 resueltas | Ninguna activa | Pendiente | U20 | Aplicar rondas de selección y ayuda10MiB |
 | UX15 | Por asignar | UX13; contrato autónomo D01 | Ninguna activa | Pendiente | U24 | Foco/título/anuncios; shell real excluido |
 | UX16 | Por asignar | UX14/UX15 | Ninguna activa | Pendiente | U25 | Layout final |
