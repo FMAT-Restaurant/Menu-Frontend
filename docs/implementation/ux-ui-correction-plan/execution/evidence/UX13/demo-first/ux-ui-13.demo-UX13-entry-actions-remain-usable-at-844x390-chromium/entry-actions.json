@@ -1,0 +1,16 @@
+{
+  "persistent": "true",
+  "formHeight": "554",
+  "available": "390",
+  "footer": {
+    "top": 317,
+    "bottom": 390,
+    "height": 73
+  },
+  "active": {
+    "top": 330,
+    "bottom": 378
+  },
+  "submitCount": 1,
+  "overflow": false
+}

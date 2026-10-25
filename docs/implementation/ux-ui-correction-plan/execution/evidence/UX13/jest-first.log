@@ -1,0 +1,273 @@
+FAIL src/features/entries/EntryFormPage.test.tsx (6.088 s)
+  ● description, required image and pending validation block saving with a localizable error
+
+    Unable to find role="alert"
+
+    Ignored nodes: comments, script, style
+    <body
+      style=""
+    >
+      <div>
+        <div
+          class="app-shell entry-form-shell"
+        >
+          <main
+            class="menu-page menu-page--form entry-form-page"
+          >
+            <header
+              class="task-header entry-form-page__heading"
+            >
+              <a
+                aria-disabled="false"
+                class="back-link"
+                data-discover="true"
+                href="/"
+              >
+                ← Volver a entradas
+              </a>
+              <div
+                class="task-header__content"
+              >
+                <h1
+                  data-route-heading="true"
+                  tabindex="-1"
+                >
+                  Nueva entrada
+                </h1>
+                <p
+                  class="task-header__intro"
+                >
+                  Nombre, descripción, categorías e imagen de referencia.
+                </p>
+              </div>
+            </header>
+            <form
+              aria-busy="false"
+              class="entry-form"
+              data-actions-height="0"
+              data-actions-persistent="false"
+              data-available-height="768"
+              data-form-height="0"
+              novalidate=""
+              style="--form-actions-height: 0px;"
+            >
+              <div
+                class="entry-form__layout"
+              >
+                <div
+                  class="entry-form__primary"
+                >
+                  <section
+                    aria-labelledby="entry-identity-title"
+                    class="entry-form__identity"
+                  >
+                    <h2
+                      id="entry-identity-title"
+                    >
+                      Identidad de la entrada
+                    </h2>
+                    <div
+                      class="entry-form__field"
+                    >
+                      <label
+                        for="entry-brandName"
+                      >
+                        Nombre comercial
+                      </label>
+                      <input
+                        aria-describedby="entry-brandName-error"
+                        aria-invalid="false"
+                        autocomplete="off"
+                        id="entry-brandName"
+                        maxlength="255"
+                        required=""
+                        value="Entrada"
+                      />
+                      <p
+                        class="entry-form__error"
+                        id="entry-brandName-error"
+                      />
+                    </div>
+                    <div
+                      class="entry-form__field"
+                    >
+                      <label
+                        for="entry-description"
+                      >
+                        Descripción
+                      </label>
+                      <textarea
+                        aria-describedby="entry-description-error"
+                        aria-invalid="false"
+                        id="entry-description"
+                        required=""
+                        rows="3"
+                      />
+                      <p
+                        class="entry-form__error"
+                        id="entry-description-error"
+                      />
+                    </div>
+                  </section>
+                  <fieldset
+                    class="entry-category-selector"
+                  >
+                    <legend>
+                      Categorías
+                    </legend>
+                    <p
+                      class="entry-form__muted"
+                    >
+                      Puedes asignar varias o guardar sin clasificación.
+                    </p>
+                    <button
+                      aria-controls="entry-category-panel"
+                      aria-describedby="entry-categoryIds-error"
+                      aria-expanded="false"
+                      class="entry-category-selector__trigger"
+                      data-invalid="false"
+                      id="entry-categoryIds"
+                      type="button"
+                    >
+                      <span>
+                        Seleccionar categorías
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        class="entry-category-selector__chevron"
+                      />
+                    </button>
+                    <p
+                      class="entry-form__error"
+                      id="entry-categoryIds-error"
+                    />
+                  </fieldset>
+                </div>
+                <aside
+                  class="entry-form__secondary"
+                >
+                  <section
+                    aria-labelledby="entry-image-title"
+                    class="entry-image-field"
+                  >
+                    <h2
+                      id="entry-image-title"
+                    >
+                      Imagen de referencia
+                    </h2>
+                    <button
+                      aria-describedby="entry-image-help entry-image-error"
+                      aria-label="Seleccionar imagen"
+                      class="entry-image-field__zone"
+                      data-invalid="false"
+                      id="entry-image"
+                      type="button"
+                    >
+                      <span
+                        class="entry-image-field__preview"
+                      >
+                        <span
+                          class="entry-image-field__placeholder"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="menu-icon"
+                            fill="none"
+                            focusable="false"
+                            height="20"
+                            stroke="currentColor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.75"
+                            viewBox="0 0 24 24"
+                            width="20"
+                          >
+                            <rect
+                              height="18"
+                              rx="2"
+                              width="18"
+                              x="3"
+                              y="3"
+                            />
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="1.5"
+                            />
+                            <path
+                              d="m3 17 5-5 4 4 4-6 5 7"
+                            />
+                          </svg>
+                          <span>
+                            Selecciona una imagen de referencia
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        class="entry-image-field__action"
+                      >
+                        Seleccionar imagen
+                      </span>
+                    </button>
+                    <input
+                      accept="image/jpeg,image/png,image/webp"
+                      aria-describedby="entry-image-help entry-image-error"
+                      aria-invalid="false"
+                      aria-label="Archivo de imagen"
+                      class="entry-image-field__input"
+                      id="entry-image-file"
+                      tabindex="-1"
+                      type="file"
+                    />
+                    <p
+                      class="entry-form__muted"
+                      id="entry-image-help"
+                    >
+                      Imagen obligatoria para la nueva entrada.
+                    </p>
+                    <p
+                      class="entry-form__muted"
+                    >
+                      JPEG, PNG o WebP · hasta aprox. 10,49 MB y 4096 × 4096 px.
+                    </p>
+                    <p
+                      class="entry-form__error"
+                      id="entry-image-error"
+                    />
+                  </section>
+                </aside>
+              </div>
+              <footer
+                class="entry-form__actions"
+              >
+                <button
+                  class="button button--secondary"
+                  type="button"
+                >
+                  Cancelar
+                </button>
+                <button
+                  class="button button--primary"
+                  type="submit"
+                >
+                  Guardar entrada
+                </button>
+              </footer>
+            </form>
+          </main>
+        </div>
+      </div>
+    </body>
+
+
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/features/entries/EntryFormPage.test.tsx:1223:30)
+
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       1 failed, 132 passed, 133 total
+Snapshots:   0 total
+Time:        18.999 s
+Ran all test suites within paths "src/features/entries/EntryFormPage.test.tsx", "src/features/offers/OfferFormPage.test.tsx", "src/features/catalog/CatalogPage.test.tsx", "src/features/offers/OffersPage.test.tsx".

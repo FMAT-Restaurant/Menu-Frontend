@@ -37,7 +37,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX10 | `/root/ux10_finish`, continuación; root integra | 81fc2fe | Liberada | Integrada | U16/U27 y U06/U13 acreditados en demo/HTTP;121 focalizadas,42 demo,55 HTTP | UX11 conserva sesiones y Escape local; UX17 repite base final |
 | UX11 | `/root`, continuación del ejecutor tras límite de uso | a9408b8 | Liberada | Integrada | U15 y conservación U26/U27/U28;535 Jest,47 demo,55 HTTP | UX17 repite base final; shell excluido y validaciones manuales pendientes |
 | UX12 | `/root/ux12_money`, importes; root integra | 6f40514 | Liberada | Integrada | U12 acreditado según D02; U01 repetido;135 focalizadas,19 demo,7 HTTP nuevos y55 anteriores | UX17 repite base final; precisión y payload intactos |
-| UX13 | `/root/ux13_finish`, continuación del guardado y feedback local | bced147, UX11/UX12 integrados; cambios parciales preservados | EntryFormPage/useEntryForm/EntryFormFeedback y estilos, OfferFormPage/OffersPage y estilos, CatalogPage, nuevos localSaveReceipt/useFormActionsLayout y pruebas; eliminación por identidad en interfaz operationAttempt y pendingOperationStorage; e2e/ux-ui-13*; evidence/UX13 | En ejecución | U17/U18 | Ampliación CAS aprobada tras confirmar carrera get/delete; sin reescribir máquina; root conserva App/guard/config/registro/build/navegador |
+| UX13 | `/root/ux13_finish` y root, guardado y feedback local | UX11/UX12 integrados; implementación25c996b | Reserva liberada; consumidores, helpers, CAS y e2e/ux-ui-13 conservados | Integrado | U17/U18 | 7demo,62HTTP; revisión oleada9; checkpoint y parada solicitados |
 | UX14 | `/root/ux14_prepare`, preparación de lectura | UX13/D03 y D05 resueltas | Sólo evidence/UX14/preparation.md | Pendiente | U20 | Inventario de textos; ninguna edición de aplicación antes de UX13 |
 | UX15 | `/root/ux15_prepare`, preparación de lectura | UX13; contrato autónomo D01 | Sólo evidence/UX15/preparation.md | Pendiente | U24 | Contrato de foco/título/anuncios; no implementar antes de UX13; shell excluido |
 | UX16 | Por asignar | UX14/UX15 | Ninguna activa | Pendiente | U25 | Layout final |
@@ -54,6 +54,8 @@ Tras la interrupción del25 de octubre, list_agents sólo mostraba root y la ins
 - Los agentes escriben su evidencia individual, nunca este registro ni `audit/`. Nuevos archivos E2E se incorporarán expresamente a la selección demo y se comprobarán con `--list`.
 
 ## Revisión y continuidad
+
+Parada vigente del25 de octubre de2026 por solicitud expresa del usuario después de UX13. [Checkpoint UX13](checkpoint-ux13.md), implementación25c996b y [revisión oleada9](evidence/reviews/oleada-09.md). Pasan7demo y62HTTP sobre preview, build y verificaciones focalizadas. Todos los agentes concluyeron; no hay reservas de implementación ni servidores de prueba activos. UX14/UX15 sólo preparados; no iniciar siguientes tickets sin reanudación. El objetivo completo queda pausado.
 
 Oleada8 integrada en `6f40514`: [revisión](evidence/reviews/oleada-08.md). Formato MXN/es-MX con dos decimales en las tres superficies, sin redondear el dato. Pasan135 focalizadas,19 demo con U01,7 HTTP de revisión y las55 regresiones HTTP previas, tipos/build/lint. Se corrigió output con semántica de status y un fixture de imagen incompleto, conservando las garantías de recuperación y parser. La reserva se libera para UX13.
 

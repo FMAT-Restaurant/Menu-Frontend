@@ -1,5 +1,7 @@
 # Checkpoint seguro de UX/UI
 
+Checkpoint vigente: [UX13,25 de octubre de2026](checkpoint-ux13.md). El contenido siguiente conserva el checkpoint histórico de UX04. La implementación actual llega hasta UX13 y queda detenida a petición del usuario.
+
 Fecha:24 de octubre de2026. Detenido a petición del usuario tras terminar las tareas que ya estaban en ejecución. No se iniciará ninguna tarea siguiente sin reanudación del usuario.
 
 ## Referencias guardadas

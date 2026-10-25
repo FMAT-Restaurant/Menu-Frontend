@@ -1,5 +1,7 @@
 # Verificación de cierre UX/UI
 
+Estado vigente tras UX13: implementación `25c996b`,7/7 demo y62/62 HTTP sobre preview; [revisión oleada9](evidence/reviews/oleada-09.md). Checkpoint y parada solicitados por el usuario. UX14/UX15 sólo preparados; UX16/UX17 pendientes. Las referencias de estado anteriores conservadas debajo son históricas.
+
 Estado provisional. La implementación completa todavía no está acreditada. Este documento distingue la integración de tickets del resultado por hallazgo; UX17 completará la comprobación final sobre una misma base.
 Estado actual: UX12 integrado en6f40514, con135 focalizadas,19 demo,7 HTTP nuevos y55 regresiones anteriores aprobadas. UX13 a UX17 pendientes. Las referencias posteriores son históricas.
 Estado actual: UX11 integrado en a9408b8,535 Jest,47 demo,55 HTTP y tipos/build/lint aprobados. UX12 a UX17 pendientes. Las líneas históricas siguientes no sustituyen este estado.
@@ -30,8 +32,8 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U14 | UX07 | Acreditado en demo y HTTP controlado | bf7d6cb;404 sin formulario,503 recuperable y categorías independientes; [revisión](evidence/reviews/ux07-wave04.md) | Conservar en base final; no acredita servicio real |
 | U15 | UX11; UX10 | Acreditado en alcance autónomo probado | a9408b8; snapshots, salida intacta, seguir/descartar, router de datos, atrás/adelante y beforeunload; operaciones pendientes/inciertas y expiradas protegidas | Conservar base final UX17; dispositivo físico y lector manual pendientes |
 | U16 | UX10 | Acreditado en demo/HTTP | 81fc2fe; búsqueda y primer resultado sin cabecera administrativa, query/página conservadas | Conservar con UX11 y base final |
-| U17 | UX13 | Abierto | Sin entrega | Guardado en formulario largo, poca altura, zoom y teclado virtual |
-| U18 | UX13 | Abierto | Sin entrega | Éxito confirmado anunciado una vez en destino; incertidumbre sin falso éxito |
+| U17 | UX13 | Acreditado en alcance automatizado | 25c996b; pie por altura útil, foco/resumen/último grupo,7demo y V2 HTTP intacto | Conservar base final; teclado virtual físico manual pendiente |
+| U18 | UX13 | Acreditado en alcance probado | 25c996b; recibo local una vez, listado fallido separado, callback/F5 sin otra creación y CAS seguro | Conservar UX15/UX17; lector de pantalla manual pendiente |
 | U19 | UX09; UX02/06/07/08 | Parcialmente acreditado | Matrices por viewport, módulo y formulario en UX06/07/08/09, controles48 en paneles y tabla por contenedor | Repetir composición final y demás consumidores UX17 |
 | U20 | UX14 | Abierto | D03 y D05 resueltas | Rondas de selección, 10 MiB y restricciones operativas |
 | U21 | UX09 | Acreditado en oleada5 | 6318581 retira capacidades pendientes y conserva opciones de inventario existentes, sin operaciones nuevas | Conservar en base final |

@@ -1,0 +1,106 @@
+{
+  "diagnostics": {
+    "scrollY": 1292,
+    "viewport": 568,
+    "footerPosition": "static",
+    "footerBottom": "auto",
+    "formTop": -1103,
+    "formBottom": 496,
+    "ancestors": [
+      {
+        "tag": "ARTICLE",
+        "classes": "slot-card slot-card--active",
+        "overflow": "visible",
+        "height": 404,
+        "scrollHeight": 404,
+        "top": -132
+      },
+      {
+        "tag": "DIV",
+        "classes": "composition-editor__slots-container",
+        "overflow": "visible",
+        "height": 526,
+        "scrollHeight": 526,
+        "top": -144
+      },
+      {
+        "tag": "SECTION",
+        "classes": "composition-editor",
+        "overflow": "visible",
+        "height": 665,
+        "scrollHeight": 665,
+        "top": -268
+      },
+      {
+        "tag": "FORM",
+        "classes": "offer-form",
+        "overflow": "visible",
+        "height": 1599,
+        "scrollHeight": 1599,
+        "top": -1103
+      },
+      {
+        "tag": "MAIN",
+        "classes": "menu-page offer-form-page",
+        "overflow": "visible",
+        "height": 1860,
+        "scrollHeight": 1860,
+        "top": -1292
+      },
+      {
+        "tag": "DIV",
+        "classes": "app-shell offer-form-view",
+        "overflow": "visible",
+        "height": 1860,
+        "scrollHeight": 1860,
+        "top": -1292
+      },
+      {
+        "tag": "DIV",
+        "classes": "menu-module",
+        "overflow": "visible",
+        "height": 1860,
+        "scrollHeight": 1860,
+        "top": -1292
+      },
+      {
+        "tag": "DIV",
+        "classes": "",
+        "overflow": "visible",
+        "height": 1860,
+        "scrollHeight": 1860,
+        "top": -1292
+      },
+      {
+        "tag": "BODY",
+        "classes": "",
+        "overflow": "visible",
+        "height": 1860,
+        "scrollHeight": 1860,
+        "top": -1292
+      },
+      {
+        "tag": "HTML",
+        "classes": "",
+        "overflow": "visible",
+        "height": 568,
+        "scrollHeight": 1860,
+        "top": -1292
+      }
+    ]
+  },
+  "persistent": "true",
+  "formHeight": "1599",
+  "available": "568",
+  "footer": {
+    "top": 200,
+    "bottom": 273,
+    "height": 73
+  },
+  "active": {
+    "top": 290,
+    "bottom": 370
+  },
+  "submitCount": 1,
+  "overflow": false
+}
