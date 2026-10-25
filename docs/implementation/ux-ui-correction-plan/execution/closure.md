@@ -1,6 +1,7 @@
 # Verificación de cierre UX/UI
 
 Estado provisional. La implementación completa todavía no está acreditada. Este documento distingue la integración de tickets del resultado por hallazgo; UX17 completará la comprobación final sobre una misma base.
+Estado actual: UX12 integrado en6f40514, con135 focalizadas,19 demo,7 HTTP nuevos y55 regresiones anteriores aprobadas. UX13 a UX17 pendientes. Las referencias posteriores son históricas.
 Estado actual: UX11 integrado en a9408b8,535 Jest,47 demo,55 HTTP y tipos/build/lint aprobados. UX12 a UX17 pendientes. Las líneas históricas siguientes no sustituyen este estado.
 Estado actual: UX10 integrado en81fc2fe con42 demo,55 HTTP y121 focalizadas aprobadas. UX11 a UX17 siguen pendientes; las referencias posteriores a checkpoints son históricas.
 Reanudación actual: UX08 y UX09 integradas en3beabea y6318581. Los párrafos de parada siguientes son históricos. Pasan38 demo y52 HTTP sobre preview. UX10 a UX17 siguen pendientes.
@@ -24,7 +25,7 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U09 | UX09; UX02/06/07/08 | Parcialmente acreditado | 6318581 separa indicador y acción, punto+texto y elimina franjas; aportes previos y capturas oleada5 | Conservar adopción conjunta y revisar base final |
 | U10 | UX09; UX06/UX08/UX03 | Parcialmente acreditado | Catálogo, recetas y ofertas reducen eliminar; confirmación/restricciones conservadas; retirada de borrador explicada | Verificación conjunta final UX17 |
 | U11 | UX06 | Acreditado en oleada4 | 487340e; destinos visibles distintos, teclado y retorno; [revisión](evidence/reviews/ux06-wave04.md) | Conservar en base final |
-| U12 | UX12 | Abierto | D02 resuelta | MXN, dos decimales, sin cambiar datos almacenados |
+| U12 | UX12 | Acreditado según D02 en alcance probado | 6f40514; MXN/es-MX, dos decimales, tarjeta/editor/revisión y precisión145.125 intacta; revisión oleada8 | Conservar en guardado UX13 y base final UX17 |
 | U13 | UX08; UX10 | Acreditado en alcance probado | 3beabea y81fc2fe; vacío y consulta fallida distintos, término y limpiar con foco; selector final probado | Conservar base final |
 | U14 | UX07 | Acreditado en demo y HTTP controlado | bf7d6cb;404 sin formulario,503 recuperable y categorías independientes; [revisión](evidence/reviews/ux07-wave04.md) | Conservar en base final; no acredita servicio real |
 | U15 | UX11; UX10 | Acreditado en alcance autónomo probado | a9408b8; snapshots, salida intacta, seguir/descartar, router de datos, atrás/adelante y beforeunload; operaciones pendientes/inciertas y expiradas protegidas | Conservar base final UX17; dispositivo físico y lector manual pendientes |

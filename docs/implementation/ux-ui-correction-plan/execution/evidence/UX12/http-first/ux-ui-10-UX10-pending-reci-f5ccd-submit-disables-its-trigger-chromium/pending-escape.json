@@ -1,0 +1,30 @@
+{
+  "states": [
+    {
+      "modalCount": 1,
+      "focus": "BODY",
+      "bodyPosition": "fixed"
+    },
+    {
+      "modalCount": 1,
+      "focus": "BODY",
+      "bodyPosition": "fixed"
+    }
+  ],
+  "posts": [
+    {
+      "key": "c95de0fd-4c60-4c28-be92-b3289196fcaf",
+      "body": {
+        "description": "Respuesta controlada",
+        "instructions": "Mezclar",
+        "name": "Receta pendiente",
+        "supplies": [
+          {
+            "inventoryItemId": "flour",
+            "quantity": 1
+          }
+        ]
+      }
+    }
+  ]
+}

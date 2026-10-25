@@ -1,0 +1,108 @@
+{
+  "module": {
+    "left": 0,
+    "right": 1440,
+    "top": 0,
+    "bottom": 1000,
+    "width": 1440,
+    "height": 1000
+  },
+  "viewport": 1440,
+  "scroll": 1440,
+  "fields": [
+    {
+      "selector": ".offer-card__price",
+      "text": "MXN 123,456,789.50",
+      "left": 165,
+      "right": 687,
+      "top": 504,
+      "bottom": 528,
+      "width": 522,
+      "height": 24,
+      "parent": {
+        "left": 145,
+        "right": 707,
+        "top": 308,
+        "bottom": 558,
+        "width": 562,
+        "height": 250
+      },
+      "textRects": [
+        {
+          "left": 517.84375,
+          "right": 687
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    },
+    {
+      "selector": ".offer-card__price",
+      "text": "MXN 185.00",
+      "left": 753,
+      "right": 1275,
+      "top": 504,
+      "bottom": 528,
+      "width": 522,
+      "height": 24,
+      "parent": {
+        "left": 733,
+        "right": 1295,
+        "top": 308,
+        "bottom": 558,
+        "width": 562,
+        "height": 250
+      },
+      "textRects": [
+        {
+          "left": 1174.140625,
+          "right": 1275
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    }
+  ],
+  "controls": [
+    {
+      "text": "Desactivar oferta",
+      "minimum": 48,
+      "left": 355.15625,
+      "right": 496.84375,
+      "top": 595,
+      "bottom": 643,
+      "width": 141.6875,
+      "height": 48
+    },
+    {
+      "text": "Eliminar oferta",
+      "minimum": 48,
+      "left": 157,
+      "right": 695,
+      "top": 700,
+      "bottom": 748,
+      "width": 538,
+      "height": 48
+    },
+    {
+      "text": "Activar oferta",
+      "minimum": 48,
+      "left": 953.875,
+      "right": 1074.125,
+      "top": 595,
+      "bottom": 643,
+      "width": 120.25,
+      "height": 48
+    },
+    {
+      "text": "Eliminar oferta",
+      "minimum": 48,
+      "left": 745,
+      "right": 1283,
+      "top": 700,
+      "bottom": 748,
+      "width": 538,
+      "height": 48
+    }
+  ]
+}

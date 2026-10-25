@@ -1,0 +1,485 @@
+<testsuites id="" name="" tests="62" failures="7" skipped="0" errors="0" time="60.774564000000005">
+<testsuite name="app-routes.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="3" failures="0" skipped="0" time="1.931" errors="0">
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › unknown route shows accessible 404 message and allows returning to the catalog (R01)" classname="app-routes.spec.ts" time="0.524">
+</testcase>
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › alias /menu redirects to catalog root / (R01, R04)" classname="app-routes.spec.ts" time="0.413">
+</testcase>
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › loads editor chunks on demand and avoids downloading them on initial catalog load (R02)" classname="app-routes.spec.ts" time="0.994">
+</testcase>
+</testsuite>
+<testsuite name="audit-closure-layout.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="3" failures="0" skipped="0" time="7.691" errors="0">
+<testcase name="R05/R06: recipe fields and supply controls fit inside the dialog at all required sizes" classname="audit-closure-layout.spec.ts" time="3.874">
+</testcase>
+<testcase name="R05: populated recipe cards keep title and management actions inside 320px" classname="audit-closure-layout.spec.ts" time="0.598">
+</testcase>
+<testcase name="R06: nested recipe picker obeys 90% height, scrolls and returns focus at all required sizes" classname="audit-closure-layout.spec.ts" time="3.219">
+</testcase>
+</testsuite>
+<testsuite name="audit-layout.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="4" failures="0" skipped="0" time="6.105" errors="0">
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R05: at 320x568 px CSS commercial panel and inputs are not cut off and horizontal overflow &lt;= 1px" classname="audit-layout.spec.ts" time="0.611">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R06: both SlotModal and OptionModal obey 90% max height and have reachable controls at 390x320 px" classname="audit-layout.spec.ts" time="1.458">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R06 additional checks: CSS zoom and reduced viewport keep dialog controls reachable" classname="audit-layout.spec.ts" time="1.369">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R07: area stylesheets load without style leakage across navigations" classname="audit-layout.spec.ts" time="2.667">
+</testcase>
+</testsuite>
+<testsuite name="audit-review-regressions.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="4" failures="0" skipped="0" time="5.454" errors="0">
+<testcase name="RV09: cada pestaña conserva su receta pendiente, también al cancelar en otra pestaña" classname="audit-review-regressions.spec.ts" time="2.183">
+</testcase>
+<testcase name="RV13: recetas carga sus primitivas al entrar directamente y conserva estilos después de navegar" classname="audit-review-regressions.spec.ts" time="0.873">
+</testcase>
+<testcase name="RV04: F5 durante una carga incierta conserva bytes y clave sin enviar automáticamente" classname="audit-review-regressions.spec.ts" time="1.138">
+</testcase>
+<testcase name="RV07: una receta confirmada conserva la edición posterior y su versión después de F5" classname="audit-review-regressions.spec.ts" time="1.26">
+</testcase>
+</testsuite>
+<testsuite name="catalog-remediation.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="3" failures="0" skipped="0" time="3.625" errors="0">
+<testcase name="keeps catalog cards contained and controls reachable at desktop, mobile and zoom" classname="catalog-remediation.spec.ts" time="1.194">
+</testcase>
+<testcase name="preserves image reserved dimensions at 320px before and after image load failure (C16)" classname="catalog-remediation.spec.ts" time="1.037">
+</testcase>
+<testcase name="confirms delete in native dialog with inert backdrop, escape support and actionable recovery inside modal (C06, C11, C13)" classname="catalog-remediation.spec.ts" time="1.394">
+</testcase>
+</testsuite>
+<testsuite name="catalog-traffic.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="2" failures="0" skipped="0" time="3.052" errors="0">
+<testcase name="filters and pagination request only entries and returning to V1 reuses fresh data" classname="catalog-traffic.spec.ts" time="1.384">
+</testcase>
+<testcase name="full journey: catalog -&gt; create category -&gt; new entry with category -&gt; catalog reflects updates within TTL without F5 (C07, Instruction 8)" classname="catalog-traffic.spec.ts" time="1.668">
+</testcase>
+</testsuite>
+<testsuite name="categories.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.106" errors="0">
+<testcase name="opens V5 from the menu and creates, edits and cancels categories" classname="categories.spec.ts" time="1.106">
+</testcase>
+</testsuite>
+<testsuite name="closure-review-regressions.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="3" failures="0" skipped="0" time="4.4" errors="0">
+<testcase name="RC02: quoted group names preserve editor, draft and focus after option cancellation" classname="closure-review-regressions.spec.ts" time="1.319">
+</testcase>
+<testcase name="RC04: each Escape affects only the active step and restores focus within one dialog" classname="closure-review-regressions.spec.ts" time="1.516">
+</testcase>
+<testcase name="RC04: Escape cannot dismiss a nested recipe while its POST is pending" classname="closure-review-regressions.spec.ts" time="1.565">
+</testcase>
+</testsuite>
+<testsuite name="entry-form-remediation.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="4" failures="0" skipped="0" time="6.11" errors="0">
+<testcase name="V2 aligns navigation, keeps actions reachable and bounds 100 categories across six viewports" classname="entry-form-remediation.spec.ts" time="3.335">
+</testcase>
+<testcase name="category search and image zone work with keyboard without per-keystroke queries" classname="entry-form-remediation.spec.ts" time="0.678">
+</testcase>
+<testcase name="a server rejection preserves the draft and a retry reuses the successful upload" classname="entry-form-remediation.spec.ts" time="0.837">
+</testcase>
+<testcase name="an edit conflict requires review before using a new ETag and never refreshes it silently" classname="entry-form-remediation.spec.ts" time="1.26">
+</testcase>
+</testsuite>
+<testsuite name="entry-form.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.038" errors="0">
+<testcase name="creates and edits an entry with separate image upload and JSON writes" classname="entry-form.spec.ts" time="1.038">
+</testcase>
+</testsuite>
+<testsuite name="menu.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.165" errors="0">
+<testcase name="searches the administrative entries and opens their management routes" classname="menu.spec.ts" time="1.165">
+</testcase>
+</testsuite>
+<testsuite name="offer-form.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="2" failures="0" skipped="0" time="2.42" errors="0">
+<testcase name="creates and deletes an offer updating catalog offerCount within cache TTL without page reload (O18)" classname="offer-form.spec.ts" time="1.55">
+</testcase>
+<testcase name="manages single-dialog Escape steps preserving option draft and restoring focus without losing composition (O19, O34)" classname="offer-form.spec.ts" time="0.87">
+</testcase>
+</testsuite>
+<testsuite name="offers.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="5" failures="0" skipped="0" time="6.527" errors="0">
+<testcase name="opens an entry&apos;s offers and returns to the catalog without losing the query" classname="offers.spec.ts" time="3.55">
+</testcase>
+<testcase name="keeps the offers view inside narrow screens and reconciles an out-of-range last page" classname="offers.spec.ts" time="1.123">
+</testcase>
+<testcase name="keeps the single empty-state CTA visible at 1024x600 and prevents horizontal overflow at 320x568" classname="offers.spec.ts" time="0.508">
+</testcase>
+<testcase name="separately verifies delete dialog cancel button and Escape key restore focus to trigger without mutating" classname="offers.spec.ts" time="0.62">
+</testcase>
+<testcase name="handles delete error with single alert and recovery reachable inside the modal dialog" classname="offers.spec.ts" time="0.726">
+</testcase>
+</testsuite>
+<testsuite name="operation-recovery.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="5" failures="0" skipped="0" time="6.305" errors="0">
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › category creation recovery: uncertain POST, real browser reload (F5) restores dialog without POST, manual retry sends same Idempotency-Key and recovers category" classname="operation-recovery.spec.ts" time="1.071">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › nested recipe creation recovery in offer form: uncertain POST, reload restores parent and nested picker, retry recovers recipe and assigns it to option" classname="operation-recovery.spec.ts" time="1.381">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › entry creation recovery: two-stage flow with image upload and entry create across real reload (F5)" classname="operation-recovery.spec.ts" time="1.063">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer creation recovery: uncertain POST, real browser reload (F5) restores form without POST, manual retry sends same Idempotency-Key (A01, A08)" classname="operation-recovery.spec.ts" time="1.769">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer update recovery: uncertain PATCH, real browser reload (F5) restores form with opening If-Match, manual retry sends same Idempotency-Key and If-Match (A01, A08)" classname="operation-recovery.spec.ts" time="1.021">
+</testcase>
+</testsuite>
+<testsuite name="recipes.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="5" failures="0" skipped="0" time="3.667" errors="0">
+<testcase name="Recipe Library and Selector Flow (T13) › allows searching, paginating recipes, and managing recipes in administration mode" classname="recipes.spec.ts" time="0.659">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › creates recipe with inventory selection and paginating inventory in dialog" classname="recipes.spec.ts" time="0.719">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › isolates inventory error with independent retry without wiping the recipe draft" classname="recipes.spec.ts" time="0.662">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › supports selection mode with Asignar buttons and no management actions" classname="recipes.spec.ts" time="0.491">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › locks delete confirmation against Escape during in-flight DELETE and restores focus (P12, P11)" classname="recipes.spec.ts" time="1.136">
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-03-modal-pending.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.24" errors="0">
+<testcase name="pending DELETE keeps Tab and Shift+Tab inside the modal without closing or submitting twice" classname="ux-ui-03-modal-pending.spec.ts" time="1.24">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-03-modal-pending-pen-aa6e5-closing-or-submitting-twice-chromium\attachments\pending-modal-focus-json-554906a38c9026a90a3a64f335ff5ce2613ee903.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-05-category-recovery.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="2" failures="0" skipped="0" time="1.356" errors="0">
+<testcase name="UX05 category HTTP uncertainty retains draft and original operation at 390px" classname="ux-ui-05-category-recovery.spec.ts" time="0.666">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-05-category-recovery-cafbf-original-operation-at-390px-chromium\attachments\category-recovery-901129a914a615446cf3964ec42f5272acbf9f2d.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX05 category HTTP uncertainty retains draft and original operation at 1024px" classname="ux-ui-05-category-recovery.spec.ts" time="0.69">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-05-category-recovery-5480a-riginal-operation-at-1024px-chromium\attachments\category-recovery-d9ac1cc7a3d8378e66069332aab2affdd22656cd.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-07.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="3" failures="0" skipped="0" time="3.335" errors="0">
+<testcase name="UX07 HTTP 404 shows a missing entry without edit fields or a futile retry" classname="ux-ui-07.spec.ts" time="1.053">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-07-UX07-HTTP-404-sho-350f9-it-fields-or-a-futile-retry-chromium\attachments\http404-154b3743fb1af49ee722c59831ae1de127284d83.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX07 temporary HTTP failure can retry the entry without reloading categories" classname="ux-ui-07.spec.ts" time="1.144">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-07-UX07-temporary-HT-73af0-ithout-reloading-categories-chromium\attachments\temporary-8020a1611a09003031b84d2a2a148a7f056bab80.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX07 late HTTP categories preserve edited identity, assigned category and a selected image" classname="ux-ui-07.spec.ts" time="1.138">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-07-UX07-late-HTTP-ca-b13be-tegory-and-a-selected-image-chromium\attachments\late-categories-2842c8225f27488ddc418789e57e700a7c9b534e.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-10.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="3" failures="0" skipped="0" time="5.114" errors="0">
+<testcase name="UX10 creation HTTP 422 preserves option and controls manual recovery in one modal" classname="ux-ui-10.spec.ts" time="1.735">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-1334b-anual-recovery-in-one-modal-chromium\attachments\rejected-dff9f33abf08ed6ba45af015a5c3aba03ef27851.png]]
+
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-1334b-anual-recovery-in-one-modal-chromium\attachments\http-contract-0fe2472bf071b68a99ea1e1573abf21cbc25274e.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX10 creation HTTP 503 preserves option and controls manual recovery in one modal" classname="ux-ui-10.spec.ts" time="1.691">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-a7ffe-anual-recovery-in-one-modal-chromium\attachments\rejected-1f258d97fa5dc4a30a746fd6b575a248e90d7588.png]]
+
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-a7ffe-anual-recovery-in-one-modal-chromium\attachments\http-contract-5f8d6d5efb29120e85839fb2142be8eed89a7469.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX10 pending recipe keeps one modal through repeated Escape after submit disables its trigger" classname="ux-ui-10.spec.ts" time="1.688">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-0-5eb659b301c1094e9092d414aeef00c11779511b.json]]
+
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-1-5eb659b301c1094e9092d414aeef00c11779511b.json]]
+
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-7aaf48b8e1575016f39fccaeb6f7e50b4bb1847f.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-12.spec.ts" timestamp="2026-10-25T15:27:03.690Z" hostname="chromium" tests="7" failures="7" skipped="0" time="36.443" errors="0">
+<testcase name="UX12 server money review preserves local precision at viewport 320 and module 320" classname="ux-ui-12.spec.ts" time="5.132">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-926b6-viewport-320-and-module-320-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-926b6-viewport-320-and-module-320-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 320 and module 320 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-926b6-viewport-320-and-module-320-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-926b6-viewport-320-and-module-320-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 390 and module 390" classname="ux-ui-12.spec.ts" time="5.183">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-12091-viewport-390-and-module-390-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-12091-viewport-390-and-module-390-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 390 and module 390 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-12091-viewport-390-and-module-390-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-12091-viewport-390-and-module-390-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 600 and module 600" classname="ux-ui-12.spec.ts" time="5.203">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-baa5e-viewport-600-and-module-600-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-baa5e-viewport-600-and-module-600-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 600 and module 600 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-baa5e-viewport-600-and-module-600-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-baa5e-viewport-600-and-module-600-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 740 and module 740" classname="ux-ui-12.spec.ts" time="5.24">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-4073c-viewport-740-and-module-740-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-4073c-viewport-740-and-module-740-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 740 and module 740 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-4073c-viewport-740-and-module-740-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-4073c-viewport-740-and-module-740-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 1024 and module 1024" classname="ux-ui-12.spec.ts" time="5.204">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-6ae97-ewport-1024-and-module-1024-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-6ae97-ewport-1024-and-module-1024-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 1024 and module 1024 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-6ae97-ewport-1024-and-module-1024-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-6ae97-ewport-1024-and-module-1024-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 1440 and module 1440" classname="ux-ui-12.spec.ts" time="5.252">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-f814a-ewport-1440-and-module-1440-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-f814a-ewport-1440-and-module-1440-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 1440 and module 1440 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-f814a-ewport-1440-and-module-1440-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-f814a-ewport-1440-and-module-1440-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 1440 and module 390" classname="ux-ui-12.spec.ts" time="5.229">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-c7644-iewport-1440-and-module-390-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-c7644-iewport-1440-and-module-390-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toHaveValue(expected) failed" type="expect.toHaveValue">
+<![CDATA[  [chromium] › ux-ui-12.spec.ts:5:3 › UX12 server money review preserves local precision at viewport 1440 and module 390 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel('Precio base (MXN)', { exact: true })
+    Expected: "0"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('Precio base (MXN)', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Precio base (MXN)', { exact: true })
+
+
+      38 |     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
+      39 |     const price = page.getByLabel("Precio base (MXN)", { exact: true });
+    > 40 |     await expect(price).toHaveValue("0");
+         |                         ^
+      41 |     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+      42 |     await price.fill("145.125");
+      43 |     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-12.spec.ts:40:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-12-UX12-server-money-c7644-iewport-1440-and-module-390-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-12-UX12-server-money-c7644-iewport-1440-and-module-390-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+</testsuites>

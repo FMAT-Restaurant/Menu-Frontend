@@ -1,0 +1,235 @@
+{
+  "module": {
+    "left": 0,
+    "right": 600,
+    "top": 0,
+    "bottom": 1771,
+    "width": 600,
+    "height": 1771
+  },
+  "viewport": 600,
+  "scroll": 600,
+  "fields": [
+    {
+      "selector": "#offer-price-preview",
+      "text": "MXN 123,456,789.50",
+      "left": 33,
+      "right": 567,
+      "top": 473,
+      "bottom": 497,
+      "width": 534,
+      "height": 24,
+      "parent": {
+        "left": 33,
+        "right": 567,
+        "top": 385,
+        "bottom": 521,
+        "width": 534,
+        "height": 136
+      },
+      "textRects": [
+        {
+          "left": 416.640625,
+          "right": 567
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    },
+    {
+      "selector": "label[for=offer-price-input]",
+      "text": "Precio base (MXN)",
+      "left": 33,
+      "right": 567,
+      "top": 385,
+      "bottom": 409,
+      "width": 534,
+      "height": 24,
+      "parent": {
+        "left": 33,
+        "right": 567,
+        "top": 385,
+        "bottom": 521,
+        "width": 534,
+        "height": 136
+      },
+      "textRects": [
+        {
+          "left": 33,
+          "right": 150.6875
+        }
+      ],
+      "align": "start",
+      "weight": "600"
+    },
+    {
+      "selector": ".price-prefix",
+      "text": "MXN",
+      "left": 33,
+      "right": 98.96875,
+      "top": 417,
+      "bottom": 465,
+      "width": 65.96875,
+      "height": 48,
+      "parent": {
+        "left": 33,
+        "right": 567,
+        "top": 417,
+        "bottom": 465,
+        "width": 534,
+        "height": 48
+      },
+      "textRects": [
+        {
+          "left": 48,
+          "right": 84.96875
+        }
+      ],
+      "align": "start",
+      "weight": "600"
+    },
+    {
+      "selector": "#offer-price-input",
+      "text": "",
+      "left": 98.96875,
+      "right": 567,
+      "top": 417,
+      "bottom": 465,
+      "width": 468.03125,
+      "height": 48,
+      "parent": {
+        "left": 33,
+        "right": 567,
+        "top": 417,
+        "bottom": 465,
+        "width": 534,
+        "height": 48
+      },
+      "textRects": [],
+      "align": "right",
+      "weight": "600"
+    }
+  ],
+  "controls": [
+    {
+      "text": "",
+      "minimum": 48,
+      "left": 33,
+      "right": 567,
+      "top": 297,
+      "bottom": 345,
+      "width": 534,
+      "height": 48
+    },
+    {
+      "text": "",
+      "minimum": 48,
+      "left": 98.96875,
+      "right": 567,
+      "top": 417,
+      "bottom": 465,
+      "width": 468.03125,
+      "height": 48
+    },
+    {
+      "text": "Cambiar imagen",
+      "minimum": 48,
+      "left": 33,
+      "right": 567,
+      "top": 739,
+      "bottom": 903,
+      "width": 534,
+      "height": 164
+    },
+    {
+      "text": "Editar",
+      "minimum": 48,
+      "left": 50,
+      "right": 112.890625,
+      "top": 1181,
+      "bottom": 1229,
+      "width": 62.890625,
+      "height": 48
+    },
+    {
+      "text": "Retirar grupo",
+      "minimum": 48,
+      "left": 120.890625,
+      "right": 231.5,
+      "top": 1181,
+      "bottom": 1229,
+      "width": 110.609375,
+      "height": 48
+    },
+    {
+      "text": "Desactivar",
+      "minimum": 48,
+      "left": 298.453125,
+      "right": 389.9375,
+      "top": 1347,
+      "bottom": 1395,
+      "width": 91.484375,
+      "height": 48
+    },
+    {
+      "text": "Editar",
+      "minimum": 48,
+      "left": 397.9375,
+      "right": 460.828125,
+      "top": 1347,
+      "bottom": 1395,
+      "width": 62.890625,
+      "height": 48
+    },
+    {
+      "text": "Retirar",
+      "minimum": 48,
+      "left": 468.828125,
+      "right": 537,
+      "top": 1347,
+      "bottom": 1395,
+      "width": 68.171875,
+      "height": 48
+    },
+    {
+      "text": "+ Agregar opción",
+      "minimum": 48,
+      "left": 50,
+      "right": 188.25,
+      "top": 1433,
+      "bottom": 1481,
+      "width": 138.25,
+      "height": 48
+    },
+    {
+      "text": "+Agregar grupo",
+      "minimum": 48,
+      "left": 33,
+      "right": 567,
+      "top": 1510,
+      "bottom": 1590,
+      "width": 534,
+      "height": 80
+    },
+    {
+      "text": "Cancelar",
+      "minimum": 48,
+      "left": 369.78125,
+      "right": 450.125,
+      "top": 1651,
+      "bottom": 1699,
+      "width": 80.34375,
+      "height": 48
+    },
+    {
+      "text": "Guardar Oferta",
+      "minimum": 48,
+      "left": 462.125,
+      "right": 584,
+      "top": 1651,
+      "bottom": 1699,
+      "width": 121.875,
+      "height": 48
+    }
+  ]
+}

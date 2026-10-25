@@ -1,0 +1,21 @@
+{
+  "environment": "production build with controlled HTTP fixtures, not a live backend",
+  "viewport": 390,
+  "writes": [
+    {
+      "key": "9722e503-ab25-4cfc-a669-30844999583d",
+      "body": {
+        "description": "Borrador original",
+        "name": "Categoría con recuperación"
+      }
+    },
+    {
+      "key": "9722e503-ab25-4cfc-a669-30844999583d",
+      "body": {
+        "description": "Borrador original",
+        "name": "Categoría con recuperación"
+      }
+    }
+  ],
+  "errors": []
+}
