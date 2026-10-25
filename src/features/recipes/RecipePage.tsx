@@ -14,6 +14,7 @@ import type {
   PendingOperationStorageAdapter,
 } from "../../application/operationAttempt";
 import { SearchField } from "../../shared/SearchField";
+import { Icon } from "../../shared/Icon";
 import { analyzeNonIdempotentWriteError } from "../../api/idempotencyResponse";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
@@ -203,6 +204,20 @@ export function RecipePage({
     }
   }
 
+  function clearSearch() {
+    setDraftSearch("");
+    if (propMode) {
+      setLocalQuery("");
+      setLocalPage(1);
+    } else {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("q");
+      nextParams.set("page", "1");
+      setSearchParams(nextParams);
+    }
+    document.getElementById("recipe-search")?.focus();
+  }
+
   async function handleOpenEdit(recipe: RecipeSummary) {
     openingControllerRef.current?.abort();
     const controller = new AbortController();
@@ -322,11 +337,11 @@ export function RecipePage({
             className="button button--quiet category-screen__back"
             onClick={onClose}
           >
-            {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
+            {mode === "selection" ? <><Icon name="close" /> Cancelar</> : "Volver al menú"}
           </button>
         ) : (
           <Link className="back-link category-screen__back" to={returnTo}>
-            {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
+            {mode === "selection" ? <><Icon name="close" /> Cancelar</> : "Volver al menú"}
           </Link>
         )}
           <div className="task-header__row">
@@ -337,12 +352,13 @@ export function RecipePage({
             <button
               className="button button--primary"
               type="button"
+              aria-label="+ Nueva receta"
               onClick={() => {
                 openingRecipeIdRef.current = null;
                 setEditingRecipe("new");
               }}
             >
-              + Nueva receta
+              <Icon name="add" /> Nueva receta
             </button>
           </div>
       </header>
@@ -370,14 +386,14 @@ export function RecipePage({
 
           {!loading && !error && recipes.length === 0 && (
             <div className="empty-state category-empty">
-              <span className="empty-state__icon" aria-hidden="true">⌕</span>
-              <h3>Aún no hay recetas registradas.</h3>
+              <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
+              <h3>{confirmedQuery ? "No hay recetas que coincidan con tu búsqueda." : "Aún no hay recetas registradas."}</h3>
               <p>
                 {confirmedQuery
-                  ? "No se encontraron recetas con el término buscado."
+                  ? `No encontramos resultados para “${confirmedQuery}”. Cambia el término o limpia la búsqueda.`
                   : "Crea una receta para asociar insumos y pasos de preparación."}
               </p>
-              <button
+              {confirmedQuery ? <button type="button" className="button button--secondary" onClick={clearSearch}>Limpiar búsqueda</button> : <button
                 className="button button--primary"
                 type="button"
                 onClick={() => {
@@ -386,7 +402,7 @@ export function RecipePage({
                 }}
               >
                 Crear receta
-              </button>
+              </button>}
             </div>
           )}
 

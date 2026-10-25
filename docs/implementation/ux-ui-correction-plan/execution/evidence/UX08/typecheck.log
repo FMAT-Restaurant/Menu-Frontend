@@ -1,0 +1,3 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run tsc --noEmit
+src/features/offers/OfferCommercialInfo.tsx(1,10): error TS6133: 'Icon' is declared but its value is never read.

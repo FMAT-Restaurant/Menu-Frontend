@@ -24,7 +24,7 @@
   min-width: 0;
   padding: 20px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
 }
@@ -69,12 +69,11 @@
 
 .recipe-card__supplies {
   overflow-wrap: anywhere;
-  margin-top: 14px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  font-size: 13px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 20px;
   color: var(--text);
 }
 
@@ -84,7 +83,8 @@
 
 /* Recipe Form Dialog (R06) */
 .recipe-form-dialog {
-  width: min(calc(100% - 32px), 720px);
+  container: menu-dialog recipe-form / inline-size;
+  width: min(calc(100% - 32px), calc(100cqw - 32px), 960px);
   max-height: min(90vh, 800px);
   max-height: min(90dvh, 800px);
   margin: auto;
@@ -115,22 +115,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 24px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   background: #f8fafc;
 }
 
 .recipe-form-dialog__header h2 {
   margin: 0;
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 22px;
+  line-height: 30px;
 }
 
 .recipe-form-dialog__close {
-  width: 32px;
-  height: 32px;
+  width: var(--control-height);
+  height: var(--control-height);
+  display: grid;
+  place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text);
   font-size: 24px;
@@ -153,7 +155,7 @@
 .recipe-form-dialog__field {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .recipe-form-dialog__field label {
@@ -165,13 +167,15 @@
 .recipe-form-dialog__field input,
 .recipe-form-dialog__field textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
+  min-height: var(--control-height);
   border: 1px solid #9ca3af;
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
   font: inherit;
   font-size: 14px;
+  line-height: 20px;
 }
 
 .recipe-form-dialog__field textarea {
@@ -181,10 +185,8 @@
 .recipe-supplies-section {
   min-width: 0;
   margin: 8px 0 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fafafa;
+  padding: 0;
+  border: 0;
 }
 
 .recipe-supplies-section__header {
@@ -211,7 +213,7 @@
 .recipe-supplies-table th,
 .recipe-supplies-table td {
   padding: 8px 10px;
-  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   text-align: left;
 }
 
@@ -219,18 +221,21 @@
   background: #f1f5f9;
   font-weight: 600;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .recipe-supplies-table td select,
 .recipe-supplies-table td input {
   width: 100%;
   min-width: 0;
-  padding: 6px 8px;
+  padding: 8px;
+  min-height: var(--control-height);
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .recipe-supplies-table .recipe-supplies-table__unit {
@@ -260,7 +265,8 @@
   max-width: 100%;
 }
 
-@media (max-width: 520px) {
+@container recipe-form (width < 768px) {
+  .recipe-form-dialog > * { --control-height: 48px; }
   .recipe-supplies-table thead {
     display: none;
   }
@@ -274,9 +280,8 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .recipe-supplies-table td {
@@ -296,6 +301,31 @@
     content: attr(data-label);
     color: var(--text);
     font-size: 12px;
+    line-height: 16px;
     font-weight: 600;
   }
 }
+
+.recipe-inventory-controls input {
+  flex: 1 1 200px;
+  min-height: var(--control-height);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+.recipe-card__delete { color: var(--text); }
+.recipe-card__delete:hover { color: #991b1b; }
+.recipe-field-error { margin: 4px 0 0; color: #991b1b; font-size: 14px; line-height: 20px; }
+.recipe-validation-summary { padding: 16px; border: 1px solid #dc2626; border-radius: 8px; color: #991b1b; background: #fef2f2; overflow-wrap: anywhere; }
+.recipe-validation-summary h3 { margin: 0; font-size: 18px; line-height: 26px; }
+.recipe-validation-summary ul { margin: 8px 0 0; padding-left: 24px; }
+.recipe-validation-summary a { color: inherit; }
+.recipe-form-dialog [aria-invalid="true"] { border: 2px solid #dc2626; }
+.recipe-form-dialog :is(input, select, textarea, button, a, [tabindex]):focus-visible { outline: 2px solid #c2410c; outline-offset: 2px; }
+.recipe-form-dialog :is(input, select, textarea) { scroll-margin-block: 16px; }
+.recipe-supplies-section legend { padding: 0 0 12px; font-weight: 600; font-size: 18px; line-height: 26px; }
+.recipe-supplies-table td { vertical-align: top; }
+.recipe-supplies-table input[type="number"] { text-align: right; }
+.recipe-form-dialog .pagination__info { font-size: 12px; line-height: 16px; }
+.recipe-form-dialog .pagination { flex-wrap: wrap; }

@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { InventoryItem, Page, RecipeDetail, RecipeSummary } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
 import { RecipePage, type RecipeRepository } from "./RecipePage";
+import { RecipeFormDialog } from "./RecipeFormDialog";
 
 const inventoryItems: InventoryItem[] = [
   { id: "inv-1", name: "Carne Molida Res 80/20", unit: "g" },
@@ -94,6 +95,71 @@ function createMockRepository(): jest.Mocked<RecipeRepository> {
     } as Page<InventoryItem>),
   };
 }
+
+describe("UX08 recipe recovery and field validation", () => {
+  test("explains a detail loaded without supplies and focuses the recovery action without writing", async () => {
+    const repository = createMockRepository();
+    repository.getRecipe.mockResolvedValue({ data: { ...recipeDetail, supplies: [] }, etag: '"empty-supplies"' });
+    render(<RecipeFormDialog recipe={recipeDetail} repository={repository} storage={createMemoryStorage()} onClose={() => {}} />);
+    await waitFor(() => expect(screen.queryByLabelText("Insumo 1")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    const summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
+    expect(summary).toHaveFocus();
+    const add = screen.getByRole("button", { name: "+ Agregar insumo" });
+    expect(add).toHaveAccessibleDescription("Agrega al menos un ingrediente del inventario.");
+    fireEvent.click(screen.getByRole("link", { name: "Agrega al menos un ingrediente del inventario." }));
+    expect(add).toHaveFocus();
+    expect(repository.createRecipe).not.toHaveBeenCalled();
+    expect(repository.updateRecipe).not.toHaveBeenCalled();
+    fireEvent.click(add);
+    expect(screen.getByLabelText("Insumo 1")).toBeVisible();
+    expect(add).not.toHaveAttribute("aria-describedby");
+    expect(screen.queryByRole("link", { name: "Agrega al menos un ingrediente del inventario." })).not.toBeInTheDocument();
+  });
+  test.each(["management", "selection"] as const)("keeps an unmatched query in %s and restores three recipes by clearing it", async mode => {
+    const repository = createMockRepository();
+    const library = [recipes[0], { ...recipes[0], id: "rec-2", name: "Sopa" }, { ...recipes[0], id: "rec-3", name: "Ensalada" }];
+    repository.listRecipes.mockImplementation(async query => ({ data: query?.q ? [] : library, meta: { page: 1, pageSize: 50, total: query?.q ? 0 : 3, totalPages: 1 } }));
+    render(<MemoryRouter><RecipePage repository={repository} mode={mode} storage={createMemoryStorage()} /></MemoryRouter>);
+    await screen.findByRole("heading", { name: "Sopa" });
+    fireEvent.change(screen.getByLabelText("Buscar recetas"), { target: { value: "sin coincidencias" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
+    await screen.findByRole("heading", { name: "No hay recetas que coincidan con tu búsqueda." });
+    expect(screen.getByLabelText("Buscar recetas")).toHaveValue("sin coincidencias");
+    expect(screen.queryByText("Aún no hay recetas registradas.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
+    expect(await screen.findByRole("heading", { name: "Ensalada" })).toBeVisible();
+    expect(screen.getByLabelText("Buscar recetas")).toHaveValue("");
+    expect(screen.getByLabelText("Buscar recetas")).toHaveFocus();
+    expect(repository.listRecipes).toHaveBeenLastCalledWith({ q: undefined, page: 1, pageSize: 50 }, expect.any(AbortSignal));
+  });
+
+  test("associates every invalid field, focuses its summary and links back to controls without writing", async () => {
+    const repository = createMockRepository();
+    render(<MemoryRouter><RecipePage repository={repository} mode="management" storage={createMemoryStorage()} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+    await screen.findByRole("option", { name: "Carne Molida Res 80/20" });
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+    const summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
+    expect(summary).toHaveFocus();
+    for (const label of ["Nombre", "Descripción", "Instrucciones", "Insumo 1", "Cantidad del insumo 1"]) {
+      const control = screen.getByLabelText(label);
+      expect(control).toHaveAttribute("aria-invalid", "true");
+      const errorId = control.getAttribute("aria-describedby")!;
+      const message = document.getElementById(errorId)!;
+      expect(message).toBeVisible();
+      expect(message.parentElement).toContainElement(control);
+      fireEvent.click(summary.querySelector(`a[href="#${control.id}"]`)!);
+      expect(control).toHaveFocus();
+    }
+    expect(repository.createRecipe).not.toHaveBeenCalled();
+    expect(repository.updateRecipe).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
+    expect(screen.getByLabelText("Insumo 1")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByLabelText("Insumo 1")).not.toHaveAttribute("aria-describedby");
+  });
+});
 
 describe("RecipePage Component (V6 Integration)", () => {
   test("renders recipe list from repository with supply badges (REQ-MENU-REC-001)", async () => {

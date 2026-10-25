@@ -235,6 +235,23 @@ export function RecipeFormDialog({
   });
 
   const [busy, setBusy] = useState(false);
+  const [validationAttempt, setValidationAttempt] = useState(0);
+  const validationSummaryRef = useRef<HTMLDivElement>(null);
+  const fieldErrors: Record<string, string> = {};
+  if (validationAttempt > 0) {
+    if (!name.trim()) fieldErrors["recipe-name"] = "Indica el nombre de la receta.";
+    if (!description.trim()) fieldErrors["recipe-description"] = "Indica la descripción de la receta.";
+    if (!instructions.trim()) fieldErrors["recipe-instructions"] = "Indica las instrucciones de la receta.";
+    if (supplies.length === 0) fieldErrors["recipe-add-supply"] = "Agrega al menos un ingrediente del inventario.";
+    for (const supply of supplies) {
+      if (!supply.inventoryItemId) fieldErrors[`${supply.key}-item`] = "Selecciona un artículo de inventario para cada ingrediente.";
+      const quantity = Number(supply.quantity);
+      if (!Number.isFinite(quantity) || quantity <= 0) fieldErrors[`${supply.key}-quantity`] = "La cantidad de cada ingrediente debe ser mayor a 0.";
+    }
+  }
+  useEffect(() => {
+    if (validationAttempt > 0) validationSummaryRef.current?.focus();
+  }, [validationAttempt]);
   const [error, setError] = useState<string>(() => {
     if (!recipe && initialPendingRecord) {
       const stage = initialPendingRecord.stages[initialPendingRecord.currentStageIndex];
@@ -585,12 +602,12 @@ export function RecipeFormDialog({
     cleanInstructions?: string;
     parsedSupplies?: RecipeSupplyInput[];
   } {
+    setValidationAttempt(attempt => attempt + 1);
     const cleanName = name.trim();
     const cleanDescription = description.trim();
     const cleanInstructions = instructions.trim();
 
     if (!cleanName) {
-      nameRef.current?.focus();
       return { ok: false, error: "Indica el nombre de la receta." };
     }
     if (!cleanDescription) {
@@ -657,7 +674,7 @@ export function RecipeFormDialog({
     const recovering = action === "retry" && repository && controllerRef.current?.getRecord();
     const validation = recovering ? null : validateDraft();
     if (validation && !validation.ok) {
-      setError(validation.error!);
+      setError("");
       return;
     }
 
@@ -746,7 +763,7 @@ export function RecipeFormDialog({
 
     const validation = validateDraft();
     if (!validation.ok) {
-      setError(validation.error!);
+      setError("");
       return;
     }
 
@@ -945,11 +962,25 @@ export function RecipeFormDialog({
 
       <form noValidate onSubmit={(e) => void save(e)}>
         <div className="recipe-form-dialog__fields">
+          {Object.keys(fieldErrors).length > 0 && (
+            <div ref={validationSummaryRef} className="recipe-validation-summary" role="alert" aria-labelledby="recipe-validation-title" tabIndex={-1}>
+              <h3 id="recipe-validation-title">Revisa los campos de la receta</h3>
+              <ul>{Object.entries(fieldErrors).map(([id, message]) => {
+                const rowIndex = supplies.findIndex(supply => id.startsWith(`${supply.key}-`));
+                return <li key={id}><a href={`#${id}`} onClick={event => {
+                  event.preventDefault();
+                  document.getElementById(id)?.focus();
+                }}>{rowIndex >= 0 ? `Insumo ${rowIndex + 1}: ${message}` : message}</a></li>;
+              })}</ul>
+            </div>
+          )}
           <div className="recipe-form-dialog__field">
             <label htmlFor="recipe-name">Nombre</label>
             <input
               ref={nameRef}
               id="recipe-name"
+              aria-invalid={Boolean(fieldErrors["recipe-name"])}
+              aria-describedby={fieldErrors["recipe-name"] ? "recipe-name-error" : undefined}
               value={name}
               disabled={busy}
               onChange={(e) => handleNameChange(e.target.value)}
@@ -957,12 +988,15 @@ export function RecipeFormDialog({
               placeholder="Ej. Hamburguesa Hawaiana"
               required
             />
+            {fieldErrors["recipe-name"] && <p className="recipe-field-error" id="recipe-name-error">{fieldErrors["recipe-name"]}</p>}
           </div>
 
           <div className="recipe-form-dialog__field">
             <label htmlFor="recipe-description">Descripción</label>
             <textarea
               id="recipe-description"
+              aria-invalid={Boolean(fieldErrors["recipe-description"])}
+              aria-describedby={fieldErrors["recipe-description"] ? "recipe-description-error" : undefined}
               value={description}
               disabled={busy}
               onChange={(e) => handleDescriptionChange(e.target.value)}
@@ -970,12 +1004,15 @@ export function RecipeFormDialog({
               placeholder="Descripción breve de la receta"
               required
             />
+            {fieldErrors["recipe-description"] && <p className="recipe-field-error" id="recipe-description-error">{fieldErrors["recipe-description"]}</p>}
           </div>
 
           <div className="recipe-form-dialog__field">
             <label htmlFor="recipe-instructions">Instrucciones</label>
             <textarea
               id="recipe-instructions"
+              aria-invalid={Boolean(fieldErrors["recipe-instructions"])}
+              aria-describedby={fieldErrors["recipe-instructions"] ? "recipe-instructions-error" : undefined}
               value={instructions}
               disabled={busy}
               onChange={(e) => handleInstructionsChange(e.target.value)}
@@ -983,6 +1020,7 @@ export function RecipeFormDialog({
               placeholder="Pasos de preparación"
               required
             />
+            {fieldErrors["recipe-instructions"] && <p className="recipe-field-error" id="recipe-instructions-error">{fieldErrors["recipe-instructions"]}</p>}
           </div>
 
           <fieldset className="recipe-supplies-section">
@@ -991,12 +1029,16 @@ export function RecipeFormDialog({
               <button
                 type="button"
                 className="button button--secondary button--small"
+                aria-label="+ Agregar insumo"
+                id="recipe-add-supply"
+                aria-describedby={fieldErrors["recipe-add-supply"] ? "recipe-supplies-error" : undefined}
                 onClick={handleAddSupply}
                 disabled={busy}
               >
-                + Agregar insumo
+                <Icon name="add" /> Agregar insumo
               </button>
             </div>
+            {fieldErrors["recipe-add-supply"] && <p className="recipe-field-error" id="recipe-supplies-error">{fieldErrors["recipe-add-supply"]}</p>}
 
             {inventoryError && (
               <div className="feedback feedback--error" role="alert" style={{ marginBottom: "0.75rem" }}>
@@ -1082,6 +1124,9 @@ export function RecipeFormDialog({
                     <tr key={supply.key}>
                       <td data-label="Insumo seleccionado">
                         <select
+                          id={`${supply.key}-item`}
+                          aria-invalid={Boolean(fieldErrors[`${supply.key}-item`])}
+                          aria-describedby={fieldErrors[`${supply.key}-item`] ? `${supply.key}-item-error` : undefined}
                           aria-label={`Insumo ${index + 1}`}
                           value={supply.inventoryItemId}
                           onChange={(e) =>
@@ -1106,9 +1151,13 @@ export function RecipeFormDialog({
                             </option>
                           ))}
                         </select>
+                        {fieldErrors[`${supply.key}-item`] && <p className="recipe-field-error" id={`${supply.key}-item-error`}>{fieldErrors[`${supply.key}-item`]}</p>}
                       </td>
                       <td data-label="Cantidad">
                         <input
+                          id={`${supply.key}-quantity`}
+                          aria-invalid={Boolean(fieldErrors[`${supply.key}-quantity`])}
+                          aria-describedby={fieldErrors[`${supply.key}-quantity`] ? `${supply.key}-quantity-error` : undefined}
                           type="number"
                           step="any"
                           min="0"
@@ -1120,6 +1169,7 @@ export function RecipeFormDialog({
                           disabled={busy}
                           required
                         />
+                        {fieldErrors[`${supply.key}-quantity`] && <p className="recipe-field-error" id={`${supply.key}-quantity-error`}>{fieldErrors[`${supply.key}-quantity`]}</p>}
                       </td>
                       <td data-label="U. Medida" className="recipe-supplies-table__unit">{unit}</td>
                       <td data-label="Acción">

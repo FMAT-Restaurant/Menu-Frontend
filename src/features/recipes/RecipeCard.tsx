@@ -61,7 +61,7 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
               </button>
               <button
                 type="button"
-                className="button button--danger"
+                className="button button--quiet recipe-card__delete"
                 onClick={(e) => {
                   e.currentTarget.focus();
                   props.onDelete(recipe);

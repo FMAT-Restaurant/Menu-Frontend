@@ -97,8 +97,14 @@ test("narrow forms in a wide module use 48px controls and scroll internally whil
   await page.keyboard.press("Escape");
   await expect(categoryTrigger).toBeFocused();
   await page.goto("/recipes");
+  // The recipe dialog can now use a wider table layout. Give this narrow-form
+  // scenario an explicit module width while retaining the wide document host.
+  await page.locator("[data-menu-module]").evaluate(el => {
+    (el as HTMLElement).style.width = "740px";
+  });
   await page.getByRole("button", { name: /Nueva receta/ }).click();
   const recipe = page.getByRole("dialog", { name: "Nueva receta", exact: true });
+  expect((await recipe.boundingBox())!.width).toBeLessThan(768);
   expect((await recipe.getByLabel("Nombre", { exact: true }).boundingBox())!.height).toBe(48);
   const fields = recipe.locator(".recipe-form-dialog__fields");
   const start = await fields.evaluate(el => ({ scroll: el.scrollTop, overflow: el.scrollHeight > el.clientHeight }));
