@@ -1389,6 +1389,55 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByDisplayValue("Receta Recuperada")).toBeVisible();
   });
 
+  test("UX12 rounds presentation only and submits the original price precision", async () => {
+    const repository = createMockRepository();
+    repository.getOffer.mockResolvedValueOnce({ data: { ...mockOffer, basePrice: 245.125 }, etag: '"offer-rev-1"' });
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    const price = await screen.findByLabelText("Precio base (MXN)");
+    expect(price).toHaveValue(245.125);
+    expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0245.13");
+    fireEvent.change(price, { target: { value: "145.125" } });
+    expect(price).toHaveValue(145.125);
+    expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0145.13");
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    await waitFor(() => expect(repository.updateOffer).toHaveBeenCalledTimes(1));
+    expect(repository.updateOffer.mock.calls[0][1].basePrice).toBe(145.125);
+  });
+
+  test.each(["0", "-1", ""])("UX12 retains positive-price validation for %s without sending a request", async raw => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    const price = await screen.findByLabelText("Precio base (MXN)");
+    fireEvent.change(price, { target: { value: raw } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    expect(await screen.findByText("El precio base debe ser un número positivo.")).toBeVisible();
+    expect(repository.updateOffer).not.toHaveBeenCalled();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+  });
+
+  test("UX12 server review formats its price without overwriting or adopting local edits", async () => {
+    const repository = createMockRepository();
+    repository.updateOffer.mockRejectedValueOnce(Object.assign(new Error("Precondition Failed"), { status: 412, response: { status: 412 } }));
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    const price = await screen.findByLabelText("Precio base (MXN)");
+    fireEvent.change(price, { target: { value: "145.125" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    const review = await screen.findByRole("button", { name: "Revisar oferta actual" });
+    repository.getOffer.mockResolvedValueOnce({ data: { ...mockOffer, basePrice: 123456789.5 }, etag: '"offer-rev-2"' });
+    fireEvent.click(review);
+    const region = await screen.findByRole("region", { name: "Versión del servidor" });
+    expect(within(region).getByText("MXN\u00a0123,456,789.50", { normalizer: text => text })).toBeVisible();
+    expect(within(region).getByText(/offer-rev-2/)).toBeVisible();
+    expect(price).toHaveValue(145.125);
+    expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    expect(repository.updateOffer.mock.calls[0][1].basePrice).toBe(145.125);
+    fireEvent.click(within(region).getByRole("button", { name: "Adoptar versión del servidor" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Versión del servidor" })).not.toBeInTheDocument());
+    expect(price).toHaveValue(145.125);
+    expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0145.13");
+    expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+  });
+
   test("handles 412 Precondition Failed by preserving local draft and offering review / adoption (A01, A08)", async () => {
     const repository = createMockRepository();
     // Simulate initial offer read at rev 1
@@ -1681,7 +1730,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
       target: { value: "Promo Estudiante" },
     });
-    fireEvent.change(screen.getByLabelText("Precio base"), {
+    fireEvent.change(screen.getByLabelText("Precio base (MXN)"), {
       target: { value: "199" },
     });
 
@@ -1783,7 +1832,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
       target: { value: "Oferta Válida" },
     });
-    fireEvent.change(screen.getByLabelText("Precio base"), {
+    fireEvent.change(screen.getByLabelText("Precio base (MXN)"), {
       target: { value: "150" },
     });
 

@@ -74,7 +74,7 @@ test("matches the offer card mockup with inline status and one footer action", a
   expect(screen.getByRole("link", { name: /Volver a entradas/ })).toHaveAttribute("href", "/?q=hawai&status=ACTIVE");
   expect(screen.getByRole("heading", { name: "Individual" })).toBeVisible();
   expect(screen.getByRole("heading", { name: "Combo" })).toBeVisible();
-  expect(screen.getAllByText("$ 180")).toHaveLength(2);
+  expect(screen.getAllByText("MXN\u00a0180.00", { normalizer: text => text })).toHaveLength(2);
   expect(screen.getAllByText(/Grupos de composici/)).toHaveLength(2);
   expect(screen.getByRole("heading", { name: "Individual" }).closest(".offer-card")?.querySelector(".offer-card__composition strong")).toHaveTextContent("2");
   expect(screen.getByText(/solo se publica si la entrada está activa/)).toBeVisible();

@@ -102,7 +102,7 @@ for (const width of [390, 1440]) {
       const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name, exact: true }) });
       await expect(card.getByRole("img")).toHaveJSProperty("naturalWidth", imageWidth);
       const geometry = await assertSeparatedContent(card);
-      await expect(card.locator(".offer-card__price")).toContainText("123456789.5");
+      await expect(card.locator(".offer-card__price")).toHaveText("MXN\u00a0123,456,789.50");
       await capture(page, testInfo, geometry);
       assertDemo();
     });

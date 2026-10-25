@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { MenuOffer, OfferStatus } from "../../application/catalog";
+import { formatMoney } from "../../shared/formatMoney";
 
 interface OfferCardProps {
   offer: MenuOffer;
@@ -39,7 +40,7 @@ export function OfferCard({ offer, busy, returnTo, catalogReturnTo, onStatusChan
         </div>
         <h2>{presentation}</h2>
         <p className="offer-card__entry">{offer.entryName}</p>
-        <p className="offer-card__price">$ {offer.basePrice}</p>
+        <p className="offer-card__price">{formatMoney(offer.basePrice)}</p>
       </Link>
       <div className="offer-card__details">
         <span className={`offer-state ${active ? "offer-state--active" : "offer-state--inactive"}`}>{active ? "Activa" : "Inactiva"}</span>

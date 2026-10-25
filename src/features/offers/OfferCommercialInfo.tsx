@@ -1,6 +1,7 @@
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
+import { formatMoney } from "../../shared/formatMoney";
 
 export interface OfferCommercialInfoProps {
   presentationTag: string;
@@ -43,6 +44,10 @@ export function OfferCommercialInfo({
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isImageBlocked = disabled || imageValidating;
+  const numericPrice = basePrice.trim() === "" ? null : Number(basePrice);
+  const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice)
+    ? formatMoney(numericPrice)
+    : null;
 
   function handleTriggerFileSelect() {
     if (isImageBlocked) return;
@@ -97,9 +102,9 @@ export function OfferCommercialInfo({
           </div>
 
           <div className="form-field">
-            <label htmlFor="offer-price-input">Precio base</label>
+            <label htmlFor="offer-price-input">Precio base (MXN)</label>
             <div className="price-input-wrapper">
-              <span className="price-prefix" aria-hidden="true">$</span>
+              <span className="price-prefix" aria-hidden="true">MXN</span>
               <input
                 id="offer-price-input"
                 type="number"
@@ -110,9 +115,15 @@ export function OfferCommercialInfo({
                 placeholder="0.00"
                 required
                 disabled={disabled}
+                aria-describedby={formattedPrice === null ? "offer-price-help" : "offer-price-preview offer-price-help"}
               />
             </div>
-            <p className="field-hint">
+            {formattedPrice !== null && (
+              <p id="offer-price-preview" className="offer-money-preview">
+                {formattedPrice}
+              </p>
+            )}
+            <p className="field-hint" id="offer-price-help">
               El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
             </p>
           </div>

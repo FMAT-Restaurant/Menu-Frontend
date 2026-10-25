@@ -97,7 +97,7 @@ test("entry uploads, editing, offer composition and state changes work without A
   await expect(page.getByRole("heading", { name: "Principal", exact: true })).toBeVisible();
   await page.getByLabel("Precio base").fill("135");
   await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
-  await expect(page.getByText("$ 135", { exact: true })).toBeVisible();
+  await expect(page.getByText("MXN\u00a0135.00", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cambiar estado de oferta Presentación demo: Inactiva" }).click();
   await expect(page.getByRole("button", { name: "Cambiar estado de oferta Presentación demo: Activa" })).toHaveAttribute("aria-pressed", "true");
   await page.screenshot({ path: testInfo.outputPath("demo-offers.png"), fullPage: true });

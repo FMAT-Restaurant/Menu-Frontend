@@ -236,7 +236,7 @@ test('oferta: una creación ambigua sobrevive F5, consulta el ID confirmado y s�
   expect(r.getOffer.mock.calls[0][0]).toBe('created-on-server');
   fireEvent.click(screen.getByRole('button', { name: 'Adoptar versión del servidor' }));
   expect(screen.getByLabelText('Etiqueta de presentación (opcional)')).toHaveValue('Mi borrador');
-  expect(screen.getByLabelText('Precio base')).toHaveValue(250);
+  expect(screen.getByLabelText('Precio base (MXN)')).toHaveValue(250);
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(1));
   expect(r.updateOffer.mock.calls[0][0]).toBe('created-on-server');

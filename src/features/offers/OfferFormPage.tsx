@@ -1,4 +1,5 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
+import { formatMoney } from "../../shared/formatMoney";
 import { isStrongEtag } from "../../application/entryVersion";
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -1213,8 +1214,9 @@ export function OfferFormPage({
             {reviewedOffer && (
               <div className="feedback feedback--info" role="region" aria-label="Versión del servidor">
                 <p>
-                  <strong>Versión actual en el servidor:</strong> ETag {reviewedOffer.etag}, etiqueta “{reviewedOffer.data.presentationTag}”, precio $ {reviewedOffer.data.basePrice}.
+                  <strong>Versión actual en el servidor:</strong> ETag {reviewedOffer.etag}, etiqueta “{reviewedOffer.data.presentationTag}”.
                 </p>
+                <p className="offer-review-price"><span>Precio base (MXN)</span><strong>{formatMoney(reviewedOffer.data.basePrice)}</strong></p>
                 <p>
                   Adoptar esta versión actualizará la composición y versión de apertura del formulario, conservando los demás campos.
                 </p>

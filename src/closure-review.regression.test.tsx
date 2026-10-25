@@ -73,7 +73,7 @@ test.each(["IDEMPOTENCY_KEY_REUSED", "INVALID_IDEMPOTENCY_KEY"] as const)("RC05:
   expect(repository.updateOffer).toHaveBeenCalledTimes(1);
   expect(repository.getOffer).toHaveBeenCalledTimes(1);
   expect(screen.getByLabelText("Etiqueta de presentación (opcional)")).toHaveValue("Cambios conservados");
-  fireEvent.change(screen.getByLabelText("Precio base"), { target: { value: "17" } });
+  fireEvent.change(screen.getByLabelText("Precio base (MXN)"), { target: { value: "17" } });
   fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
   await screen.findByRole("heading", { name: "Ofertas guardadas" });
   expect(repository.updateOffer).toHaveBeenCalledTimes(2);

@@ -110,6 +110,8 @@
 }
 
 .offer-card__price {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   text-align: right;
   margin: 14px 0 16px;
@@ -261,8 +263,38 @@
 .price-input-wrapper input {
   flex: 1;
   min-width: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+}
+
+.offer-money-preview {
+  display: block;
+  margin: 0;
+  max-width: 100%;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.offer-review-price {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.offer-review-price strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .radio-group {
