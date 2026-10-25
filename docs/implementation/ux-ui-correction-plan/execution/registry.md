@@ -34,9 +34,9 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | bf7d6cb | Liberada | Integrada | U14 acreditado; 75 focalizadas, 3 demo y 3 HTTP | UX11/UX13 conservan sus propios pendientes |
 | UX08 | `/root/ux08_recipes`, recetas; root integra | 3beabea | Liberada | Integrada | U04 acreditado con UX05; U13 y aportes;44 focalizadas y3 demo | Repetir selección y validación en UX10 |
 | UX09 | `/root/ux09_offers`, ofertas; root integra | 6318581 | Liberada | Integrada | U02/U21/U23 acreditados en demo; U09/U10/U19 aportes conjuntos;96 focalizadas,3 demo,U01 repetido | Conservar UX10/UX12/UX17; tacto físico pendiente |
-| UX10 | `/root/ux10_flow`, preparación de lectura | UX08/UX09 todavía pendientes | Sólo evidence/UX10/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U16/U27 y contratos a conservar | Revalidar después de integrar UX08/UX09 antes de implementar |
+| UX10 | `/root/ux10_flow`, flujo de opción/receta | db2defc, UX08/09 integradas | OfferFormPage.tsx, OptionModal.tsx, RecipePage.tsx, RecipeFormDialog.tsx, nuevos Session/Content/Selector, estilos de ofertas/recetas y sus tests consumidores; e2e/offer-form.spec.ts, operation-recovery.spec.ts y ux-ui-10*; evidence/UX10 | En ejecución | U16/U27, U06/U13/U26/U28 y recuperación | Root conserva BASE/config/registro/build/navegador; UX11 sólo lectura |
 | UX11 | `/root/ux11_guard`, preparación de lectura | UX10 todavía pendiente | Sólo evidence/UX11/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U15 | Revalidar router y protección sobre UX10 integrado antes de implementar |
-| UX12 | Por asignar | UX11/D02 resuelta | Ninguna activa | Pendiente | U12 | Implementar MXN con dos decimales |
+| UX12 | `/root/ux09_offers`, preparación de lectura | UX11/D02 resuelta | Sólo evidence/UX12/preparation.md | Pendiente | U12 | Implementar sólo tras UX11; no editar ofertas durante UX10 |
 | UX13 | Por asignar | UX11; turno libre UX12 | Ninguna activa | Pendiente | U17/U18 | Guardado |
 | UX14 | Por asignar | UX13/D03 y D05 resueltas | Ninguna activa | Pendiente | U20 | Aplicar rondas de selección y ayuda10MiB |
 | UX15 | Por asignar | UX13; contrato autónomo D01 | Ninguna activa | Pendiente | U24 | Foco/título/anuncios; shell real excluido |
