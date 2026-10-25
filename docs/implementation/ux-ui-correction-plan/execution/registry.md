@@ -1,6 +1,7 @@
 # Registro de ejecución UX/UI
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
+Estado actual: el usuario indicó expresamente "Continua con el trabajo". Se retoma desde620c027, con directorio limpio, sin agentes anteriores vivos ni servidores propios. Se despliegan UX08 y UX09 con reservas separadas. Los checkpoints y las pausas que siguen son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
 Checkpoint posterior de oleada4: [checkpoint-ux07.md](checkpoint-ux07.md). UX05 a UX07 están integradas y todos los ejecutores terminaron. UX08 a UX17 no se han iniciado.
@@ -31,9 +32,9 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX05 | `/root/ux00_baseline`, validación de categorías | 6e09554 | Liberada | Integrada | Aporte U04/U03/U07/U08/U22; 16 focalizadas, 2 demo y 2 HTTP | U04 espera recetas UX08 |
 | UX06 | `/root/ux01_images`, catálogo y tarjetas | 487340e | Liberada | Integrada | U11 acreditado; aportes U03/U07/U08/U09/U10/U19/U22/U24; 32 focalizadas y 3 demo | Responsive conjunto espera UX08/UX09; contexto de rutas UX15 |
 | UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | bf7d6cb | Liberada | Integrada | U14 acreditado; 75 focalizadas, 3 demo y 3 HTTP | UX11/UX13 conservan sus propios pendientes |
-| UX08 | Por asignar | UX05 | Ninguna activa | Pendiente | U04/U13 y aportes | Recetas |
-| UX09 | Por asignar | UX06/UX07 | Ninguna activa | Pendiente | U02/U09/U10/U19/U21/U23 | Repetir U01 |
-| UX10 | Por asignar | UX08/UX09 | Ninguna activa | Pendiente | U16/U27 | Flujo único |
+| UX08 | `/root/ux08_recipes`, biblioteca, validación e insumos | 620c027, UX05 integrada | recipes/RecipePage.tsx, RecipeCard.tsx, RecipeFormDialog.tsx, styles.css y pruebas propias; e2e/ux-ui-08*; evidence/UX08 | En ejecución | U04/U13; aportes U03/U07/U08/U09/U10/U19/U22 | No editar ofertas ni BASE; el flujo de un modal pertenece UX10 |
+| UX09 | `/root/ux09_offers`, composición, tarjetas y controles | 620c027, UX06/UX07 integradas | features/offers, estilos y pruebas propios; e2e/ux-ui-09*; evidence/UX09 | En ejecución | U02/U09/U10/U19/U21/U23 y aportes | Repetir U01; no editar recetas ni BASE; no anticipar UX10/UX13 |
+| UX10 | `/root/ux10_flow`, preparación de lectura | UX08/UX09 todavía pendientes | Sólo evidence/UX10/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U16/U27 y contratos a conservar | Revalidar después de integrar UX08/UX09 antes de implementar |
 | UX11 | Por asignar | UX10 | Ninguna activa | Pendiente | U15 | Borradores y router |
 | UX12 | Por asignar | UX11/D02 resuelta | Ninguna activa | Pendiente | U12 | Implementar MXN con dos decimales |
 | UX13 | Por asignar | UX11; turno libre UX12 | Ninguna activa | Pendiente | U17/U18 | Guardado |
@@ -44,7 +45,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 
 ## Recursos
 
-- Capacidad: cuatro agentes incluido root. Los tres subagentes terminaron sus turnos de oleada4, incluidas las revisiones y documentación. No hay reservas de implementación activas. Root cierra el registro y el checkpoint; UX08 a UX17 no se han iniciado.
+- Capacidad: cuatro agentes incluido root. Dos ejecutores de oleada5 poseen recetas y ofertas respectivamente. Root conserva registro, BASE, configuración común, build, cobertura, test-results, puertos4173/5174 y navegador. No se permiten ediciones compartidas ni E2E simultáneos sobre las mismas salidas.
 - Root coordina E2E, `test-results`, `playwright-report`, puertos 5174 y 4173 y sus contextos. Demo escalada sesión 86947 terminó con 2 pruebas aprobadas. Intento sandbox 74998 se detuvo tras comprobar Vite vivo sin puerto; no se presenta como resultado de tests. Producción sesión 12292 terminó con 46 pruebas aprobadas en 17,9 s. Los casos HTTP usan fixtures de las pruebas, no acreditan servicios reales.
 - Docker 29.9.2 disponible mediante ejecución autorizada fuera del sandbox. Proyecto Compose aislado previsto `menu-ux-ui-baseline`, sin contenedores previos en ese proyecto. No detener contenedores ajenos.
 - Shell real excluido del alcance actual por el usuario. Para dispositivo físico con teclado virtual y lector de pantalla, el usuario indicó expresamente "Registrar validación manual pendiente". Se entregarán recorridos y pendientes identificados, sin sustituirlos por evidencia emulada ni exigirlos para terminar la implementación de agentes.

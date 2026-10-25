@@ -1,0 +1,18 @@
+{
+  "base": "620c02719196dc20b9ab785a6ac9adcf16fd2267",
+  "branch": "feature/ux-ui-improvement",
+  "utc": "2026-10-25T01:06:30.4576181Z",
+  "initialWorktree": "clean",
+  "userInstruction": "Continua con el trabajo",
+  "scope": "src",
+  "graph": ".analysis/ux-ui-wave05-dependencies.json",
+  "graphSha256": "16C8D4A45EBC6E0404738C69C786BCFD1D5DAE4144FF2B8B540E8BE803BEAF19",
+  "config": ".dependency-cruiser.cjs",
+  "tsConfig": "tsconfig.json",
+  "limitations": "Static module index; JSX/CSS/runtime and callbacks checked in source and browser",
+  "ownership": {
+    "root": "shared config, registry, browser, build, coverage, test-results",
+    "UX09": "offers",
+    "UX08": "recipes"
+  }
+}
