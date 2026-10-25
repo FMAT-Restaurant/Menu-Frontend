@@ -35,7 +35,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX08 | `/root/ux08_recipes`, recetas; root integra | 3beabea | Liberada | Integrada | U04 acreditado con UX05; U13 y aportes;44 focalizadas y3 demo | Repetir selección y validación en UX10 |
 | UX09 | `/root/ux09_offers`, ofertas; root integra | 6318581 | Liberada | Integrada | U02/U21/U23 acreditados en demo; U09/U10/U19 aportes conjuntos;96 focalizadas,3 demo,U01 repetido | Conservar UX10/UX12/UX17; tacto físico pendiente |
 | UX10 | `/root/ux10_finish`, continuación; root integra | 81fc2fe | Liberada | Integrada | U16/U27 y U06/U13 acreditados en demo/HTTP;121 focalizadas,42 demo,55 HTTP | UX11 conserva sesiones y Escape local; UX17 repite base final |
-| UX11 | `/root/ux11_execute`, actualización de lectura tras interrupción | UX10 bajo verificación final | Sólo evidence/UX11/preparation-refresh.md; ninguna edición de aplicación autorizada | Pendiente | U15 | Revalidar router y protección sobre UX10 integrado antes de implementar |
+| UX11 | `/root/ux11_execute`, guard común y router | adf2509, UX10 integrado81fc2fe | App.tsx/main.tsx, shared guard/confirmación nuevos, formularios de categorías/entradas/ofertas/recetas y hooks, estilos propios y tests afectados; e2e/ux-ui-11* y premisas justificadas de consumidores; evidence/UX11 | En ejecución | U15 y conservación U26/U27/U28 | Root conserva configuración común, registro, build, cobertura, navegador y salidas |
 | UX12 | `/root/ux09_offers`, preparación de lectura | UX11/D02 resuelta | Sólo evidence/UX12/preparation.md | Pendiente | U12 | Implementar sólo tras UX11; no editar ofertas durante UX10 |
 | UX13 | `/root/ux08_recipes`, preparación de lectura | UX11; turno libre UX12 | Sólo evidence/UX13/preparation.md | Pendiente | U17/U18 | Guardado y feedback; sin edición de aplicación antes de desbloqueo |
 | UX14 | Por asignar | UX13/D03 y D05 resueltas | Ninguna activa | Pendiente | U20 | Aplicar rondas de selección y ayuda10MiB |
@@ -56,6 +56,8 @@ Tras la interrupción del25 de octubre, list_agents sólo mostraba root y la ins
 ## Revisión y continuidad
 
 Oleada6 integrada en `81fc2fe`: [revisión](evidence/reviews/oleada-06.md). Pasan121 focalizadas, tipos/build/lint global y42 demo en1,0min,55 HTTP sobre preview en38,8s. La revisión encontró y corrigió pérdida de receta retenida al guardar opción y un cierre nativo no cancelable durante Escape. Se conservan sus negativos, eventos y positivos. Los tests históricos de tres capas se adaptaron antes de integrar, con foco, borradores, F5, claves/payload y bloqueo pendientes intactos. Se libera UX10 y se habilita UX11.
+
+Referencia recuperable antes de UX11: tag local `checkpoint/ux-ui-2026-10-25-ux10` sobre `adf2509`. No implica pausa del objetivo ni publicación remota.
 
 Oleada5 integrada: UX08 `3beabea`, UX09 `6318581`; [revisión conjunta](evidence/reviews/oleada-05.md). Pasan38/38 demo en1,8min,52/52 HTTP sobre preview en45,4s, build/tipos y lint globales. Focalizadas44 recetas y96 ofertas. Se corrigieron dos fallos visuales reales sin relajar las aserciones: baseline inline en imagen y pérdida del nombre compartido del contenedor de receta. Evidencia negativa y positiva en evidence/resume-ux08. Root inspeccionó capturas y medidas. Se liberan ambas reservas; UX10 debe conservar el controlador de receta al volver entre pasos. UX11 sólo tiene preparación de lectura.
 
