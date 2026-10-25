@@ -95,6 +95,10 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     });
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
 
+    fireEvent.click(screen.getByRole("button", { name: "Seguir editando" }));
+    expect(screen.getByRole("textbox", { name: "Nombre" })).toHaveValue("Postres");
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Descartar cambios" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(api.createCategory).not.toHaveBeenCalled();
 

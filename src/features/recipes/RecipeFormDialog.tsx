@@ -11,6 +11,7 @@ export function RecipeFormDialog(props: Readonly<RecipeFormDialogProps>) {
   useTaskDialog(dialogRef, true);
   useEffect(() => { dialogRef.current?.querySelector<HTMLInputElement>("#recipe-name")?.focus({ preventScroll: true }); }, []);
   return <dialog ref={dialogRef} className="recipe-form-dialog menu-task-dialog" aria-labelledby="recipe-form-title"
+    onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!event.repeat) sessionRef.current?.back(); } }}
     onCancel={event => { event.preventDefault(); sessionRef.current?.back(); }}>
     <RecipeFormContent {...props} sessionRef={sessionRef} />
   </dialog>;

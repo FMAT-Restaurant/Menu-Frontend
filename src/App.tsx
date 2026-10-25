@@ -1,6 +1,7 @@
 import axios from "axios";
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
+import { EditGuardProvider } from "./shared/editGuard";
 import { createMenuApi } from "./api/menuApi";
 import type { MenuRepository } from "./application/catalog";
 
@@ -59,36 +60,31 @@ const defaultRepository = createMenuApi(
   }),
 );
 
-export function App({ repository = defaultRepository }: Readonly<{ repository?: MenuRepository }> = {}) {
-  return (
-    <BrowserRouter>
-      <div className="menu-module" data-menu-module>
-        <Suspense
-          fallback={
-            <div
-              className="app-shell loading-shell"
-              role="status"
-              aria-live="polite"
-              style={{ padding: "2rem", textAlign: "center" }}
-            >
-              <p>Cargando página…</p>
-            </div>
-          }
-        >
-          <Routes>
-            <Route path="/" element={<CatalogPage repository={repository} />} />
-            <Route path="/menu" element={<Navigate to="/" replace />} />
-            <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
-            <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
-            <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
-            <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
-            <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
-            <Route path="/categories" element={<CategoryPage repository={repository} />} />
-            <Route path="/recipes" element={<RecipePage repository={repository} />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </div>
-    </BrowserRouter>
+export function createMenuRoutes(repository: MenuRepository = defaultRepository) {
+  return createRoutesFromElements(
+    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
+      <Route path="/" element={<CatalogPage repository={repository} />} />
+      <Route path="/menu" element={<Navigate to="/" replace />} />
+      <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
+      <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
+      <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
+      <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
+      <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
+      <Route path="/categories" element={<CategoryPage repository={repository} />} />
+      <Route path="/recipes" element={<RecipePage repository={repository} />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Route>,
   );
+}
+
+export function App({ repository = defaultRepository }: Readonly<{ repository?: MenuRepository }> = {}) {
+  const [router, setRouter] = useState<ReturnType<typeof createBrowserRouter> | null>(null);
+  useEffect(() => {
+    // Router construction attaches history listeners. Own it in an effect so a
+    // StrictMode replay disposes the discarded instance before creating another.
+    const ownedRouter = createBrowserRouter(createMenuRoutes(repository));
+    setRouter(ownedRouter);
+    return () => ownedRouter.dispose();
+  }, [repository]);
+  return router ? <RouterProvider router={router} /> : <div className="menu-module" data-menu-module><p role="status">Cargando página…</p></div>;
 }

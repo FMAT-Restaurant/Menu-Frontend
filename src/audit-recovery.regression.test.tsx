@@ -1,6 +1,7 @@
 import { consumeConfirmedRecipeAssignments } from "./features/offers/compositionReconciliation";
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { GuardedMemoryRouter } from './shared/GuardedMemoryRouter.test-helper';
 import { OfferFormPage, buildOfferCreateScope, buildOfferUpdateScope, type OfferFormDraftState } from './features/offers/OfferFormPage';
 import { RecipePage } from './features/recipes/RecipePage';
 import { RecipeFormDialog } from './features/recipes/RecipeFormDialog';
@@ -26,10 +27,10 @@ function repo() {
     listInventoryItems: jest.fn().mockResolvedValue({ data: [{ id: 'i1', name: 'Harina', unit: 'kg' }], meta }) };
 }
 function mountOffer(r: ReturnType<typeof repo>, s: ReturnType<typeof storage>) {
-  return render(<MemoryRouter initialEntries={['/entries/e1/offers/o1/edit']}><Routes>
+  return render(<GuardedMemoryRouter initialEntries={['/entries/e1/offers/o1/edit']}><Routes>
     <Route path='/entries/:entryId/offers/:offerId/edit' element={<OfferFormPage repository={r} storage={s} />} />
     <Route path='/entries/e1/offers' element={<h1>Listado destino</h1>} />
-  </Routes></MemoryRouter>);
+  </Routes></GuardedMemoryRouter>);
 }
 beforeEach(() => {
   Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: jest.fn(() => 'blob:review') });
@@ -76,18 +77,17 @@ test('oferta: cambiar imagen no reemplaza la clave del PATCH incierto', async ()
   expect(r.updateOffer.mock.calls[1][3]).toBe(firstKey);
 });
 
-test('oferta: salir durante upload detiene el PATCH posterior', async () => {
+test('oferta: desmontar durante upload detiene el PATCH posterior', async () => {
   const r = repo(); const s = storage();
   let resolveUpload!: (id: string) => void;
   r.uploadEntryImage.mockImplementation(() => new Promise(resolve => { resolveUpload = resolve; }));
-  mountOffer(r, s);
+  const view = mountOffer(r, s);
   await screen.findByDisplayValue('Original');
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
   await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await waitFor(() => expect(r.uploadEntryImage).toHaveBeenCalledTimes(1));
-  fireEvent.click(screen.getByRole('link', { name: 'Cancelar' }));
-  await screen.findByRole('heading', { name: 'Listado destino' });
+  view.unmount();
   await act(async () => { resolveUpload('img'); });
   expect(r.updateOffer).not.toHaveBeenCalled();
 });
@@ -289,19 +289,27 @@ test('oferta: confirmar una asignación sólo consume esa intención y conserva 
 });
 
 
-test('oferta: salir voluntariamente elimina la recuperación y una respuesta tardía no la resucita', async () => {
+test('oferta: una carga pendiente bloquea la salida y una respuesta tras desmontar no escribe ni pierde la recuperación', async () => {
   const r = repo(); const s = storage();
   let resolveUpload!: (id: string) => void;
   r.uploadEntryImage.mockImplementation(() => new Promise(resolve => { resolveUpload = resolve; }));
-  mountOffer(r, s); await screen.findByDisplayValue('Original');
+  const view = mountOffer(r, s); await screen.findByDisplayValue('Original');
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
   await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await waitFor(() => expect(r.uploadEntryImage).toHaveBeenCalledTimes(1));
+  const pending = await s.getRecord(buildOfferUpdateScope('o1'));
+  expect(pending).not.toBeNull();
   fireEvent.click(screen.getByRole('link', { name: 'Cancelar' }));
-  await screen.findByRole('heading', { name: 'Listado destino' });
+  expect(screen.queryByRole('heading', { name: 'Listado destino' })).not.toBeInTheDocument();
+  expect(screen.getByDisplayValue('Original')).toBeVisible();
+  expect(await s.getRecord(buildOfferUpdateScope('o1'))).not.toBeNull();
+  view.unmount();
   await act(async () => { resolveUpload('img'); });
-  await waitFor(async () => expect(await s.getRecord(buildOfferUpdateScope('o1'))).toBeNull());
+  const retained = await s.getRecord(buildOfferUpdateScope('o1'));
+  expect(retained).not.toBeNull();
+  expect(retained!.stages[0].idempotencyKey).toBe(pending!.stages[0].idempotencyKey);
+  expect(r.uploadEntryImage).toHaveBeenCalledTimes(1);
   expect(r.updateOffer).not.toHaveBeenCalled();
 });
 

@@ -1,3 +1,4 @@
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
@@ -53,16 +54,8 @@ export function SlotModal({
 
   useTaskDialog(dialogRef, isOpen);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  const guard = useEditGuard({ dirty: !sameDraft({ name, quantity: quantityText, course }, { name: initialData?.name ?? "", quantity: String(initialData?.quantity ?? 1), course: initialData?.course ?? "" }), blocked: false }, undefined, isOpen);
+  const requestClose = () => guard.request(onClose);
 
   if (!isOpen) return null;
 
@@ -92,17 +85,19 @@ export function SlotModal({
       ref={dialogRef}
       className="slot-modal-dialog menu-task-dialog"
       aria-labelledby="slot-modal-title"
+      onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!event.repeat) requestClose(); } }}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        requestClose();
       }}
     >
+      {guard.confirmation}
       <header className="modal-header">
         <h2 id="slot-modal-title">{title}</h2>
         <button
           type="button"
           className="modal-close"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Cerrar modal de grupo"
         >
           <Icon name="close" />
@@ -168,7 +163,7 @@ export function SlotModal({
           <button
             type="button"
             className="button button--secondary"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Cancelar
           </button>

@@ -1116,6 +1116,8 @@ describe("RecipePage Component (V6 Integration)", () => {
     // Cancel dialog
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
+    fireEvent.click(screen.getByRole("button", { name: "Descartar cambios" }));
+
     // Reopen dialog -> pure instance initialization produces clean rows
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();

@@ -1,6 +1,7 @@
+import { GuardedMemoryRouter as MemoryRouter } from "../../shared/GuardedMemoryRouter.test-helper";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import type {
   MenuEntryDetail,
   MenuOfferDetail,
@@ -749,6 +750,7 @@ describe("OfferFormPage (V4)", () => {
 
     // Navigate to entry-2 within the same router
     fireEvent.click(screen.getByRole("link", { name: "Cambiar a Entrada 2" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Descartar cambios" }));
 
     // Form draft is completely reset for entry-2
     await screen.findByLabelText(/Etiqueta de presentación/);
@@ -1761,8 +1763,8 @@ describe("OfferFormPage (V4)", () => {
 
     // Second Escape requests explicit discard of the edited option.
     fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
-    expect(screen.getByRole("heading", { name: "¿Descartar los cambios de esta opción?" })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Continuar editando" }));
+    expect(screen.getByRole("heading", { name: "¿Descartar los cambios sin guardar?" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Seguir editando" }));
     expect(nameInput).toHaveValue("Mi Selección Favorita");
     fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
     fireEvent.click(screen.getByRole("button", { name: "Descartar cambios" }));

@@ -1,4 +1,6 @@
+import "./shared/dataRouter.test-helper";
 import { cleanup, render, screen } from "@testing-library/react";
+import { StrictMode } from "react";
 import { App } from "./App";
 import type {
   MenuEntry,
@@ -50,6 +52,40 @@ describe("App routing and lazy loading (T15)", () => {
   afterEach(() => {
     cleanup();
     window.history.replaceState({}, "", "/");
+  });
+
+  test("StrictMode owns one live router and disposes its history listeners on unmount", async () => {
+    window.history.replaceState({}, "", "/router-lifecycle");
+    const repository = createRepository();
+    const listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
+    const add = window.addEventListener;
+    const remove = window.removeEventListener;
+    const addSpy = jest.spyOn(window, "addEventListener").mockImplementation((type, listener, options) => {
+      if (type === "popstate" || type === "pagehide") {
+        const entries = listeners.get(type) ?? new Set<EventListenerOrEventListenerObject>();
+        entries.add(listener); listeners.set(type, entries);
+      }
+      add.call(window, type, listener, options);
+    });
+    const removeSpy = jest.spyOn(window, "removeEventListener").mockImplementation((type, listener, options) => {
+      listeners.get(type)?.delete(listener);
+      remove.call(window, type, listener, options);
+    });
+    const view = render(<StrictMode><App repository={repository} /></StrictMode>);
+    try {
+      await screen.findByRole("heading", { name: "Página no encontrada" });
+      expect(listeners.get("popstate")?.size).toBe(1);
+      expect(listeners.get("pagehide")?.size).toBe(1);
+      const registrations = addSpy.mock.calls.filter(([type]) => type === "popstate" || type === "pagehide").length;
+      view.rerender(<StrictMode><App repository={repository} /></StrictMode>);
+      expect(addSpy.mock.calls.filter(([type]) => type === "popstate" || type === "pagehide")).toHaveLength(registrations);
+      view.unmount();
+      expect(listeners.get("popstate")?.size).toBe(0);
+      expect(listeners.get("pagehide")?.size).toBe(0);
+    } finally {
+      view.unmount();
+      addSpy.mockRestore(); removeSpy.mockRestore();
+    }
   });
 
   test("opens the administrative catalog at the application root", async () => {

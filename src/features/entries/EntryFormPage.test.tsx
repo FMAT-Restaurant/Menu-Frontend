@@ -1,7 +1,8 @@
+import { GuardedMemoryRouter as MemoryRouter } from "../../shared/GuardedMemoryRouter.test-helper";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { AxiosError, AxiosHeaders } from "axios";
-import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import type { MenuEntryDetail, MenuRepository } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
 import {
@@ -251,6 +252,12 @@ test("cancel discards the draft after modifying fields and image, and reopening 
   fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción a cancelar" } });
 
   fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Seguir editando" }));
+  expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Borrador a cancelar");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("Descripción a cancelar");
+  expect(screen.getByRole("img", { name: "Vista previa de la imagen de la entrada" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Descartar cambios" }));
 
   expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?status=ARCHIVED" })).toBeVisible();
   expect(api.createEntry).not.toHaveBeenCalled();
@@ -355,12 +362,18 @@ function fillIdentity() {
   fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Con arroz" } });
 }
 
-test("back navigation is visible immediately and preserves query, filters and page without saving", () => {
+test("back navigation is visible immediately and preserves query, filters and page without saving", async () => {
   const api = repository();
   renderPage(api, "/entries/new", { returnTo: "/?q=arroz&status=INACTIVE&page=3" });
   fillIdentity();
   fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
-  expect(screen.getByRole("heading", { name: "Catálogo restaurado ?q=arroz&status=INACTIVE&page=3" })).toBeVisible();
+  fireEvent.click(await screen.findByRole("button", { name: "Seguir editando" }));
+  expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("Con arroz");
+  fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Descartar cambios" }));
+  expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?q=arroz&status=INACTIVE&page=3" })).toBeVisible();
+  expect(api.updateEntry).not.toHaveBeenCalled();
   expect(api.createEntry).not.toHaveBeenCalled();
 });
 

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { OptionModal, type OptionDraft } from "../offers/OptionModal";
 import { createControllableIndexedDbHarness, createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
+import type { RecipeDraft } from "../../application/catalog";
 import { RecipeSelectionTask, type RecipeSelectionTaskHandle } from "./RecipeSelectionTask";
 import type { RecipeRepository } from "./RecipePage";
 import { buildRecipeCreateScope } from "./RecipeFormContent";
@@ -118,6 +119,31 @@ test("clearing no-match search restores results and focus without opening anothe
   expect(within(screen.getByRole("dialog")).queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
 });
 
+test("an expired creation with a possible applied write cannot discard its recovery or leave the recipe step", async () => {
+  const repo = repository(); const store = storage();
+  repo.createRecipe.mockRejectedValueOnce(Object.assign(new Error("timeout"), { code: "ECONNABORTED" }));
+  const view = render(<Task repo={repo} store={store} />);
+  await openCreate(); fillRecipe();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+  await screen.findByRole("button", { name: "Reintentar" });
+  const pending = await store.getRecord<RecipeDraft>(buildRecipeCreateScope());
+  expect(pending).not.toBeNull();
+  view.unmount();
+  await store.saveRecord({ ...pending!, stages: pending!.stages.map((stage, index) => index === pending!.currentStageIndex
+    ? { ...stage, status: "expired" as const, possibleWriteApplied: true } : stage) });
+  render(<Task repo={repo} store={store} />);
+  await waitFor(() => expect(screen.getByLabelText("Nombre", { exact: true })).toHaveValue("Pan"));
+  await screen.findByRole("dialog", { name: "Nueva receta" });
+  cancel();
+  fireEvent.keyDown(screen.getByLabelText("Nombre", { exact: true }), { key: "Escape" });
+  expect(screen.getByRole("dialog", { name: "Nueva receta" })).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Descartar cambios" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Conservar borrador y volver" })).not.toBeInTheDocument();
+  const retained = await store.getRecord<RecipeDraft>(buildRecipeCreateScope());
+  expect(retained?.stages[retained.currentStageIndex].idempotencyKey).toBe(pending!.stages[pending!.currentStageIndex].idempotencyKey);
+  expect(repo.createRecipe).toHaveBeenCalledTimes(1);
+});
+
 test("saving an option requires an explicit decision for its preserved recipe draft", async () => {
   const repo = repository(); const saved = jest.fn();
   render(<Task repo={repo} store={storage()} onSave={saved} />);
@@ -155,6 +181,6 @@ test("local Escape handles repeated steps before the browser requests a native c
   expect(dialog).toHaveAttribute("open");
   expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Etiqueta propia");
   expect(escape()).toBe(false);
-  expect(screen.getByRole("button", { name: "Continuar editando" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Seguir editando" })).toHaveFocus();
   expect(repo.createRecipe).not.toHaveBeenCalled();
 });

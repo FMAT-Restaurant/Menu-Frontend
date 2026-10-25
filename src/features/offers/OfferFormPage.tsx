@@ -1,3 +1,4 @@
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { isStrongEtag } from "../../application/entryVersion";
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -261,6 +262,8 @@ export function OfferFormPage({
 
   const [entry, setEntry] = useState<MenuEntryDetail | null>(null);
 
+  const baseDraft = useRef<OfferFormDraftState>({ presentationTag: "", basePrice: "", desiredStatus: "INACTIVE", slots: [] });
+  const exitSucceeded = useRef(false);
   const [presentationTag, setPresentationTag] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [desiredStatus, setDesiredStatus] = useState<OfferStatus>("INACTIVE");
@@ -365,15 +368,7 @@ export function OfferFormPage({
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [savedNotice, setSavedNotice] = useState("");
 
-  useEffect(() => {
-    function handleHistoryExit() {
-      if (window.location.pathname !== location.pathname) abandonEditor();
-    }
-    window.addEventListener("popstate", handleHistoryExit);
-    return () => window.removeEventListener("popstate", handleHistoryExit);
-  }, [location.pathname]);
 
-  // O12: Reset all form state and invalidate in-flight validations when route identity changes
   useEffect(() => {
     imageValidationId.current += 1;
     controllerRef.current = null;
@@ -619,6 +614,7 @@ export function OfferFormPage({
         if (offerData && !restoredFromStorageRef.current) {
           setOpeningEtag(offerData.etag);
           openingEtagRef.current = offerData.etag;
+          baseDraft.current = { presentationTag: offerData.data.presentationTag || "", basePrice: String(offerData.data.basePrice ?? ""), desiredStatus: offerData.data.status, slots: mapOfferDetailToSlots(offerData.data) };
           setPresentationTag(offerData.data.presentationTag || "");
           setBasePrice(String(offerData.data.basePrice ?? ""));
           setDesiredStatus(offerData.data.status);
@@ -923,6 +919,10 @@ export function OfferFormPage({
       return;
     }
     const confirmedSlots = consumeConfirmedRecipeAssignments(reconciliation.slots, sent?.slots ?? []);
+    if (sent) {
+      const confirmedBase = reconcileComposition({ currentSlots: sent.slots, sentSlots: sent.slots, responseSlots: result.composition?.slots ?? [] });
+      if (confirmedBase.status !== "ambiguous") baseDraft.current = { ...sent, slots: consumeConfirmedRecipeAssignments(confirmedBase.slots, sent.slots) };
+    }
     setSlots(confirmedSlots);
     if (attemptResult.hasDraftChangesSinceSubmission) {
       await controller.updateEditableDraft({ ...current, slots: confirmedSlots });
@@ -937,6 +937,7 @@ export function OfferFormPage({
     } else {
       await controller.abandonFlow().catch(() => {});
       if (!isCurrentController(controller)) return;
+      exitSucceeded.current = true;
       await navigate(returnTo, { replace: true, state: { returnTo: catalogReturnTo } });
     }
   }
@@ -1012,6 +1013,11 @@ export function OfferFormPage({
     setSavedNotice("Nueva operación preparada. Pulsa Guardar Oferta para enviar tus cambios.");
   }
 
+  const guard = useEditGuard({
+    get dirty() { return !exitSucceeded.current && !sameDraft(draftRef.current, baseDraft.current); },
+    get blocked() { return !exitSucceeded.current && (saving || isSubmittingRef.current || uncertainStage !== null || Boolean(controllerRef.current?.getCurrentAttempt()?.possibleWriteApplied && controllerRef.current.getCurrentAttempt()?.status !== "succeeded")); },
+  }, abandonEditor);
+
   function abandonEditor() {
     mountedRef.current = false;
     imageValidationId.current += 1;
@@ -1062,6 +1068,7 @@ export function OfferFormPage({
     }
     setOpeningEtag(reviewedOffer.etag);
     openingEtagRef.current = reviewedOffer.etag;
+    baseDraft.current = { ...baseDraft.current, slots: reviewedSlots };
     setSlots(reviewedSlots);
 
     setConflictNotice("");
@@ -1106,9 +1113,10 @@ export function OfferFormPage({
 
   return (
     <div className="app-shell offer-form-view">
+      {guard.confirmation}
       <main className="menu-page offer-form-page">
         <header className="task-header offer-form-page__heading">
-          <Link onClick={abandonEditor} to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
+          <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
             ← Volver a ofertas
           </Link>
           <div className="task-header__content">
@@ -1267,7 +1275,7 @@ export function OfferFormPage({
             />
 
             <div className="offer-form__actions">
-              <Link onClick={abandonEditor} to={returnTo} state={{ returnTo: catalogReturnTo }} className="button button--secondary">
+              <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="button button--secondary">
                 Cancelar
               </Link>
               <button
@@ -1299,6 +1307,7 @@ export function OfferFormPage({
           isNestedPickerOpen={recipePickerOpen}
           recipeStep={recipeCreating}
           onNestedBack={() => recipeTaskRef.current?.back()}
+          isNestedBlocked={() => recipeTaskRef.current?.isBlocked() ?? false}
           hasNestedChanges={() => recipeTaskRef.current?.hasChanges() ?? false}
           onDiscardNested={() => recipeTaskRef.current?.discard()}
           onChangeDraft={(updated) => setCurrentOptionDraft(updated)}

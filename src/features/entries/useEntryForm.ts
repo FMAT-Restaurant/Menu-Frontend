@@ -1,3 +1,4 @@
+import { sameDraft } from "../../shared/editGuard";
 import { useCallback, useEffect, useRef, useState, type SubmitEvent } from "react";
 import type {
   EntryCreateDraft,
@@ -97,6 +98,8 @@ export function useEntryForm(
   const entryId = routeEntryId ?? confirmedEntryId;
   const [infoNotice, setInfoNotice] = useState("");
   const [draft, setDraft] = useState<EntryUpdateDraft>(emptyDraft);
+  const baseDraft = useRef<EntryUpdateDraft>(emptyDraft);
+  const baseFile = useRef<File | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<File | null>(null);
   fileRef.current = file;
@@ -127,6 +130,7 @@ export function useEntryForm(
 
   const onLoaded = useCallback((entry: MenuEntryDetail) => {
     if (!loaded.current) {
+      baseDraft.current = draftFrom(entry);
       setDraft(draftFrom(entry));
       loaded.current = true;
     }
@@ -250,6 +254,8 @@ export function useEntryForm(
           }
           if (currentStage.status === "succeeded" && restored.confirmedResult) {
             const confirmed = restored.confirmedResult as MenuEntryDetail;
+            baseDraft.current = draftFrom(confirmed);
+            baseFile.current = restored.submittedDraft?.imageFile ?? null;
             loaded.current = true;
             setConfirmedEntryId(confirmed.id);
             resources.setEntry(confirmed);
@@ -583,6 +589,7 @@ export function useEntryForm(
     if (reviewLoading || !review || !isStrongEntryVersion(review.etag)) return;
     resources.setEntry(review);
     if (!keepDraft) {
+      baseDraft.current = draftFrom(review);
       setDraft(draftFrom(review));
       setFile(null);
       uploaded.current = null;
@@ -600,6 +607,8 @@ export function useEntryForm(
 
   return {
     ...resources,
+    get dirty() { return !saveSucceeded.current && (!sameDraft({ ...draft, categoryIds: [...draft.categoryIds].sort() }, { ...baseDraft.current, categoryIds: [...baseDraft.current.categoryIds].sort() }) || file !== baseFile.current); },
+    get exitBlocked() { return !saveSucceeded.current && (saving.current || stage !== "idle" || uncertain !== "idle" || Boolean(controllerRef.current?.getCurrentAttempt()?.possibleWriteApplied && controllerRef.current.getCurrentAttempt()?.status !== "succeeded")); },
     editing: Boolean(entryId),
     infoNotice,
     draft,

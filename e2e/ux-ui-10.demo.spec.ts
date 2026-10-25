@@ -31,7 +31,11 @@ for (const width of [390, 1024, 600, 740]) {
     page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/api/")) requests.push(request.url()); });
     await page.setViewportSize({ width: width === 600 || width === 740 ? 1440 : width, height: 844 });
     await page.goto("/entries/demo-entry-burger/offers/new");
-    if (width === 600 || width === 740) await page.locator("[data-menu-module]").evaluate((el, size) => { (el as HTMLElement).style.width = `${size}px`; }, width);
+    await expect(page.getByRole("heading", { name: "Nueva oferta", exact: true })).toBeVisible();
+    if (width === 600 || width === 740) {
+      await page.locator("[data-menu-module]").evaluate((el, size) => { (el as HTMLElement).style.width = `${size}px`; }, width);
+      await expect(page.locator("[data-menu-module]")).toHaveCSS("width", `${width}px`);
+    }
     await page.getByRole("button", { name: "Agregar grupo", exact: true }).click();
     await page.getByLabel("Nombre del grupo").fill("Principal");
     await page.getByRole("button", { name: "Guardar grupo", exact: true }).click();
@@ -105,7 +109,7 @@ for (const width of [390, 1024, 600, 740]) {
     await expect(page.getByRole("button", { name: /^Elegir receta/ })).toBeFocused();
     expect(await node!.evaluate(el => el === document.querySelector("dialog[open]:modal"))).toBe(true);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Continuar editando", exact: true }).click();
+    await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
     await expect(page.getByLabel("Nombre mostrado (opcional)")).toHaveValue("Mi opción conservada");
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Descartar cambios", exact: true }).click();

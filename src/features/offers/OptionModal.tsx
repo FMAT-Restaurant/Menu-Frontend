@@ -1,3 +1,4 @@
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type ReactNode, type SubmitEvent } from "react";
@@ -7,7 +8,9 @@ import { validateOptionDraft, type OptionDraft, type ValidatedOptionDraft } from
 export type { OptionDraft } from "./optionDraft";
 
 function draftSnapshot(draft: OptionDraft | null) {
-  return JSON.stringify(draft, Object.keys(draft ?? {}).sort());
+  return { displayName: draft?.displayName ?? "", status: draft?.status ?? "ACTIVE", sourceType: draft?.sourceType ?? null,
+    recipeId: draft?.recipeId, recipeName: draft?.recipeName, hasRecipeAssignmentIntent: draft?.hasRecipeAssignmentIntent,
+    recipeAssignmentToken: draft?.recipeAssignmentToken, inventoryItemId: draft?.inventoryItemId, inventoryItemName: draft?.inventoryItemName, quantity: draft?.quantity, unit: draft?.unit };
 }
 
 export interface OptionModalProps {
@@ -24,7 +27,8 @@ export interface OptionModalProps {
   recipeStep?: boolean;
   onNestedBack?: () => void;
   hasNestedChanges?: () => boolean;
-  onDiscardNested?: () => void;
+  onDiscardNested?: () => boolean | void;
+  isNestedBlocked?: () => boolean;
 }
 
 export function OptionModal({
@@ -42,6 +46,7 @@ export function OptionModal({
   onNestedBack,
   hasNestedChanges,
   onDiscardNested,
+  isNestedBlocked,
 }: Readonly<OptionModalProps>) {
   const [displayName, setDisplayName] = useState("");
   const [status, setStatus] = useState<OfferStatus>("ACTIVE");
@@ -57,20 +62,16 @@ export function OptionModal({
   const [validationError, setValidationError] = useState("");
   const [confirmClose, setConfirmClose] = useState(false);
   const [pendingSave, setPendingSave] = useState<ValidatedOptionDraft | null>(null);
-  const openingDraftRef = useRef<string>("");
+  const openingDraftRef = useRef(draftSnapshot(initialData));
   const confirmRef = useRef<HTMLButtonElement>(null);
   const confirmationTriggerRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (isOpen) { openingDraftRef.current = draftSnapshot(initialData); setConfirmClose(false); setPendingSave(null); }
     // Capture the opening snapshot, not every keystroke emitted to the parent.
   }, [isOpen]);
-  function requestClose() {
-    if (draftSnapshot(initialData) !== openingDraftRef.current || hasNestedChanges?.()) {
-      confirmationTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      setConfirmClose(true);
-    }
-    else onClose();
-  }
+  const currentDraft = { ...draftSnapshot(initialData), displayName, status: isCreateMode ? "ACTIVE" : status, sourceType, recipeId, recipeName, hasRecipeAssignmentIntent, inventoryItemId, inventoryItemName, quantity, unit };
+  const guard = useEditGuard({ get dirty() { return !sameDraft(currentDraft, openingDraftRef.current) || Boolean(hasNestedChanges?.()); }, get blocked() { return Boolean(isNestedBlocked?.()); } }, undefined, isOpen);
+  function requestClose() { guard.request(() => { if (onDiscardNested?.() !== false) onClose(); }); }
   function requestStepBack() {
     if (isNestedPickerOpen) { onNestedBack?.(); return; }
     if (confirmClose) { setConfirmClose(false); setPendingSave(null); }
@@ -223,6 +224,7 @@ export function OptionModal({
       } : {}),
     }, isCreateMode ? "create" : "update");
     if (!result.valid) { setValidationError(result.message); return; }
+    if (isNestedBlocked?.()) return;
     if (hasNestedChanges?.()) {
       confirmationTriggerRef.current = event.currentTarget.querySelector<HTMLButtonElement>('button[type="submit"]');
       setPendingSave(result.value);
@@ -262,11 +264,12 @@ export function OptionModal({
         requestStepBack();
       }}
     >
+      {guard.confirmation}
       {confirmClose && <section className="option-discard" aria-labelledby="option-discard-title">
         <h2 id="option-discard-title">{pendingSave ? "¿Descartar el borrador de receta y guardar la opción?" : "¿Descartar los cambios de esta opción?"}</h2>
         <p>{pendingSave ? "Hay una receta sin guardar que conservaste al volver. Puedes seguir editándola o descartarla antes de guardar la opción." : "La opción y los borradores de receta sin guardar se conservan si continúas editando."}</p>
         <button ref={confirmRef} type="button" className="button button--secondary" onClick={() => { setConfirmClose(false); setPendingSave(null); }}>Continuar editando</button>
-        <button type="button" className="button button--primary" onClick={() => { onDiscardNested?.(); setConfirmClose(false); if (pendingSave) { onSave(pendingSave); setPendingSave(null); } else onClose(); }}>{pendingSave ? "Descartar receta y guardar opción" : "Descartar cambios"}</button>
+        <button type="button" className="button button--primary" onClick={() => { if (isNestedBlocked?.() || onDiscardNested?.() === false) return; setConfirmClose(false); if (pendingSave) { onSave(pendingSave); setPendingSave(null); } else onClose(); }}>{pendingSave ? "Descartar receta y guardar opción" : "Descartar cambios"}</button>
       </section>}
       <header className="modal-header" hidden={isNestedPickerOpen || confirmClose}>
         <h2 id="option-modal-title">{title}</h2>

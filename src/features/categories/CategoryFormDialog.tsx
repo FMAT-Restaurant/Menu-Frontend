@@ -1,3 +1,4 @@
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
@@ -67,6 +68,8 @@ export function CategoryFormDialog({
   const [description, setDescription] = useState(
     () => category?.description ?? initialPendingRecord?.editableDraft.description ?? "",
   );
+  const baseDraft = useRef({ name: category?.name ?? "", description: category?.description ?? "" });
+  const exitSucceeded = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [nameError, setNameError] = useState("");
@@ -92,6 +95,7 @@ export function CategoryFormDialog({
   // Edit mode version & conflict review state
   const [openingEtag, setOpeningEtag] = useState<string | undefined>(undefined);
   const [reviewRequired, setReviewRequired] = useState(false);
+  const [exitUncertain, setExitUncertain] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewedResource, setReviewedResource] =
@@ -181,6 +185,7 @@ export function CategoryFormDialog({
         }
         setActiveCategory(versioned.data);
         if (!options?.preserveDraft && !userEditedRef.current) {
+          baseDraft.current = { name: versioned.data.name, description: versioned.data.description ?? "" };
           setName(versioned.data.name);
           setDescription(versioned.data.description ?? "");
         }
@@ -300,7 +305,7 @@ export function CategoryFormDialog({
     }
   }
 
-  async function handleVoluntaryClose() {
+  async function abandonEditor() {
     if (busy) return;
     activeRef.current = false;
     if (controllerRef.current) {
@@ -316,8 +321,15 @@ export function CategoryFormDialog({
         // Ignore cleanup error on voluntary exit
       }
     }
+    exitSucceeded.current = true;
     onClose();
   }
+
+  const guard = useEditGuard({
+    get dirty() { return !exitSucceeded.current && !sameDraft({ name, description }, baseDraft.current); },
+    blocked: exitUncertain || busy || pendingAttempt?.status === "uncertain" || pendingAttempt?.status === "conflict_in_progress" || pendingAttempt?.status === "in_flight" || Boolean(pendingAttempt?.possibleWriteApplied && pendingAttempt.status !== "succeeded"),
+  }, () => { void abandonEditor(); });
+  function handleVoluntaryClose() { guard.request(() => { void abandonEditor(); }); }
 
   async function executeCreationFlow(mode: "submit" | "retry") {
     // A retry sends the original sealed payload, independently of later draft edits.
@@ -359,6 +371,7 @@ export function CategoryFormDialog({
 
       if (result.status === "succeeded" && result.result) {
         const created = result.result;
+        baseDraft.current = { name: created.name, description: created.description ?? "" };
         syncAttemptStateFromRecord(null);
 
         if (result.hasDraftChangesSinceSubmission) {
@@ -458,6 +471,7 @@ export function CategoryFormDialog({
     } catch (err) {
       if (!activeRef.current) return;
       const analysis = analyzeNonIdempotentWriteError(err);
+      setExitUncertain(analysis.possibleWriteApplied);
       if (analysis.requiresResourceReload) {
         setReviewRequired(true);
       }
@@ -494,6 +508,8 @@ export function CategoryFormDialog({
     setActiveCategory(reviewedResource.data);
     setOpeningEtag(reviewedResource.etag);
     if (!keepDraft) {
+      setExitUncertain(false);
+      baseDraft.current = { name: reviewedResource.data.name, description: reviewedResource.data.description ?? "" };
       setName(reviewedResource.data.name);
       setDescription(reviewedResource.data.description ?? "");
       setNameError("");
@@ -565,6 +581,7 @@ export function CategoryFormDialog({
       ref={dialogRef}
       className="category-form-dialog menu-task-dialog"
       aria-labelledby="category-form-title"
+      onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!event.repeat) handleVoluntaryClose(); } }}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) {
@@ -572,6 +589,7 @@ export function CategoryFormDialog({
         }
       }}
     >
+      {guard.confirmation}
       <div className="category-form-dialog__header">
         <h2 id="category-form-title">{editing ? "Editar categoría" : "Crear categoría"}</h2>
         <button

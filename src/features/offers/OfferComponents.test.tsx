@@ -427,7 +427,7 @@ describe("SlotModal Component", () => {
       <SlotModal isOpen={true} initialData={null} onSave={jest.fn()} onClose={handleClose} />
     );
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(handleClose).toHaveBeenCalledTimes(1);
 
     const closeBtn = screen.getByRole("button", { name: "Cerrar modal de grupo" });

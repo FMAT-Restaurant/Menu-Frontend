@@ -65,7 +65,7 @@ test("RC04: each Escape affects only the active step and restores focus within o
   await expect(chooseRecipe).toBeFocused();
   expect(await node!.evaluate(el => el === document.querySelector("dialog[open]:modal"))).toBe(true);
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Continuar editando", exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Seguir editando", exact: true })).toBeFocused();
   await page.getByRole("button", { name: "Descartar cambios", exact: true }).click();
   await expect(option).not.toBeVisible();
   await expect(page.locator("dialog[open]:modal")).toHaveCount(0);

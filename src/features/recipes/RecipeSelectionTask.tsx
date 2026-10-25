@@ -6,7 +6,7 @@ import { RecipeFormContent, buildRecipeCreateScope, type RecipeFormContentHandle
 import { RecipeSelector, emptyRecipeSelection, type RecipeSelectionState } from "./RecipeSelector";
 import "./styles.css";
 
-export interface RecipeSelectionTaskHandle { back(): void; hasChanges(): boolean; discard(): void }
+export interface RecipeSelectionTaskHandle { back(): void; hasChanges(): boolean; discard(): boolean; isBlocked(): boolean }
 
 /** Stays mounted for the option task, including while its option step is visible. */
 export function RecipeSelectionTask({ repository, storage, nestedContext, active, slotName, onSelect, onBack, onStepChange, taskRef }: {
@@ -54,7 +54,7 @@ export function RecipeSelectionTask({ repository, storage, nestedContext, active
     // Restore once for this option session; subsequent context updates belong to its controller.
   }, [storage]);
   useEffect(() => { onStepChange(creating); }, [creating, onStepChange]);
-  useImperativeHandle(taskRef, () => ({ back() { if (creating) sessionRef.current?.back(); else onBack(); }, hasChanges: () => sessionRef.current?.hasChanges() ?? false, discard: () => sessionRef.current?.discard() }));
+  useImperativeHandle(taskRef, () => ({ back() { if (creating) sessionRef.current?.back(); else onBack(); }, hasChanges: () => sessionRef.current?.hasChanges() ?? false, discard: () => sessionRef.current?.discard() ?? true, isBlocked: () => sessionRef.current?.isBlocked() ?? false }));
   const finish = (recipe: RecipeSummary) => {
     setCreating(false);
     setHasSession(false);

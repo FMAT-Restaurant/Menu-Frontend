@@ -1,3 +1,4 @@
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useEffect, useRef, useState, useImperativeHandle, type Ref, type SubmitEvent } from "react";
 import type {
@@ -31,7 +32,8 @@ import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOper
 
 export interface RecipeFormContentHandle {
   back(): void;
-  discard(): void;
+  discard(): boolean;
+  isBlocked(): boolean;
   hasChanges(): boolean;
 }
 
@@ -249,6 +251,10 @@ export function RecipeFormContent({
     return [{ key: "supply-row-1", inventoryItemId: "", quantity: 1 }];
   });
 
+  const snapshot = { name, description, instructions, supplies: supplies.map(({ inventoryItemId, quantity }) => ({ inventoryItemId, quantity: String(quantity) })) };
+  const initialConfirmed = initialPendingRecord?.confirmedResult as RecipeDetail | undefined;
+  const baseDraft = useRef(initialConfirmed ? { name: initialConfirmed.name, description: initialConfirmed.description, instructions: initialConfirmed.instructions, supplies: initialConfirmed.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) } : recipe ? snapshot : { name: "", description: "", instructions: "", supplies: [{ inventoryItemId: "", quantity: "1" }] });
+  const exitSucceeded = useRef(false);
   const [busy, setBusy] = useState(false);
   const [confirmBack, setConfirmBack] = useState(false);
   const backConfirmRef = useRef<HTMLButtonElement>(null);
@@ -304,6 +310,7 @@ export function RecipeFormContent({
   // Edit version & review state
   const [openingEtag, setOpeningEtag] = useState<string | undefined>(openingResource?.etag);
   const [reviewRequired, setReviewRequired] = useState(false);
+  const [exitUncertain, setExitUncertain] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewedResource, setReviewedResource] =
@@ -417,6 +424,8 @@ export function RecipeFormContent({
           }
           syncAttemptStateFromRecord(restored);
           if (stage.status === "succeeded" && restored.confirmedResult) {
+            const confirmed = restored.confirmedResult as RecipeDetail;
+            baseDraft.current = { name: confirmed.name, description: confirmed.description, instructions: confirmed.instructions, supplies: confirmed.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) };
             setActiveRecipe(restored.confirmedResult as RecipeDetail);
             setOpeningEtag((restored.confirmedResult as RecipeDetail).etag);
             setReviewRequired(!isStrongEtag((restored.confirmedResult as RecipeDetail).etag));
@@ -446,6 +455,7 @@ export function RecipeFormContent({
           }
           setOpeningEtag(versioned.etag);
           setActiveRecipe(versioned.data);
+          baseDraft.current = { name: versioned.data.name, description: versioned.data.description, instructions: versioned.data.instructions, supplies: versioned.data.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) };
           setName(versioned.data.name);
           setDescription(versioned.data.description);
           setInstructions(versioned.data.instructions);
@@ -675,13 +685,16 @@ export function RecipeFormContent({
   }
 
   function handleBack() {
-    if (busy || isSubmittingRef.current || (onBack && pendingAttempt && pendingAttempt.status !== "succeeded")) return;
-    if (onBack && userEditedRef.current) setConfirmBack(value => !value);
+    if (exitBlocked()) return;
+    if (onBack && dirty) setConfirmBack(value => !value);
     else if (onBack) onBack();
-    else handleVoluntaryClose();
+    else guard.request(() => { handleVoluntaryClose(); });
   }
 
-  useImperativeHandle(sessionRef, () => ({ back: handleBack, discard: handleVoluntaryClose, hasChanges: () => userEditedRef.current || Boolean(initialPendingRecord) }));
+  const dirty = !exitSucceeded.current && !sameDraft(snapshot, baseDraft.current);
+  function exitBlocked() { return exitUncertain || busy || isSubmittingRef.current || pendingAttempt?.status === "uncertain" || pendingAttempt?.status === "conflict_in_progress" || pendingAttempt?.status === "in_flight" || Boolean(pendingAttempt?.possibleWriteApplied && pendingAttempt.status !== "succeeded"); }
+  const guard = useEditGuard({ get dirty() { return dirty && !exitSucceeded.current; }, get blocked() { return exitBlocked(); } }, () => { handleVoluntaryClose(); });
+  useImperativeHandle(sessionRef, () => ({ back: handleBack, discard: handleVoluntaryClose, hasChanges: () => dirty, isBlocked: exitBlocked }));
 
   useEffect(() => {
     const controller = controllerRef.current;
@@ -689,12 +702,13 @@ export function RecipeFormContent({
   }, [nestedContext]);
 
   function handleVoluntaryClose() {
-    if (busy || isSubmittingRef.current) return;
+    if (exitBlocked()) return false;
     activeRef.current = false;
     if (controllerRef.current) {
       void controllerRef.current.abandonFlow().catch(() => {});
     }
     onClose();
+    return true;
   }
 
   async function handleStartNewOperation() {
@@ -732,6 +746,7 @@ export function RecipeFormContent({
     if (!repository && onSubmit) {
       try {
         await onSubmit(cleanDraft);
+        exitSucceeded.current = true;
         onClose();
       } catch {
         setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
@@ -758,6 +773,7 @@ export function RecipeFormContent({
 
       if (result.status === "succeeded" && result.result) {
         setPendingAttempt(null);
+        if (result.record.submittedDraft) { const d = result.record.submittedDraft; baseDraft.current = { name: d.name, description: d.description, instructions: d.instructions, supplies: d.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) }; }
         if (result.hasDraftChangesSinceSubmission) {
           setActiveRecipe(result.result);
           setOpeningEtag(result.result.etag);
@@ -769,6 +785,7 @@ export function RecipeFormContent({
         } else {
           await controller.abandonFlow().catch(() => {});
           if (!activeRef.current) return;
+          exitSucceeded.current = true;
           onCreated?.(result.result);
           onClose();
         }
@@ -821,6 +838,7 @@ export function RecipeFormContent({
     if (!repository && onSubmit) {
       try {
         await onSubmit(cleanDraft);
+        exitSucceeded.current = true;
         onClose();
       } catch {
         setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
@@ -862,11 +880,13 @@ export function RecipeFormContent({
       if (!activeRef.current) return;
       await controllerRef.current?.abandonFlow().catch(() => {});
       if (!activeRef.current) return;
+      exitSucceeded.current = true;
       onUpdated?.(updated);
       onClose();
     } catch (err) {
       if (!activeRef.current) return;
       const analysis = analyzeNonIdempotentWriteError(err);
+      setExitUncertain(analysis.possibleWriteApplied);
       if (analysis.requiresResourceReload) {
         setReviewRequired(true);
       }
@@ -904,6 +924,8 @@ export function RecipeFormContent({
     setActiveRecipe(reviewedResource.data);
     setOpeningEtag(reviewedResource.etag);
     if (!keepDraft) {
+      setExitUncertain(false);
+      baseDraft.current = { name: reviewedResource.data.name, description: reviewedResource.data.description ?? "", instructions: reviewedResource.data.instructions ?? "", supplies: reviewedResource.data.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) };
       setName(reviewedResource.data.name);
       setDescription(reviewedResource.data.description ?? "");
       setInstructions(reviewedResource.data.instructions ?? "");
@@ -973,6 +995,7 @@ export function RecipeFormContent({
 
   return (
     <section className="recipe-form-dialog recipe-form-content" hidden={!active} aria-labelledby="recipe-form-title">
+      {guard.confirmation}
       {confirmBack && <section className="recipe-back-confirm" aria-labelledby="recipe-back-title">
         <h3 id="recipe-back-title">Tu receta tiene cambios sin guardar</h3>
         <p>Puedes volver a la búsqueda conservando este borrador, o seguir editando la receta.</p>

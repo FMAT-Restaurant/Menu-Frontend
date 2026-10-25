@@ -1,3 +1,4 @@
+import { useEditGuard } from "../../shared/editGuard";
 import { useCallback, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { EntryStatus, MenuRepository } from "../../application/catalog";
@@ -95,6 +96,7 @@ function EntryFormEditor({
 
   const defaultOnSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
   const model = useEntryForm(repository, entryId, customOnSaved ?? defaultOnSaved, storage);
+  const guard = useEditGuard({ get dirty() { return model.dirty; }, get blocked() { return model.exitBlocked; } }, model.abandon);
   const editing = model.editing;
   const summary = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLElement>(null);
@@ -109,10 +111,10 @@ function EntryFormEditor({
 
   useEffect(() => { if (model.failureEpoch) summary.current?.focus(); }, [model.failureEpoch]);
 
-  return <div className="app-shell entry-form-shell">
+  return <div className="app-shell entry-form-shell">{guard.confirmation}
     <main className="menu-page menu-page--form entry-form-page">
       <header className="task-header entry-form-page__heading">
-        <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } model.abandon(); }}>{missing ? "Volver al catálogo" : "← Volver a entradas"}</Link>
+        <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } }}>{missing ? "Volver al catálogo" : "← Volver a entradas"}</Link>
         <div className="task-header__content">
           <h1 data-route-heading tabIndex={-1}>{missing ? "Entrada no encontrada" : editing ? "Editar entrada" : "Nueva entrada"}</h1>
           <p className="task-header__intro">{missing ? "No pudimos abrir la entrada que intentas editar." : "Nombre, descripción, categorías e imagen de referencia."}</p>
@@ -141,7 +143,7 @@ function EntryFormEditor({
           </aside>
         </div>
         <footer ref={actions} className="entry-form__actions">
-          <button className="button button--secondary" type="button" disabled={busy} onClick={() => { model.abandon(); void navigate(returnTo); }}>Cancelar</button>
+          <button className="button button--secondary" type="button" disabled={busy} onClick={() => { void navigate(returnTo); }}>Cancelar</button>
           <button className="button button--primary" type="submit" disabled={saveDisabled}>{saveLabel}</button>
         </footer>
       </form>}
