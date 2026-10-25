@@ -329,3 +329,28 @@
 .recipe-supplies-table input[type="number"] { text-align: right; }
 .recipe-form-dialog .pagination__info { font-size: 12px; line-height: 16px; }
 .recipe-form-dialog .pagination { flex-wrap: wrap; }
+
+/* The session content is reusable; only its host owns a modal/backdrop. */
+dialog.recipe-form-dialog { container: menu-dialog recipe-form / inline-size; }
+.recipe-form-content {
+  container: recipe-form / inline-size;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.recipe-selector { padding: 16px 24px 24px; min-width: 0; }
+.recipe-selector__header { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.recipe-selector__header h2 { flex: 1 1 200px; margin: 0; font-size: 22px; line-height: 30px; }
+.recipe-selector .recipe-list { margin-top: 16px; }
+.recipe-selector__empty, .recipe-back-confirm { padding-block: 16px; }
+.recipe-back-confirm { padding-inline: 24px; }
+.recipe-back-confirm button { margin: 8px 8px 0 0; }
+.recipe-selection-task [hidden], .recipe-form-content[hidden] { display: none !important; }

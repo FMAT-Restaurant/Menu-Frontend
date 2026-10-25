@@ -861,6 +861,12 @@
   gap: 8px;
 }
 .offer-form input[type=radio], .option-modal-dialog input[type=radio] { accent-color: var(--brand); }
+
+.option-modal-dialog [hidden] { display: none !important; }
+.option-modal-dialog:has(.recipe-selection-task:not([hidden])) { width: min(calc(100% - 32px), calc(100cqw - 32px), 960px); }
+.option-modal-dialog:has(.recipe-selection-task:not([hidden])) > div:last-child { min-height: 0; overflow-y: auto; }
+.option-discard { padding: 24px; }
+.option-discard button { margin: 8px 8px 0 0; }
 .offer-state, .slot-card__badge--active, .slot-card__badge--inactive {
   display: inline-flex;
   align-items: center;
@@ -922,4 +928,9 @@
 @container offer-dialog (width < 768px) {
   :is(.modal-header, .modal-body, .modal-footer) { --control-height: 48px; padding-inline: 16px; }
   .form-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.option-modal-dialog { container: menu-dialog offer-dialog / inline-size; }
+@container menu-dialog (width < 1200px) {
+  .option-modal-dialog > * { --control-height: 48px; }
 }

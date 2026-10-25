@@ -421,7 +421,7 @@ describe("OfferFormPage (V4)", () => {
     const recipeBtn = screen.getByRole("button", { name: /Elegir receta/ });
     expect(recipeBtn).toBeEnabled();
     fireEvent.click(recipeBtn);
-    expect(await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /Elegir receta ·/ })).toBeVisible();
 
     // Select recipe from list
     const recipeArticle = screen.getByRole("article", { name: "Receta Hamburguesa" });
@@ -986,11 +986,11 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
     // Open recipe picker
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
-    expect(await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /Elegir receta ·/ })).toBeVisible();
 
     // Close recipe picker
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).getByRole("button", { name: "Cancelar" }));
-    expect(screen.queryByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("dialog", { name: /Elegir receta ·/ })).getByRole("button", { name: "Volver a la opción" }));
+    expect(screen.queryByRole("heading", { name: /Elegir receta ·/ })).not.toBeInTheDocument();
   });
 
   test("handles image drop with format validation", async () => {
@@ -1245,13 +1245,13 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
     // Open recipe picker
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
-    const dialog = screen.getByRole("dialog", { name: "Biblioteca de recetas" });
+    const dialog = screen.getByRole("dialog", { name: /Elegir receta ·/ });
     expect(dialog).toBeInTheDocument();
 
     // Fire native cancel event
     fireEvent(dialog, new Event("cancel"));
 
-    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /Elegir receta ·/ })).not.toBeInTheDocument();
   });
 
   test("preserves option modal input when opening and canceling recipe picker (O13 single source)", async () => {
@@ -1270,11 +1270,11 @@ describe("OfferFormPage (V4)", () => {
 
     // Open recipe picker
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
-    expect(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /Elegir receta ·/ })).toBeInTheDocument();
 
     // Cancel recipe picker
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).getByRole("button", { name: "Cancelar" }));
-    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("dialog", { name: /Elegir receta ·/ })).getByRole("button", { name: "Volver a la opción" }));
+    expect(screen.queryByRole("dialog", { name: /Elegir receta ·/ })).not.toBeInTheDocument();
 
     // The display name must remain preserved in OptionModal
     expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Mi Opción Personalizada");
@@ -1299,7 +1299,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
 
     // Recipe dialog closes and option modal has the recipe assigned, keeping the custom name
-    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /Elegir receta ·/ })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Etiqueta Especial");
     expect(screen.getByText("Receta asignada: Receta Hamburguesa")).toBeVisible();
   });
@@ -1380,8 +1380,9 @@ describe("OfferFormPage (V4)", () => {
     expect(await screen.findByDisplayValue("Super Promo Anidada")).toBeVisible();
     expect(screen.getByDisplayValue("250")).toBeVisible();
 
-    // The nested recipe picker dialog and RecipeFormDialog are reopened automatically
-    expect(await screen.findByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
+    // Recovery opens the creation step in the single option task dialog.
+    expect(await screen.findByRole("dialog", { name: "Nueva receta" })).toBeInTheDocument();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
     expect(screen.getByDisplayValue("Receta Recuperada")).toBeVisible();
   });
@@ -1635,7 +1636,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
     // Cancel recipe picker without selecting
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).getByRole("button", { name: "Cancelar" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: /Elegir receta ·/ })).getByRole("button", { name: "Volver a la opción" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
 
@@ -1723,7 +1724,7 @@ describe("OfferFormPage (V4)", () => {
     expect(createdOption).not.toHaveProperty("recipeRevision");
   });
 
-  test("nested Escape closes only recipe picker modal while preserving option draft and restoring focus, and second Escape closes option modal (O19, O34)", async () => {
+  test("Escape returns from recipe selection preserving draft/focus, then confirms discard before closing (O19, O34) (O19, O34)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
 
@@ -1745,19 +1746,27 @@ describe("OfferFormPage (V4)", () => {
     // Open recipe picker
     const pickerBtn = screen.getByRole("button", { name: /Elegir receta/ });
     fireEvent.click(pickerBtn);
-    expect(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /Elegir receta ·/ })).toBeInTheDocument();
 
     // First Escape -> closes ONLY the nested recipe picker
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    expect(screen.queryByRole("dialog", { name: /Elegir receta ·/ })).not.toBeInTheDocument();
 
     // OptionModal remains open with draft preserved
     expect(screen.getByRole("dialog", { name: /Agregar opción/ })).toBeInTheDocument();
     expect(screen.getByLabelText("Nombre mostrado (opcional)")).toHaveValue("Mi Selección Favorita");
 
-    // Second Escape -> closes OptionModal
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: /Agregar opción/ })).not.toBeInTheDocument();
+    expect(pickerBtn).toHaveFocus();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+
+    // Second Escape requests explicit discard of the edited option.
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    expect(screen.getByRole("heading", { name: "¿Descartar los cambios de esta opción?" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar editando" }));
+    expect(nameInput).toHaveValue("Mi Selección Favorita");
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Descartar cambios" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     // Slot "Principal" remains intact in the form
     expect(screen.getByRole("heading", { name: "Principal", level: 3 })).toBeVisible();

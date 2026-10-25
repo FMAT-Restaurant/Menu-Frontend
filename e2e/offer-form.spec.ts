@@ -230,7 +230,7 @@ test("creates and deletes an offer updating catalog offerCount within cache TTL 
   await expect(entryCard).toContainText("Ofertas: 0");
 });
 
-test("manages multi-modal Escape hierarchy preserving option draft and restoring focus without losing composition (O19, O34)", async ({
+test("manages single-dialog Escape steps preserving option draft and restoring focus without losing composition (O19, O34)", async ({
   page,
 }) => {
   const entry = {
@@ -303,8 +303,9 @@ test("manages multi-modal Escape hierarchy preserving option draft and restoring
   // Open nested recipe picker
   const chooseRecipeBtn = page.getByRole("button", { name: "Elegir receta" });
   await chooseRecipeBtn.click();
-  const recipeDialog = page.getByRole("dialog", { name: "Biblioteca de recetas" });
+  const recipeDialog = page.getByRole("dialog", { name: "Elegir receta · Acompañamiento" });
   await expect(recipeDialog).toBeVisible();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
 
   // Press Escape while nested recipe picker is open
   await page.keyboard.press("Escape");
@@ -320,8 +321,11 @@ test("manages multi-modal Escape hierarchy preserving option draft and restoring
   // Press Escape again while OptionModal is top dialog
   await page.keyboard.press("Escape");
 
+  // A changed option requires an explicit discard decision inside the same dialog.
+  await page.getByRole("button", { name: "Descartar cambios", exact: true }).click();
   // Verify OptionModal closes and composition slot remains intact
   await expect(optionDialog).not.toBeVisible();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Acompañamiento", level: 3 })).toBeVisible();
   await expect(addOptionBtn).toBeFocused();
 });

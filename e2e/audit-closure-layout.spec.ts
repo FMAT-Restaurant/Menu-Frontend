@@ -63,7 +63,7 @@ test("R06: nested recipe picker obeys 90% height, scrolls and returns focus at a
     const option = page.getByRole("dialog", { name: "Agregar opción · Principal" });
     const trigger = option.getByRole("button", { name: /Elegir receta/ });
     await trigger.click();
-    const picker = page.getByRole("dialog", { name: "Biblioteca de recetas", exact: true });
+    const picker = page.getByRole("dialog", { name: "Elegir receta · Principal", exact: true });
     await expect(picker).toBeVisible();
     const box = await picker.boundingBox();
     expect(box!.height).toBeLessThanOrEqual(height * 0.9 + 1);

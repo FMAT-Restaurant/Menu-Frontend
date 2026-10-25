@@ -584,7 +584,7 @@ describe("OptionModal Component", () => {
       />
     );
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
     expect(handleClose).toHaveBeenCalledTimes(1);
 
     const closeBtn = screen.getByRole("button", { name: "Cerrar modal de opción" });
@@ -907,7 +907,7 @@ describe("OptionModal Component", () => {
     expect(screen.getByRole("radio", { name: /Inactiva/ })).toBeInTheDocument();
   });
 
-  test("respects modal hierarchy for Escape and restores focus to recipe picker button when nested picker closes (O19, O34)", () => {
+  test("routes native cancel by task step and restores focus when recipe selection returns (O19, O34)", () => {
     const handleClose = jest.fn();
     const { rerender } = render(
       <OptionModal
@@ -922,7 +922,7 @@ describe("OptionModal Component", () => {
     );
 
     // Escape while nested picker is open does NOT close OptionModal
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
     expect(handleClose).not.toHaveBeenCalled();
 
     // Nested picker closes -> focus restores to "Elegir receta" button
@@ -941,7 +941,7 @@ describe("OptionModal Component", () => {
     expect(document.activeElement).toBe(pickerBtn);
 
     // Now Escape closes OptionModal
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 });

@@ -40,25 +40,35 @@ test("RC02: quoted group names preserve editor, draft and focus after option can
   expect(errors).toEqual([]);
 });
 
-test("RC04: each Escape closes only the top dialog and restores focus across all three layers", async ({ page }) => {
+test("RC04: each Escape affects only the active step and restores focus within one dialog", async ({ page }) => {
   const trigger = await openOption(page);
   const option = page.getByRole("dialog", { name: "Agregar opción · Principal", exact: true });
+  const node = await option.elementHandle();
   const chooseRecipe = option.getByRole("button", { name: /Elegir receta/ });
   await chooseRecipe.click();
-  const picker = page.getByRole("dialog", { name: "Biblioteca de recetas", exact: true });
+  const picker = page.getByRole("dialog", { name: "Elegir receta · Principal", exact: true });
   const createRecipe = picker.getByRole("button", { name: "+ Nueva receta", exact: true });
   await createRecipe.click();
   const form = page.getByRole("dialog", { name: "Nueva receta", exact: true });
   await form.getByLabel("Nombre", { exact: true }).fill("Receta anidada");
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
   await page.keyboard.press("Escape");
+  await expect(form.getByRole("button", { name: "Seguir editando receta", exact: true })).toBeFocused();
+  await expect(form.getByLabel("Nombre", { exact: true })).toHaveValue("Receta anidada");
+  await form.getByRole("button", { name: "Conservar borrador y volver", exact: true }).click();
   await expect(form).not.toBeVisible();
   await expect(picker).toBeVisible();
   await expect(createRecipe).toBeFocused();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await expect(picker).not.toBeVisible();
   await expect(chooseRecipe).toBeFocused();
+  expect(await node!.evaluate(el => el === document.querySelector("dialog[open]:modal"))).toBe(true);
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Continuar editando", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Descartar cambios", exact: true }).click();
   await expect(option).not.toBeVisible();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await expect(page.getByLabel("Etiqueta de presentación (opcional)")).toHaveValue("Borrador conservado");
 });
@@ -87,11 +97,16 @@ test("RC04: Escape cannot dismiss a nested recipe while its POST is pending", as
     await page.keyboard.press("Escape");
     await expect(form).toBeVisible();
     await expect(form.getByLabel("Nombre", { exact: true })).toHaveValue("Receta guardada");
-    await expect(form.getByRole("button", { name: "Cancelar", exact: true })).toBeDisabled();
+    const backActions = form.getByRole("button", { name: "Volver a elegir receta", exact: true });
+    await expect(backActions).toHaveCount(2);
+    for (const action of await backActions.all()) await expect(action).toBeDisabled();
+    await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
   } finally { release(); }
   await expect(form).not.toBeVisible();
   const option = page.getByRole("dialog", { name: "Agregar opción · Principal", exact: true });
   await expect(option).toBeVisible();
   await expect(option.getByText("Receta asignada: Receta guardada", { exact: true })).toBeVisible();
   expect(writes).toBe(1);
+  await option.getByRole("button", { name: "Guardar opción", exact: true }).click();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
 });

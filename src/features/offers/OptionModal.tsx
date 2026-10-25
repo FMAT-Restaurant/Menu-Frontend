@@ -1,10 +1,14 @@
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type SubmitEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
 import { validateOptionDraft, type OptionDraft, type ValidatedOptionDraft } from "./optionDraft";
 export type { OptionDraft } from "./optionDraft";
+
+function draftSnapshot(draft: OptionDraft | null) {
+  return JSON.stringify(draft, Object.keys(draft ?? {}).sort());
+}
 
 export interface OptionModalProps {
   isOpen: boolean;
@@ -16,6 +20,11 @@ export interface OptionModalProps {
   onClose: () => void;
   onOpenRecipePicker: () => void;
   onChangeDraft?: (data: OptionDraft) => void;
+  children?: ReactNode;
+  recipeStep?: boolean;
+  onNestedBack?: () => void;
+  hasNestedChanges?: () => boolean;
+  onDiscardNested?: () => void;
 }
 
 export function OptionModal({
@@ -28,6 +37,11 @@ export function OptionModal({
   onClose,
   onOpenRecipePicker,
   onChangeDraft,
+  children,
+  recipeStep = false,
+  onNestedBack,
+  hasNestedChanges,
+  onDiscardNested,
 }: Readonly<OptionModalProps>) {
   const [displayName, setDisplayName] = useState("");
   const [status, setStatus] = useState<OfferStatus>("ACTIVE");
@@ -41,6 +55,37 @@ export function OptionModal({
   const [unit, setUnit] = useState<string | undefined>(undefined);
 
   const [validationError, setValidationError] = useState("");
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [pendingSave, setPendingSave] = useState<ValidatedOptionDraft | null>(null);
+  const openingDraftRef = useRef<string>("");
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const confirmationTriggerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (isOpen) { openingDraftRef.current = draftSnapshot(initialData); setConfirmClose(false); setPendingSave(null); }
+    // Capture the opening snapshot, not every keystroke emitted to the parent.
+  }, [isOpen]);
+  function requestClose() {
+    if (draftSnapshot(initialData) !== openingDraftRef.current || hasNestedChanges?.()) {
+      confirmationTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setConfirmClose(true);
+    }
+    else onClose();
+  }
+  function requestStepBack() {
+    if (isNestedPickerOpen) { onNestedBack?.(); return; }
+    if (confirmClose) { setConfirmClose(false); setPendingSave(null); }
+    else requestClose();
+  }
+  const previousConfirmRef = useRef(false);
+  useEffect(() => {
+    if (confirmClose) confirmRef.current?.focus();
+    else if (previousConfirmRef.current) {
+      const trigger = confirmationTriggerRef.current;
+      if (trigger && trigger !== document.body && trigger.isConnected && !trigger.closest("[hidden]")) trigger.focus();
+      else recipePickerBtnRef.current?.focus();
+    }
+    previousConfirmRef.current = confirmClose;
+  }, [confirmClose]);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const recipePickerBtnRef = useRef<HTMLButtonElement>(null);
   const wasNestedPickerOpenRef = useRef(false);
@@ -99,24 +144,6 @@ export function OptionModal({
     }
     wasNestedPickerOpenRef.current = Boolean(isNestedPickerOpen);
   }, [isNestedPickerOpen, isOpen]);
-
-  // Modal Escape key handling respecting modal hierarchy
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (isNestedPickerOpen) {
-          // Leave the native cancel event available to the topmost dialog.
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isNestedPickerOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -196,7 +223,11 @@ export function OptionModal({
       } : {}),
     }, isCreateMode ? "create" : "update");
     if (!result.valid) { setValidationError(result.message); return; }
-    onSave(result.value);
+    if (hasNestedChanges?.()) {
+      confirmationTriggerRef.current = event.currentTarget.querySelector<HTMLButtonElement>('button[type="submit"]');
+      setPendingSave(result.value);
+      setConfirmClose(true);
+    } else onSave(result.value);
   }
 
   const title = initialData?.optionId ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
@@ -216,27 +247,40 @@ export function OptionModal({
     <dialog
       ref={dialogRef}
       className="option-modal-dialog menu-task-dialog"
-      aria-labelledby="option-modal-title"
+      aria-labelledby={confirmClose ? "option-discard-title" : isNestedPickerOpen ? (recipeStep ? "recipe-form-title" : "recipe-selector-title") : "option-modal-title"}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        // Repeated native close requests may emit a non-cancelable cancel event.
+        // Handle the task transition before the browser requests that close.
+        event.preventDefault();
+        event.stopPropagation();
+        if (!event.repeat) requestStepBack();
+      }}
       onCancel={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (isNestedPickerOpen) return;
-        onClose();
+        requestStepBack();
       }}
     >
-      <header className="modal-header">
+      {confirmClose && <section className="option-discard" aria-labelledby="option-discard-title">
+        <h2 id="option-discard-title">{pendingSave ? "¿Descartar el borrador de receta y guardar la opción?" : "¿Descartar los cambios de esta opción?"}</h2>
+        <p>{pendingSave ? "Hay una receta sin guardar que conservaste al volver. Puedes seguir editándola o descartarla antes de guardar la opción." : "La opción y los borradores de receta sin guardar se conservan si continúas editando."}</p>
+        <button ref={confirmRef} type="button" className="button button--secondary" onClick={() => { setConfirmClose(false); setPendingSave(null); }}>Continuar editando</button>
+        <button type="button" className="button button--primary" onClick={() => { onDiscardNested?.(); setConfirmClose(false); if (pendingSave) { onSave(pendingSave); setPendingSave(null); } else onClose(); }}>{pendingSave ? "Descartar receta y guardar opción" : "Descartar cambios"}</button>
+      </section>}
+      <header className="modal-header" hidden={isNestedPickerOpen || confirmClose}>
         <h2 id="option-modal-title">{title}</h2>
         <button
           type="button"
           className="modal-close"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Cerrar modal de opción"
         >
           <Icon name="close" />
         </button>
       </header>
 
-      <form onSubmit={handleSubmit} className="option-form" noValidate>
+      <form onSubmit={handleSubmit} className="option-form" noValidate hidden={isNestedPickerOpen || confirmClose}>
         <div className="modal-body">
           {validationError && (
             <p className="feedback feedback--error" role="alert">
@@ -317,7 +361,7 @@ export function OptionModal({
         </div>
 
         <footer className="modal-footer">
-          <button type="button" className="button button--secondary" onClick={onClose}>
+          <button type="button" className="button button--secondary" onClick={requestClose}>
             Cancelar
           </button>
           <button
@@ -329,6 +373,7 @@ export function OptionModal({
           </button>
         </footer>
       </form>
+      <div hidden={confirmClose}>{children}</div>
     </dialog>
   );
 }

@@ -183,14 +183,15 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await optionModal.getByRole("button", { name: /Elegir receta/ }).click();
 
     // 6. Inside recipe picker, open new recipe dialog
-    const recipePicker = page.getByRole("dialog", { name: "Biblioteca de recetas" });
+    const recipePicker = page.getByRole("dialog", { name: "Elegir receta · Acompañamiento" });
     await expect(recipePicker).toBeVisible();
     await recipePicker.getByRole("button", { name: "+ Nueva receta" }).click();
 
     const recipeDialog = page.getByRole("dialog", { name: "Nueva receta" });
     await expect(recipeDialog).toBeVisible();
+    await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
 
-    await recipeDialog.getByLabel("Nombre").fill("Papas al Horno");
+    await recipeDialog.getByLabel("Nombre", { exact: true }).fill("Papas al Horno");
     await recipeDialog.getByLabel("Descripción").fill("Al romero y sal marina");
     await recipeDialog.getByLabel("Instrucciones").fill("Hornear 30 minutos a 200C");
     await recipeDialog.getByLabel("Insumo 1", { exact: true }).selectOption("inv-papas");
@@ -214,7 +215,8 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
 
     const restoredRecipeDialog = page.getByRole("dialog", { name: "Nueva receta" });
     await expect(restoredRecipeDialog).toBeVisible();
-    await expect(restoredRecipeDialog.getByLabel("Nombre")).toHaveValue("Papas al Horno");
+    await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
+    await expect(restoredRecipeDialog.getByLabel("Nombre", { exact: true })).toHaveValue("Papas al Horno");
     await expect(restoredRecipeDialog.getByLabel("Descripción")).toHaveValue("Al romero y sal marina");
     await expect(restoredRecipeDialog.getByLabel("Instrucciones")).toHaveValue("Hornear 30 minutos a 200C");
 
@@ -235,6 +237,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     // 12. Save option into slot
     await restoredOptionModal.getByRole("button", { name: "Guardar opción" }).click();
     await expect(restoredOptionModal).not.toBeVisible();
+    await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
 
     // Option is visible in composition
     await expect(page.getByText("Papas Rústicas")).toBeVisible();
@@ -242,6 +245,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     // Verify exactly 2 requests with identical Idempotency-Key
     expect(postRecipeRequests).toHaveLength(2);
     expect(postRecipeRequests[1].key).toBe(initialKey);
+    expect(postRecipeRequests[1].body).toEqual(postRecipeRequests[0].body);
   });
 
   test("entry creation recovery: two-stage flow with image upload and entry create across real reload (F5)", async ({

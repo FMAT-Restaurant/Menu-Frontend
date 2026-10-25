@@ -1,4 +1,3 @@
-import { useTaskDialog } from "../../shared/useTaskDialog";
 import { isStrongEtag } from "../../application/entryVersion";
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -29,7 +28,7 @@ import {
 } from "../../application/operationAttempt";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
-import { RecipePage } from "../recipes/RecipePage";
+import { RecipeSelectionTask, type RecipeSelectionTaskHandle } from "../recipes/RecipeSelectionTask";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
 import { CompositionEditor } from "./CompositionEditor";
 import { OfferCommercialInfo } from "./OfferCommercialInfo";
@@ -307,7 +306,8 @@ export function OfferFormPage({
   const [currentOptionDraft, setCurrentOptionDraft] = useState<OptionDraft | null>(null);
 
   const [recipePickerOpen, setRecipePickerOpen] = useState(false);
-  const recipeDialogRef = useRef<HTMLDialogElement>(null);
+  const recipeTaskRef = useRef<RecipeSelectionTaskHandle>(null);
+  const [recipeCreating, setRecipeCreating] = useState(false);
   const slotModalTriggerRef = useRef<HTMLElement | null>(null);
   const optionModalTriggerRef = useRef<HTMLElement | null>(null);
   const wasOptionModalOpenRef = useRef(false);
@@ -372,20 +372,6 @@ export function OfferFormPage({
     window.addEventListener("popstate", handleHistoryExit);
     return () => window.removeEventListener("popstate", handleHistoryExit);
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (!recipePickerOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (recipeDialogRef.current?.querySelector("dialog[open]")) return;
-        event.preventDefault();
-        event.stopPropagation();
-        setRecipePickerOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [recipePickerOpen]);
 
   // O12: Reset all form state and invalidate in-flight validations when route identity changes
   useEffect(() => {
@@ -564,7 +550,7 @@ export function OfferFormPage({
       .then((record) => {
         if (cancelled || !record) return;
         const currentStage = record.stages[record.currentStageIndex];
-        if (currentStage && currentStage.status !== "succeeded" && record.nestedContext) {
+        if (currentStage && (currentStage.status !== "succeeded" || record.confirmedResult) && record.nestedContext) {
           const ctx = record.nestedContext as {
             entryId?: string;
             offerId?: string;
@@ -610,7 +596,6 @@ export function OfferFormPage({
     };
   }, [entryId, offerId, storage]);
 
-  useTaskDialog(recipeDialogRef, recipePickerOpen);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1312,39 +1297,26 @@ export function OfferFormPage({
           initialData={currentOptionDraft}
           isCreateMode={!isEditing}
           isNestedPickerOpen={recipePickerOpen}
+          recipeStep={recipeCreating}
+          onNestedBack={() => recipeTaskRef.current?.back()}
+          hasNestedChanges={() => recipeTaskRef.current?.hasChanges() ?? false}
+          onDiscardNested={() => recipeTaskRef.current?.discard()}
           onChangeDraft={(updated) => setCurrentOptionDraft(updated)}
           onSave={handleSaveOption}
           onClose={() => {
             setOptionModalOpen(false);
+            setRecipePickerOpen(false);
             setTargetSlotIndex(null);
             setEditingOptionIndex(null);
             setCurrentOptionDraft(null);
           }}
           onOpenRecipePicker={handleOpenRecipePicker}
-        />
-
-        {recipePickerOpen && (
-          <dialog
-            ref={recipeDialogRef}
-            className="recipe-picker-modal menu-task-dialog"
-            aria-label="Biblioteca de recetas"
-            onCancel={(event) => {
-              if (event.target !== event.currentTarget) return;
-              event.preventDefault();
-              event.stopPropagation();
-              setRecipePickerOpen(false);
-            }}
-          >
-            <RecipePage
-              repository={repository}
-              mode="selection"
-              storage={storage}
-              nestedContext={nestedRecipeContext}
-              onSelectRecipe={handleSelectRecipe}
-              onClose={() => setRecipePickerOpen(false)}
-            />
-          </dialog>
-        )}
+        >
+          {optionModalOpen && <RecipeSelectionTask repository={repository} storage={storage}
+            nestedContext={nestedRecipeContext} active={recipePickerOpen} slotName={currentSlotName}
+            onStepChange={setRecipeCreating} taskRef={recipeTaskRef}
+            onSelect={handleSelectRecipe} onBack={() => setRecipePickerOpen(false)} />}
+        </OptionModal>
       </main>
     </div>
   );
