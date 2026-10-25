@@ -35,19 +35,7 @@ export function CompositionEditor({
           </p>
         </div>
 
-        <div>
-          <button
-            type="button"
-            className="button button--secondary"
-            disabled
-            aria-describedby="copy-composition-pending-hint"
-          >
-            Copiar composición desde otra oferta
-          </button>
-          <p id="copy-composition-pending-hint" className="field-hint">
-            Función pendiente: copiar la composición desde otra oferta aún no está disponible.
-          </p>
-        </div>
+
       </div>
 
       {slots.length === 0 && (

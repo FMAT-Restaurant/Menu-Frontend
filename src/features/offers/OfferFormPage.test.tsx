@@ -311,36 +311,22 @@ describe("OfferFormPage (V4)", () => {
 
     // Section 2: Composition
     expect(screen.getByRole("heading", { name: "2. Composición", level: 2 })).toBeVisible();
-    const copyCompositionButton = screen.getByRole("button", {
-      name: "Copiar composición desde otra oferta",
-    });
-    expect(copyCompositionButton).toBeVisible();
-    expect(copyCompositionButton).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Copiar composición desde otra oferta" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Agregar grupo" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Agregar grupo" })).toBeEnabled();
   });
 
-  test("shows copy composition action as a disabled pending feature with accessible explanation and without draft or repository effects", async () => {
+  test("omits unavailable composition copy without draft or repository effects", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
 
-    const copyBtn = await screen.findByRole("button", {
-      name: "Copiar composición desde otra oferta",
-    });
-    expect(copyBtn).toBeVisible();
-    expect(copyBtn).toBeDisabled();
-    expect(copyBtn).toHaveAttribute("aria-describedby", "copy-composition-pending-hint");
-
-    const pendingHint = document.getElementById("copy-composition-pending-hint");
-    expect(pendingHint).toBeVisible();
-    expect(pendingHint).toHaveTextContent(
-      "Función pendiente: copiar la composición desde otra oferta aún no está disponible."
-    );
+    await screen.findByRole("button", { name: "Agregar grupo" });
+    expect(screen.queryByRole("button", { name: "Copiar composición desde otra oferta" })).not.toBeInTheDocument();
+    expect(document.getElementById("copy-composition-pending-hint")).not.toBeInTheDocument();
 
     const addGroupBtn = screen.getByRole("button", { name: "Agregar grupo" });
     expect(addGroupBtn).toBeEnabled();
 
-    fireEvent.click(copyBtn);
 
     expect(
       screen.getByText("La composición debe contener al menos un grupo (slot) con opciones válidas.")
@@ -406,7 +392,7 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.queryByRole("heading", { name: "Bebida fría", level: 3 })).not.toBeInTheDocument();
   });
 
-  test("keeps pending inventory item selection disabled with explanation in OptionModal while adding a recipe option via V6", async () => {
+  test("omits unavailable inventory selection while adding a recipe option via V6", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
 
@@ -421,24 +407,14 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Principal" }));
     expect(screen.getByRole("heading", { name: /Agregar opción · Principal/ })).toBeVisible();
 
-    // Inventory selection is shown as a disabled pending feature with accessible explanation and no effects
-    const inventoryBtn = screen.getByRole("button", { name: /Elegir artículo de inventario/ });
-    expect(inventoryBtn).toBeVisible();
-    expect(inventoryBtn).toBeDisabled();
-    expect(inventoryBtn).toHaveAttribute("aria-describedby", "inventory-source-pending-hint");
-
-    const inventoryHint = document.getElementById("inventory-source-pending-hint");
-    expect(inventoryHint).toBeVisible();
-    expect(inventoryHint).toHaveTextContent(
-      "Función pendiente: la selección de artículos de inventario desde este editor aún no está disponible."
-    );
-
-    fireEvent.click(inventoryBtn);
+    // Unavailable inventory selection is omitted; recipe assignment remains available.
+    expect(screen.queryByRole("button", { name: /Elegir artículo de inventario/ })).not.toBeInTheDocument();
+    expect(document.getElementById("inventory-source-pending-hint")).not.toBeInTheDocument();
+    expect(repository.createOffer).not.toHaveBeenCalled();
+    expect(repository.updateOffer).not.toHaveBeenCalled();
     expect(repository.listInventoryItems).not.toHaveBeenCalled();
     expect(repository.listRecipes).not.toHaveBeenCalled();
-    expect(
-      screen.getByText("Elige una receta de la biblioteca para esta opción.")
-    ).toBeVisible();
+    expect(screen.getByText("Elige una receta de la biblioteca para esta opción.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Guardar opción" })).toBeDisabled();
 
     // Click recipe button -> opens V6 RecipePage
@@ -463,7 +439,7 @@ describe("OfferFormPage (V4)", () => {
     // Verify option appears in slot card
     expect(screen.getByText("Hamburguesa Especial")).toBeVisible();
     expect(screen.getByText("Receta")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Especial" })).toHaveTextContent("Activa");
+    expect(screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Especial" })).toHaveTextContent("Desactivar");
 
     // Slot derived status is now Activo!
     const slotCard = screen.getByTestId("slot-card-0");
@@ -485,7 +461,7 @@ describe("OfferFormPage (V4)", () => {
     // Toggle option status to Inactiva
     const toggleBtn = screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Doble" });
     fireEvent.click(toggleBtn);
-    expect(toggleBtn).toHaveTextContent("Inactiva");
+    expect(toggleBtn).toHaveTextContent("Activar");
 
     // Slot is now Inactivo
     expect(within(slotCard).getByText("Inactivo")).toBeVisible();
@@ -986,7 +962,7 @@ describe("OfferFormPage (V4)", () => {
     // Toggle option status to inactive
     const toggleBtn = screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Doble" });
     fireEvent.click(toggleBtn);
-    expect(toggleBtn).toHaveTextContent("Inactiva");
+    expect(toggleBtn).toHaveTextContent("Activar");
 
     // Edit option
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
@@ -1013,7 +989,7 @@ describe("OfferFormPage (V4)", () => {
     expect(await screen.findByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).toBeVisible();
 
     // Close recipe picker
-    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("heading", { name: "Biblioteca de recetas — elegir opción" })).not.toBeInTheDocument();
   });
 
@@ -1297,7 +1273,7 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).toBeInTheDocument();
 
     // Cancel recipe picker
-    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("dialog", { name: "Biblioteca de recetas" })).not.toBeInTheDocument();
 
     // The display name must remain preserved in OptionModal
@@ -1659,7 +1635,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
     // Cancel recipe picker without selecting
-    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Biblioteca de recetas" })).getByRole("button", { name: "Cancelar" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
 

@@ -1,3 +1,4 @@
+import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
 
@@ -120,7 +121,7 @@ export function OfferCommercialInfo({
             <span className="field-label" id="offer-status-label">Estado de la oferta</span>
             {!isEditing ? (
               <div className="status-fixed-box">
-                <span className="badge badge--inactive">Inactiva</span>
+                <span className="offer-state offer-state--inactive">Inactiva</span>
                 <p className="field-hint">
                   Toda oferta se crea con estado inactivo (INACTIVE); la composición del borrador local no garantiza la aceptación del servidor ni activa la oferta automáticamente.
                 </p>
@@ -203,7 +204,7 @@ export function OfferCommercialInfo({
                 </div>
               ) : (
                 <div className="image-dropzone__placeholder">
-                  <span className="image-dropzone__icon" aria-hidden="true">🖼</span>
+                  <Icon name="image" className="image-dropzone__icon" />
                   <span className="image-dropzone__text">
                     Arrastra una imagen aquí o haz clic para seleccionar
                   </span>

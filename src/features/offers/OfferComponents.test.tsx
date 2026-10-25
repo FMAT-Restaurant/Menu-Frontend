@@ -667,7 +667,7 @@ describe("OptionModal Component", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  test("keeps pending inventory item selection disabled with accessible explanation while recipe picker button remains functional", () => {
+  test("omits unavailable inventory selection without operations while recipe picker remains functional", () => {
     const handleOpenRecipePicker = jest.fn();
     const handleSave = jest.fn();
     const handleClose = jest.fn();
@@ -682,18 +682,8 @@ describe("OptionModal Component", () => {
       />
     );
 
-    const inventoryBtn = screen.getByRole("button", { name: /Elegir artículo de inventario/ });
-    expect(inventoryBtn).toBeVisible();
-    expect(inventoryBtn).toBeDisabled();
-    expect(inventoryBtn).toHaveAttribute("aria-describedby", "inventory-source-pending-hint");
-
-    const pendingHint = document.getElementById("inventory-source-pending-hint");
-    expect(pendingHint).toBeVisible();
-    expect(pendingHint).toHaveTextContent(
-      "Función pendiente: la selección de artículos de inventario desde este editor aún no está disponible."
-    );
-
-    fireEvent.click(inventoryBtn);
+    expect(screen.queryByRole("button", { name: /Elegir artículo de inventario/ })).not.toBeInTheDocument();
+    expect(document.getElementById("inventory-source-pending-hint")).not.toBeInTheDocument();
     expect(handleOpenRecipePicker).not.toHaveBeenCalled();
     expect(handleSave).not.toHaveBeenCalled();
     expect(handleClose).not.toHaveBeenCalled();
@@ -988,7 +978,7 @@ describe("SlotOptionItem Component", () => {
       pressed: true,
     });
     expect(statusButton).toHaveAttribute("aria-pressed", "true");
-    expect(statusButton).toHaveTextContent("Activa");
+    expect(statusButton).toHaveTextContent("Desactivar");
 
     fireEvent.click(statusButton);
     expect(handleToggle).toHaveBeenCalledTimes(1);
@@ -1008,7 +998,7 @@ describe("SlotOptionItem Component", () => {
       pressed: false,
     });
     expect(updatedStatusButton).toHaveAttribute("aria-pressed", "false");
-    expect(updatedStatusButton).toHaveTextContent("Inactiva");
+    expect(updatedStatusButton).toHaveTextContent("Activar");
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Papas Fritas" }));
     expect(handleEdit).toHaveBeenCalled();
@@ -1046,7 +1036,7 @@ describe("SlotOptionItem Component", () => {
       pressed: false,
     });
     expect(statusButton).toHaveAttribute("aria-pressed", "false");
-    expect(statusButton).toHaveTextContent("Inactiva");
+    expect(statusButton).toHaveTextContent("Activar");
     expect(statusButton).toBeDisabled();
   });
 });
@@ -1140,7 +1130,7 @@ describe("SlotCard Component", () => {
 });
 
 describe("CompositionEditor Component", () => {
-  test("keeps pending copy composition control disabled with accessible explanation and no callback effects while slot actions remain functional", () => {
+  test("omits unavailable composition copy without operations while slot actions remain functional", () => {
     const handleAddSlot = jest.fn();
     const handleEditSlot = jest.fn();
     const handleDeleteSlot = jest.fn();
@@ -1163,20 +1153,8 @@ describe("CompositionEditor Component", () => {
       />
     );
 
-    const copyBtn = screen.getByRole("button", {
-      name: "Copiar composición desde otra oferta",
-    });
-    expect(copyBtn).toBeVisible();
-    expect(copyBtn).toBeDisabled();
-    expect(copyBtn).toHaveAttribute("aria-describedby", "copy-composition-pending-hint");
-
-    const pendingHint = document.getElementById("copy-composition-pending-hint");
-    expect(pendingHint).toBeVisible();
-    expect(pendingHint).toHaveTextContent(
-      "Función pendiente: copiar la composición desde otra oferta aún no está disponible."
-    );
-
-    fireEvent.click(copyBtn);
+    expect(screen.queryByRole("button", { name: "Copiar composición desde otra oferta" })).not.toBeInTheDocument();
+    expect(document.getElementById("copy-composition-pending-hint")).not.toBeInTheDocument();
     expect(handleAddSlot).not.toHaveBeenCalled();
     expect(handleEditSlot).not.toHaveBeenCalled();
     expect(handleDeleteSlot).not.toHaveBeenCalled();

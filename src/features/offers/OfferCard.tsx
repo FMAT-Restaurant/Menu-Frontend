@@ -23,8 +23,8 @@ export function OfferCard({ offer, busy, returnTo, catalogReturnTo, onStatusChan
   }, [imageSource, offer.image?.url, offer.image?.thumbnailUrl]);
 
   return (
-    <article className="offer-card">
-      <Link className="offer-card__content" to={editPath} state={{ returnTo, catalogReturnTo }} aria-label={`Abrir oferta ${presentation} para editar`}>
+    <article className="offer-card" data-return-key={`offer:${offer.id}`}>
+      <Link data-return-key={`offer:${offer.id}:edit`} className="offer-card__content" to={editPath} state={{ returnTo, catalogReturnTo }} aria-label={`Abrir oferta ${presentation} para editar`}>
         <div className="offer-card__image">
           {imageSource && !imageFailed ? (
             <img
@@ -42,12 +42,14 @@ export function OfferCard({ offer, busy, returnTo, catalogReturnTo, onStatusChan
         <p className="offer-card__price">$ {offer.basePrice}</p>
       </Link>
       <div className="offer-card__details">
-        <button className={`offer-card__status-control ${active ? "offer-card__status-control--active" : "offer-card__status-control--inactive"}`} type="button" disabled={busy || (!active && offer.slotCount === 0)} onClick={() => onStatusChange(offer, active ? "INACTIVE" : "ACTIVE")} aria-label={`Cambiar estado de oferta ${presentation}: ${active ? "Activa" : "Inactiva"}`} aria-pressed={active}>Estado: <span>{active ? "Activa" : "Inactiva"}</span></button>
+        <span className={`offer-state ${active ? "offer-state--active" : "offer-state--inactive"}`}>{active ? "Activa" : "Inactiva"}</span>
+        <button className={`offer-card__status-control button button--secondary ${active ? "offer-card__status-control--active" : "offer-card__status-control--inactive"}`} data-return-key={`offer:${offer.id}:status`} type="button" disabled={busy || (!active && offer.slotCount === 0)} onClick={() => onStatusChange(offer, active ? "INACTIVE" : "ACTIVE")} aria-label={`Cambiar estado de oferta ${presentation}: ${active ? "Activa" : "Inactiva"}`} aria-pressed={active}>{active ? "Desactivar oferta" : "Activar oferta"}</button>
         <p className="offer-card__composition">Grupos de composición: <strong>{offer.slotCount}</strong></p>
       </div>
       <div className="offer-card__actions">
-        <button className="offer-card__delete" type="button" disabled={busy || active} onClick={() => onDelete(offer)} aria-label={`Eliminar oferta ${presentation}`}>Eliminar oferta</button>
+        <button className="offer-card__delete" data-return-key={`offer:${offer.id}:delete`} aria-describedby={active ? `offer-delete-hint-${offer.id}` : undefined} type="button" disabled={busy || active} onClick={() => onDelete(offer)} aria-label={`Eliminar oferta ${presentation}`}>Eliminar oferta</button>
       </div>
+      {active && <p className="offer-card__hint" id={`offer-delete-hint-${offer.id}`}>Desactiva la oferta antes de eliminarla.</p>}
       {!active && offer.slotCount === 0 && <p className="offer-card__hint">Agrega una composición válida para activar esta oferta.</p>}
     </article>
   );

@@ -278,21 +278,8 @@ export function OptionModal({
                 </span>
               </button>
 
-              <button
-                type="button"
-                className="source-btn"
-                disabled
-                aria-describedby="inventory-source-pending-hint"
-              >
-                <span className="source-btn__title">Elegir artículo de inventario</span>
-                <span className="source-btn__desc">
-                  Vincular un insumo del catálogo de inventario.
-                </span>
-              </button>
             </div>
-            <p id="inventory-source-pending-hint" className="field-hint">
-              Función pendiente: la selección de artículos de inventario desde este editor aún no está disponible.
-            </p>
+
           </div>
 
           {isCreateMode ? (

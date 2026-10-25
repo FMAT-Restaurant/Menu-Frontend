@@ -46,17 +46,18 @@ export function SlotOptionItem({
         )}
       </div>
 
+      <span className={`offer-state ${isActive ? "offer-state--active" : "offer-state--inactive"}`}>{isActive ? "Activa" : "Inactiva"}</span>
       <div className="slot-option-item__actions">
         <button
           type="button"
-          className={`option-status-badge ${isActive ? "option-status-badge--active" : "option-status-badge--inactive"}`}
+          className="button button--small button--secondary"
           onClick={onToggleStatus}
           disabled={disabled}
           title={isActive ? "Hacer inactiva" : "Hacer activa"}
           aria-label={`Cambiar estado de ${label}`}
           aria-pressed={isActive}
         >
-          {isActive ? "Activa" : "Inactiva"}
+          {isActive ? "Desactivar" : "Activar"}
         </button>
 
         <button
@@ -71,12 +72,13 @@ export function SlotOptionItem({
 
         <button
           type="button"
-          className="button button--small button--danger"
+          className="button button--small button--secondary"
           onClick={onDelete}
           disabled={disabled}
           aria-label={`Eliminar opción ${label}`}
+          title="Retirar esta opción del borrador; se aplica al guardar"
         >
-          ✕
+          Retirar
         </button>
       </div>
     </div>

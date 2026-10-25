@@ -27,7 +27,11 @@ test("opens an entry's offers and returns to the catalog without losing the quer
   await expect(page.getByRole("heading", { name: "Combo" })).toBeVisible();
   await expect(page.getByText(/solo se publica si la entrada está activa/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Eliminar oferta Combo" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cambiar estado de oferta Combo: Inactiva" })).toHaveCSS("border-radius", "999px");
+  const statusControl = page.getByRole("button", { name: "Cambiar estado de oferta Combo: Inactiva" });
+  await expect(statusControl).toHaveCSS("border-radius", "8px");
+  await expect(statusControl).toHaveText("Activar oferta");
+  await expect(statusControl).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".offer-state--inactive")).toHaveText("Inactiva");
   await expect(page.locator(".offer-card__composition")).toHaveCSS("justify-content", "center");
   await page.getByRole("link", { name: "Abrir oferta Combo para editar" }).click();
   await expect(page.getByRole("heading", { name: "Editar oferta" })).toBeVisible();

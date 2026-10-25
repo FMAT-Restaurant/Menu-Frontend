@@ -84,17 +84,19 @@ export function SlotCard({
           </button>
           <button
             type="button"
-            className="button button--small button--danger"
+            className="button button--small button--secondary"
             onClick={onDelete}
             disabled={disabled}
             aria-label={`Eliminar grupo ${slot.name}`}
+            aria-describedby={`slot-draft-hint-${slotIndex}`}
           >
-            Eliminar
+            Retirar grupo
           </button>
         </div>
       </header>
 
       <div className="slot-card__body">
+        <p id={`slot-draft-hint-${slotIndex}`} className="field-hint">Retirar grupos u opciones modifica este borrador. Se aplica al guardar la oferta.</p>
         {slot.options.length === 0 ? (
           <p className="slot-card__empty-notice">
             Este grupo aún no tiene opciones. Debe incluir al menos una opción para ser válido.
