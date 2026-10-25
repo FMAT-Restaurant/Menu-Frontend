@@ -1,0 +1,18 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts e2e/ux-ui-09.demo.spec.ts --workers=2
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:25464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 2 workers
+
+(node:20384) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:38564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › e2e\ux-ui-09.demo.spec.ts:79:1 › UX09 existing inventory option remains editable and image replacement works by keyboard and touch (15.9s)
+  ok 3 [chromium] › e2e\ux-ui-09.demo.spec.ts:106:1 › UX09 cards retain untagged offers, independent state, deletion restriction and catalog return (2.9s)
+  ok 2 [chromium] › e2e\ux-ui-09.demo.spec.ts:41:1 › UX09 composition follows viewport, module and own form width without horizontal traversal (21.8s)
+
+  3 passed (28.0s)

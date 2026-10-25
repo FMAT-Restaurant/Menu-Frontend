@@ -14,5 +14,7 @@
     "root": "shared config, registry, browser, build, coverage, test-results",
     "UX09": "offers",
     "UX08": "recipes"
-  }
+  },
+  "integratedGraph": ".analysis/ux-ui-wave05-integrated.json",
+  "integratedGraphSha256": "74A16630D69AAA1BE93711B5E8E542A53253C25DF3E9D0A8C2C67B8573926E5B"
 }

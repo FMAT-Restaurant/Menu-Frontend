@@ -1,7 +1,7 @@
 # Registro de ejecución UX/UI
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
-Estado actual: el usuario indicó expresamente "Continua con el trabajo". Se retoma desde620c027, con directorio limpio, sin agentes anteriores vivos ni servidores propios. Se despliegan UX08 y UX09 con reservas separadas. Los checkpoints y las pausas que siguen son históricos.
+Estado actual: reanudado por el usuario con "Continua con el trabajo". UX08 y UX09 integradas en3beabea y6318581. Pasan38 demo,52 HTTP sobre preview, tipos/build/lint y focalizadas44/96. UX10 queda habilitado. Los checkpoints y las pausas siguientes son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
 Checkpoint posterior de oleada4: [checkpoint-ux07.md](checkpoint-ux07.md). UX05 a UX07 están integradas y todos los ejecutores terminaron. UX08 a UX17 no se han iniciado.
@@ -32,10 +32,10 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX05 | `/root/ux00_baseline`, validación de categorías | 6e09554 | Liberada | Integrada | Aporte U04/U03/U07/U08/U22; 16 focalizadas, 2 demo y 2 HTTP | U04 espera recetas UX08 |
 | UX06 | `/root/ux01_images`, catálogo y tarjetas | 487340e | Liberada | Integrada | U11 acreditado; aportes U03/U07/U08/U09/U10/U19/U22/U24; 32 focalizadas y 3 demo | Responsive conjunto espera UX08/UX09; contexto de rutas UX15 |
 | UX07 | `/root/ux02_foundation`, recursos y formulario de entrada | bf7d6cb | Liberada | Integrada | U14 acreditado; 75 focalizadas, 3 demo y 3 HTTP | UX11/UX13 conservan sus propios pendientes |
-| UX08 | `/root/ux08_recipes`, biblioteca, validación e insumos | 620c027, UX05 integrada | recipes/RecipePage.tsx, RecipeCard.tsx, RecipeFormDialog.tsx, styles.css y pruebas propias; e2e/ux-ui-08*; evidence/UX08 | En ejecución | U04/U13; aportes U03/U07/U08/U09/U10/U19/U22 | No editar ofertas ni BASE; el flujo de un modal pertenece UX10 |
-| UX09 | `/root/ux09_offers`, composición, tarjetas y controles | 620c027, UX06/UX07 integradas | features/offers, estilos y pruebas propios; e2e/ux-ui-09*; evidence/UX09 | En ejecución | U02/U09/U10/U19/U21/U23 y aportes | Repetir U01; no editar recetas ni BASE; no anticipar UX10/UX13 |
+| UX08 | `/root/ux08_recipes`, recetas; root integra | 3beabea | Liberada | Integrada | U04 acreditado con UX05; U13 y aportes;44 focalizadas y3 demo | Repetir selección y validación en UX10 |
+| UX09 | `/root/ux09_offers`, ofertas; root integra | 6318581 | Liberada | Integrada | U02/U21/U23 acreditados en demo; U09/U10/U19 aportes conjuntos;96 focalizadas,3 demo,U01 repetido | Conservar UX10/UX12/UX17; tacto físico pendiente |
 | UX10 | `/root/ux10_flow`, preparación de lectura | UX08/UX09 todavía pendientes | Sólo evidence/UX10/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U16/U27 y contratos a conservar | Revalidar después de integrar UX08/UX09 antes de implementar |
-| UX11 | Por asignar | UX10 | Ninguna activa | Pendiente | U15 | Borradores y router |
+| UX11 | `/root/ux11_guard`, preparación de lectura | UX10 todavía pendiente | Sólo evidence/UX11/preparation.md; ninguna edición de aplicación autorizada | Pendiente | U15 | Revalidar router y protección sobre UX10 integrado antes de implementar |
 | UX12 | Por asignar | UX11/D02 resuelta | Ninguna activa | Pendiente | U12 | Implementar MXN con dos decimales |
 | UX13 | Por asignar | UX11; turno libre UX12 | Ninguna activa | Pendiente | U17/U18 | Guardado |
 | UX14 | Por asignar | UX13/D03 y D05 resueltas | Ninguna activa | Pendiente | U20 | Aplicar rondas de selección y ayuda10MiB |
@@ -52,6 +52,8 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 - Los agentes escriben su evidencia individual, nunca este registro ni `audit/`. Nuevos archivos E2E se incorporarán expresamente a la selección demo y se comprobarán con `--list`.
 
 ## Revisión y continuidad
+
+Oleada5 integrada: UX08 `3beabea`, UX09 `6318581`; [revisión conjunta](evidence/reviews/oleada-05.md). Pasan38/38 demo en1,8min,52/52 HTTP sobre preview en45,4s, build/tipos y lint globales. Focalizadas44 recetas y96 ofertas. Se corrigieron dos fallos visuales reales sin relajar las aserciones: baseline inline en imagen y pérdida del nombre compartido del contenedor de receta. Evidencia negativa y positiva en evidence/resume-ux08. Root inspeccionó capturas y medidas. Se liberan ambas reservas; UX10 debe conservar el controlador de receta al volver entre pasos. UX11 sólo tiene preparación de lectura.
 
 Se registrarán asignaciones, ampliaciones, resultados, referencia de integración y liberación al recibir cada entrega. Las ediciones compartidas se integran por turnos. El historial de auditoría permanece intacto.
 
@@ -70,3 +72,4 @@ Oleada4 integrada: [revisión conjunta](evidence/reviews/oleada-04.md), [revisi�
 - La primera ejecución Compose heredó puerto 5173 del entorno, mientras las 46 pruebas normales usaron preview en 4173. Ese resultado demuestra preview de producción, no el contenedor. Root repitió la suite con FRONTEND_PORT=4173 y la imagen inicial sin reconstruir sobre ediciones parciales. Logs separados `compose-4173-*`. Se investigan diferencias contractuales y recuperación como condiciones de línea base, sin atribuirlas a UX01/UX02.
 - Repetición Compose4173 finalizada: 37 pruebas pasan y 9 fallan en 41,6 s; JUnit y logs conservados. Contenedor y red propios detenidos/eliminados. No se modificaron tests para ocultar estos fallos. La preparación UX00 admite fallos previos documentados y sigue habilitando trabajo independiente cuando el alcance quede confirmado.
 - Contraste controlado sobre la misma imagen inicial, puerto 4173 y API_BASE_URL vacío únicamente en el proceso de prueba: 46 pruebas aprobadas. La configuración anterior usaba API absoluta de otro origen, comprobado sin registrar su valor. La diferencia explica ETag no expuesto por los mocks cross-origin; no se cambia el contrato productivo ni las pruebas para ocultarla. Logs `compose-same-origin-*`; proyecto propio detenido al terminar.
+

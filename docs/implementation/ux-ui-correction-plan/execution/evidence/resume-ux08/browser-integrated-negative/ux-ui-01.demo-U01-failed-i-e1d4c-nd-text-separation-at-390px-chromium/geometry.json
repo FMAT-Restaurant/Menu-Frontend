@@ -1,0 +1,68 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "geometry": {
+    "card": {
+      "x": 16,
+      "y": 447,
+      "width": 358,
+      "height": 494,
+      "top": 447,
+      "right": 374,
+      "bottom": 941,
+      "left": 16
+    },
+    "image": {
+      "x": 37,
+      "y": 460,
+      "width": 316,
+      "height": 112,
+      "top": 460,
+      "right": 353,
+      "bottom": 572,
+      "left": 37
+    },
+    "renderedImage": null,
+    "intrinsicImage": null,
+    "text": [
+      {
+        "selector": "h2",
+        "text": "Individual",
+        "x": 37,
+        "y": 584,
+        "width": 316,
+        "height": 26,
+        "top": 584,
+        "right": 353,
+        "bottom": 610,
+        "left": 37
+      },
+      {
+        "selector": ".offer-card__entry",
+        "text": "Hamburguesa clásica",
+        "x": 37,
+        "y": 614,
+        "width": 316,
+        "height": 16,
+        "top": 614,
+        "right": 353,
+        "bottom": 630,
+        "left": 37
+      },
+      {
+        "selector": ".offer-card__price",
+        "text": "$ 145",
+        "x": 37,
+        "y": 644,
+        "width": 316,
+        "height": 24,
+        "top": 644,
+        "right": 353,
+        "bottom": 668,
+        "left": 37
+      }
+    ]
+  }
+}

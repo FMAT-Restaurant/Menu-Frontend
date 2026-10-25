@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Agregar opción · Grupo modal",
+    "modal": true,
+    "backdrop": "rgba(0, 0, 0, 0)",
+    "covered": true,
+    "width": 352,
+    "height": 626
+  },
+  {
+    "name": "Biblioteca de recetas",
+    "modal": true,
+    "backdrop": "rgba(0, 0, 0, 0)",
+    "covered": true,
+    "width": 358,
+    "height": 630
+  },
+  {
+    "name": "Nueva receta",
+    "modal": true,
+    "backdrop": "rgba(17, 24, 39, 0.4)",
+    "covered": false,
+    "width": 326,
+    "height": 630
+  }
+]

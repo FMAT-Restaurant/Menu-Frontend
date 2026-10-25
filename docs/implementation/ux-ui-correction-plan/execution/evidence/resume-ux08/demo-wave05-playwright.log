@@ -1,0 +1,62 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts e2e/ux-ui-01.demo.spec.ts e2e/ux-ui-08.demo.spec.ts e2e/ux-ui-09.demo.spec.ts --workers=2
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:30796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 16 tests using 2 workers
+
+(node:10572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:40384) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  2 [chromium] › e2e\ux-ui-01.demo.spec.ts:64:3 › U01: Individual and Combo con bebida remain below their image at 390px (23.2s)
+  ok  1 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: square upload cannot cover long presentation or price at 390px (24.6s)
+  ok  3 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: portrait upload cannot cover long presentation or price at 390px (3.1s)
+  ok  4 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: landscape upload cannot cover long presentation or price at 390px (3.5s)
+  ok  5 [chromium] › e2e\ux-ui-01.demo.spec.ts:111:3 › U01: failed image preserves fallback and text separation at 390px (2.2s)
+  ok  6 [chromium] › e2e\ux-ui-01.demo.spec.ts:64:3 › U01: Individual and Combo con bebida remain below their image at 1440px (1.9s)
+  ok  7 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: square upload cannot cover long presentation or price at 1440px (3.0s)
+  ok  8 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: portrait upload cannot cover long presentation or price at 1440px (2.6s)
+  ok  9 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: landscape upload cannot cover long presentation or price at 1440px (2.5s)
+  ok 10 [chromium] › e2e\ux-ui-01.demo.spec.ts:111:3 › U01: failed image preserves fallback and text separation at 1440px (1.9s)
+  ok 11 [chromium] › e2e\ux-ui-08.demo.spec.ts:24:3 › UX08 management keeps unmatched query and restores its three recipes (1.8s)
+  ok 12 [chromium] › e2e\ux-ui-08.demo.spec.ts:24:3 › UX08 selection keeps unmatched query and restores its three recipes (2.3s)
+  x  14 [chromium] › e2e\ux-ui-09.demo.spec.ts:41:1 › UX09 composition follows viewport, module and own form width without horizontal traversal (4.6s)
+  ok 13 [chromium] › e2e\ux-ui-08.demo.spec.ts:46:1 › UX08 validates locally with summary links and adapts supplies to actual module width (6.6s)
+(node:36744) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 15 [chromium] › e2e\ux-ui-09.demo.spec.ts:106:1 › UX09 cards retain untagged offers, independent state, deletion restriction and catalog return (3.6s)
+  ok 16 [chromium] › e2e\ux-ui-09.demo.spec.ts:79:1 › UX09 existing inventory option remains editable and image replacement works by keyboard and touch (3.1s)
+
+
+  1) [chromium] › e2e\ux-ui-09.demo.spec.ts:41:1 › UX09 composition follows viewport, module and own form width without horizontal traversal 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 161
+    Received:    166
+
+      62 |       for (const control of data.controls) {
+      63 |         expect(control.height, `${control.name}: ${host} ${width}`).toBeGreaterThanOrEqual(data.form.width < 768 || data.module.width < 1200 ? 48 : 40);
+    > 64 |         expect(control.scrollHeight).toBeLessThanOrEqual(control.clientHeight + 1);
+         |                                      ^
+      65 |         expect(control.right).toBeLessThanOrEqual(data.form.right + 1);
+      66 |       }
+      67 |       for (const meta of data.metadata) { expect(Number.parseFloat(meta.font)).toBeGreaterThanOrEqual(12); expect(Number.parseFloat(meta.line)).toBeGreaterThanOrEqual(16); }
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-09.demo.spec.ts:64:38
+
+    Error Context: test-results\ux-ui-09.demo-UX09-composi-ed594-ithout-horizontal-traversal-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-09.demo-UX09-composi-ed594-ithout-horizontal-traversal-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-09.demo-UX09-composi-ed594-ithout-horizontal-traversal-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\ux-ui-09.demo.spec.ts:41:1 › UX09 composition follows viewport, module and own form width without horizontal traversal 
+  15 passed (56.8s)
