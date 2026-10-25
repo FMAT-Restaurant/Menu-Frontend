@@ -1,6 +1,7 @@
 # Verificación de cierre UX/UI
 
 Estado provisional. La implementación completa todavía no está acreditada. Este documento distingue la integración de tickets del resultado por hallazgo; UX17 completará la comprobación final sobre una misma base.
+Estado actual: UX11 integrado en a9408b8,535 Jest,47 demo,55 HTTP y tipos/build/lint aprobados. UX12 a UX17 pendientes. Las líneas históricas siguientes no sustituyen este estado.
 Estado actual: UX10 integrado en81fc2fe con42 demo,55 HTTP y121 focalizadas aprobadas. UX11 a UX17 siguen pendientes; las referencias posteriores a checkpoints son históricas.
 Reanudación actual: UX08 y UX09 integradas en3beabea y6318581. Los párrafos de parada siguientes son históricos. Pasan38 demo y52 HTTP sobre preview. UX10 a UX17 siguen pendientes.
 Trabajo detenido por solicitud del usuario después de integrar UX04 en810f5d9. La referencia y condiciones de reanudación están en [checkpoint.md](checkpoint.md).
@@ -26,7 +27,7 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U12 | UX12 | Abierto | D02 resuelta | MXN, dos decimales, sin cambiar datos almacenados |
 | U13 | UX08; UX10 | Acreditado en alcance probado | 3beabea y81fc2fe; vacío y consulta fallida distintos, término y limpiar con foco; selector final probado | Conservar base final |
 | U14 | UX07 | Acreditado en demo y HTTP controlado | bf7d6cb;404 sin formulario,503 recuperable y categorías independientes; [revisión](evidence/reviews/ux07-wave04.md) | Conservar en base final; no acredita servicio real |
-| U15 | UX11; UX10 | Abierto | D04 adoptada | Escape, cancelar, navegación, atrás y recarga conservan política y recuperación |
+| U15 | UX11; UX10 | Acreditado en alcance autónomo probado | a9408b8; snapshots, salida intacta, seguir/descartar, router de datos, atrás/adelante y beforeunload; operaciones pendientes/inciertas y expiradas protegidas | Conservar base final UX17; dispositivo físico y lector manual pendientes |
 | U16 | UX10 | Acreditado en demo/HTTP | 81fc2fe; búsqueda y primer resultado sin cabecera administrativa, query/página conservadas | Conservar con UX11 y base final |
 | U17 | UX13 | Abierto | Sin entrega | Guardado en formulario largo, poca altura, zoom y teclado virtual |
 | U18 | UX13 | Abierto | Sin entrega | Éxito confirmado anunciado una vez en destino; incertidumbre sin falso éxito |

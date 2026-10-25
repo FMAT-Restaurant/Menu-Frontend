@@ -1,0 +1,461 @@
+FAIL src/features/recipes/RecipeSelectionTask.test.tsx
+  ● an expired creation with a possible applied write cannot discard its recovery or leave the recipe step
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "dialog" and name "Nueva receta"
+
+    Here are the accessible roles:
+
+      dialog:
+
+      Name "Elegir receta · Principal":
+      <dialog
+        aria-labelledby="recipe-selector-title"
+        class="option-modal-dialog menu-task-dialog"
+        open=""
+      />
+
+      --------------------------------------------------
+      region:
+
+      Name "Nueva receta":
+      <section
+        aria-labelledby="recipe-form-title"
+        class="recipe-form-dialog recipe-form-content"
+      />
+
+      --------------------------------------------------
+      heading:
+
+      Name "Nueva receta":
+      <h2
+        id="recipe-form-title"
+      />
+
+      --------------------------------------------------
+      button:
+
+      Name "Volver a elegir receta":
+      <button
+        aria-label="Volver a elegir receta"
+        class="recipe-form-dialog__close"
+        type="button"
+      />
+
+      Name "+ Agregar insumo":
+      <button
+        aria-label="+ Agregar insumo"
+        class="button button--secondary button--small"
+        id="recipe-add-supply"
+        type="button"
+      />
+
+      Name "Buscar insumos":
+      <button
+        class="button button--secondary button--small"
+        type="button"
+      />
+
+      Name "Eliminar insumo 1":
+      <button
+        aria-label="Eliminar insumo 1"
+        class="button button--quiet"
+        disabled=""
+        type="button"
+      />
+
+      Name "Iniciar nueva operación":
+      <button
+        class="button button--secondary"
+        type="button"
+      />
+
+      Name "Volver a elegir receta":
+      <button
+        class="button button--secondary"
+        type="button"
+      />
+
+      Name "Guardar receta":
+      <button
+        class="button button--primary"
+        disabled=""
+        type="submit"
+      />
+
+      --------------------------------------------------
+      textbox:
+
+      Name "Nombre":
+      <input
+        aria-invalid="false"
+        id="recipe-name"
+        maxlength="255"
+        placeholder="Ej. Hamburguesa Hawaiana"
+        required=""
+        value="Pan"
+      />
+
+      Name "Descripción":
+      <textarea
+        aria-invalid="false"
+        id="recipe-description"
+        placeholder="Descripción breve de la receta"
+        required=""
+        rows="2"
+      />
+
+      Name "Instrucciones":
+      <textarea
+        aria-invalid="false"
+        id="recipe-instructions"
+        placeholder="Pasos de preparación"
+        required=""
+        rows="3"
+      />
+
+      --------------------------------------------------
+      group:
+
+      Name "Insumos del inventario":
+      <fieldset
+        class="recipe-supplies-section"
+      />
+
+      --------------------------------------------------
+      searchbox:
+
+      Name "Buscar insumos de inventario":
+      <input
+        aria-label="Buscar insumos de inventario"
+        placeholder="Filtrar insumos de inventario…"
+        type="search"
+        value=""
+      />
+
+      --------------------------------------------------
+      table:
+
+      Name "":
+      <table
+        class="recipe-supplies-table"
+      />
+
+      --------------------------------------------------
+      rowgroup:
+
+      Name "":
+      <thead />
+
+      Name "":
+      <tbody />
+
+      --------------------------------------------------
+      row:
+
+      Name "Insumo seleccionado Cantidad U. Medida Acción":
+      <tr />
+
+      Name "i1 1 --":
+      <tr />
+
+      --------------------------------------------------
+      columnheader:
+
+      Name "Insumo seleccionado":
+      <th
+        scope="col"
+      />
+
+      Name "Cantidad":
+      <th
+        scope="col"
+      />
+
+      Name "U. Medida":
+      <th
+        scope="col"
+      />
+
+      Name "Acción":
+      <th
+        scope="col"
+      />
+
+      --------------------------------------------------
+      cell:
+
+      Name "i1":
+      <td
+        data-label="Insumo seleccionado"
+      />
+
+      Name "1":
+      <td
+        data-label="Cantidad"
+      />
+
+      Name "--":
+      <td
+        class="recipe-supplies-table__unit"
+        data-label="U. Medida"
+      />
+
+      Name "":
+      <td
+        data-label="Acción"
+      />
+
+      --------------------------------------------------
+      combobox:
+
+      Name "Insumo 1":
+      <select
+        aria-invalid="false"
+        aria-label="Insumo 1"
+        id="supply-row-1-item"
+        required=""
+      />
+
+      --------------------------------------------------
+      option:
+
+      Name "Seleccione insumo…":
+      <option
+        value=""
+      />
+
+      Name "i1":
+      <option
+        value="i1"
+      />
+
+      --------------------------------------------------
+      spinbutton:
+
+      Name "Cantidad del insumo 1":
+      <input
+        aria-invalid="false"
+        aria-label="Cantidad del insumo 1"
+        id="supply-row-1-quantity"
+        min="0"
+        required=""
+        step="any"
+        type="number"
+        value="1"
+      />
+
+      --------------------------------------------------
+      alert:
+
+      Name "":
+      <div
+        class="recipe-form-dialog__error"
+        role="alert"
+      />
+
+      --------------------------------------------------
+      paragraph:
+
+      Name "":
+      <p />
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    <body
+      style="position: fixed; top: 0px; left: 0px; right: 0px; width: 100%; overflow: hidden;"
+    >
+      <div />
+      <div>
+        <dialog
+          aria-labelledby="recipe-selector-title"
+          class="option-modal-dialog menu-task-dialog"
+          open=""
+        >
+          <header
+            class="modal-header"
+            hidden=""
+          >
+            <h2
+              id="option-modal-title"
+            >
+              Editar opción · Principal
+            </h2>
+            <button
+              aria-label="Cerrar modal de opción"
+              class="modal-close"
+              type="button"
+            >
+              <svg
+                aria-hidden="true"
+                class="menu-icon"
+                fill="none"
+                focusable="false"
+                height="20"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.75"
+                viewBox="0 0 24 24"
+                width="20"
+              >
+                <path
+                  d="m6 6 12 12M18 6 6 18"
+                />
+              </svg>
+            </button>
+          </header>
+          <form
+            class="option-form"
+            hidden=""
+            novalidate=""
+          >
+            <div
+              class="modal-body"
+            >
+              <div
+                class="form-field"
+              >
+                <label
+                  for="option-display-name"
+                >
+                  Nombre mostrado (opcional)
+                </label>
+                <input
+                  id="option-display-name"
+                  placeholder="Ej. Coca-Cola o Papas a la francesa"
+                  type="text"
+                  value="Etiqueta propia"
+                />
+                <p
+                  class="field-hint"
+                >
+                  Puedes usar una etiqueta contextual distinta al nombre de la receta o del artículo.
+                </p>
+              </div>
+              <div
+                class="option-source-box"
+              >
+                <span
+                  class="option-source-box__title"
+                >
+                  Contenido actual:
+                </span>
+                <p
+                  class="option-source-box__summary"
+                >
+                  Receta asignada: Anterior
+                </p>
+              </div>
+              <div
+                class="form-field"
+              >
+                <span
+                  class="field-label"
+                >
+                  Origen del contenido de esta opción
+                </span>
+                <div
+                  class="source-picker-buttons"
+                >
+                  <button
+                    class="source-btn"
+                    type="button"
+                  >
+                    <span
+                      class="source-btn__title"
+                    >
+                      Elegir receta
+                    </span>
+                    <span
+                      class="source-btn__desc"
+                    >
+                      Seleccionar una preparación de la biblioteca.
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <fieldset
+                class="form-fieldset"
+              >
+                <legend>
+                  Disponibilidad
+                </legend>
+                <div
+                  class="radio-group"
+                >
+                  <label
+                    class="radio-option"
+                  >
+                    <input
+                      checked=""
+                      name="option-status"
+                      type="radio"
+                      value="ACTIVE"
+                    />
+                    Activa
+                  </label>
+                  <label
+                    class="radio-option"
+                  >
+                    <input
+                      name="option-status"
+                      type="radio"
+                      value="INACTIVE"
+                    />
+                    Inactiva
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+            <footer
+              class="modal-footer"
+            >
+              <button
+                class="button button--secondary"
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                class="button button--primary"
+                type="submit"
+              >
+                Guardar opción
+              </button>
+            </footer>
+          </form>
+          <div>
+            <div
+              class="recipe-selection-task"
+            >
+              <section
+                aria-labelledby="recipe-selector-title"
+                class="recipe-selector"
+                hidden=""
+              >
+                <header
+                  class="recipe-selector__header"
+                >
+                  <button
+                    class="button button--quiet"
+                    type="button"
+                  >
+                    Volver a la opción
+                  </button>
+                  <h2
+                    ...
+
+
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/features/recipes/RecipeSelectionTask.test.tsx:381:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 5 passed, 6 total
+Snapshots:   0 total
+Time:        5.571 s
+Ran all test suites within paths "src/features/recipes/RecipeSelectionTask.test.tsx".

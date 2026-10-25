@@ -1,7 +1,7 @@
 # Registro de ejecución UX/UI
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
-Estado actual: UX10 integrado en81fc2fe. Pasan42 demo,55 HTTP sobre preview,121 focalizadas y tipos/build/lint. UX11 queda habilitado; UX12 a UX17 pendientes. Los checkpoints y las pausas siguientes son históricos.
+Estado actual: UX11 integrado en a9408b8. Pasan535 tests de Jest,47 demo,55 HTTP sobre preview y tipos/build/lint. UX12 queda habilitado; UX12 a UX17 pendientes. Los checkpoints y las pausas siguientes son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
 Checkpoint posterior de oleada4: [checkpoint-ux07.md](checkpoint-ux07.md). UX05 a UX07 están integradas y todos los ejecutores terminaron. UX08 a UX17 no se han iniciado.
@@ -35,7 +35,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX08 | `/root/ux08_recipes`, recetas; root integra | 3beabea | Liberada | Integrada | U04 acreditado con UX05; U13 y aportes;44 focalizadas y3 demo | Repetir selección y validación en UX10 |
 | UX09 | `/root/ux09_offers`, ofertas; root integra | 6318581 | Liberada | Integrada | U02/U21/U23 acreditados en demo; U09/U10/U19 aportes conjuntos;96 focalizadas,3 demo,U01 repetido | Conservar UX10/UX12/UX17; tacto físico pendiente |
 | UX10 | `/root/ux10_finish`, continuación; root integra | 81fc2fe | Liberada | Integrada | U16/U27 y U06/U13 acreditados en demo/HTTP;121 focalizadas,42 demo,55 HTTP | UX11 conserva sesiones y Escape local; UX17 repite base final |
-| UX11 | `/root/ux11_execute`, guard común y router | adf2509, UX10 integrado81fc2fe | App.tsx/main.tsx, shared guard/confirmación nuevos, formularios de categorías/entradas/ofertas/recetas y hooks, estilos propios y tests afectados; e2e/ux-ui-11* y premisas justificadas de consumidores; evidence/UX11 | En ejecución | U15 y conservación U26/U27/U28 | Root conserva configuración común, registro, build, cobertura, navegador y salidas |
+| UX11 | `/root`, continuación del ejecutor tras límite de uso | a9408b8 | Liberada | Integrada | U15 y conservación U26/U27/U28;535 Jest,47 demo,55 HTTP | UX17 repite base final; shell excluido y validaciones manuales pendientes |
 | UX12 | `/root/ux09_offers`, preparación de lectura | UX11/D02 resuelta | Sólo evidence/UX12/preparation.md | Pendiente | U12 | Implementar sólo tras UX11; no editar ofertas durante UX10 |
 | UX13 | `/root/ux08_recipes`, preparación de lectura | UX11; turno libre UX12 | Sólo evidence/UX13/preparation.md | Pendiente | U17/U18 | Guardado y feedback; sin edición de aplicación antes de desbloqueo |
 | UX14 | Por asignar | UX13/D03 y D05 resueltas | Ninguna activa | Pendiente | U20 | Aplicar rondas de selección y ayuda10MiB |
@@ -54,6 +54,8 @@ Tras la interrupción del25 de octubre, list_agents sólo mostraba root y la ins
 - Los agentes escriben su evidencia individual, nunca este registro ni `audit/`. Nuevos archivos E2E se incorporarán expresamente a la selección demo y se comprobarán con `--list`.
 
 ## Revisión y continuidad
+
+Oleada7 integrada en `a9408b8`: [entrega](evidence/UX11/entrega.md) y [continuación/revisión](evidence/UX11/root-continuation.md). Router de datos, snapshots confirmados y guard agregado con confirmación en el contenedor existente. Se conservaron todos los cambios del ejecutor al alcanzar su límite. Pasan535 Jest en42 suites,47 demo y55 HTTP, tipos/build/lint. Se verificaron listeners de StrictMode, bloqueo pendiente, operación expirada con posible escritura, archivo/categorías y receta retenida, atrás/adelante y aviso nativo. Las adaptaciones de tests se comunicaron antes de editar y conservan garantías de negocio. Se libera la reserva y se habilita UX12.
 
 Oleada6 integrada en `81fc2fe`: [revisión](evidence/reviews/oleada-06.md). Pasan121 focalizadas, tipos/build/lint global y42 demo en1,0min,55 HTTP sobre preview en38,8s. La revisión encontró y corrigió pérdida de receta retenida al guardar opción y un cierre nativo no cancelable durante Escape. Se conservan sus negativos, eventos y positivos. Los tests históricos de tres capas se adaptaron antes de integrar, con foco, borradores, F5, claves/payload y bloqueo pendientes intactos. Se libera UX10 y se habilita UX11.
 

@@ -1,0 +1,486 @@
+FAIL src/audit-recovery.regression.test.tsx
+  ● Console
+
+    console.warn
+      No routes matched location "/"
+
+      at warning (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:212:49)
+      at useRoutesImpl (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7388:5)
+      at useRoutes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7333:10)
+      at Routes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:10060:10)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:28571:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:8030:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10569:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:12205:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:1048:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:19176:22)
+      at workLoopConcurrentByScheduler (node_modules/react-dom/cjs/react-dom-client.development.js:19170:9)
+      at renderRootConcurrent (node_modules/react-dom/cjs/react-dom-client.development.js:19152:15)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:18014:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:20665:7)
+      at performWorkUntilDeadline (node_modules/scheduler/cjs/scheduler.development.js:45:48)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+    console.warn
+      No routes matched location "/"
+
+      at warning (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:212:49)
+      at useRoutesImpl (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7388:5)
+      at useRoutes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7333:10)
+      at Routes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:10060:10)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:28571:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:8030:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10569:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:12205:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:1048:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:19176:22)
+      at workLoopConcurrentByScheduler (node_modules/react-dom/cjs/react-dom-client.development.js:19170:9)
+      at renderRootConcurrent (node_modules/react-dom/cjs/react-dom-client.development.js:19152:15)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:18014:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:20665:7)
+      at performWorkUntilDeadline (node_modules/scheduler/cjs/scheduler.development.js:45:48)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+  ● oferta: salir durante upload detiene el PATCH posterior
+
+    Unable to find role="heading" and name "Listado destino"
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="app-shell offer-form-view"
+        >
+          <main
+            class="menu-page offer-form-page"
+          >
+            <header
+              class="task-header offer-form-page__heading"
+            >
+              <a
+                class="back-link"
+                data-discover="true"
+                href="/entries/e1/offers"
+              >
+                ← Volver a ofertas
+              </a>
+              <div
+                class="task-header__content"
+              >
+                <h1
+                  data-route-heading="true"
+                  tabindex="-1"
+                >
+                  Editar oferta
+                </h1>
+                <p
+                  class="task-header__intro offer-form-page__subtitle"
+                >
+                  Entrada: 
+                  <strong>
+                    Entrada
+                  </strong>
+                </p>
+              </div>
+            </header>
+            <form
+              aria-busy="true"
+              class="offer-form"
+              novalidate=""
+            >
+              <section
+                aria-labelledby="commercial-info-title"
+                class="offer-commercial-info"
+              >
+                <h2
+                  class="offer-commercial-info__title"
+                  id="commercial-info-title"
+                >
+                  1. Información comercial
+                </h2>
+                <div
+                  class="offer-commercial-info__grid"
+                >
+                  <div
+                    class="offer-commercial-info__fields"
+                  >
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-tag-input"
+                      >
+                        Etiqueta de presentación (opcional)
+                      </label>
+                      <input
+                        disabled=""
+                        id="offer-tag-input"
+                        placeholder="Ej. Individual, Mediana o Combo"
+                        type="text"
+                        value="Original"
+                      />
+                      <p
+                        class="field-hint"
+                      >
+                        La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-price-input"
+                      >
+                        Precio base
+                      </label>
+                      <div
+                        class="price-input-wrapper"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="price-prefix"
+                        >
+                          $
+                        </span>
+                        <input
+                          disabled=""
+                          id="offer-price-input"
+                          min="0"
+                          placeholder="0.00"
+                          required=""
+                          step="any"
+                          type="number"
+                          value="100"
+                        />
+                      </div>
+                      <p
+                        class="field-hint"
+                      >
+                        El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <span
+                        class="field-label"
+                        id="offer-status-label"
+                      >
+                        Estado de la oferta
+                      </span>
+                      <div>
+                        <div
+                          aria-labelledby="offer-status-label"
+                          class="radio-group"
+                          role="radiogroup"
+                        >
+                          <label
+                            class="radio-label"
+                          >
+                            <input
+                              checked=""
+                              disabled=""
+                              name="offer-form-status"
+                              type="radio"
+                              value="ACTIVE"
+                            />
+                            <span>
+                              Activa
+                            </span>
+                          </label>
+                          <label
+                            class="radio-label"
+                          >
+                            <input
+                              disabled=""
+                              name="offer-form-status"
+                              type="radio"
+                              value="INACTIVE"
+                            />
+                            <span>
+                              Inactiva
+                            </span>
+                          </label>
+                        </div>
+                        <p
+                          class="field-hint"
+                        >
+                          El borrador incluye al menos un grupo con opciones activas para solicitar el estado activo. Toda oferta inicia inactiva (INACTIVE) al crearse y la composición local no garantiza la aceptación del servidor hasta guardar.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="offer-commercial-info__image-column"
+                  >
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        class="field-label"
+                        for="offer-image-input"
+                      >
+                        Imagen de la oferta 
+                        (opcional si se conserva)
+                      </label>
+                      <input
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled=""
+                        id="offer-image-input"
+                        style="display: none;"
+                        type="file"
+                      />
+                      <button
+                        aria-label="Seleccionar o arrastrar imagen de la oferta"
+                        class="image-dropzone image-dropzone--has-preview"
+                        disabled=""
+                        type="button"
+                      >
+                        <div
+                          class="image-preview"
+                        >
+                          <img
+                            alt="Vista previa de la oferta"
+                            src="blob:review"
+                          />
+                          <span
+                            class="image-preview__overlay"
+                          >
+                            Cambiar imagen
+                          </span>
+                        </div>
+                      </button>
+                      <p
+                        class="field-hint"
+                      >
+                        Formatos aceptados: JPEG, PNG o WebP. Tamaño máximo: 10 MiB y 4096 × 4096 px.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <section
+                aria-labelledby="composition-editor-title"
+                class="composition-editor"
+              >
+                <div
+                  class="composition-editor__header"
+                >
+                  <div>
+                    <h2
+                      class="composition-editor__title"
+                      id="composition-editor-title"
+                    >
+                      2. Composición
+                    </h2>
+                    <p
+                      class="composition-editor__subtitle"
+                    >
+                      Cada grupo define su participación y cantidad; cada opción elige su propia fuente de contenido.
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="composition-editor__slots-container"
+                >
+                  <article
+                    aria-label="Grupo Principal"
+                    class="slot-card slot-card--active"
+                    data-testid="slot-card-0"
+                  >
+                    <header
+                      class="slot-card__header"
+                    >
+                      <div
+                        class="slot-card__title-row"
+                      >
+                        <h3
+                          class="slot-card__title"
+                        >
+                          Principal
+                        </h3>
+                        <div
+                          class="slot-card__badges"
+                        >
+                          <span
+                            class="slot-card__badge slot-card__badge--rounds"
+                          >
+                            1 ronda
+                          </span>
+                          <span
+                            class="slot-card__badge slot-card__badge--active"
+                          >
+                            Activo
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        class="slot-card__header-actions"
+                      >
+                        <button
+                          aria-label="Editar grupo Principal"
+                          class="button button--small button--secondary"
+                          disabled=""
+                          type="button"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          aria-describedby="slot-draft-hint-0"
+                          aria-label="Eliminar grupo Principal"
+                          class="button button--small button--secondary"
+                          disabled=""
+                          type="button"
+                        >
+                          Retirar grupo
+                        </button>
+                      </div>
+                    </header>
+                    <div
+                      class="slot-card__body"
+                    >
+                      <p
+                        class="field-hint"
+                        id="slot-draft-hint-0"
+                      >
+                        Retirar grupos u opciones modifica este borrador. Se aplica al guardar la oferta.
+                      </p>
+                      <div
+                        class="slot-card__options-list"
+                      >
+                        <div
+                          class="slot-option-item slot-option-item--active"
+                          data-testid="slot-option-0"
+                        >
+                          <div
+                            class="slot-option-item__main"
+                          >
+                            <div
+                              class="slot-option-item__header"
+                            >
+                              <strong
+                                class="slot-option-item__name"
+                              >
+                                Receta
+                              </strong>
+                              <span
+                                class="slot-option-item__source-badge"
+                              >
+                                Receta
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            class="offer-state offer-state--active"
+                          >
+                            Activa
+                          </span>
+                          <div
+                            class="slot-option-item__actions"
+                          >
+                            <button
+                              aria-label="Cambiar estado de Receta"
+                              aria-pressed="true"
+                              class="button button--small button--secondary"
+                              disabled=""
+                              title="Hacer inactiva"
+                              type="button"
+                            >
+                              Desactivar
+                            </button>
+                            <button
+                              aria-label="Editar opción Receta"
+                              class="button button--small button--secondary"
+                              disabled=""
+                              type="button"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              aria-label="Eliminar opción Receta"
+                              class="button button--small button--secondary"
+                              disabled=""
+                              title="Retirar esta opción del borrador; se aplica al guardar"
+                              type="button"
+                            >
+                              Retirar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <footer
+                      class="slot-card__footer"
+                    >
+                      <button
+                        aria-label="Agregar opción a Principal"
+                        class="button button--secondary button--full"
+                        disabled=""
+                        type="button"
+                      >
+                        + Agregar opción
+                      </button>
+                    </footer>
+                  </article>
+                  <button
+                    aria-label="Agregar grupo"
+                    class="add-slot-card"
+                    disabled=""
+                    type="button"
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="add-slot-card__icon"
+                    >
+                      +
+                    </span>
+                    <span
+                      class="add-slot-card__label"
+                    >
+                      Agregar grupo
+                    </span>
+                  </button>
+                </div>
+              </section>
+              <div
+                class="offer-form__actions"
+              >
+                <a
+                  class="button button--secondary"
+                  data-discover="true"
+                  href="/entries/e1/offers"
+                >
+                  Cancelar
+                </a>
+                <button
+                  class="button button--primary"
+                  disabled=""
+                  type="submit"
+                >
+                  Guardando…
+                </button>
+              </div>
+            </form>
+          </main>
+        </div>
+      </div>
+    </body>
+
+      234 |   r.getOffer.mockResolvedValue({ data: confirmed, etag: '"confirmed-version"' });
+      235 |   fireEvent.click(await screen.findByRole('button', { name: 'Revisar oferta actual' }));
+    > 236 |   await screen.findByRole('region', { name: 'Versión del servidor' });
+          |                       ^
+      237 |   expect(r.getOffer.mock.calls[0][0]).toBe('created-on-server');
+      238 |   fireEvent.click(screen.getByRole('button', { name: 'Adoptar versión del servidor' }));
+      239 |   expect(screen.getByLabelText('Etiqueta de presentación (opcional)')).toHaveValue('Mi borrador');
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/audit-recovery.regression.test.tsx:236:23)
+
+
+Test Suites: 1 failed, 8 passed, 9 total
+Tests:       1 failed, 202 passed, 203 total
+Snapshots:   0 total
+Time:        28.576 s
+Ran all test suites within paths "src/shared/editGuard.test.tsx", "src/App.test.tsx", "src/features/entries/EntryFormPage.test.tsx", "src/features/categories/CategoryPage.test.tsx", "src/features/recipes/RecipePage.test.tsx", "src/features/recipes/RecipeSelectionTask.test.tsx", "src/features/offers/OfferComponents.test.tsx", "src/features/offers/OfferFormPage.test.tsx", "src/audit-recovery.regression.test.tsx".

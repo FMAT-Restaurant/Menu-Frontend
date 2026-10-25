@@ -1,0 +1,402 @@
+{
+  "viewport": 390,
+  "module": {
+    "x": 0,
+    "y": -671,
+    "width": 390,
+    "height": 2401,
+    "right": 390,
+    "bottom": 1730
+  },
+  "form": {
+    "x": 16,
+    "y": -482,
+    "width": 358,
+    "height": 2140,
+    "right": 374,
+    "bottom": 1658
+  },
+  "clientWidth": 358,
+  "scrollWidth": 358,
+  "grid": {
+    "x": 33,
+    "y": 381,
+    "width": 324,
+    "height": 1180,
+    "right": 357,
+    "bottom": 1561
+  },
+  "columns": 1,
+  "slots": [
+    {
+      "x": 33,
+      "y": 393,
+      "width": 324,
+      "height": 620,
+      "right": 357,
+      "bottom": 1013
+    },
+    {
+      "x": 33,
+      "y": 1029,
+      "width": 324,
+      "height": 424,
+      "right": 357,
+      "bottom": 1453
+    }
+  ],
+  "add": {
+    "x": 33,
+    "y": 1469,
+    "width": 324,
+    "height": 80,
+    "right": 357,
+    "bottom": 1549
+  },
+  "controls": [
+    {
+      "name": "offer-tag-input",
+      "x": 33,
+      "y": -374,
+      "width": 324,
+      "height": 48,
+      "right": 357,
+      "bottom": -326,
+      "lineHeight": "24px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "offer-price-input",
+      "x": 70.890625,
+      "y": -238,
+      "width": 286.109375,
+      "height": 48,
+      "right": 357,
+      "bottom": -190,
+      "lineHeight": "24px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Seleccionar o arrastrar imagen de la oferta",
+      "x": 33,
+      "y": 12,
+      "width": 324,
+      "height": 164,
+      "right": 357,
+      "bottom": 176,
+      "lineHeight": "24px",
+      "scrollHeight": 160,
+      "clientHeight": 160
+    },
+    {
+      "name": "Editar grupo Plato principal",
+      "x": 50,
+      "y": 470,
+      "width": 62.890625,
+      "height": 48,
+      "right": 112.890625,
+      "bottom": 518,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Eliminar grupo Plato principal",
+      "x": 120.890625,
+      "y": 470,
+      "width": 110.609375,
+      "height": 48,
+      "right": 231.5,
+      "bottom": 518,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Cambiar estado de Hamburguesa clásica",
+      "x": 88.453125,
+      "y": 652,
+      "width": 91.484375,
+      "height": 48,
+      "right": 179.9375,
+      "bottom": 700,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Editar opción Hamburguesa clásica",
+      "x": 187.9375,
+      "y": 652,
+      "width": 62.890625,
+      "height": 48,
+      "right": 250.828125,
+      "bottom": 700,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Eliminar opción Hamburguesa clásica",
+      "x": 258.828125,
+      "y": 652,
+      "width": 68.171875,
+      "height": 48,
+      "right": 327,
+      "bottom": 700,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Cambiar estado de Alternativa de limonada con nombre largo para comprobar opciones completas",
+      "x": 109.875,
+      "y": 866,
+      "width": 70.0625,
+      "height": 48,
+      "right": 179.9375,
+      "bottom": 914,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Editar opción Alternativa de limonada con nombre largo para comprobar opciones completas",
+      "x": 187.9375,
+      "y": 866,
+      "width": 62.890625,
+      "height": 48,
+      "right": 250.828125,
+      "bottom": 914,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Eliminar opción Alternativa de limonada con nombre largo para comprobar opciones completas",
+      "x": 258.828125,
+      "y": 866,
+      "width": 68.171875,
+      "height": 48,
+      "right": 327,
+      "bottom": 914,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Agregar opción a Plato principal",
+      "x": 50,
+      "y": 952,
+      "width": 138.25,
+      "height": 48,
+      "right": 188.25,
+      "bottom": 1000,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Editar grupo Bebida",
+      "x": 50,
+      "y": 1106,
+      "width": 62.890625,
+      "height": 48,
+      "right": 112.890625,
+      "bottom": 1154,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Eliminar grupo Bebida",
+      "x": 120.890625,
+      "y": 1106,
+      "width": 110.609375,
+      "height": 48,
+      "right": 231.5,
+      "bottom": 1154,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Cambiar estado de Agua mineral",
+      "x": 88.453125,
+      "y": 1306,
+      "width": 91.484375,
+      "height": 48,
+      "right": 179.9375,
+      "bottom": 1354,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Editar opción Agua mineral",
+      "x": 187.9375,
+      "y": 1306,
+      "width": 62.890625,
+      "height": 48,
+      "right": 250.828125,
+      "bottom": 1354,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Eliminar opción Agua mineral",
+      "x": 258.828125,
+      "y": 1306,
+      "width": 68.171875,
+      "height": 48,
+      "right": 327,
+      "bottom": 1354,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Agregar opción a Bebida",
+      "x": 50,
+      "y": 1392,
+      "width": 138.25,
+      "height": 48,
+      "right": 188.25,
+      "bottom": 1440,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    },
+    {
+      "name": "Agregar grupo",
+      "x": 33,
+      "y": 1469,
+      "width": 324,
+      "height": 80,
+      "right": 357,
+      "bottom": 1549,
+      "lineHeight": "24px",
+      "scrollHeight": 76,
+      "clientHeight": 76
+    },
+    {
+      "name": "Guardar Oferta",
+      "x": 252.125,
+      "y": 1610,
+      "width": 121.875,
+      "height": 48,
+      "right": 374,
+      "bottom": 1658,
+      "lineHeight": "20px",
+      "scrollHeight": 46,
+      "clientHeight": 46
+    }
+  ],
+  "metadata": [
+    {
+      "text": "1 ronda",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Plato fuerte",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Activo",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Receta",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Activa",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Receta",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Origen: Limonada de la casa",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Inactiva",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "1 ronda",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Bebida",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Activo",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Inventario",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "350 ml",
+      "font": "12px",
+      "line": "16px"
+    },
+    {
+      "text": "Activa",
+      "font": "12px",
+      "line": "16px"
+    }
+  ],
+  "stripes": [
+    {
+      "left": "1px",
+      "right": "1px",
+      "top": "1px",
+      "bottom": "1px"
+    },
+    {
+      "left": "1px",
+      "right": "1px",
+      "top": "1px",
+      "bottom": "1px"
+    },
+    {
+      "left": "1px",
+      "right": "1px",
+      "top": "1px",
+      "bottom": "1px"
+    },
+    {
+      "left": "1px",
+      "right": "1px",
+      "top": "1px",
+      "bottom": "1px"
+    },
+    {
+      "left": "1px",
+      "right": "1px",
+      "top": "1px",
+      "bottom": "1px"
+    }
+  ]
+}

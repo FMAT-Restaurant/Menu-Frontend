@@ -1,0 +1,6 @@
+
+Test Suites: 9 passed, 9 total
+Tests:       205 passed, 205 total
+Snapshots:   0 total
+Time:        26.718 s
+Ran all test suites within paths "src/shared/editGuard.test.tsx", "src/App.test.tsx", "src/features/entries/EntryFormPage.test.tsx", "src/features/categories/CategoryPage.test.tsx", "src/features/recipes/RecipePage.test.tsx", "src/features/recipes/RecipeSelectionTask.test.tsx", "src/features/offers/OfferComponents.test.tsx", "src/features/offers/OfferFormPage.test.tsx", "src/audit-recovery.regression.test.tsx".

@@ -1,0 +1,75 @@
+FAIL src/audit-recovery.regression.test.tsx
+  ● Console
+
+    console.warn
+      No routes matched location "/"
+
+      at warning (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:212:49)
+      at useRoutesImpl (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7388:5)
+      at useRoutes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7333:10)
+      at Routes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:10060:10)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:28571:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:8030:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10569:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:12205:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:1048:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:19176:22)
+      at workLoopConcurrentByScheduler (node_modules/react-dom/cjs/react-dom-client.development.js:19170:9)
+      at renderRootConcurrent (node_modules/react-dom/cjs/react-dom-client.development.js:19152:15)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:18014:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:20665:7)
+      at performWorkUntilDeadline (node_modules/scheduler/cjs/scheduler.development.js:45:48)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+    console.warn
+      No routes matched location "/"
+
+      at warning (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:212:49)
+      at useRoutesImpl (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7388:5)
+      at useRoutes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:7333:10)
+      at Routes (node_modules/react-router/dist/development/chunk-GR4NQCSD.js:10060:10)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:28571:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:8030:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10569:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:12205:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:1048:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:19176:22)
+      at workLoopConcurrentByScheduler (node_modules/react-dom/cjs/react-dom-client.development.js:19170:9)
+      at renderRootConcurrent (node_modules/react-dom/cjs/react-dom-client.development.js:19152:15)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:18014:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:20665:7)
+      at performWorkUntilDeadline (node_modules/scheduler/cjs/scheduler.development.js:45:48)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+  ● oferta: salir voluntariamente elimina la recuperación y una respuesta tardía no la resucita
+
+    expect(received).toBeNull()
+
+    Received: {"confirmedImageId": null, "createdAt": 1792910740597, "currentDraftVersion": 2, "currentStageIndex": 0, "editableDraft": {"basePrice": "100", "desiredStatus": "ACTIVE", "imageFile": {}, "presentationTag": "Original", "slots": [{"course": null, "localId": "29dc3237-52b3-4c47-90f9-1b29508afa65", "name": "Principal", "options": [{"displayName": "Receta", "hasRecipeAssignmentIntent": false, "inventoryItemId": undefined, "inventoryItemName": undefined, "localId": "51a41ed5-9efc-4282-85fb-f116f1a14047", "optionId": "op1", "originalSourceType": "RECIPE", "quantity": undefined, "recipeId": "r1", "recipeName": "Receta", "sourceType": "RECIPE", "status": "ACTIVE", "unit": undefined}], "quantity": 1, "slotId": "s1"}]}, "ifMatch": null, "scope": {"formKind": "offer-form", "resourceKey": "update:o1", "tabId": "b917140f-0582-422c-8df2-d73501972b0a"}, "stages": [{"attemptCount": 1, "attemptId": "29c07b27-8e7e-4861-a761-38b683cd1ada", "createdAt": 1792910740597, "endpointPath": "/media/images", "firstConfirmedAt": null, "firstSentAt": 1792910740597, "idempotencyKey": "dd7a23b2-2510-4a72-99e8-0a67df1f13f2", "lastAttemptAt": 1792910740597, "lastErrorCode": null, "lastErrorMessage": null, "method": "POST", "operationKind": "image.upload", "payload": {"byteSize": 5, "fileBlob": {}, "fileName": "nueva.png", "kind": "multipart-file", "mimeType": "image/png"}, "possibleWriteApplied": false, "retryAfterInvalid": false, "retryAfterSeconds": null, "retryAfterUntil": null, "status": "in_flight", "submittedDraftVersion": 2}], "storageKey": "b917140f-0582-422c-8df2-d73501972b0a::offer-form::update:o1", "submittedDraft": {"basePrice": "100", "desiredStatus": "ACTIVE", "imageFile": {}, "presentationTag": "Original", "slots": [{"course": null, "localId": "29dc3237-52b3-4c47-90f9-1b29508afa65", "name": "Principal", "options": [{"displayName": "Receta", "hasRecipeAssignmentIntent": false, "inventoryItemId": undefined, "inventoryItemName": undefined, "localId": "51a41ed5-9efc-4282-85fb-f116f1a14047", "optionId": "op1", "originalSourceType": "RECIPE", "quantity": undefined, "recipeId": "r1", "recipeName": "Receta", "sourceType": "RECIPE", "status": "ACTIVE", "unit": undefined}], "quantity": 1, "slotId": "s1"}]}, "submittedDraftVersion": 2, "updatedAt": 1792910740597}
+
+    Ignored nodes: comments, script, style
+    <html
+      style=""
+    >
+      <head />
+      <body
+        style=""
+      >
+        <div>
+          <h1>
+            Listado destino
+          </h1>
+        </div>
+      </body>
+    </html>
+
+
+
+      at src/audit-recovery.regression.test.tsx:850:116
+
+
+Test Suites: 1 failed, 8 passed, 9 total
+Tests:       1 failed, 202 passed, 203 total
+Snapshots:   0 total
+Time:        27.134 s
+Ran all test suites within paths "src/shared/editGuard.test.tsx", "src/App.test.tsx", "src/features/entries/EntryFormPage.test.tsx", "src/features/categories/CategoryPage.test.tsx", "src/features/recipes/RecipePage.test.tsx", "src/features/recipes/RecipeSelectionTask.test.tsx", "src/features/offers/OfferComponents.test.tsx", "src/features/offers/OfferFormPage.test.tsx", "src/audit-recovery.regression.test.tsx".

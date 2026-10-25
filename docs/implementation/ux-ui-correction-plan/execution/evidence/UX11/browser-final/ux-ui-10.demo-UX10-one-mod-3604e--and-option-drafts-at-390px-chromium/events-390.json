@@ -1,0 +1,266 @@
+[
+  {
+    "phase": "attribute-change",
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-selector-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-search\" placeholder=\"Buscar por nombre o descripción…\" type=\"search\" value=\"\">"
+  },
+  {
+    "phase": "attribute-change",
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-name\" aria-invalid=\"false\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"\">"
+  },
+  {
+    "phase": "capture",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-name\" aria-invalid=\"false\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"Borrador de receta UX10\">"
+  },
+  {
+    "phase": "after",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-name\" aria-invalid=\"false\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"Borrador de receta UX10\">"
+  },
+  {
+    "phase": "after-dispatch",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": true,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\">Seguir editando receta</button>"
+  },
+  {
+    "phase": "capture",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-name\" aria-invalid=\"false\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"Borrador de receta UX10\">"
+  },
+  {
+    "phase": "after",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-name\" aria-invalid=\"false\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"Borrador de receta UX10\">"
+  },
+  {
+    "phase": "after-dispatch",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": true,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\">Seguir editando receta</button>"
+  },
+  {
+    "phase": "attribute-change",
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-selector-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\" aria-label=\"+ Nueva receta\">Nueva receta</button>"
+  },
+  {
+    "phase": "attribute-change",
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<input id=\"recipe-name\" aria-invalid=\"false\" maxlength=\"255\" placeholder=\"Ej. Hamburguesa Hawaiana\" required=\"\" value=\"Borrador de receta UX10\">"
+  },
+  {
+    "phase": "capture",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<textarea id=\"recipe-description\" aria-invalid=\"false\" rows=\"2\" placeholder=\"Descripción breve de la receta\" required=\"\" style=\"\"></textarea>"
+  },
+  {
+    "phase": "after",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<textarea id=\"recipe-description\" aria-invalid=\"false\" rows=\"2\" placeholder=\"Descripción breve de la receta\" required=\"\" style=\"\"></textarea>"
+  },
+  {
+    "phase": "after-dispatch",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": true,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-form-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\">Seguir editando receta</button>"
+  },
+  {
+    "phase": "attribute-change",
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-selector-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\" aria-label=\"+ Nueva receta\">Nueva receta</button>"
+  },
+  {
+    "phase": "capture",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-selector-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\" aria-label=\"+ Nueva receta\">Nueva receta</button>"
+  },
+  {
+    "phase": "after",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": false,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "recipe-selector-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"button button--secondary\" aria-label=\"+ Nueva receta\">Nueva receta</button>"
+  },
+  {
+    "phase": "attribute-change",
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "option-modal-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"source-btn\"><span class=\"source-btn__title\">Elegir receta</span><span class=\"source-btn__desc\">Seleccionar una preparación de la biblioteca.</span></bu"
+  },
+  {
+    "phase": "after-dispatch",
+    "type": "keydown",
+    "key": "Escape",
+    "cancelable": true,
+    "prevented": true,
+    "dialogs": [
+      {
+        "open": true,
+        "modal": true,
+        "title": "option-modal-title",
+        "connected": true
+      }
+    ],
+    "focus": "<button type=\"button\" class=\"source-btn\"><span class=\"source-btn__title\">Elegir receta</span><span class=\"source-btn__desc\">Seleccionar una preparación de la biblioteca.</span></bu"
+  }
+]

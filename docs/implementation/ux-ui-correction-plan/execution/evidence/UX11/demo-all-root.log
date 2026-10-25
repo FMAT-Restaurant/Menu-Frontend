@@ -1,0 +1,93 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts --workers=2
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:5060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 47 tests using 2 workers
+
+(node:5080) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 [chromium] › e2e\demo-mode.e2e.ts:28:1 › categories and recipes can be created and edited through their real dialogs without a backend (10.4s)
+  ok  3 [chromium] › e2e\ux-ui-01.demo.spec.ts:64:3 › U01: Individual and Combo con bebida remain below their image at 390px (1.1s)
+  ok  2 [chromium] › e2e\demo-mode.e2e.ts:66:1 › entry uploads, editing, offer composition and state changes work without API calls (13.0s)
+  ok  4 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: square upload cannot cover long presentation or price at 390px (1.8s)
+  ok  5 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: portrait upload cannot cover long presentation or price at 390px (1.5s)
+  ok  6 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: landscape upload cannot cover long presentation or price at 390px (1.9s)
+  ok  7 [chromium] › e2e\ux-ui-01.demo.spec.ts:111:3 › U01: failed image preserves fallback and text separation at 390px (1.1s)
+  ok  8 [chromium] › e2e\ux-ui-01.demo.spec.ts:64:3 › U01: Individual and Combo con bebida remain below their image at 1440px (1.1s)
+  ok  9 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: square upload cannot cover long presentation or price at 1440px (1.3s)
+  ok 10 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: portrait upload cannot cover long presentation or price at 1440px (1.8s)
+  ok 11 [chromium] › e2e\ux-ui-01.demo.spec.ts:80:5 › U01: landscape upload cannot cover long presentation or price at 1440px (1.9s)
+  ok 12 [chromium] › e2e\ux-ui-01.demo.spec.ts:111:3 › U01: failed image preserves fallback and text separation at 1440px (1.1s)
+  ok 13 [chromium] › e2e\ux-ui-02.demo.spec.ts:24:1 › shared search controls follow module width, preserve keyboard focus and leave external controls alone (1.9s)
+  ok 15 [chromium] › e2e\ux-ui-03.demo.spec.ts:46:3 › archived entry: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session (2.2s)
+  ok 16 [chromium] › e2e\ux-ui-03.demo.spec.ts:46:3 › inactive offer: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session (2.2s)
+  ok 17 [chromium] › e2e\ux-ui-03.demo.spec.ts:46:3 › recipe: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session (2.0s)
+  ok 18 [chromium] › e2e\ux-ui-03.demo.spec.ts:88:1 › narrow forms in a wide module use 48px controls and scroll internally while the document stays fixed (2.4s)
+  ok 14 [chromium] › e2e\ux-ui-02.demo.spec.ts:80:1 › all task routes retain their real content within the shared module at desktop and mobile widths (12.1s)
+  ok 19 [chromium] › e2e\ux-ui-03.demo.spec.ts:124:1 › nested existing recipe flow shares its lock and only its top native backdrop is colored (1.6s)
+  ok 20 [chromium] › e2e\ux-ui-03.demo.spec.ts:153:3 › touch emulation › a touch gesture on the backdrop leaves the long catalog in place (1.3s)
+  ok 21 [chromium] › e2e\ux-ui-04.demo.spec.ts:30:3 › U05/U06: nine routes begin with a local task header at 390px (7.3s)
+  ok 22 [chromium] › e2e\ux-ui-04.demo.spec.ts:30:3 › U05/U06: nine routes begin with a local task header at 1440px (7.2s)
+  ok 23 [chromium] › e2e\ux-ui-04.demo.spec.ts:80:1 › U05/U24: local back links retain catalog filters and offer origins without a brand navigation row (1.8s)
+  ok 24 [chromium] › e2e\ux-ui-04.demo.spec.ts:110:1 › V18: saving an entry with its category panel open delivers one click after the shorter header (1.5s)
+  ok 25 [chromium] › e2e\ux-ui-05.demo.spec.ts:5:3 › UX05 category validation and keyboard correction at 390px (1.3s)
+  ok 26 [chromium] › e2e\ux-ui-05.demo.spec.ts:5:3 › UX05 category validation and keyboard correction at 1024px (1.3s)
+  ok 27 [chromium] › e2e\ux-ui-06.demo.spec.ts:73:1 › U11/U19: catalog actions, columns and page size stay legible across the useful-width boundaries (3.1s)
+  ok 28 [chromium] › e2e\ux-ui-06.demo.spec.ts:95:1 › V02: a narrow module in a wide host uses its own grid and touch controls (2.9s)
+  ok 30 [chromium] › e2e\ux-ui-07.demo.spec.ts:21:1 › UX07 missing demo entry has context and a catalog exit without an empty form (1.0s)
+  ok 29 [chromium] › e2e\ux-ui-06.demo.spec.ts:110:1 › U11/V05/V06: long categorized cards expose separate keyboard routes and explain restricted deletion (2.6s)
+  ok 31 [chromium] › e2e\ux-ui-07.demo.spec.ts:35:1 › UX07 entry geometry follows actual form width and retains image and assigned categories (1.4s)
+  ok 32 [chromium] › e2e\ux-ui-07.demo.spec.ts:81:1 › UX07 validation summary still reveals the invalid field above the existing footer (1.1s)
+  ok 33 [chromium] › e2e\ux-ui-08.demo.spec.ts:24:3 › UX08 management keeps unmatched query and restores its three recipes (1.6s)
+  ok 34 [chromium] › e2e\ux-ui-08.demo.spec.ts:24:3 › UX08 selection keeps unmatched query and restores its three recipes (1.6s)
+  ok 35 [chromium] › e2e\ux-ui-08.demo.spec.ts:46:1 › UX08 validates locally with summary links and adapts supplies to actual module width (2.3s)
+  ok 37 [chromium] › e2e\ux-ui-09.demo.spec.ts:79:1 › UX09 existing inventory option remains editable and image replacement works by keyboard and touch (2.1s)
+  ok 36 [chromium] › e2e\ux-ui-09.demo.spec.ts:41:1 › UX09 composition follows viewport, module and own form width without horizontal traversal (4.2s)
+  ok 38 [chromium] › e2e\ux-ui-09.demo.spec.ts:106:1 › UX09 cards retain untagged offers, independent state, deletion restriction and catalog return (1.6s)
+  ok 39 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px (3.1s)
+  ok 40 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 1024px (3.4s)
+  ok 41 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 600px (3.0s)
+  x  42 [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px (1.6s)
+(node:24732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 43 [chromium] › e2e\ux-ui-11.demo.spec.ts:24:3 › UX11 category keeps edits in its original modal and closes directly after reversal (2.0s)
+  ok 44 [chromium] › e2e\ux-ui-11.demo.spec.ts:24:3 › UX11 recipe keeps edits in its original modal and closes directly after reversal (1.9s)
+  ok 45 [chromium] › e2e\ux-ui-11.demo.spec.ts:52:1 › UX11 browser back keeps entry image/categories and discards once to the exact filtered catalog (2.2s)
+  ok 46 [chromium] › e2e\ux-ui-11.demo.spec.ts:93:1 › UX11 route exit protects a retained recipe even when the offer and option remain unchanged (2.5s)
+  ok 47 [chromium] › e2e\ux-ui-11.demo.spec.ts:126:1 › UX11 reload uses the native warning only while a category has unsaved changes (2.2s)
+
+
+  1) [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 740
+    Received:    960
+
+      69 |     await page.getByRole("button", { name: "Buscar ahora", exact: true }).click();
+      70 |     await expect(page.getByRole("article", { name: "Limonada de la casa", exact: true })).toBeVisible();
+    > 71 |     expect((await dialog.boundingBox())!.width).toBeLessThanOrEqual(width);
+         |                                                 ^
+      72 |     const controlHeights = await dialog.locator("button,input").evaluateAll(elements => elements.filter(el => el.getBoundingClientRect().height > 0).map(el => el.getBoundingClientRect().height));
+      73 |     for (const height of controlHeights) expect(height).toBeGreaterThanOrEqual(48);
+      74 |     expect((await evidence(page, info, `selector-${width}`)).modalCount).toBe(1);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-10.demo.spec.ts:71:49
+
+    Error Context: test-results\ux-ui-10.demo-UX10-one-mod-9b8ab--and-option-drafts-at-740px-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-10.demo-UX10-one-mod-9b8ab--and-option-drafts-at-740px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-10.demo-UX10-one-mod-9b8ab--and-option-drafts-at-740px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px 
+  46 passed (1.2m)

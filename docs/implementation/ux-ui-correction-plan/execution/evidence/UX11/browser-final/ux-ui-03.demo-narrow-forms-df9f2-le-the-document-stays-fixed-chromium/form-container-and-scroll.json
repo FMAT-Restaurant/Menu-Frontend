@@ -1,0 +1,16 @@
+{
+  "moduleWidth": 1440,
+  "categoryControl": 48,
+  "recipeControl": 48,
+  "recipe": [
+    {
+      "name": "Nueva receta",
+      "modal": true,
+      "backdrop": "rgba(17, 24, 39, 0.4)",
+      "covered": false,
+      "width": 708,
+      "height": 540
+    }
+  ],
+  "internalScroll": 409
+}
