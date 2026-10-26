@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -70,6 +71,7 @@ export function RecipePage({
   const [draftSearch, setDraftSearch] = useState(confirmedQuery);
 
   const [recipesResult, setRecipesResult] = useState<Page<RecipeSummary> | null>(null);
+  const [displayedContext, setDisplayedContext] = useState<{ query: string; page: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -142,6 +144,7 @@ export function RecipePage({
       .then((items) => {
         if (!controller.signal.aborted) {
           setRecipesResult(items);
+          setDisplayedContext({ query: confirmedQuery, page: currentPage });
         }
       })
       .catch(() => {
@@ -321,6 +324,8 @@ export function RecipePage({
   }
 
   const recipes = recipesResult?.data ?? [];
+  const olderResults = Boolean(displayedContext && (displayedContext.query !== confirmedQuery || displayedContext.page !== currentPage));
+  const resultsBusy = loading || olderResults;
   const title = mode === "selection" ? "Biblioteca de recetas — elegir opción" : "Biblioteca de recetas";
   const subtitle =
     mode === "selection"
@@ -362,7 +367,7 @@ export function RecipePage({
             </button>
           </div>
       </header>
-        <section className="category-panel" aria-labelledby="recipe-page-title">
+        <section className="category-panel" aria-labelledby="recipe-page-title" aria-busy={loading}>
           <div className="recipe-toolbar">
             <SearchField
               id="recipe-search"
@@ -382,9 +387,11 @@ export function RecipePage({
             </div>
           )}
 
-          {loading && <output className="feedback">Cargando recetas…</output>}
+          {loading && !recipesResult && <LoadingState variant="rows" label="Cargando recetas…" />}
+          {loading && recipesResult && <output className="feedback">Actualizando recetas…</output>}
+          {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
 
-          {!loading && !error && recipes.length === 0 && (
+          {!loading && !error && !olderResults && recipes.length === 0 && (
             <div className="empty-state category-empty">
               <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
               <h3>{confirmedQuery ? "No hay recetas que coincidan con tu búsqueda." : "Aún no hay recetas registradas."}</h3>
@@ -406,7 +413,7 @@ export function RecipePage({
             </div>
           )}
 
-          {!loading && !error && recipes.length > 0 && (
+          {recipes.length > 0 && (
             <>
               <ul className="recipe-list">
                 {recipes.map((recipe) => (
@@ -416,7 +423,7 @@ export function RecipePage({
                         recipe={recipe}
                         mode="selection"
                         onSelect={handleSelect}
-                        isBusy={loading}
+                        isBusy={resultsBusy}
                       />
                     ) : (
                       <RecipeCard
@@ -432,7 +439,7 @@ export function RecipePage({
                           setActionError("");
                           setRecipeToDelete(rec);
                         }}
-                        isBusy={loading}
+                        isBusy={resultsBusy}
                       />
                     )}
                   </li>
@@ -444,7 +451,7 @@ export function RecipePage({
                   <button
                     type="button"
                     className="button button--secondary"
-                    disabled={currentPage <= 1 || loading}
+                    disabled={(recipesResult?.meta.page ?? 1) <= 1 || resultsBusy}
                     onClick={() => handlePageChange(currentPage - 1)}
                     aria-label="Página anterior"
                   >
@@ -456,7 +463,7 @@ export function RecipePage({
                   <button
                     type="button"
                     className="button button--secondary"
-                    disabled={currentPage >= recipesResult.meta.totalPages || loading}
+                    disabled={recipesResult.meta.page >= recipesResult.meta.totalPages || resultsBusy}
                     onClick={() => handlePageChange(currentPage + 1)}
                     aria-label="Siguiente página"
                   >

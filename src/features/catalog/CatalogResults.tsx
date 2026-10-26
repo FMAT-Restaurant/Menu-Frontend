@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import React from "react";
 import { Link } from "react-router-dom";
 import type { EntryQuery, MenuEntry, Page } from "../../application/catalog";
@@ -90,7 +91,7 @@ function showEmpty(props: Pick<ResultsProps, "displayed" | "olderResults" | "fet
   return Boolean(props.displayed) && count === 0 && !props.olderResults && !props.fetching;
 }
 
-function ResultsToolbar(props: Readonly<Pick<ResultsProps, "displayed" | "pageSize" | "olderResults" | "onPageSize">>) {
+function ResultsToolbar(props: Readonly<Pick<ResultsProps, "displayed" | "pageSize" | "olderResults" | "onPageSize" | "fetching">>) {
   const shown = props.displayed?.result;
   const shownPage = props.displayed?.query.page ?? 1;
   const count = shown?.data.length ?? 0;
@@ -99,7 +100,7 @@ function ResultsToolbar(props: Readonly<Pick<ResultsProps, "displayed" | "pageSi
   const last = count ? first + count - 1 : 0;
   return <div className="catalog-toolbar">
       <div>
-        {shown && <p className="catalog-toolbar__count" aria-live="polite">Mostrando {first}–{last} de {total} entradas</p>}
+        {shown ? <p className="catalog-toolbar__count" aria-live="polite">Mostrando {first}–{last} de {total} entradas</p> : props.fetching && <p className="catalog-toolbar__count" role="status">Cargando entradas…</p>}
         {props.olderResults && <p className="catalog-toolbar__note">Mostrando resultados anteriores mientras se actualiza la consulta.</p>}
       </div>
       <div className="select-field select-field--inline"><label htmlFor="page-size">Entradas por página</label><select id="page-size" value={props.pageSize} onChange={(event) => props.onPageSize(event.target.value)}>{[6, 12, 24].map((size) => <option key={size} value={size}>{size}</option>)}</select></div>
@@ -113,6 +114,7 @@ function ResultsBody(props: Readonly<Omit<ResultsProps, "pageSize" | "onPageSize
   const totalPages = shown?.meta.totalPages ?? 0;
   return (
     <section className="catalog-results" aria-busy={props.fetching || props.busy}>
+      {!shown && props.fetching && <LoadingState variant="entries" />}
       {shown && count > 0 && <EntryGrid {...props} />}
       {showEmpty(props, count) && <EmptyEntries hasFilters={props.hasFilters} returnTo={props.returnTo} onClear={props.onClear} />}
       {shown && totalPages > 1 && <EntryPagination page={shownPage} totalPages={totalPages} disabled={props.busy} onPage={props.onPage} />}
@@ -122,7 +124,7 @@ function ResultsBody(props: Readonly<Omit<ResultsProps, "pageSize" | "onPageSize
 
 export function CatalogResults(props: Readonly<ResultsProps>) {
   return <>
-    <ResultsToolbar displayed={props.displayed} pageSize={props.pageSize} olderResults={props.olderResults} onPageSize={props.onPageSize} />
+    <ResultsToolbar displayed={props.displayed} pageSize={props.pageSize} olderResults={props.olderResults} onPageSize={props.onPageSize} fetching={props.fetching} />
     <ResultsBody {...props} />
   </>;
 }

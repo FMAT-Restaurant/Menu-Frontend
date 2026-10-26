@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import type { MenuCategory } from "../../application/catalog";
 import { Icon } from "../../shared/Icon";
@@ -69,7 +70,7 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
     else onChange([...selected, id]);
   }
 
-  return <fieldset ref={root} className="entry-category-selector">
+  return <fieldset ref={root} className="entry-category-selector" aria-busy={loading}>
     <legend>Categorías</legend>
     <p className="entry-form__muted">Puedes asignar varias o guardar sin clasificación.</p>
     <CategoryLoadState loading={loading} error={error} continuing={continuing} onRetry={onRetry} onContinue={onContinue} />
@@ -84,6 +85,7 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
       </div>
       <fieldset className="entry-category-selector__list">
         <legend className="sr-only">Categorías disponibles</legend>
+        {loading && available.length === 0 && <LoadingState variant="options" />}
         {filtered.map((category) => <label className="entry-category-selector__option" key={category.id}>
           <input type="checkbox" checked={selected.includes(category.id)} onChange={() => toggle(category.id)} disabled={disabled} aria-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" />
           <span>{category.name}</span>

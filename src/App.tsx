@@ -1,3 +1,4 @@
+import { LoadingState } from "./shared/LoadingState";
 import axios from "axios";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
@@ -63,7 +64,7 @@ const defaultRepository = createMenuApi(
 
 export function createMenuRoutes(repository: MenuRepository = defaultRepository, transitions?: ReturnType<typeof createRouteTransitionTracker>) {
   return createRoutesFromElements(
-    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
+    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell"><LoadingState variant="task" label="Cargando página…" /></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
       <Route path="/" element={<CatalogPage repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
       <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
@@ -90,5 +91,5 @@ export function App({ repository = defaultRepository }: Readonly<{ repository?: 
     setRouter(ownedRouter);
     return () => { unsubscribe(); ownedRouter.dispose(); };
   }, [repository]);
-  return router ? <RouterProvider router={router} /> : <div className="menu-module" data-menu-module><p role="status">Cargando página…</p></div>;
+  return router ? <RouterProvider router={router} /> : <div className="menu-module" data-menu-module><LoadingState variant="task" label="Cargando página…" /></div>;
 }

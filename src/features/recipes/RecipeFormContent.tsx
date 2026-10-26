@@ -123,6 +123,7 @@ export function RecipeFormContent({
   const [itemsFromApi, setItemsFromApi] = useState<InventoryItem[] | null>(null);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryTotalPages, setInventoryTotalPages] = useState(1);
+  const [displayedInventory, setDisplayedInventory] = useState<{ query: string; page: number } | null>(null);
   const [inventorySearchDraft, setInventorySearchDraft] = useState("");
   const [confirmedInventoryQuery, setConfirmedInventoryQuery] = useState("");
   const [inventoryLoading, setInventoryLoading] = useState(false);
@@ -177,6 +178,7 @@ export function RecipeFormContent({
       .then((res) => {
         if (!controller.signal.aborted) {
           setItemsFromApi(res.data);
+          setDisplayedInventory({ query: confirmedInventoryQuery, page: inventoryPage });
           setInventoryTotalPages(res.meta.totalPages || 1);
           setKnownItems((prev) => {
             const next = new Map(prev);
@@ -203,6 +205,7 @@ export function RecipeFormContent({
   }, [repository, inventoryPage, confirmedInventoryQuery, inventoryRetryCount]);
 
   const currentInventoryItems = itemsFromApi ?? inventoryItems ?? [];
+  const olderInventory = Boolean(displayedInventory && (displayedInventory.query !== confirmedInventoryQuery || displayedInventory.page !== inventoryPage));
 
   const initialDraft = initialPendingRecord?.editableDraft;
 
@@ -1080,7 +1083,7 @@ export function RecipeFormContent({
             {fieldErrors["recipe-instructions"] && <p className="recipe-field-error" id="recipe-instructions-error">{fieldErrors["recipe-instructions"]}</p>}
           </div>
 
-          <fieldset className="recipe-supplies-section">
+          <fieldset className="recipe-supplies-section" aria-busy={inventoryLoading}>
             <legend>Insumos del inventario</legend>
             <div className="recipe-supplies-section__header">
               <button
@@ -1109,7 +1112,9 @@ export function RecipeFormContent({
                 </button>
               </div>
             )}
-            {inventoryLoading && <output className="feedback">Cargando insumos…</output>}
+            {inventoryLoading && currentInventoryItems.length === 0 && <output className="feedback">Cargando insumos…</output>}
+            {inventoryLoading && currentInventoryItems.length > 0 && <output className="feedback">Actualizando insumos…</output>}
+            {olderInventory && <p className="feedback">Opciones anteriores de insumos: {displayedInventory?.query ? `búsqueda “${displayedInventory.query}”` : "sin filtro"}, página {displayedInventory?.page}. Las selecciones y cantidades del borrador se conservan.</p>}
 
             <div className="recipe-inventory-controls" style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap" }}>
               <input
@@ -1143,19 +1148,19 @@ export function RecipeFormContent({
                   <button
                     type="button"
                     className="button button--secondary button--small"
-                    disabled={inventoryPage <= 1 || inventoryLoading || busy}
+                    disabled={inventoryPage <= 1 || inventoryLoading || olderInventory || busy}
                     onClick={() => setInventoryPage((p) => Math.max(1, p - 1))}
                     aria-label="Página anterior de inventario"
                   >
                     Anterior
                   </button>
                   <span className="pagination__info">
-                    Página {inventoryPage} de {inventoryTotalPages}
+                    Página {displayedInventory?.page ?? inventoryPage} de {inventoryTotalPages}
                   </span>
                   <button
                     type="button"
                     className="button button--secondary button--small"
-                    disabled={inventoryPage >= inventoryTotalPages || inventoryLoading || busy}
+                    disabled={inventoryPage >= inventoryTotalPages || inventoryLoading || olderInventory || busy}
                     onClick={() => setInventoryPage((p) => p + 1)}
                     aria-label="Siguiente página de inventario"
                   >
@@ -1189,7 +1194,7 @@ export function RecipeFormContent({
                           onChange={(e) =>
                             handleSupplyChange(index, "inventoryItemId", e.target.value)
                           }
-                          disabled={busy}
+                          disabled={busy || inventoryLoading || olderInventory}
                           required
                         >
                           <option value="">Seleccione insumo…</option>

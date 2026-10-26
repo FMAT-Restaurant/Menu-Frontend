@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon } from "../../shared/Icon";
@@ -103,10 +104,11 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
             <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Nueva categoría</button>
           </div>
         </header>
-        <section className="category-panel" aria-labelledby="category-page-title">
+        <section className="category-panel" aria-labelledby="category-page-title" aria-busy={loading}>
           {notice && <output className="feedback feedback--success">{notice}</output>}
           {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
-          {loading && <output className="feedback">Cargando categorías…</output>}
+          {loading && categories.length === 0 && <LoadingState variant="rows" label="Cargando categorías…" />}
+          {loading && categories.length > 0 && <output className="feedback">Actualizando categorías…</output>}
           {!loading && !error && categories.length === 0 && (
             <div className="empty-state category-empty">
               <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
@@ -115,7 +117,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
               <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Crear categoría</button>
             </div>
           )}
-          {!loading && !error && categories.length > 0 && (
+          {categories.length > 0 && (
             <ul className="category-list">
               {categories.map((category) => (
                 <li className="category-row" key={category.id}>

@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import { receiptState, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
 import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { useEditGuard } from "../../shared/editGuard";
@@ -125,10 +126,10 @@ function EntryFormEditor({
         requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actions.current); });
       }}>
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
-        {model.entryLoading && <output className="feedback" aria-live="polite">Cargando la entrada…</output>}
+        {model.entryLoading && <LoadingState variant="entry-form" label="Cargando la entrada…" />}
         {model.entryError && <div className="feedback feedback--error" role="alert">{model.entryError} <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
         {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
-        <div className="entry-form__layout">
+        <div className="entry-form__layout" hidden={model.entryLoading}>
           <div className="entry-form__primary">
             <EntryIdentity model={model} disabled={disabled} />
             <EntryCategorySelector categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />

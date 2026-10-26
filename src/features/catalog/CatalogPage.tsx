@@ -62,7 +62,7 @@ function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
     {props.entryError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
     {!props.dialogOpen && props.actionError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
     {props.notice && <output className="feedback feedback--success">{props.notice}</output>}
-    {props.fetching && <output className="catalog-updating">{props.hasDisplayed ? "Actualizando entradas…" : "Cargando entradas…"}</output>}
+    {props.fetching && props.hasDisplayed && <output className="catalog-updating">Actualizando entradas…</output>}
     {props.busyId && <output className="catalog-updating">Actualizando entrada…</output>}
   </>;
 }

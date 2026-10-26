@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import { useLocalSaveReceipt } from "../../shared/localSaveReceipt";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -201,7 +202,7 @@ interface OffersResultsProps extends OffersCollectionProps, OffersPaginationProp
 }
 
 function OffersResults({ initialLoading, result, offersLoading, first, last, ...collectionProps }: Readonly<OffersResultsProps>) {
-  if (initialLoading) return <output className="feedback">Cargando ofertas…</output>;
+  if (initialLoading) return <><p className="offers-page__count" role="status">Cargando ofertas…</p><LoadingState variant="offers" /></>;
   if (!result) return null;
 
   return <>

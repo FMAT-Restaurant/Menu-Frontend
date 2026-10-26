@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/LoadingState";
 import { receiptState, saveReceiptMessage, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
 import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
@@ -1163,9 +1164,7 @@ export function OfferFormPage({
         </header>
 
         {loading && (
-          <p className="feedback" aria-live="polite">
-            Cargando datos de la oferta…
-          </p>
+          <LoadingState variant="offer-form" label="Cargando datos de la oferta…" />
         )}
 
         {loadError && (
