@@ -24,7 +24,7 @@ export function OfferCard({ offer, busy, returnTo, catalogReturnTo, onStatusChan
   }, [imageSource, offer.image?.url, offer.image?.thumbnailUrl]);
 
   return (
-    <article className="offer-card" data-return-key={`offer:${offer.id}`}>
+    <article className="offer-card" data-return-key={`offer:${offer.id}`} tabIndex={-1}>
       <Link data-return-key={`offer:${offer.id}:edit`} className="offer-card__content" to={editPath} state={{ returnTo, catalogReturnTo }} aria-label={`Abrir oferta ${presentation} para editar`}>
         <div className="offer-card__image">
           {imageSource && !imageFailed ? (
