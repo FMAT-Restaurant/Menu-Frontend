@@ -1,7 +1,0 @@
-{
-  "environment": "production HTTP fixture",
-  "entryReads": 2,
-  "categoryReads": 1,
-  "errors": [],
-  "writes": []
-}

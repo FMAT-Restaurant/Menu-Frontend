@@ -1,6 +1,0 @@
-
-Test Suites: 4 passed, 4 total
-Tests:       32 passed, 32 total
-Snapshots:   0 total
-Time:        7.464 s
-Ran all test suites within paths "src/features/catalog/CatalogPage.test.tsx", "src/features/catalog/CatalogPage.remediation.test.tsx", "src/features/catalog/CatalogResults.test.tsx", "src/features/catalog/EntryCard.test.tsx".

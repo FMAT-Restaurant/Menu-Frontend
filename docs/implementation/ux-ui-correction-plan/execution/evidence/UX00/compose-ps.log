@@ -1,2 +1,0 @@
-NAME                             IMAGE                 COMMAND                  SERVICE    CREATED              STATUS                        PORTS
-menu-ux-ui-baseline-frontend-1   menu-frontend:local   "/docker-entrypoint.…"   frontend   About a minute ago   Up About a minute (healthy)   0.0.0.0:5173->8080/tcp, [::]:5173->8080/tcp

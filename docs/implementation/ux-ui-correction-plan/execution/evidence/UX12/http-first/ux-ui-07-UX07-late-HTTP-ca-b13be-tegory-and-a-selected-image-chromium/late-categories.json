@@ -1,8 +1,0 @@
-{
-  "environment": "production HTTP fixture",
-  "entryReads": 1,
-  "categoryReads": 1,
-  "selectedSource": "blob:http://127.0.0.1:4173/649eee11-01be-41ec-aab1-bafb1efdecb2",
-  "errors": [],
-  "writes": []
-}

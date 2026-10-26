@@ -1,6 +1,0 @@
-
-Test Suites: 3 passed, 3 total
-Tests:       19 passed, 19 total
-Snapshots:   0 total
-Time:        49.225 s
-Ran all test suites within paths "src/shared/RouteContext.test.tsx", "src/features/offers/OfferCard.route-context.test.tsx", "src/App.test.tsx".

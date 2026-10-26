@@ -1,6 +1,0 @@
-
-Test Suites: 3 passed, 3 total
-Tests:       11 passed, 11 total
-Snapshots:   0 total
-Time:        11.68 s
-Ran all test suites within paths "src/shared/useFormActionsLayout.test.tsx", "src/shared/pendingOperationStorage.test.ts", "src/shared/localSaveReceipt.test.tsx".

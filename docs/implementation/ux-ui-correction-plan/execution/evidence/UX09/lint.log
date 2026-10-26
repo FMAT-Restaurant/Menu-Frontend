@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint src/features/offers/CompositionEditor.tsx src/features/offers/OfferCard.tsx src/features/offers/OfferCommercialInfo.tsx src/features/offers/OfferComponents.test.tsx src/features/offers/OfferFormPage.test.tsx src/features/offers/OfferPresentation.ux.test.tsx src/features/offers/OptionModal.tsx src/features/offers/SlotCard.tsx src/features/offers/SlotOptionItem.tsx e2e/ux-ui-09.demo.spec.ts

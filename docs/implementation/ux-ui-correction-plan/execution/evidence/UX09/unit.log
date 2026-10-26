@@ -1,8 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run jest --runInBand --runTestsByPath src/features/offers/OfferComponents.test.tsx src/features/offers/OffersPage.test.tsx src/features/offers/OfferFormPage.test.tsx src/features/offers/OfferPresentation.ux.test.tsx
-
-Test Suites: 4 passed, 4 total
-Tests:       96 passed, 96 total
-Snapshots:   0 total
-Time:        24.573 s
-Ran all test suites within paths "src/features/offers/OfferComponents.test.tsx", "src/features/offers/OffersPage.test.tsx", "src/features/offers/OfferFormPage.test.tsx", "src/features/offers/OfferPresentation.ux.test.tsx".

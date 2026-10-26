@@ -1,8 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run jest --runInBand --runTestsByPath src/features/recipes/RecipePage.test.tsx src/audit-recovery.regression.test.tsx
-
-Test Suites: 2 passed, 2 total
-Tests:       43 passed, 43 total
-Snapshots:   0 total
-Time:        15.338 s
-Ran all test suites within paths "src/features/recipes/RecipePage.test.tsx", "src/audit-recovery.regression.test.tsx".

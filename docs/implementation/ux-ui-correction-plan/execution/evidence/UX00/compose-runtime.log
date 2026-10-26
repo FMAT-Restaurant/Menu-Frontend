@@ -1,9 +1,0 @@
-frontend-1  | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
-frontend-1  | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
-frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
-frontend-1  | 10-listen-on-ipv6-by-default.sh: info: /etc/nginx/conf.d/default.conf is not a file or does not exist
-frontend-1  | /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
-frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
-frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
-frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/40-runtime-config.sh
-frontend-1  | /docker-entrypoint.sh: Configuration complete; ready for start up

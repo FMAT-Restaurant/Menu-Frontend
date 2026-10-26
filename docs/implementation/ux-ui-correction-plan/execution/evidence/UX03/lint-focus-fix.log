@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint src/shared/useTaskDialog.ts src/shared/useTaskDialog.test.tsx

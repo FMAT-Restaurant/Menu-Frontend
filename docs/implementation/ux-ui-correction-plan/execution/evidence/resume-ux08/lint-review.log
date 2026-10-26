@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint e2e/offers.spec.ts e2e/ux-ui-03.demo.spec.ts e2e/ux-ui-08.demo.spec.ts

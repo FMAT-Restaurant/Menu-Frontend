@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint src/App.tsx src/main.tsx src/shared/SearchField.tsx src/shared/Icon.tsx src/shared/SearchField.test.tsx e2e/ux-ui-02.demo.spec.ts

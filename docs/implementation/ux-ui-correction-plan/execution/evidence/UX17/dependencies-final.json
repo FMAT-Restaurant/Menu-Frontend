@@ -1,8 +1,0 @@
-{
-  "Revision": "c5d22caa3cc24dfa11c9a89d1d82905343cb8570",
-  "Modules": 128,
-  "Sha256": "916BF1E085F5EB2FC532FBD668F6E8616B3F79C08F74F205F917824BF4AC56D5",
-  "Roots": "src",
-  "TsConfig": "tsconfig.json",
-  "Unresolved": 0
-}

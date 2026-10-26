@@ -1,6 +1,0 @@
-
-Test Suites: 4 passed, 4 total
-Tests:       116 passed, 116 total
-Snapshots:   0 total
-Time:        21.801 s
-Ran all test suites within paths "src/features/offers/OfferFormPage.test.tsx", "src/features/offers/OfferComponents.test.tsx", "src/features/recipes/RecipePage.test.tsx", "src/audit-recovery.regression.test.tsx".

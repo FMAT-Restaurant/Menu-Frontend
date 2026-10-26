@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint src/features/recipes/RecipePage.tsx src/features/recipes/RecipeCard.tsx src/features/recipes/RecipeFormDialog.tsx src/features/recipes/RecipePage.test.tsx e2e/ux-ui-08.demo.spec.ts

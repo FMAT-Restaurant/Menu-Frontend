@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint src/shared/formatMoney.ts src/shared/formatMoney.test.ts src/features/offers/OfferMoney.test.tsx src/features/offers/OfferCard.tsx src/features/offers/OfferCommercialInfo.tsx src/features/offers/OfferFormPage.tsx src/features/offers/OfferFormPage.test.tsx src/features/offers/OffersPage.test.tsx src/audit-recovery.regression.test.tsx src/closure-review.regression.test.tsx e2e/ux-ui-12-evidence.ts e2e/ux-ui-12.demo.spec.ts e2e/ux-ui-12.spec.ts e2e/demo-mode.e2e.ts e2e/ux-ui-01.demo.spec.ts

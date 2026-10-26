@@ -1,2 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run eslint src/shared/useTaskDialog.ts src/shared/useModalScrollLock.ts src/shared/useTaskDialog.test.tsx src/features/catalog/CatalogPage.tsx src/features/offers/OffersPage.tsx src/features/recipes/RecipePage.tsx src/features/categories/CategoryFormDialog.tsx src/features/recipes/RecipeFormDialog.tsx src/features/offers/SlotModal.tsx src/features/offers/OptionModal.tsx src/features/offers/OfferFormPage.tsx e2e/ux-ui-03.demo.spec.ts

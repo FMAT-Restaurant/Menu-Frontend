@@ -1,3 +1,0 @@
-npm notice run menu-frontend@0.1.0 npx
-npm notice run tsc --noEmit
-src/features/offers/OfferMoney.test.tsx(21,30): error TS2741: Property 'image' is missing in type '{ id: string; entryId: string; entryName: string; presentationTag: string; basePrice: number; status: "INACTIVE"; slotCount: number; }' but required in type 'MenuOffer'.
