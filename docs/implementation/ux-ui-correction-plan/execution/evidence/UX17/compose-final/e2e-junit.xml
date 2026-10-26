@@ -1,0 +1,619 @@
+<testsuites id="" name="" tests="87" failures="0" skipped="0" errors="0" time="55.870199">
+<testsuite name="app-routes.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="2.148" errors="0">
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › unknown route shows accessible 404 message and allows returning to the catalog (R01)" classname="app-routes.spec.ts" time="0.607">
+</testcase>
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › alias /menu redirects to catalog root / (R01, R04)" classname="app-routes.spec.ts" time="0.542">
+</testcase>
+<testcase name="Application routing, 404 and on-demand chunk loading (e2e/app-routes.spec.ts - T15) › loads editor chunks on demand and avoids downloading them on initial catalog load (R02)" classname="app-routes.spec.ts" time="0.999">
+</testcase>
+</testsuite>
+<testsuite name="audit-closure-layout.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="8.269" errors="0">
+<testcase name="R05/R06: recipe fields and supply controls fit inside the dialog at all required sizes" classname="audit-closure-layout.spec.ts" time="3.905">
+</testcase>
+<testcase name="R05: populated recipe cards keep title and management actions inside 320px" classname="audit-closure-layout.spec.ts" time="0.62">
+</testcase>
+<testcase name="R06: nested recipe picker obeys 90% height, scrolls and returns focus at all required sizes" classname="audit-closure-layout.spec.ts" time="3.744">
+</testcase>
+</testsuite>
+<testsuite name="audit-layout.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="4" failures="0" skipped="0" time="6.855" errors="0">
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R05: at 320x568 px CSS commercial panel and inputs are not cut off and horizontal overflow &lt;= 1px" classname="audit-layout.spec.ts" time="0.651">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R06: both SlotModal and OptionModal obey 90% max height and have reachable controls at 390x320 px" classname="audit-layout.spec.ts" time="1.517">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R06 additional checks: CSS zoom and reduced viewport keep dialog controls reachable" classname="audit-layout.spec.ts" time="1.428">
+</testcase>
+<testcase name="T16 Layout, Dimensions, and Accessibility Audit › R07: area stylesheets load without style leakage across navigations" classname="audit-layout.spec.ts" time="3.259">
+</testcase>
+</testsuite>
+<testsuite name="audit-review-regressions.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="4" failures="0" skipped="0" time="6.147" errors="0">
+<testcase name="RV09: cada pestaña conserva su receta pendiente, también al cancelar en otra pestaña" classname="audit-review-regressions.spec.ts" time="2.24">
+</testcase>
+<testcase name="RV13: recetas carga sus primitivas al entrar directamente y conserva estilos después de navegar" classname="audit-review-regressions.spec.ts" time="0.873">
+</testcase>
+<testcase name="RV04: F5 durante una carga incierta conserva bytes y clave sin enviar automáticamente" classname="audit-review-regressions.spec.ts" time="1.187">
+</testcase>
+<testcase name="RV07: una receta confirmada conserva la edición posterior y su versión después de F5" classname="audit-review-regressions.spec.ts" time="1.847">
+</testcase>
+</testsuite>
+<testsuite name="catalog-remediation.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="3.233" errors="0">
+<testcase name="keeps catalog cards contained and controls reachable at desktop, mobile and zoom" classname="catalog-remediation.spec.ts" time="1.313">
+</testcase>
+<testcase name="preserves image reserved dimensions at 320px before and after image load failure (C16)" classname="catalog-remediation.spec.ts" time="0.587">
+</testcase>
+<testcase name="confirms delete in native dialog with inert backdrop, escape support and actionable recovery inside modal (C06, C11, C13)" classname="catalog-remediation.spec.ts" time="1.333">
+</testcase>
+</testsuite>
+<testsuite name="catalog-traffic.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="2" failures="0" skipped="0" time="2.686" errors="0">
+<testcase name="filters and pagination request only entries and returning to V1 reuses fresh data" classname="catalog-traffic.spec.ts" time="1.419">
+</testcase>
+<testcase name="full journey: catalog -&gt; create category -&gt; new entry with category -&gt; catalog reflects updates within TTL without F5 (C07, Instruction 8)" classname="catalog-traffic.spec.ts" time="1.267">
+</testcase>
+</testsuite>
+<testsuite name="categories.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.374" errors="0">
+<testcase name="opens V5 from the menu and creates, edits and cancels categories" classname="categories.spec.ts" time="1.374">
+</testcase>
+</testsuite>
+<testsuite name="closure-review-regressions.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="4.157" errors="0">
+<testcase name="RC02: quoted group names preserve editor, draft and focus after option cancellation" classname="closure-review-regressions.spec.ts" time="0.965">
+</testcase>
+<testcase name="RC04: each Escape affects only the active step and restores focus within one dialog" classname="closure-review-regressions.spec.ts" time="1.539">
+</testcase>
+<testcase name="RC04: Escape cannot dismiss a nested recipe while its POST is pending" classname="closure-review-regressions.spec.ts" time="1.653">
+</testcase>
+</testsuite>
+<testsuite name="entry-form-remediation.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="4" failures="0" skipped="0" time="6.848" errors="0">
+<testcase name="V2 aligns navigation, keeps actions reachable and bounds 100 categories across six viewports" classname="entry-form-remediation.spec.ts" time="3.821">
+</testcase>
+<testcase name="category search and image zone work with keyboard without per-keystroke queries" classname="entry-form-remediation.spec.ts" time="0.729">
+</testcase>
+<testcase name="a server rejection preserves the draft and a retry reuses the successful upload" classname="entry-form-remediation.spec.ts" time="0.9">
+</testcase>
+<testcase name="an edit conflict requires review before using a new ETag and never refreshes it silently" classname="entry-form-remediation.spec.ts" time="1.398">
+</testcase>
+</testsuite>
+<testsuite name="entry-form.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.177" errors="0">
+<testcase name="creates and edits an entry with separate image upload and JSON writes" classname="entry-form.spec.ts" time="1.177">
+</testcase>
+</testsuite>
+<testsuite name="menu.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.217" errors="0">
+<testcase name="searches the administrative entries and opens their management routes" classname="menu.spec.ts" time="1.217">
+</testcase>
+</testsuite>
+<testsuite name="offer-form.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="2" failures="0" skipped="0" time="2.546" errors="0">
+<testcase name="creates and deletes an offer updating catalog offerCount within cache TTL without page reload (O18)" classname="offer-form.spec.ts" time="1.637">
+</testcase>
+<testcase name="manages single-dialog Escape steps preserving option draft and restoring focus without losing composition (O19, O34)" classname="offer-form.spec.ts" time="0.909">
+</testcase>
+</testsuite>
+<testsuite name="offers.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="5" failures="0" skipped="0" time="7.659" errors="0">
+<testcase name="opens an entry&apos;s offers and returns to the catalog without losing the query" classname="offers.spec.ts" time="1.403">
+</testcase>
+<testcase name="keeps the offers view inside narrow screens and reconciles an out-of-range last page" classname="offers.spec.ts" time="3.266">
+</testcase>
+<testcase name="keeps the single empty-state CTA visible at 1024x600 and prevents horizontal overflow at 320x568" classname="offers.spec.ts" time="0.587">
+</testcase>
+<testcase name="separately verifies delete dialog cancel button and Escape key restore focus to trigger without mutating" classname="offers.spec.ts" time="1.183">
+</testcase>
+<testcase name="handles delete error with single alert and recovery reachable inside the modal dialog" classname="offers.spec.ts" time="1.22">
+</testcase>
+</testsuite>
+<testsuite name="operation-recovery.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="5" failures="0" skipped="0" time="7.142" errors="0">
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › category creation recovery: uncertain POST, real browser reload (F5) restores dialog without POST, manual retry sends same Idempotency-Key and recovers category" classname="operation-recovery.spec.ts" time="1.555">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › nested recipe creation recovery in offer form: uncertain POST, reload restores parent and nested picker, retry recovers recipe and assigns it to option" classname="operation-recovery.spec.ts" time="1.888">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › entry creation recovery: two-stage flow with image upload and entry create across real reload (F5)" classname="operation-recovery.spec.ts" time="1.109">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer creation recovery: uncertain POST, real browser reload (F5) restores form without POST, manual retry sends same Idempotency-Key (A01, A08)" classname="operation-recovery.spec.ts" time="1.473">
+</testcase>
+<testcase name="Operation recovery across page reloads (e2e/operation-recovery.spec.ts) › offer update recovery: uncertain PATCH, real browser reload (F5) restores form with opening If-Match, manual retry sends same Idempotency-Key and If-Match (A01, A08)" classname="operation-recovery.spec.ts" time="1.117">
+</testcase>
+</testsuite>
+<testsuite name="recipes.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="5" failures="0" skipped="0" time="3.349" errors="0">
+<testcase name="Recipe Library and Selector Flow (T13) › allows searching, paginating recipes, and managing recipes in administration mode" classname="recipes.spec.ts" time="0.708">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › creates recipe with inventory selection and paginating inventory in dialog" classname="recipes.spec.ts" time="0.768">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › isolates inventory error with independent retry without wiping the recipe draft" classname="recipes.spec.ts" time="0.657">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › supports selection mode with Asignar buttons and no management actions" classname="recipes.spec.ts" time="0.533">
+</testcase>
+<testcase name="Recipe Library and Selector Flow (T13) › locks delete confirmation against Escape during in-flight DELETE and restores focus (P12, P11)" classname="recipes.spec.ts" time="0.683">
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-03-modal-pending.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.32" errors="0">
+<testcase name="pending DELETE keeps Tab and Shift+Tab inside the modal without closing or submitting twice" classname="ux-ui-03-modal-pending.spec.ts" time="1.32">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-03-modal-pending-pen-aa6e5-closing-or-submitting-twice-chromium\attachments\pending-modal-focus-json-554906a38c9026a90a3a64f335ff5ce2613ee903.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-05-category-recovery.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="2" failures="0" skipped="0" time="1.388" errors="0">
+<testcase name="UX05 category HTTP uncertainty retains draft and original operation at 390px" classname="ux-ui-05-category-recovery.spec.ts" time="0.683">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-05-category-recovery-cafbf-original-operation-at-390px-chromium\attachments\category-recovery-901129a914a615446cf3964ec42f5272acbf9f2d.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX05 category HTTP uncertainty retains draft and original operation at 1024px" classname="ux-ui-05-category-recovery.spec.ts" time="0.705">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-05-category-recovery-5480a-riginal-operation-at-1024px-chromium\attachments\category-recovery-d9ac1cc7a3d8378e66069332aab2affdd22656cd.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-07.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="3.084" errors="0">
+<testcase name="UX07 HTTP 404 shows a missing entry without edit fields or a futile retry" classname="ux-ui-07.spec.ts" time="0.58">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-07-UX07-HTTP-404-sho-350f9-it-fields-or-a-futile-retry-chromium\attachments\http404-154b3743fb1af49ee722c59831ae1de127284d83.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX07 temporary HTTP failure can retry the entry without reloading categories" classname="ux-ui-07.spec.ts" time="1.236">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-07-UX07-temporary-HT-73af0-ithout-reloading-categories-chromium\attachments\temporary-8020a1611a09003031b84d2a2a148a7f056bab80.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX07 late HTTP categories preserve edited identity, assigned category and a selected image" classname="ux-ui-07.spec.ts" time="1.268">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-07-UX07-late-HTTP-ca-b13be-tegory-and-a-selected-image-chromium\attachments\late-categories-2842c8225f27488ddc418789e57e700a7c9b534e.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-10.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="5.541" errors="0">
+<testcase name="UX10 creation HTTP 422 preserves option and controls manual recovery in one modal" classname="ux-ui-10.spec.ts" time="1.897">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-1334b-anual-recovery-in-one-modal-chromium\attachments\rejected-dff9f33abf08ed6ba45af015a5c3aba03ef27851.png]]
+
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-1334b-anual-recovery-in-one-modal-chromium\attachments\http-contract-0fe2472bf071b68a99ea1e1573abf21cbc25274e.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX10 creation HTTP 503 preserves option and controls manual recovery in one modal" classname="ux-ui-10.spec.ts" time="1.931">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-a7ffe-anual-recovery-in-one-modal-chromium\attachments\rejected-1f258d97fa5dc4a30a746fd6b575a248e90d7588.png]]
+
+[[ATTACHMENT|ux-ui-10-UX10-creation-HTT-a7ffe-anual-recovery-in-one-modal-chromium\attachments\http-contract-5f8d6d5efb29120e85839fb2142be8eed89a7469.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX10 pending recipe keeps one modal through repeated Escape after submit disables its trigger" classname="ux-ui-10.spec.ts" time="1.713">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-0-5eb659b301c1094e9092d414aeef00c11779511b.json]]
+
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-1-5eb659b301c1094e9092d414aeef00c11779511b.json]]
+
+[[ATTACHMENT|ux-ui-10-UX10-pending-reci-f5ccd-submit-disables-its-trigger-chromium\attachments\pending-escape-7aaf48b8e1575016f39fccaeb6f7e50b4bb1847f.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-12.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="7" failures="0" skipped="0" time="10.841" errors="0">
+<testcase name="UX12 server money review preserves local precision at viewport 320 and module 320" classname="ux-ui-12.spec.ts" time="1.52">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-926b6-viewport-320-and-module-320-chromium\attachments\server-review-long-price-48daa8273d4cc10ff5887e4071996f68e3719ae1.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-926b6-viewport-320-and-module-320-chromium\attachments\server-review-long-price-image-e8418f09c6c5e5f0482e6573bd4f8a09baf63b22.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 390 and module 390" classname="ux-ui-12.spec.ts" time="1.549">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-12091-viewport-390-and-module-390-chromium\attachments\server-review-long-price-afc498602df81e41b083498ad828b304565bf0b5.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-12091-viewport-390-and-module-390-chromium\attachments\server-review-long-price-image-1dabef1460b0a23446abaff02323fb5833744211.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 600 and module 600" classname="ux-ui-12.spec.ts" time="1.602">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-baa5e-viewport-600-and-module-600-chromium\attachments\server-review-long-price-9189079a78db68018b6615bdbce70a82206d57d0.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-baa5e-viewport-600-and-module-600-chromium\attachments\server-review-long-price-image-c4536a622883f716713549a77c3803ba992dd41f.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 740 and module 740" classname="ux-ui-12.spec.ts" time="1.657">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-4073c-viewport-740-and-module-740-chromium\attachments\server-review-long-price-8b676015d965858ce6d1b1641019dbf9a05f2750.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-4073c-viewport-740-and-module-740-chromium\attachments\server-review-long-price-image-6cdb2bcd9570043aa9a0d9cb77c8c9911b91e8f9.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 1024 and module 1024" classname="ux-ui-12.spec.ts" time="1.634">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-6ae97-ewport-1024-and-module-1024-chromium\attachments\server-review-long-price-0ed111d135a4eda007b7f1a1d7607c48be2feae1.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-6ae97-ewport-1024-and-module-1024-chromium\attachments\server-review-long-price-image-6c12dff09b23c238fc5780ba941c2dc51963d001.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 1440 and module 1440" classname="ux-ui-12.spec.ts" time="1.685">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-f814a-ewport-1440-and-module-1440-chromium\attachments\server-review-long-price-475767e989c08b2ca611067a3b5ced2a8728d7cd.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-f814a-ewport-1440-and-module-1440-chromium\attachments\server-review-long-price-image-2c0f9c3a844dc96c1a0f39df6613c6a97d37d542.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX12 server money review preserves local precision at viewport 1440 and module 390" classname="ux-ui-12.spec.ts" time="1.194">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-12-UX12-server-money-c7644-iewport-1440-and-module-390-chromium\attachments\server-review-long-price-ab8c088cb4b620ec3ad67514b220cc372a2c5c6c.json]]
+
+[[ATTACHMENT|ux-ui-12-UX12-server-money-c7644-iewport-1440-and-module-390-chromium\attachments\server-review-long-price-image-3b1b8c985a2f6ffa8db3767c8735a19f91fc9ab6.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-14.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="2" failures="0" skipped="0" time="1.669" errors="0">
+<testcase name="UX14 category 409 explains the next action without automatic resubmission" classname="ux-ui-14.spec.ts" time="0.86">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-14-UX14-category-409-6c2d6-hout-automatic-resubmission-chromium\attachments\recovery-c887033d89edb199e390c4ea91fee499c6f573d3.png]]
+
+[[ATTACHMENT|ux-ui-14-UX14-category-409-6c2d6-hout-automatic-resubmission-chromium\attachments\contract-2f71b5f8cbb455576158e3242f339a7a92d40d37.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX14 category 503 explains the next action without automatic resubmission" classname="ux-ui-14.spec.ts" time="0.809">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-14-UX14-category-503-69d89-hout-automatic-resubmission-chromium\attachments\recovery-1fac29066987a4217ffb0aee9377ac03820038bc.png]]
+
+[[ATTACHMENT|ux-ui-14-UX14-category-503-69d89-hout-automatic-resubmission-chromium\attachments\contract-08b5c12ab166ad2c7048ba07c467182fad8a8496.json]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-15.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="3" failures="0" skipped="0" time="2.23" errors="0">
+<testcase name="UX15 delayed entry context updates the task title without moving the user&apos;s focus" classname="ux-ui-15.spec.ts" time="0.657">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-15-UX15-delayed-entr-3f76d-out-moving-the-user-s-focus-chromium\attachments\late-context-8309aee8fea325f708d96215c3a98208ead17951.json]]
+
+[[ATTACHMENT|ux-ui-15-UX15-delayed-entr-3f76d-out-moving-the-user-s-focus-chromium\attachments\late-context-image-fd4bd42917782ca78c12500ec6c5a23ed8c4e36b.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX15 a suspended editor preserves a persistent control&apos;s useful focus context" classname="ux-ui-15.spec.ts" time="0.779">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-15-UX15-a-suspended--fee1f-trol-s-useful-focus-context-chromium\attachments\suspended-route-persistent-4d610ea9ded1610df900188bfe8a3bc19e41ccdc.json]]
+
+[[ATTACHMENT|ux-ui-15-UX15-a-suspended--fee1f-trol-s-useful-focus-context-chromium\attachments\suspended-route-persistent-image-0f110d9045ecf6e9b3931f6d02b70d9a26829129.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX15 a suspended editor preserves a removed control&apos;s useful focus context" classname="ux-ui-15.spec.ts" time="0.794">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-15-UX15-a-suspended--fa577-trol-s-useful-focus-context-chromium\attachments\suspended-route-removed-f7f07ca028b77829be7c0ab35d330f288bd9967b.json]]
+
+[[ATTACHMENT|ux-ui-15-UX15-a-suspended--fa577-trol-s-useful-focus-context-chromium\attachments\suspended-route-removed-image-b4219c9fb5db6269da60ba1825477a201846b65e.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ux-ui-16.spec.ts" timestamp="2026-10-26T22:20:37.365Z" hostname="chromium" tests="20" failures="0" skipped="0" time="15.377" errors="0">
+<testcase name="UX16 / reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.744">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\pending-e8dfcfcef0da877284d2c2f992d59ecc8872823f.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\pending-e86d63313dc7c1a7ed6da05c79cb0c5daef8a821.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\resolved-82a6d8c68ea0585623313b1de1e1abd0f30e2f72.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\resolved-239aaca1f02fb4da1159b55d1af6968df7691097.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\comparison-c7aa090c7b072b88ca5f1981c42b03dc89f42848.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /categories reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.726">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\pending-15232296e59a17965615042b7b058c3eb4d75292.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\pending-17ef9bfca3ff81d29d7d1cc6d9bcd0e03d432570.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\resolved-a21582ccee5d33af24b1b8b9f52479f5d578969e.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\resolved-6b7cbfc21c13c7d9b368050cf01ebad6bf8705b1.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\comparison-cbe635609683f2a2fb928f4828c5eba8ff47904e.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /recipes reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.751">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\pending-2f4b3edb670f7ba4c732adae0c996feec786ff2c.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\pending-e04afed4eb235a8228f1927954251fcda5d423c7.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\resolved-030f235b7fa4f85a62258651e6f4c79d65f5b607.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\resolved-b055afce0db10625905e06dbfb934f3a8ff07b6c.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\comparison-6c5a3d6a3c3716227d5034d17ffa5326f1f604f1.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.72">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\pending-5c38f03bcdb93ccf2935b069b72403e945f8b974.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\pending-6dae91649de9fc035fbfa9adfbdd4f18a79931d6.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\resolved-72aaaeda7b4492f3c8e5d534a52eecbae68593c4.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\resolved-2bc85836ac59e7077838cbe1f666e4fa52c29be4.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\comparison-b74461d14d0c9f20a4749674c0250ac8b8b35cba.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers/new reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.757">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\pending-d96a671e52db3bd357d11a30d4e3840f541f1de3.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\pending-f96afba735382cf1983b902af273b72cbd3517d7.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\resolved-48087cd2ee419d6c73adefc86a7489aeb2b30e64.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\resolved-c51a6bdf684512ded748d3c121c3270b80f644be.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\comparison-246bdfdf6b2cb1452b6cedfd03cfb45cdf27cc60.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/edit reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.686">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\pending-fb798011e0ba7fe5ae8a25fee58f47ab08eb7116.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\pending-0fd46583d31e9854d9a2e2bd513dfae27b278335.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\resolved-98c9e22366c2ad30dbbdd28744f81e8a0b449303.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\resolved-ecc6f7c5caffe1834273d8284e072cc627312170.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\comparison-31549b96b9b4e5e2e90308d68f0e2ee25a6fcd5c.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 / reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.762">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\pending-2c01f972f0cb459ee1586b4c3bff7c2c298fa42c.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\pending-21d1a007b9dca9cace8a5110eeb7a0062544bd25.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\resolved-7f64d9f7c65ee57634b68fc5a8431a4961496e31.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\resolved-8c5a61c7b0bd488895257cffcbfa8be9dbe6fb5d.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\comparison-5d345cd0ea5599c509cf468fc02f4c189ed994d3.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /categories reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.702">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\pending-292ed89f324777471658f780f467fea1874e24b1.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\pending-ba550cd6c0f165f16b62cca22dcf2b85b31da7a1.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\resolved-5026141b21c5d03bcf7005e34b26f41f7e5adbd6.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\resolved-8e98af6f03f5d53c7a42bec94bb28a03a843ae31.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\comparison-dbfd9797835b51fdf22cc82051564722f4e93cd9.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /recipes reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.697">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\pending-bae6e65cd3114e2d9d5bd11634b873f08db0d7c4.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\pending-5146539c8925284c2bce62bbcaa3321140d20360.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\resolved-cb4f9c9486b19b0cbcc9ce9c1a734d943c3b7a78.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\resolved-4510b7828eb1552abf0ac7527f20c12f57ca4604.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\comparison-99386598d1aa832008b46963b4db067d455f8146.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.701">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-ee624a5025095f4e169048b9701b3e70296d1b4d.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-0f0165c19596672a64b69614be1128e2954b83f2.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-913dbade2e924366b69bd7aa1de7807ca18f1ebc.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-8392637ed66ea12d44751e0514bcbc1b9c771f03.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\comparison-97420f799494ca8c9fb9e48dd360e40550e66faf.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers/new reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.697">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\pending-91ef69b8975835bacfa7ea401829232e5348d79a.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\pending-fd65f43ea077419cff725a95fc569f9d9cb5b1d5.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\resolved-fa91b458ee593d044ea6cc38d40044e520fa4332.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\resolved-2e89425a9b72151a010af14618c23408242ca370.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\comparison-f994b62365370694e5e2d549a392219b9167468a.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/edit reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.724">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\pending-4f04be9622b0b6934e63b462ad75141fa7ee9838.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\pending-47b2555fe4ca51e9a6453926ed7023fbd46b86d2.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\resolved-d5d32c79d206c78d2fef20157f0fd49467f4af48.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\resolved-b5141850b486cb8c65df3644638dda2a6f267849.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\comparison-78c58fcd6054d185858ef746fd1a4e346a6b220a.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 / reserves local content at 1440px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.781">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-46438-ts-initial-response-arrives-chromium\attachments\pending-3ae0e775c701efa639b5fb92f8b264de5f843175.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-46438-ts-initial-response-arrives-chromium\attachments\pending-e57e3c489af3892398f2fbc689cce2d0938df1be.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-46438-ts-initial-response-arrives-chromium\attachments\resolved-88459fc37c660e231ee0df5220397c906aa63190.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-46438-ts-initial-response-arrives-chromium\attachments\resolved-8f0fc5c3ce3396e38fbfb1b01f5ba46f8d639c9b.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-46438-ts-initial-response-arrives-chromium\attachments\comparison-6bcb93b339ef8f3b0543b99924c723b16a569e0f.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /categories reserves local content at 1440px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.699">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-2f3ca-ts-initial-response-arrives-chromium\attachments\pending-9028f49d319f5e754a6e127097b769bb275213f9.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-2f3ca-ts-initial-response-arrives-chromium\attachments\pending-fd9a7bc58d28db966b5c7d04b142a87150e54fc5.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-2f3ca-ts-initial-response-arrives-chromium\attachments\resolved-67d4cac4657e3aeaaa9359e9b62009790a663fac.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-2f3ca-ts-initial-response-arrives-chromium\attachments\resolved-3dcfcd8a252806fa47c2f25c43bb573103852998.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-2f3ca-ts-initial-response-arrives-chromium\attachments\comparison-45e10f15778f5843b9cddcc12bb36bdc1b1d5481.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /recipes reserves local content at 1440px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.732">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-b82f8-ts-initial-response-arrives-chromium\attachments\pending-3ebe282a4f1d979d492a878a7b33847332eb6606.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-b82f8-ts-initial-response-arrives-chromium\attachments\pending-5d5570046f411053c7ed8078c2ca0d400f4719b3.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-b82f8-ts-initial-response-arrives-chromium\attachments\resolved-b67f1d23e70f0070d95235a48c7172bd4a6f3089.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-b82f8-ts-initial-response-arrives-chromium\attachments\resolved-9f23aec48e641adbae5d4c773ac6ba2b2befbea1.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-b82f8-ts-initial-response-arrives-chromium\attachments\comparison-9e0838a7cb36317c10cd6fdfbda39ce1366092a4.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers reserves local content at 1440px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.824">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-3a26f-ts-initial-response-arrives-chromium\attachments\pending-7524bcc54fc4e0dc2d700fa1d16461c7770a9334.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-3a26f-ts-initial-response-arrives-chromium\attachments\pending-b8755fc4059a5f025a6ee03aceced9772a2abb2c.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-3a26f-ts-initial-response-arrives-chromium\attachments\resolved-057055831e19a000d7473eb3f42129db85c300cf.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-3a26f-ts-initial-response-arrives-chromium\attachments\resolved-abb9c6a0b423ea81bdb245e64257bd1418a94574.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-3a26f-ts-initial-response-arrives-chromium\attachments\comparison-e822511e9a380b41115ac59dd17e9588504ec892.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers/new reserves local content at 1440px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.754">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-9b54e-ts-initial-response-arrives-chromium\attachments\pending-eaba1ba81389abba85221f35cc614e98d63f00b6.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-9b54e-ts-initial-response-arrives-chromium\attachments\pending-a9db64f331a2ca7fdb1b02279bba00749041db67.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-9b54e-ts-initial-response-arrives-chromium\attachments\resolved-93d01fb4fb199e1693ae824f149657ca07ccf254.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-9b54e-ts-initial-response-arrives-chromium\attachments\resolved-a5752b154c0113f15972d45b6b93e5fc52066f29.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-9b54e-ts-initial-response-arrives-chromium\attachments\comparison-6d21b96ba0e189c17f35687c419765defedcb5d6.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/edit reserves local content at 1440px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.777">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-68a77-ts-initial-response-arrives-chromium\attachments\pending-ed9414bd5198f2ec366c62b7d01eb231056e2d5d.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-68a77-ts-initial-response-arrives-chromium\attachments\pending-887a0e02cd45812e01c11c0a1738e8ca0f15f037.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-68a77-ts-initial-response-arrives-chromium\attachments\resolved-623f56ba16227ac8b8c73b41e66173d28e8363d0.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-68a77-ts-initial-response-arrives-chromium\attachments\resolved-a1bff80305a9a3b731cc75683d99bc08c65847a2.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-68a77-ts-initial-response-arrives-chromium\attachments\comparison-c34c74990521d57ad51398726cd8e62adb5df2e7.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 a failed recipe refresh retains the confirmed cards and query context" classname="ux-ui-16.spec.ts" time="1.249">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-pending-27fbd3a886dfaa10d2617b93202c74b481ebabac.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-pending-d6b5aa2d3f1b0bc4f545bc2b309bc112c305ea31.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-failed-5b1788a1d6df747af04d005944ea2718c6195228.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-failed-908c77e6335c944aca928d6f2b302fd64aa69c38.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 late categories reserve only their open panel and keep entry edits and the chosen file" classname="ux-ui-16.spec.ts" time="0.894">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-closed-pending-e2d94c2a3e1d9c3880b4ec6de0a18301c731e0c8.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-closed-pending-94fa5e71b05107fb6170e974031784561a92782e.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-open-pending-7b34c0f2a0db08b95d74d830aeb0ed52516732f0.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-open-pending-6bb7931921c7e98705ab47742581036e7dcd13d7.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-resolved-a57bd12241ccf2e30458dcf9d0ffb6a65c3adac0.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-resolved-caedeaa5610149f2450f7ac162fdee6dd761b5bf.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

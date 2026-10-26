@@ -1,0 +1,41 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test e2e/ux-ui-16.spec.ts --workers=2
+[WebServer] npm notice run menu-frontend@0.1.0 preview
+
+[WebServer] npm notice run vite preview --host 0.0.0.0
+
+[WebServer] (node:11332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 20 tests using 2 workers
+
+
+(node:23052) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:19516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 / reserves local content at 390px until its initial response arrives
+[2/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /categories reserves local content at 390px until its initial response arrives
+[3/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /recipes reserves local content at 390px until its initial response arrives
+[4/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 390px until its initial response arrives
+[5/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers/new reserves local content at 390px until its initial response arrives
+[6/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/edit reserves local content at 390px until its initial response arrives
+[7/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 / reserves local content at 1024px until its initial response arrives
+[8/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /categories reserves local content at 1024px until its initial response arrives
+[9/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /recipes reserves local content at 1024px until its initial response arrives
+[10/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives
+[11/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers/new reserves local content at 1024px until its initial response arrives
+[12/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/edit reserves local content at 1024px until its initial response arrives
+[13/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 / reserves local content at 1440px until its initial response arrives
+[14/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /categories reserves local content at 1440px until its initial response arrives
+[15/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /recipes reserves local content at 1440px until its initial response arrives
+[16/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 1440px until its initial response arrives
+[17/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers/new reserves local content at 1440px until its initial response arrives
+[18/20] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/edit reserves local content at 1440px until its initial response arrives
+[19/20] [chromium] › e2e\ux-ui-16.spec.ts:90:1 › UX16 a failed recipe refresh retains the confirmed cards and query context
+[20/20] [chromium] › e2e\ux-ui-16.spec.ts:121:1 › UX16 late categories reserve only their open panel and keep entry edits and the chosen file
+  20 passed (10.7s)

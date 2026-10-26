@@ -1,0 +1,12 @@
+{
+  "url": "http://127.0.0.1:5174/entries/demo-entry-burger/edit",
+  "modals": 1,
+  "focus": "Seguir editando",
+  "bodyPosition": "fixed",
+  "dialogs": [
+    {
+      "width": 352,
+      "backdrop": "rgba(17, 24, 39, 0.4)"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test e2e/ux-ui-16.spec.ts --workers=2
+[WebServer] npm notice run menu-frontend@0.1.0 preview
+
+[WebServer] npm notice run vite preview --host 0.0.0.0
+
+
+[WebServer] (node:15584) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 14 tests using 2 workers
+
+
+(node:26508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:25088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 / reserves local content at 390px until its initial response arrives
+[2/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /categories reserves local content at 390px until its initial response arrives
+[3/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /recipes reserves local content at 390px until its initial response arrives
+[4/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 390px until its initial response arrives
+[5/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers/new reserves local content at 390px until its initial response arrives
+[6/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/edit reserves local content at 390px until its initial response arrives
+[7/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 / reserves local content at 1024px until its initial response arrives
+[8/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /categories reserves local content at 1024px until its initial response arrives
+[9/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /recipes reserves local content at 1024px until its initial response arrives
+[10/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives
+[11/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers/new reserves local content at 1024px until its initial response arrives
+  1) [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 2
+    Received:    4
+
+      74 |       expect(Math.abs(resolved.content[0].y - pending.content[0].y)).toBeLessThanOrEqual(4);
+      75 |       expect(Math.abs(resolved.content[0].x - pending.content[0].x)).toBeLessThanOrEqual(1);
+    > 76 |       expect(Math.abs(resolved.content[0].width - pending.content[0].width)).toBeLessThanOrEqual(2);
+         |                                                                              ^
+      77 |       if (variant === "entries" || variant === "entry-form") {
+      78 |         expect(Math.abs(resolved.images[0].height - pending.images[0].height)).toBeLessThanOrEqual(1);
+      79 |         expect(Math.abs(resolved.images[0].width - pending.images[0].width)).toBeLessThanOrEqual(2);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-16.spec.ts:76:78
+
+    attachment #1: pending (application/json) ──────────────────────────────────────────────────────
+    test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-ee624a5025095f4e169048b9701b3e70296d1b4d.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: pending (image/png) ─────────────────────────────────────────────────────────────
+    test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-0f0165c19596672a64b69614be1128e2954b83f2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: resolved (application/json) ─────────────────────────────────────────────────────
+    test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-913dbade2e924366b69bd7aa1de7807ca18f1ebc.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: resolved (image/png) ────────────────────────────────────────────────────────────
+    test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-8392637ed66ea12d44751e0514bcbc1b9c771f03.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\error-context.md
+
+
+
+(node:12332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[12/14] [chromium] › e2e\ux-ui-16.spec.ts:89:1 › UX16 a failed recipe refresh retains the confirmed cards and query context
+[13/14] [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/edit reserves local content at 1024px until its initial response arrives
+[14/14] [chromium] › e2e\ux-ui-16.spec.ts:120:1 › UX16 late categories reserve only their open panel and keep entry edits and the chosen file
+  1 failed
+    [chromium] › e2e\ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives 
+  13 passed (9.1s)

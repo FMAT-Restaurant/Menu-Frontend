@@ -1,0 +1,72 @@
+[
+  {
+    "viewport": 1440,
+    "moduleWidth": 320,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 390,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 600,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 740,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 767,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 768,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1024,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1199,
+    "inputHeight": 48,
+    "submitHeight": 48,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1200,
+    "inputHeight": 40,
+    "submitHeight": 40,
+    "inputRadius": "0px"
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1440,
+    "inputHeight": 40,
+    "submitHeight": 40,
+    "inputRadius": "0px"
+  }
+]

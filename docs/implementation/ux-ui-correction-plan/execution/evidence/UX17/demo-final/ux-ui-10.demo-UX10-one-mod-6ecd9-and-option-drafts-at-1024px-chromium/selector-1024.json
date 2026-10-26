@@ -1,0 +1,14 @@
+{
+  "modalCount": 1,
+  "dialogs": [
+    {
+      "title": "recipe-selector-title",
+      "backdrop": "rgba(17, 24, 39, 0.4)",
+      "width": 960,
+      "height": 339
+    }
+  ],
+  "active": "Buscar ahora",
+  "bodyPosition": "fixed",
+  "scrollY": 0
+}

@@ -1,0 +1,764 @@
+npm notice run menu-frontend@0.1.0 test
+npm notice run jest --runInBand
+FAIL src/closure-review.regression.test.tsx
+  ● RC05: IDEMPOTENCY_KEY_REUSED requires explicit preparation without writes and keeps draft/If-Match
+
+    Unable to find an element with the text: Clave rechazada: IDEMPOTENCY_KEY_REUSED. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    <body
+      style=""
+    >
+      <div>
+        <div
+          class="app-shell offer-form-view"
+        >
+          <main
+            class="menu-page offer-form-page"
+          >
+            <header
+              class="task-header offer-form-page__heading"
+            >
+              <a
+                class="back-link"
+                data-discover="true"
+                href="/entries/entry-1/offers"
+              >
+                ← Volver a ofertas
+              </a>
+              <div
+                class="task-header__content"
+              >
+                <h1
+                  data-route-heading="true"
+                  tabindex="-1"
+                >
+                  Editar oferta
+                </h1>
+                <p
+                  class="task-header__intro offer-form-page__subtitle"
+                >
+                  Entrada: 
+                  <strong>
+                    Entrada
+                  </strong>
+                </p>
+              </div>
+            </header>
+            <form
+              aria-busy="false"
+              class="offer-form"
+              data-actions-height="0"
+              data-actions-persistent="false"
+              data-available-height="768"
+              data-form-height="0"
+              novalidate=""
+              style="--form-actions-height: 0px;"
+            >
+              <div
+                class="feedback feedback--warning"
+                role="status"
+              >
+                Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
+                <button
+                  class="button button--small button--secondary"
+                  type="button"
+                >
+                  Iniciar nueva operación
+                </button>
+              </div>
+              <p
+                class="feedback feedback--error"
+                role="alert"
+              >
+                El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar.
+              </p>
+              <section
+                aria-labelledby="commercial-info-title"
+                class="offer-commercial-info"
+              >
+                <h2
+                  class="offer-commercial-info__title"
+                  id="commercial-info-title"
+                >
+                  1. Información comercial
+                </h2>
+                <div
+                  class="offer-commercial-info__grid"
+                >
+                  <div
+                    class="offer-commercial-info__fields"
+                  >
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-tag-input"
+                      >
+                        Etiqueta de presentación (opcional)
+                      </label>
+                      <input
+                        id="offer-tag-input"
+                        placeholder="Ej. Individual, Mediana o Combo"
+                        type="text"
+                        value="Combo"
+                      />
+                      <p
+                        class="field-hint"
+                      >
+                        La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-price-input"
+                      >
+                        Precio base (MXN)
+                      </label>
+                      <div
+                        class="price-input-wrapper"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="price-prefix"
+                        >
+                          MXN
+                        </span>
+                        <input
+                          aria-describedby="offer-price-preview offer-price-help"
+                          id="offer-price-input"
+                          min="0"
+                          placeholder="0.00"
+                          required=""
+                          step="any"
+                          type="number"
+                          value="10"
+                        />
+                      </div>
+                      <p
+                        class="offer-money-preview"
+                        id="offer-price-preview"
+                      >
+                        MXN 10.00
+                      </p>
+                      <p
+                        class="field-hint"
+                        id="offer-price-help"
+                      >
+                        El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <span
+                        class="field-label"
+                        id="offer-status-label"
+                      >
+                        Estado de la oferta
+                      </span>
+                      <div>
+                        <div
+                          aria-labelledby="offer-status-label"
+                          class="radio-group"
+                          role="radiogroup"
+                        >
+            ...
+
+      62 |   </Routes></MemoryRouter>);
+      63 |   fireEvent.click(await screen.findByRole("button", { name: "Guardar Oferta" }));
+    > 64 |   await screen.findByText(`Clave rechazada: ${code}`);
+         |                ^
+      65 |   const oldKey = repository.updateOffer.mock.calls[0][3];
+      66 |   fireEvent.change(screen.getByLabelText("Etiqueta de presentación (opcional)"), { target: { value: "Cambios conservados" } });
+      67 |   const prepare = screen.getByRole("button", { name: "Iniciar nueva operación" });
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at findByText (src/closure-review.regression.test.tsx:64:16)
+
+  ● RC05: INVALID_IDEMPOTENCY_KEY requires explicit preparation without writes and keeps draft/If-Match
+
+    Unable to find an element with the text: Clave rechazada: INVALID_IDEMPOTENCY_KEY. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    <body
+      style=""
+    >
+      <div>
+        <div
+          class="app-shell offer-form-view"
+        >
+          <main
+            class="menu-page offer-form-page"
+          >
+            <header
+              class="task-header offer-form-page__heading"
+            >
+              <a
+                class="back-link"
+                data-discover="true"
+                href="/entries/entry-1/offers"
+              >
+                ← Volver a ofertas
+              </a>
+              <div
+                class="task-header__content"
+              >
+                <h1
+                  data-route-heading="true"
+                  tabindex="-1"
+                >
+                  Editar oferta
+                </h1>
+                <p
+                  class="task-header__intro offer-form-page__subtitle"
+                >
+                  Entrada: 
+                  <strong>
+                    Entrada
+                  </strong>
+                </p>
+              </div>
+            </header>
+            <form
+              aria-busy="false"
+              class="offer-form"
+              data-actions-height="0"
+              data-actions-persistent="false"
+              data-available-height="768"
+              data-form-height="0"
+              novalidate=""
+              style="--form-actions-height: 0px;"
+            >
+              <div
+                class="feedback feedback--warning"
+                role="status"
+              >
+                Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
+                <button
+                  class="button button--small button--secondary"
+                  type="button"
+                >
+                  Iniciar nueva operación
+                </button>
+              </div>
+              <p
+                class="feedback feedback--error"
+                role="alert"
+              >
+                El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar.
+              </p>
+              <section
+                aria-labelledby="commercial-info-title"
+                class="offer-commercial-info"
+              >
+                <h2
+                  class="offer-commercial-info__title"
+                  id="commercial-info-title"
+                >
+                  1. Información comercial
+                </h2>
+                <div
+                  class="offer-commercial-info__grid"
+                >
+                  <div
+                    class="offer-commercial-info__fields"
+                  >
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-tag-input"
+                      >
+                        Etiqueta de presentación (opcional)
+                      </label>
+                      <input
+                        id="offer-tag-input"
+                        placeholder="Ej. Individual, Mediana o Combo"
+                        type="text"
+                        value="Combo"
+                      />
+                      <p
+                        class="field-hint"
+                      >
+                        La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-price-input"
+                      >
+                        Precio base (MXN)
+                      </label>
+                      <div
+                        class="price-input-wrapper"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="price-prefix"
+                        >
+                          MXN
+                        </span>
+                        <input
+                          aria-describedby="offer-price-preview offer-price-help"
+                          id="offer-price-input"
+                          min="0"
+                          placeholder="0.00"
+                          required=""
+                          step="any"
+                          type="number"
+                          value="10"
+                        />
+                      </div>
+                      <p
+                        class="offer-money-preview"
+                        id="offer-price-preview"
+                      >
+                        MXN 10.00
+                      </p>
+                      <p
+                        class="field-hint"
+                        id="offer-price-help"
+                      >
+                        El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <span
+                        class="field-label"
+                        id="offer-status-label"
+                      >
+                        Estado de la oferta
+                      </span>
+                      <div>
+                        <div
+                          aria-labelledby="offer-status-label"
+                          class="radio-group"
+                          role="radiogroup"
+                        >
+            ...
+
+      62 |   </Routes></MemoryRouter>);
+      63 |   fireEvent.click(await screen.findByRole("button", { name: "Guardar Oferta" }));
+    > 64 |   await screen.findByText(`Clave rechazada: ${code}`);
+         |                ^
+      65 |   const oldKey = repository.updateOffer.mock.calls[0][3];
+      66 |   fireEvent.change(screen.getByLabelText("Etiqueta de presentación (opcional)"), { target: { value: "Cambios conservados" } });
+      67 |   const prepare = screen.getByRole("button", { name: "Iniciar nueva operación" });
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at findByText (src/closure-review.regression.test.tsx:64:16)
+
+FAIL src/features/categories/CategoryFormDialog.ux.test.tsx
+  ● a retry after an uncertain create preserves the sealed valid payload even when the editable name is blank
+
+    expect(element).toHaveTextContent()
+
+    Expected element to have text content:
+      Timeout
+    Received:
+      No sabemos si se creó la categoría. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente.Reintentar
+
+      68 |   fireEvent.click(screen.getByRole("button", { name: "Guardar categoría" }));
+      69 |   const retry = await screen.findByRole("button", { name: "Reintentar" });
+    > 70 |   expect(screen.getByRole("alert")).toHaveTextContent("Timeout");
+         |                                     ^
+      71 |   fireEvent.change(name, { target: { value: "" } });
+      72 |   fireEvent.click(retry);
+      73 |   await waitFor(() => expect(repository.createCategory).toHaveBeenCalledTimes(2));
+
+      at Object.toHaveTextContent (src/features/categories/CategoryFormDialog.ux.test.tsx:70:37)
+
+
+Summary of all failing tests
+FAIL src/closure-review.regression.test.tsx
+  ● RC05: IDEMPOTENCY_KEY_REUSED requires explicit preparation without writes and keeps draft/If-Match
+
+    Unable to find an element with the text: Clave rechazada: IDEMPOTENCY_KEY_REUSED. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    <body
+      style=""
+    >
+      <div>
+        <div
+          class="app-shell offer-form-view"
+        >
+          <main
+            class="menu-page offer-form-page"
+          >
+            <header
+              class="task-header offer-form-page__heading"
+            >
+              <a
+                class="back-link"
+                data-discover="true"
+                href="/entries/entry-1/offers"
+              >
+                ← Volver a ofertas
+              </a>
+              <div
+                class="task-header__content"
+              >
+                <h1
+                  data-route-heading="true"
+                  tabindex="-1"
+                >
+                  Editar oferta
+                </h1>
+                <p
+                  class="task-header__intro offer-form-page__subtitle"
+                >
+                  Entrada: 
+                  <strong>
+                    Entrada
+                  </strong>
+                </p>
+              </div>
+            </header>
+            <form
+              aria-busy="false"
+              class="offer-form"
+              data-actions-height="0"
+              data-actions-persistent="false"
+              data-available-height="768"
+              data-form-height="0"
+              novalidate=""
+              style="--form-actions-height: 0px;"
+            >
+              <div
+                class="feedback feedback--warning"
+                role="status"
+              >
+                Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
+                <button
+                  class="button button--small button--secondary"
+                  type="button"
+                >
+                  Iniciar nueva operación
+                </button>
+              </div>
+              <p
+                class="feedback feedback--error"
+                role="alert"
+              >
+                El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar.
+              </p>
+              <section
+                aria-labelledby="commercial-info-title"
+                class="offer-commercial-info"
+              >
+                <h2
+                  class="offer-commercial-info__title"
+                  id="commercial-info-title"
+                >
+                  1. Información comercial
+                </h2>
+                <div
+                  class="offer-commercial-info__grid"
+                >
+                  <div
+                    class="offer-commercial-info__fields"
+                  >
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-tag-input"
+                      >
+                        Etiqueta de presentación (opcional)
+                      </label>
+                      <input
+                        id="offer-tag-input"
+                        placeholder="Ej. Individual, Mediana o Combo"
+                        type="text"
+                        value="Combo"
+                      />
+                      <p
+                        class="field-hint"
+                      >
+                        La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-price-input"
+                      >
+                        Precio base (MXN)
+                      </label>
+                      <div
+                        class="price-input-wrapper"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="price-prefix"
+                        >
+                          MXN
+                        </span>
+                        <input
+                          aria-describedby="offer-price-preview offer-price-help"
+                          id="offer-price-input"
+                          min="0"
+                          placeholder="0.00"
+                          required=""
+                          step="any"
+                          type="number"
+                          value="10"
+                        />
+                      </div>
+                      <p
+                        class="offer-money-preview"
+                        id="offer-price-preview"
+                      >
+                        MXN 10.00
+                      </p>
+                      <p
+                        class="field-hint"
+                        id="offer-price-help"
+                      >
+                        El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <span
+                        class="field-label"
+                        id="offer-status-label"
+                      >
+                        Estado de la oferta
+                      </span>
+                      <div>
+                        <div
+                          aria-labelledby="offer-status-label"
+                          class="radio-group"
+                          role="radiogroup"
+                        >
+            ...
+
+      62 |   </Routes></MemoryRouter>);
+      63 |   fireEvent.click(await screen.findByRole("button", { name: "Guardar Oferta" }));
+    > 64 |   await screen.findByText(`Clave rechazada: ${code}`);
+         |                ^
+      65 |   const oldKey = repository.updateOffer.mock.calls[0][3];
+      66 |   fireEvent.change(screen.getByLabelText("Etiqueta de presentación (opcional)"), { target: { value: "Cambios conservados" } });
+      67 |   const prepare = screen.getByRole("button", { name: "Iniciar nueva operación" });
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at findByText (src/closure-review.regression.test.tsx:64:16)
+
+  ● RC05: INVALID_IDEMPOTENCY_KEY requires explicit preparation without writes and keeps draft/If-Match
+
+    Unable to find an element with the text: Clave rechazada: INVALID_IDEMPOTENCY_KEY. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    <body
+      style=""
+    >
+      <div>
+        <div
+          class="app-shell offer-form-view"
+        >
+          <main
+            class="menu-page offer-form-page"
+          >
+            <header
+              class="task-header offer-form-page__heading"
+            >
+              <a
+                class="back-link"
+                data-discover="true"
+                href="/entries/entry-1/offers"
+              >
+                ← Volver a ofertas
+              </a>
+              <div
+                class="task-header__content"
+              >
+                <h1
+                  data-route-heading="true"
+                  tabindex="-1"
+                >
+                  Editar oferta
+                </h1>
+                <p
+                  class="task-header__intro offer-form-page__subtitle"
+                >
+                  Entrada: 
+                  <strong>
+                    Entrada
+                  </strong>
+                </p>
+              </div>
+            </header>
+            <form
+              aria-busy="false"
+              class="offer-form"
+              data-actions-height="0"
+              data-actions-persistent="false"
+              data-available-height="768"
+              data-form-height="0"
+              novalidate=""
+              style="--form-actions-height: 0px;"
+            >
+              <div
+                class="feedback feedback--warning"
+                role="status"
+              >
+                Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
+                <button
+                  class="button button--small button--secondary"
+                  type="button"
+                >
+                  Iniciar nueva operación
+                </button>
+              </div>
+              <p
+                class="feedback feedback--error"
+                role="alert"
+              >
+                El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar.
+              </p>
+              <section
+                aria-labelledby="commercial-info-title"
+                class="offer-commercial-info"
+              >
+                <h2
+                  class="offer-commercial-info__title"
+                  id="commercial-info-title"
+                >
+                  1. Información comercial
+                </h2>
+                <div
+                  class="offer-commercial-info__grid"
+                >
+                  <div
+                    class="offer-commercial-info__fields"
+                  >
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-tag-input"
+                      >
+                        Etiqueta de presentación (opcional)
+                      </label>
+                      <input
+                        id="offer-tag-input"
+                        placeholder="Ej. Individual, Mediana o Combo"
+                        type="text"
+                        value="Combo"
+                      />
+                      <p
+                        class="field-hint"
+                      >
+                        La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <label
+                        for="offer-price-input"
+                      >
+                        Precio base (MXN)
+                      </label>
+                      <div
+                        class="price-input-wrapper"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="price-prefix"
+                        >
+                          MXN
+                        </span>
+                        <input
+                          aria-describedby="offer-price-preview offer-price-help"
+                          id="offer-price-input"
+                          min="0"
+                          placeholder="0.00"
+                          required=""
+                          step="any"
+                          type="number"
+                          value="10"
+                        />
+                      </div>
+                      <p
+                        class="offer-money-preview"
+                        id="offer-price-preview"
+                      >
+                        MXN 10.00
+                      </p>
+                      <p
+                        class="field-hint"
+                        id="offer-price-help"
+                      >
+                        El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
+                      </p>
+                    </div>
+                    <div
+                      class="form-field"
+                    >
+                      <span
+                        class="field-label"
+                        id="offer-status-label"
+                      >
+                        Estado de la oferta
+                      </span>
+                      <div>
+                        <div
+                          aria-labelledby="offer-status-label"
+                          class="radio-group"
+                          role="radiogroup"
+                        >
+            ...
+
+      62 |   </Routes></MemoryRouter>);
+      63 |   fireEvent.click(await screen.findByRole("button", { name: "Guardar Oferta" }));
+    > 64 |   await screen.findByText(`Clave rechazada: ${code}`);
+         |                ^
+      65 |   const oldKey = repository.updateOffer.mock.calls[0][3];
+      66 |   fireEvent.change(screen.getByLabelText("Etiqueta de presentación (opcional)"), { target: { value: "Cambios conservados" } });
+      67 |   const prepare = screen.getByRole("button", { name: "Iniciar nueva operación" });
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at findByText (src/closure-review.regression.test.tsx:64:16)
+
+FAIL src/features/categories/CategoryFormDialog.ux.test.tsx
+  ● a retry after an uncertain create preserves the sealed valid payload even when the editable name is blank
+
+    expect(element).toHaveTextContent()
+
+    Expected element to have text content:
+      Timeout
+    Received:
+      No sabemos si se creó la categoría. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente.Reintentar
+
+      68 |   fireEvent.click(screen.getByRole("button", { name: "Guardar categoría" }));
+      69 |   const retry = await screen.findByRole("button", { name: "Reintentar" });
+    > 70 |   expect(screen.getByRole("alert")).toHaveTextContent("Timeout");
+         |                                     ^
+      71 |   fireEvent.change(name, { target: { value: "" } });
+      72 |   fireEvent.click(retry);
+      73 |   await waitFor(() => expect(repository.createCategory).toHaveBeenCalledTimes(2));
+
+      at Object.toHaveTextContent (src/features/categories/CategoryFormDialog.ux.test.tsx:70:37)
+
+
+Test Suites: 2 failed, 47 passed, 49 total
+Tests:       3 failed, 585 passed, 588 total
+Snapshots:   0 total
+Time:        63.241 s
+Ran all test suites.

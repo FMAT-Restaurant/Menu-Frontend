@@ -1,0 +1,256 @@
+<testsuites id="" name="" tests="14" failures="1" skipped="0" errors="0" time="9.109762">
+<testsuite name="ux-ui-16.spec.ts" timestamp="2026-10-26T17:04:48.690Z" hostname="chromium" tests="14" failures="1" skipped="0" time="11.898" errors="0">
+<testcase name="UX16 / reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.939">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\pending-e8dfcfcef0da877284d2c2f992d59ecc8872823f.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\pending-e86d63313dc7c1a7ed6da05c79cb0c5daef8a821.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\resolved-82a6d8c68ea0585623313b1de1e1abd0f30e2f72.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\resolved-239aaca1f02fb4da1159b55d1af6968df7691097.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-043bf-ts-initial-response-arrives-chromium\attachments\comparison-c7aa090c7b072b88ca5f1981c42b03dc89f42848.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /categories reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.871">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\pending-15232296e59a17965615042b7b058c3eb4d75292.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\pending-17ef9bfca3ff81d29d7d1cc6d9bcd0e03d432570.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\resolved-a21582ccee5d33af24b1b8b9f52479f5d578969e.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\resolved-6b7cbfc21c13c7d9b368050cf01ebad6bf8705b1.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-8d247-ts-initial-response-arrives-chromium\attachments\comparison-cbe635609683f2a2fb928f4828c5eba8ff47904e.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /recipes reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.711">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\pending-2f4b3edb670f7ba4c732adae0c996feec786ff2c.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\pending-e04afed4eb235a8228f1927954251fcda5d423c7.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\resolved-030f235b7fa4f85a62258651e6f4c79d65f5b607.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\resolved-b055afce0db10625905e06dbfb934f3a8ff07b6c.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-fc4ac-ts-initial-response-arrives-chromium\attachments\comparison-6c5a3d6a3c3716227d5034d17ffa5326f1f604f1.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.771">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\pending-5c38f03bcdb93ccf2935b069b72403e945f8b974.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\pending-6dae91649de9fc035fbfa9adfbdd4f18a79931d6.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\resolved-72aaaeda7b4492f3c8e5d534a52eecbae68593c4.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\resolved-2bc85836ac59e7077838cbe1f666e4fa52c29be4.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-7e497-ts-initial-response-arrives-chromium\attachments\comparison-b74461d14d0c9f20a4749674c0250ac8b8b35cba.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers/new reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.787">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\pending-d96a671e52db3bd357d11a30d4e3840f541f1de3.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\pending-f96afba735382cf1983b902af273b72cbd3517d7.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\resolved-48087cd2ee419d6c73adefc86a7489aeb2b30e64.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\resolved-c51a6bdf684512ded748d3c121c3270b80f644be.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-14432-ts-initial-response-arrives-chromium\attachments\comparison-246bdfdf6b2cb1452b6cedfd03cfb45cdf27cc60.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/edit reserves local content at 390px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.794">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\pending-fb798011e0ba7fe5ae8a25fee58f47ab08eb7116.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\pending-0fd46583d31e9854d9a2e2bd513dfae27b278335.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\resolved-98c9e22366c2ad30dbbdd28744f81e8a0b449303.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\resolved-ecc6f7c5caffe1834273d8284e072cc627312170.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-710ed-ts-initial-response-arrives-chromium\attachments\comparison-31549b96b9b4e5e2e90308d68f0e2ee25a6fcd5c.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 / reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.769">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\pending-2c01f972f0cb459ee1586b4c3bff7c2c298fa42c.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\pending-21d1a007b9dca9cace8a5110eeb7a0062544bd25.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\resolved-7f64d9f7c65ee57634b68fc5a8431a4961496e31.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\resolved-8c5a61c7b0bd488895257cffcbfa8be9dbe6fb5d.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-reserves-loc-f3701-ts-initial-response-arrives-chromium\attachments\comparison-5d345cd0ea5599c509cf468fc02f4c189ed994d3.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /categories reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.679">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\pending-292ed89f324777471658f780f467fea1874e24b1.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\pending-ba550cd6c0f165f16b62cca22dcf2b85b31da7a1.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\resolved-5026141b21c5d03bcf7005e34b26f41f7e5adbd6.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\resolved-8e98af6f03f5d53c7a42bec94bb28a03a843ae31.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-categories-r-6d031-ts-initial-response-arrives-chromium\attachments\comparison-dbfd9797835b51fdf22cc82051564722f4e93cd9.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /recipes reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.695">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\pending-bae6e65cd3114e2d9d5bd11634b873f08db0d7c4.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\pending-5146539c8925284c2bce62bbcaa3321140d20360.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\resolved-cb4f9c9486b19b0cbcc9ce9c1a734d943c3b7a78.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\resolved-4510b7828eb1552abf0ac7527f20c12f57ca4604.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-recipes-rese-48135-ts-initial-response-arrives-chromium\attachments\comparison-99386598d1aa832008b46963b4db067d455f8146.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.816">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-ee624a5025095f4e169048b9701b3e70296d1b4d.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-0f0165c19596672a64b69614be1128e2954b83f2.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-913dbade2e924366b69bd7aa1de7807ca18f1ebc.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-8392637ed66ea12d44751e0514bcbc1b9c771f03.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(received).toBeLessThanOrEqual(expected)" type="expect.toBeLessThanOrEqual">
+<![CDATA[  [chromium] › ux-ui-16.spec.ts:42:3 › UX16 /entries/ux16-entry/offers reserves local content at 1024px until its initial response arrives 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 2
+    Received:    4
+
+      74 |       expect(Math.abs(resolved.content[0].y - pending.content[0].y)).toBeLessThanOrEqual(4);
+      75 |       expect(Math.abs(resolved.content[0].x - pending.content[0].x)).toBeLessThanOrEqual(1);
+    > 76 |       expect(Math.abs(resolved.content[0].width - pending.content[0].width)).toBeLessThanOrEqual(2);
+         |                                                                              ^
+      77 |       if (variant === "entries" || variant === "entry-form") {
+      78 |         expect(Math.abs(resolved.images[0].height - pending.images[0].height)).toBeLessThanOrEqual(1);
+      79 |         expect(Math.abs(resolved.images[0].width - pending.images[0].width)).toBeLessThanOrEqual(2);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-16.spec.ts:76:78
+
+    attachment #1: pending (application/json) ──────────────────────────────────────────────────────
+    ..\test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-ee624a5025095f4e169048b9701b3e70296d1b4d.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: pending (image/png) ─────────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\pending-0f0165c19596672a64b69614be1128e2954b83f2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: resolved (application/json) ─────────────────────────────────────────────────────
+    ..\test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-913dbade2e924366b69bd7aa1de7807ca18f1ebc.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: resolved (image/png) ────────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\attachments\resolved-8392637ed66ea12d44751e0514bcbc1b9c771f03.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-16-UX16-entries-ux16-26d8e-ts-initial-response-arrives-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/offers/new reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.869">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\pending-91ef69b8975835bacfa7ea401829232e5348d79a.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\pending-fd65f43ea077419cff725a95fc569f9d9cb5b1d5.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\resolved-fa91b458ee593d044ea6cc38d40044e520fa4332.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\resolved-2e89425a9b72151a010af14618c23408242ca370.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-622ee-ts-initial-response-arrives-chromium\attachments\comparison-f994b62365370694e5e2d549a392219b9167468a.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 /entries/ux16-entry/edit reserves local content at 1024px until its initial response arrives" classname="ux-ui-16.spec.ts" time="0.843">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\pending-4f04be9622b0b6934e63b462ad75141fa7ee9838.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\pending-47b2555fe4ca51e9a6453926ed7023fbd46b86d2.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\resolved-d5d32c79d206c78d2fef20157f0fd49467f4af48.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\resolved-b5141850b486cb8c65df3644638dda2a6f267849.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-entries-ux16-1434d-ts-initial-response-arrives-chromium\attachments\comparison-78c58fcd6054d185858ef746fd1a4e346a6b220a.json]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 a failed recipe refresh retains the confirmed cards and query context" classname="ux-ui-16.spec.ts" time="1.303">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-pending-27fbd3a886dfaa10d2617b93202c74b481ebabac.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-pending-d6b5aa2d3f1b0bc4f545bc2b309bc112c305ea31.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-failed-5b1788a1d6df747af04d005944ea2718c6195228.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-a-failed-rec-a97fe-med-cards-and-query-context-chromium\attachments\refresh-failed-908c77e6335c944aca928d6f2b302fd64aa69c38.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX16 late categories reserve only their open panel and keep entry edits and the chosen file" classname="ux-ui-16.spec.ts" time="1.051">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-closed-pending-e2d94c2a3e1d9c3880b4ec6de0a18301c731e0c8.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-closed-pending-94fa5e71b05107fb6170e974031784561a92782e.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-open-pending-7b34c0f2a0db08b95d74d830aeb0ed52516732f0.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-open-pending-6bb7931921c7e98705ab47742581036e7dcd13d7.png]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-resolved-a57bd12241ccf2e30458dcf9d0ffb6a65c3adac0.json]]
+
+[[ATTACHMENT|ux-ui-16-UX16-late-categor-3446e-y-edits-and-the-chosen-file-chromium\attachments\categories-resolved-caedeaa5610149f2450f7ac162fdee6dd761b5bf.png]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

@@ -1,0 +1,21 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts e2e/ux-ui-17-foundations.demo.spec.ts e2e/ux-ui-17-isolation.demo.spec.ts --workers=1
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:10664) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+(node:31148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 390px (20.2s)
+  ok 2 [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 1440px (4.0s)
+  ok 3 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at / (893ms)
+  ok 4 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /categories (875ms)
+  ok 5 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /recipes (946ms)
+  ok 6 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/edit (947ms)
+  ok 7 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers (821ms)
+  ok 8 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers/demo-offer-burger/edit (1.0s)
+
+  8 passed (33.1s)

@@ -1,8 +1,13 @@
 # Registro de ejecución UX/UI
 
+Estado final: UX00–UX17 implementados. Root cerró UX16/UX17 sobre c5d22ca:588 Jest,588 con cobertura,82demo y87HTTP contra Compose, tipos/lint/build aprobados. Sin reservas activas. Validaciones manuales M01–M07 pendientes por decisión del usuario; shell real excluido. Ver [closure.md](closure.md). Las actualizaciones y filas anteriores que indican pendientes son historial de ejecución y quedan sustituidas por este cierre.
+
+## Historial de ejecución
+
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
 Estado vigente: reanudado por el usuario con «Puedes continuar», desde1f415c4 y directorio limpio. UX13 integrado25c996b. UX14 y UX15 en ejecución con reservas separadas; UX16 sólo preparación de lectura. Las pausas y estados anteriores conservados debajo son históricos.
 Actualización vigente: UX14 integrado68e1ed0 y UX15 b5f70a0,74demo y67HTTP aprobados más tres casos de foco fortalecidos. UX16 asignado a `/root/ux16_execute`; las filas anteriores de preparación y las pausas conservadas son históricas.
+Actualización vigente tras UX16: implementación9165b86,20HTTP de cargas y retención aprobados; root asume UX17 sobre la base completa, incluida comprobación de aislamiento y adopción de tipografía. Las actualizaciones previas conservan el historial.
 Estado actual: UX12 integrado en6f40514.135 focalizadas,19 demo,7 HTTP nuevos y55 regresiones anteriores pasan, con tipos/build/lint. UX13 queda habilitado; UX13 a UX17 pendientes. Los checkpoints y las pausas siguientes son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
@@ -42,7 +47,7 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX13 | `/root/ux13_finish` y root, guardado y feedback local | UX11/UX12 integrados; implementación25c996b | Reserva liberada; consumidores, helpers, CAS y e2e/ux-ui-13 conservados | Integrado | U17/U18 | 7demo,62HTTP; revisión oleada9; checkpoint y parada solicitados |
 | UX14 | `/root/ux14_execute`, microcopia | Implementación68e1ed0 | Reserva liberada; consumidores y pruebas conservados | Integrado | U20 | Revisión oleada10; incertidumbre corregida tras inspección visual |
 | UX15 | `/root/ux15_execute`, contexto de rutas | Implementaciónb5f70a0 | Reserva liberada; App/RouteContext/OfferCard y pruebas conservados | Integrado | U24 | Revisión oleada10; transiciones reales y foco útil, shell excluido y lector pendiente |
-| UX16 | `/root/ux16_execute`, cargas locales | b5f70a0; UX14/UX15 integrados | App fallback, nuevo LoadingState, estados/estilos/tests de páginas y formularios según preparación; e2e/ux-ui-16* y evidence/UX16 | En ejecución | U25 | Sin RouteContext/tarjetas/máquina/API/recibos; root conserva salidas compartidas |
+| UX16 | `/root/ux16_execute`, cargas locales | Implementación9165b86 | Reserva liberada; consumidores y pruebas conservados | Integrado | U25 | Revisión oleada11;20HTTP, geometría real y retención comprobadas |
 | UX17 | Root verifica; `/root/ux17_isolation_review` prepara lectura CSS | UX01 a UX16 y decisiones | Sólo evidence/reviews/isolation-preparation.md para revisor | Pendiente de base final | U01 a U28, V01 a V18 | Revisión de aislamiento sin ejecutar navegador ni tocar hojas activas |
 
 ## Recursos
@@ -86,3 +91,11 @@ Oleada4 integrada: [revisión conjunta](evidence/reviews/oleada-04.md), [revisi�
 - La primera ejecución Compose heredó puerto 5173 del entorno, mientras las 46 pruebas normales usaron preview en 4173. Ese resultado demuestra preview de producción, no el contenedor. Root repitió la suite con FRONTEND_PORT=4173 y la imagen inicial sin reconstruir sobre ediciones parciales. Logs separados `compose-4173-*`. Se investigan diferencias contractuales y recuperación como condiciones de línea base, sin atribuirlas a UX01/UX02.
 - Repetición Compose4173 finalizada: 37 pruebas pasan y 9 fallan en 41,6 s; JUnit y logs conservados. Contenedor y red propios detenidos/eliminados. No se modificaron tests para ocultar estos fallos. La preparación UX00 admite fallos previos documentados y sigue habilitando trabajo independiente cuando el alcance quede confirmado.
 - Contraste controlado sobre la misma imagen inicial, puerto 4173 y API_BASE_URL vacío únicamente en el proceso de prueba: 46 pruebas aprobadas. La configuración anterior usaba API absoluta de otro origen, comprobado sin registrar su valor. La diferencia explica ETag no expuesto por los mocks cross-origin; no se cambia el contrato productivo ni las pruebas para ocultarla. Logs `compose-same-origin-*`; proyecto propio detenido al terminar.
+
+
+## Entrega final de reservas
+
+| Ticket | Responsable | Referencia | Estado | Evidencia |
+| --- | --- | --- | --- | --- |
+| UX16 | Ejecutor y root tras límite de uso | 9165b86 y f3909e9 | Integrado; reserva liberada |20HTTP finales y suites completas; evidence/UX17/entrega.md |
+| UX17 | Root | f3909e9 y c5d22ca | Terminado; sin reservas activas | closure.md;588unitarias,82demo,87Compose y controles de calidad |

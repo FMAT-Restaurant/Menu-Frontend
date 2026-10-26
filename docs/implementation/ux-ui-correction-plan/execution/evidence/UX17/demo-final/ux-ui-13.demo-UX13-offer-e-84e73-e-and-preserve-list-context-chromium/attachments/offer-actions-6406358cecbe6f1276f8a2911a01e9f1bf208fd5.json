@@ -1,0 +1,82 @@
+{
+  "diagnostics": {
+    "scrollY": 1274,
+    "viewport": 568,
+    "footerPosition": "sticky",
+    "footerBottom": "0px",
+    "formTop": -1085,
+    "formBottom": 496,
+    "ancestors": [
+      {
+        "tag": "FORM",
+        "classes": "offer-form",
+        "overflow": "visible",
+        "height": 1581,
+        "scrollHeight": 1581,
+        "top": -1085
+      },
+      {
+        "tag": "MAIN",
+        "classes": "menu-page offer-form-page",
+        "overflow": "visible",
+        "height": 1842,
+        "scrollHeight": 1842,
+        "top": -1274
+      },
+      {
+        "tag": "DIV",
+        "classes": "app-shell offer-form-view",
+        "overflow": "visible",
+        "height": 1842,
+        "scrollHeight": 1842,
+        "top": -1274
+      },
+      {
+        "tag": "DIV",
+        "classes": "menu-module",
+        "overflow": "visible",
+        "height": 1842,
+        "scrollHeight": 1842,
+        "top": -1274
+      },
+      {
+        "tag": "DIV",
+        "classes": "",
+        "overflow": "visible",
+        "height": 1842,
+        "scrollHeight": 1842,
+        "top": -1274
+      },
+      {
+        "tag": "BODY",
+        "classes": "",
+        "overflow": "visible",
+        "height": 1842,
+        "scrollHeight": 1842,
+        "top": -1274
+      },
+      {
+        "tag": "HTML",
+        "classes": "",
+        "overflow": "visible",
+        "height": 568,
+        "scrollHeight": 1842,
+        "top": -1274
+      }
+    ]
+  },
+  "persistent": "true",
+  "formHeight": "1581",
+  "available": "379",
+  "footer": {
+    "top": 423,
+    "bottom": 496,
+    "height": 73
+  },
+  "active": {
+    "top": 290,
+    "bottom": 370
+  },
+  "submitCount": 1,
+  "overflow": false
+}

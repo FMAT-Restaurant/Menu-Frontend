@@ -1,0 +1,82 @@
+{
+  "width": 390,
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "overflow": false,
+  "heading": [
+    {
+      "x": 16,
+      "y": 65,
+      "width": 358,
+      "height": 36
+    }
+  ],
+  "filters": [],
+  "reservation": [
+    {
+      "x": 59,
+      "y": 756,
+      "width": 272,
+      "height": 112
+    }
+  ],
+  "images": [
+    {
+      "x": 46,
+      "y": 977,
+      "width": 298,
+      "height": 176
+    }
+  ],
+  "content": [
+    {
+      "x": 17,
+      "y": 179,
+      "width": 356,
+      "height": 1139
+    },
+    {
+      "x": 59,
+      "y": 756,
+      "width": 272,
+      "height": 48
+    },
+    {
+      "x": 59,
+      "y": 820,
+      "width": 272,
+      "height": 48
+    }
+  ],
+  "imageZones": [
+    {
+      "x": 33,
+      "y": 964,
+      "width": 324,
+      "height": 262
+    }
+  ],
+  "actions": [
+    {
+      "x": 17,
+      "y": 771,
+      "width": 356,
+      "height": 73
+    }
+  ],
+  "animation": [
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none"
+  ],
+  "focus": "INPUT"
+}

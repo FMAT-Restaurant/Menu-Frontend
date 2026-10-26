@@ -1,0 +1,33 @@
+npm notice run menu-frontend@0.1.0 build
+npm notice run tsc --noEmit && vite build
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 138 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                    0.51 kB │ gzip:   0.32 kB
+dist/assets/CategoryPage-BWY0D81t.css              4.95 kB │ gzip:   1.03 kB
+dist/assets/CatalogPage-DSw0I63j.css               6.41 kB │ gzip:   1.36 kB
+dist/assets/RecipeFormDialog-BhQ5Pi0q.css          9.15 kB │ gzip:   1.68 kB
+dist/assets/EntryFormPage-B8X1n6R6.css            12.09 kB │ gzip:   2.10 kB
+dist/assets/index-BVhpXYII.css                    20.73 kB │ gzip:   3.90 kB
+dist/assets/styles-D9Dk16N-.css                   23.36 kB │ gzip:   3.63 kB
+dist/assets/styles-CtfcJpQK.js                     0.18 kB │ gzip:   0.15 kB
+dist/assets/useRetryEligibility-D5M6UTQW.js        0.31 kB │ gzip:   0.23 kB
+dist/assets/SearchField-CAOSt4QD.js                0.77 kB │ gzip:   0.43 kB
+dist/assets/Icon-BW98TJ5q.js                       0.79 kB │ gzip:   0.45 kB
+dist/assets/entryCategories-BkGYtunr.js            1.01 kB │ gzip:   0.54 kB
+dist/assets/localSaveReceipt-CJ7D6vUZ.js           1.03 kB │ gzip:   0.56 kB
+dist/assets/catalogCache-DLVmrIQg.js               1.07 kB │ gzip:   0.51 kB
+dist/assets/imageValidation-AC9vXo2W.js            2.31 kB │ gzip:   1.13 kB
+dist/assets/pendingOperationStorage-CZmfw79-.js    9.29 kB │ gzip:   2.75 kB
+dist/assets/RecipePage-D1mJbiHK.js                 9.50 kB │ gzip:   3.47 kB
+dist/assets/CategoryPage-BA7WxoBl.js              16.00 kB │ gzip:   5.07 kB
+dist/assets/OffersPage-CJGeuaE4.js                17.73 kB │ gzip:   5.91 kB
+dist/assets/CatalogPage-3tYtxlyj.js               18.01 kB │ gzip:   5.68 kB
+dist/assets/RecipeFormDialog-D9oaSHKa.js          28.03 kB │ gzip:   7.73 kB
+dist/assets/EntryFormPage-KB_G044K.js             32.72 kB │ gzip:  10.19 kB
+dist/assets/OfferFormPage-CsYeI3u4.js             59.40 kB │ gzip:  16.50 kB
+dist/assets/index-DvMg0VpN.js                    418.75 kB │ gzip: 132.61 kB
+
+✓ built in 1.07s

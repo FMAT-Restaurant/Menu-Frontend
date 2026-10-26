@@ -1,0 +1,295 @@
+FAIL src/shared/LoadingState.test.tsx (13.717 s)
+  ● inventory updates preserve selected supplies, quantities and recipe edits when a new query fails
+
+    Unable to find role="option" and name "Arroz (g)"
+
+    Ignored nodes: comments, script, style
+    <body
+      style="position: fixed; top: 0px; left: 0px; right: 0px; width: 100%; overflow: hidden;"
+    >
+      <div>
+        <dialog
+          aria-labelledby="recipe-form-title"
+          class="recipe-form-dialog menu-task-dialog"
+          open=""
+        >
+          <section
+            aria-labelledby="recipe-form-title"
+            class="recipe-form-dialog recipe-form-content"
+          >
+            <div
+              class="recipe-form-dialog__header"
+            >
+              <h2
+                id="recipe-form-title"
+              >
+                Nueva receta
+              </h2>
+              <button
+                aria-label="Cerrar formulario"
+                class="recipe-form-dialog__close"
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="menu-icon"
+                  fill="none"
+                  focusable="false"
+                  height="20"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.75"
+                  viewBox="0 0 24 24"
+                  width="20"
+                >
+                  <path
+                    d="m6 6 12 12M18 6 6 18"
+                  />
+                </svg>
+              </button>
+            </div>
+            <form
+              novalidate=""
+            >
+              <div
+                class="recipe-form-dialog__fields"
+              >
+                <div
+                  class="recipe-form-dialog__field"
+                >
+                  <label
+                    for="recipe-name"
+                  >
+                    Nombre
+                  </label>
+                  <input
+                    aria-invalid="false"
+                    id="recipe-name"
+                    maxlength="255"
+                    placeholder="Ej. Hamburguesa Hawaiana"
+                    required=""
+                    value=""
+                  />
+                </div>
+                <div
+                  class="recipe-form-dialog__field"
+                >
+                  <label
+                    for="recipe-description"
+                  >
+                    Descripción
+                  </label>
+                  <textarea
+                    aria-invalid="false"
+                    id="recipe-description"
+                    placeholder="Descripción breve de la receta"
+                    required=""
+                    rows="2"
+                  />
+                </div>
+                <div
+                  class="recipe-form-dialog__field"
+                >
+                  <label
+                    for="recipe-instructions"
+                  >
+                    Instrucciones
+                  </label>
+                  <textarea
+                    aria-invalid="false"
+                    id="recipe-instructions"
+                    placeholder="Pasos de preparación"
+                    required=""
+                    rows="3"
+                  />
+                </div>
+                <fieldset
+                  aria-busy="false"
+                  class="recipe-supplies-section"
+                >
+                  <legend>
+                    Insumos del inventario
+                  </legend>
+                  <div
+                    class="recipe-supplies-section__header"
+                  >
+                    <button
+                      aria-label="+ Agregar insumo"
+                      class="button button--secondary button--small"
+                      id="recipe-add-supply"
+                      type="button"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        class="menu-icon"
+                        fill="none"
+                        focusable="false"
+                        height="20"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.75"
+                        viewBox="0 0 24 24"
+                        width="20"
+                      >
+                        <path
+                          d="M12 5v14M5 12h14"
+                        />
+                      </svg>
+                       Agregar insumo
+                    </button>
+                  </div>
+                  <div
+                    class="recipe-inventory-controls"
+                    style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;"
+                  >
+                    <input
+                      aria-label="Buscar insumos de inventario"
+                      placeholder="Filtrar insumos de inventario…"
+                      type="search"
+                      value=""
+                    />
+                    <button
+                      class="button button--secondary button--small"
+                      type="button"
+                    >
+                      Buscar insumos
+                    </button>
+                  </div>
+                  <table
+                    class="recipe-supplies-table"
+                  >
+                    <thead>
+                      <tr>
+                        <th
+                          scope="col"
+                        >
+                          Insumo seleccionado
+                        </th>
+                        <th
+                          scope="col"
+                        >
+                          Cantidad
+                        </th>
+                        <th
+                          scope="col"
+                        >
+                          U. Medida
+                        </th>
+                        <th
+                          scope="col"
+                        >
+                          Acción
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td
+                          data-label="Insumo seleccionado"
+                        >
+                          <select
+                            aria-invalid="false"
+                            aria-label="Insumo 1"
+                            id="supply-row-1-item"
+                            required=""
+                          >
+                            <option
+                              value=""
+                            >
+                              Seleccione insumo…
+                            </option>
+                            <option
+                              value="rice"
+                            >
+                              Arroz
+                            </option>
+                          </select>
+                        </td>
+                        <td
+                          data-label="Cantidad"
+                        >
+                          <input
+                            aria-invalid="false"
+                            aria-label="Cantidad del insumo 1"
+                            id="supply-row-1-quantity"
+                            min="0"
+                            required=""
+                            step="any"
+                            type="number"
+                            value="1"
+                          />
+                        </td>
+                        <td
+                          class="recipe-supplies-table__unit"
+                          data-label="U. Medida"
+                        >
+                          --
+                        </td>
+                        <td
+                          data-label="Acción"
+                        >
+                          <button
+                            aria-label="Eliminar insumo 1"
+                            class="button button--quiet"
+                            disabled=""
+                            type="button"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              class="menu-icon"
+                              fill="none"
+                              focusable="false"
+                              height="20"
+                              stroke="currentColor"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="1.75"
+                              viewBox="0 0 24 24"
+                              width="20"
+                            >
+                              <path
+                                d="m6 6 12 12M18 6 6 18"
+                              />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </fieldset>
+              </div>
+              <div
+                class="recipe-form-dialog__actions"
+              >
+                <button
+                  class="button button--secondary"
+                  type="button"
+                >
+                  Cancelar
+                </button>
+                <button
+                  class="button button--primary"
+                  type="submit"
+                >
+                  Guardar receta
+                </button>
+              </div>
+            </form>
+          </section>
+        </dialog>
+      </div>
+    </body>
+
+
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/shared/LoadingState.test.tsx:225:23)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 9 passed, 10 total
+Snapshots:   0 total
+Time:        26.863 s
+Ran all test suites within paths "src/shared/LoadingState.test.tsx".

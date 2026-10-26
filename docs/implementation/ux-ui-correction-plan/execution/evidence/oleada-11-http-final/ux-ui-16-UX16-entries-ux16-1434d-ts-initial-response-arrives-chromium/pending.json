@@ -1,0 +1,75 @@
+{
+  "width": 1024,
+  "viewport": {
+    "width": 1024,
+    "height": 844
+  },
+  "overflow": false,
+  "heading": [
+    {
+      "x": 24,
+      "y": 84,
+      "width": 976,
+      "height": 36
+    }
+  ],
+  "filters": [],
+  "reservation": [
+    {
+      "x": 25,
+      "y": 198,
+      "width": 974,
+      "height": 516
+    }
+  ],
+  "images": [
+    {
+      "x": 612.15625,
+      "y": 281,
+      "width": 349.828125,
+      "height": 176
+    }
+  ],
+  "content": [
+    {
+      "x": 25,
+      "y": 198,
+      "width": 974,
+      "height": 516
+    }
+  ],
+  "imageZones": [
+    {
+      "x": 599.15625,
+      "y": 268,
+      "width": 375.828125,
+      "height": 262
+    }
+  ],
+  "actions": [
+    {
+      "x": 25,
+      "y": 714,
+      "width": 974,
+      "height": 73
+    }
+  ],
+  "animation": [
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none",
+    "none"
+  ],
+  "focus": "H1"
+}

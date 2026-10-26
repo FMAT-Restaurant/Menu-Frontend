@@ -1,0 +1,58 @@
+FAIL src/shared/LoadingState.test.tsx
+  ● the recipe selector retains confirmed results, prevents stale assignment, and ignores an older request even if it ignores abort
+
+    TypeError: Cannot read properties of undefined (reading 'then')
+
+      42 |   }, [active, focusCreate]);
+      43 |   const olderResults = Boolean(displayedContext && (displayedContext.query !== state.query || displayedContext.page !== state.page));
+    > 44 |   const resultsBusy = loading || olderResults;
+         |                          ^
+      45 |   return <section className="recipe-selector" hidden={!active} aria-labelledby="recipe-selector-title" aria-busy={loading}>
+      46 |     <header className="recipe-selector__header">
+      47 |       <button type="button" className="button button--quiet" onClick={onBack}>Volver a la opción</button>
+
+      at src/features/recipes/RecipeSelector.tsx:44:26
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:28656:20)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:1048:13)
+      at commitHookEffectListMount (node_modules/react-dom/cjs/react-dom-client.development.js:13748:29)
+      at commitHookPassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:13835:11)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16906:13)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:16851:13)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16898:11)
+      at recursivelyTraversePassiveMountEffects (node_modules/react-dom/cjs/react-dom-client.development.js:16851:13)
+      at commitPassiveMountOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16941:11)
+      at flushPassiveEffects (node_modules/react-dom/cjs/react-dom-client.development.js:20134:9)
+      at flushPendingEffects (node_modules/react-dom/cjs/react-dom-client.development.js:20060:14)
+      at flushSpawnedWork (node_modules/react-dom/cjs/react-dom-client.development.js:20016:44)
+      at commitRoot (node_modules/react-dom/cjs/react-dom-client.development.js:19605:58)
+      at completeRoot (node_modules/react-dom/cjs/react-dom-client.development.js:19509:9)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:18182:15)
+      at performSyncWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:20680:7)
+      at flushSyncWorkAcrossRoots_impl (node_modules/react-dom/cjs/react-dom-client.development.js:20522:21)
+      at flushSyncWork$1 (node_modules/react-dom/cjs/react-dom-client.development.js:18439:12)
+      at batchedUpdates$1 (node_modules/react-dom/cjs/react-dom-client.development.js:3445:14)
+      at dispatchEventForPluginEventSystem (node_modules/react-dom/cjs/react-dom-client.development.js:21008:7)
+      at dispatchEvent (node_modules/react-dom/cjs/react-dom-client.development.js:26142:11)
+      at dispatchDiscreteEvent (node_modules/react-dom/cjs/react-dom-client.development.js:26110:11)
+      at HTMLDivElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
+      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+      at HTMLInputElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+      at HTMLInputElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
+      at HTMLInputElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+      at node_modules/@testing-library/dom/dist/events.js:19:20
+      at node_modules/@testing-library/react/dist/pure.js:113:18
+      at node_modules/@testing-library/react/dist/act-compat.js:47:24
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:890:22)
+      at node_modules/@testing-library/react/dist/act-compat.js:46:25
+      at Object.eventWrapper (node_modules/@testing-library/react/dist/pure.js:112:30)
+      at fireEvent (node_modules/@testing-library/dom/dist/events.js:12:35)
+      at fireEvent.<computed> [as change] (node_modules/@testing-library/dom/dist/events.js:110:36)
+      at fireEvent.<computed> [as change] (node_modules/@testing-library/react/dist/fire-event.js:15:52)
+      at Object.<anonymous> (src/shared/LoadingState.test.tsx:138:20)
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       1 failed, 52 passed, 53 total
+Snapshots:   0 total
+Time:        17 s
+Ran all test suites within paths "src/shared/LoadingState.test.tsx", "src/features/categories/CategoryPage.test.tsx", "src/features/recipes/RecipePage.test.tsx", "src/features/recipes/RecipeSelectionTask.test.tsx".

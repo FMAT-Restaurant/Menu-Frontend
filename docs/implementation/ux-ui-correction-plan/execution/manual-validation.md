@@ -19,6 +19,7 @@ La ejecución se hará sobre la referencia final indicada en `closure.md`. Antes
 | M04 | Entrar al catálogo, categorías, recetas, edición y ruta inexistente. Se identifica una vez la tarea y el foco llega a su destino. Regresar recupera el origen si existe; si se eliminó, usa un destino útil. Buscar y paginar no reinician sin necesidad el recorrido. | V14/V18, U24 | Pendiente |
 | M05 | Abrir confirmación de eliminación y formulario. Se anuncia título y contexto; Cancelar es el foco inicial seguro de confirmación. Tab y Shift+Tab permanecen dentro. Escape y cierre retornan al disparador. En un caso HTTP pendiente, las acciones siguen bloqueadas y no hay doble escritura. | V09/V10/V16, U15/U26/U27 | Pendiente |
 | M06 | Enviar categoría y receta inválidas. Se anuncian los errores asociados al campo y el foco permite corregirlos sin perder datos. Probar éxito confirmado, fallo e incertidumbre en su entorno correspondiente: sólo el éxito confirmado se anuncia como guardado. | V07/V08/V11/V15, U04/U13/U14/U18/U25 | Pendiente |
+| M07 | Con fixtures de demora, abrir un listado y un formulario y retrasar sólo categorías o inventario. Se comunica la carga local y las formas decorativas no se leen como contenido. Actualizar una búsqueda conserva los resultados anteriores con su contexto; al fallar, siguen disponibles con la recuperación correspondiente. Confirmar que resolver la carga no repite el anuncio de guardado ni mueve el foco que se está usando. | V08/V14/V15/V18, U18/U24/U25 | Pendiente |
 
 ## Registro de resultado
 

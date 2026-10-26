@@ -1,0 +1,379 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts e2e/ux-ui-17-foundations.demo.spec.ts e2e/ux-ui-17-isolation.demo.spec.ts --workers=1
+[WebServer] npm notice run menu-frontend@0.1.0 dev:mock
+[WebServer] npm notice run vite --mode demo --host 127.0.0.1 --port 5174 --strictPort
+[WebServer] (node:31000) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+(node:22940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 390px (15.3s)
+(node:23464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 1440px (3.6s)
+(node:23496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  3 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at / (1.1s)
+(node:9760) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  4 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /categories (1.1s)
+(node:29804) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  5 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /recipes (1.1s)
+(node:24556) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  6 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/edit (990ms)
+(node:24940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  7 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers (1.1s)
+(node:21040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  8 [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers/demo-offer-burger/edit (1.1s)
+
+
+  1) [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 390px 
+
+    Error: /categories
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+    -   "line": "26px",
+    -   "size": "18px",
+    +   "line": "24px",
+    +   "size": "16px",
+        "weight": "600",
+      }
+
+      36 |     for (const result of results) {
+      37 |       expect(result.heading, result.path).toEqual({ size: "28px", line: "36px", weight: "700" });
+    > 38 |       expect(result.title, result.path).toEqual({ size: "18px", line: "26px", weight: "600" });
+         |                                         ^
+      39 |       expect(result.radius, result.path).toBe(result.expectedRadius);
+      40 |       for (const value of result.padding) expect(Number.parseFloat(value) % 4, `${result.path}: padding ${value}`).toBe(0);
+      41 |     }
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-foundations.demo.spec.ts:38:41
+
+    attachment #1: foundations (application/json) ──────────────────────────────────────────────────
+    test-results\ux-ui-17-foundations.demo--464d6-cing-follow-DESIGN-at-390px-chromium\attachments\foundations-6271d8f5540e91f7ccc02304b4d66c4d3cc8b668.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-foundations.demo--464d6-cing-follow-DESIGN-at-390px-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-foundations.demo--464d6-cing-follow-DESIGN-at-390px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-foundations.demo--464d6-cing-follow-DESIGN-at-390px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 1440px 
+
+    Error: /categories
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+    -   "line": "26px",
+    -   "size": "18px",
+    +   "line": "24px",
+    +   "size": "16px",
+        "weight": "600",
+      }
+
+      36 |     for (const result of results) {
+      37 |       expect(result.heading, result.path).toEqual({ size: "28px", line: "36px", weight: "700" });
+    > 38 |       expect(result.title, result.path).toEqual({ size: "18px", line: "26px", weight: "600" });
+         |                                         ^
+      39 |       expect(result.radius, result.path).toBe(result.expectedRadius);
+      40 |       for (const value of result.padding) expect(Number.parseFloat(value) % 4, `${result.path}: padding ${value}`).toBe(0);
+      41 |     }
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-foundations.demo.spec.ts:38:41
+
+    attachment #1: foundations (application/json) ──────────────────────────────────────────────────
+    test-results\ux-ui-17-foundations.demo--e09a3-ing-follow-DESIGN-at-1440px-chromium\attachments\foundations-52cd976e4b674cbc0479f1941e90e1fc7086ac52.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-foundations.demo--e09a3-ing-follow-DESIGN-at-1440px-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-foundations.demo--e09a3-ing-follow-DESIGN-at-1440px-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-foundations.demo--e09a3-ing-follow-DESIGN-at-1440px-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at / 
+
+    Error: /: filters
+
+    expect(received).toMatchObject(expected)
+
+    - Expected  - 4
+    + Received  + 4
+
+      Object {
+    -   "border": "0px",
+    -   "display": "block",
+    -   "gap": "0px",
+    -   "padding": "3px",
+    +   "border": "1px",
+    +   "display": "grid",
+    +   "gap": "12px",
+    +   "padding": "16px",
+        "position": "static",
+      }
+
+      53 |     expect(result.internalControlHeight, result.path).toBeGreaterThanOrEqual(40);
+      54 |     for (const control of result.external) {
+    > 55 |       expect(control, `${result.path}: ${control.className}`).toMatchObject({ display: "block", position: "static", padding: "3px", border: "0px", gap: "0px" });
+         |                                                               ^
+      56 |     }
+      57 |   expect(api).toEqual([]);
+      58 |   expect(errors).toEqual([]);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-isolation.demo.spec.ts:55:63
+
+    attachment #1: external-controls (application/json) ────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-fd71c-s-keep-their-own-styles-at--chromium\attachments\external-controls-d2de558cac070556463e420a6c71d5b450786e00.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-isolation.demo-UX-fd71c-s-keep-their-own-styles-at--chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-fd71c-s-keep-their-own-styles-at--chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-isolation.demo-UX-fd71c-s-keep-their-own-styles-at--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /categories 
+
+    Error: /categories: category-row
+
+    expect(received).toMatchObject(expected)
+
+    - Expected  - 4
+    + Received  + 4
+
+      Object {
+    -   "border": "0px",
+    -   "display": "block",
+    -   "gap": "0px",
+    -   "padding": "3px",
+    +   "border": "1px",
+    +   "display": "flex",
+    +   "gap": "20px",
+    +   "padding": "18px 20px",
+        "position": "static",
+      }
+
+      53 |     expect(result.internalControlHeight, result.path).toBeGreaterThanOrEqual(40);
+      54 |     for (const control of result.external) {
+    > 55 |       expect(control, `${result.path}: ${control.className}`).toMatchObject({ display: "block", position: "static", padding: "3px", border: "0px", gap: "0px" });
+         |                                                               ^
+      56 |     }
+      57 |   expect(api).toEqual([]);
+      58 |   expect(errors).toEqual([]);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-isolation.demo.spec.ts:55:63
+
+    attachment #1: external-controls (application/json) ────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-f65aa-ir-own-styles-at-categories-chromium\attachments\external-controls-9d3816dce132853d8ee4e6bdb7adaeea58ca17a1.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-isolation.demo-UX-f65aa-ir-own-styles-at-categories-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-f65aa-ir-own-styles-at-categories-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-isolation.demo-UX-f65aa-ir-own-styles-at-categories-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /recipes 
+
+    Error: /recipes: recipe-card
+
+    expect(received).toMatchObject(expected)
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+    -   "border": "0px",
+    +   "border": "1px",
+        "display": "block",
+        "gap": "0px",
+    -   "padding": "3px",
+    +   "padding": "20px",
+        "position": "static",
+      }
+
+      53 |     expect(result.internalControlHeight, result.path).toBeGreaterThanOrEqual(40);
+      54 |     for (const control of result.external) {
+    > 55 |       expect(control, `${result.path}: ${control.className}`).toMatchObject({ display: "block", position: "static", padding: "3px", border: "0px", gap: "0px" });
+         |                                                               ^
+      56 |     }
+      57 |   expect(api).toEqual([]);
+      58 |   expect(errors).toEqual([]);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-isolation.demo.spec.ts:55:63
+
+    attachment #1: external-controls (application/json) ────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-9252c-their-own-styles-at-recipes-chromium\attachments\external-controls-2da49e40da3b07e02dfb92f8e8db1bf1b3419bed.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-isolation.demo-UX-9252c-their-own-styles-at-recipes-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-9252c-their-own-styles-at-recipes-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-isolation.demo-UX-9252c-their-own-styles-at-recipes-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/edit 
+
+    Error: /entries/demo-entry-burger/edit: entry-form
+
+    expect(received).toMatchObject(expected)
+
+    - Expected  - 1
+    + Received  + 1
+
+      Object {
+    -   "border": "0px",
+    +   "border": "1px",
+        "display": "block",
+        "gap": "0px",
+        "padding": "3px",
+        "position": "static",
+      }
+
+      53 |     expect(result.internalControlHeight, result.path).toBeGreaterThanOrEqual(40);
+      54 |     for (const control of result.external) {
+    > 55 |       expect(control, `${result.path}: ${control.className}`).toMatchObject({ display: "block", position: "static", padding: "3px", border: "0px", gap: "0px" });
+         |                                                               ^
+      56 |     }
+      57 |   expect(api).toEqual([]);
+      58 |   expect(errors).toEqual([]);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-isolation.demo.spec.ts:55:63
+
+    attachment #1: external-controls (application/json) ────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-4de3c-ries-demo-entry-burger-edit-chromium\attachments\external-controls-67e4ab56e4cc515ab02a7cf9343c10b97fafe0be.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-isolation.demo-UX-4de3c-ries-demo-entry-burger-edit-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-4de3c-ries-demo-entry-burger-edit-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-isolation.demo-UX-4de3c-ries-demo-entry-burger-edit-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers 
+
+    Error: /entries/demo-entry-burger/offers: modal-header
+
+    expect(received).toMatchObject(expected)
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+        "border": "0px",
+    -   "display": "block",
+    +   "display": "flex",
+        "gap": "0px",
+    -   "padding": "3px",
+    +   "padding": "16px 20px",
+        "position": "static",
+      }
+
+      53 |     expect(result.internalControlHeight, result.path).toBeGreaterThanOrEqual(40);
+      54 |     for (const control of result.external) {
+    > 55 |       expect(control, `${result.path}: ${control.className}`).toMatchObject({ display: "block", position: "static", padding: "3px", border: "0px", gap: "0px" });
+         |                                                               ^
+      56 |     }
+      57 |   expect(api).toEqual([]);
+      58 |   expect(errors).toEqual([]);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-isolation.demo.spec.ts:55:63
+
+    attachment #1: external-controls (application/json) ────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-c8b9a-es-demo-entry-burger-offers-chromium\attachments\external-controls-8c8074b8c61300ebd30505a5ea46f2a06eb3d7f8.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-isolation.demo-UX-c8b9a-es-demo-entry-burger-offers-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-c8b9a-es-demo-entry-burger-offers-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-isolation.demo-UX-c8b9a-es-demo-entry-burger-offers-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers/demo-offer-burger/edit 
+
+    Error: /entries/demo-entry-burger/offers/demo-offer-burger/edit: modal-header
+
+    expect(received).toMatchObject(expected)
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+        "border": "0px",
+    -   "display": "block",
+    +   "display": "flex",
+        "gap": "0px",
+    -   "padding": "3px",
+    +   "padding": "16px 20px",
+        "position": "static",
+      }
+
+      53 |     expect(result.internalControlHeight, result.path).toBeGreaterThanOrEqual(40);
+      54 |     for (const control of result.external) {
+    > 55 |       expect(control, `${result.path}: ${control.className}`).toMatchObject({ display: "block", position: "static", padding: "3px", border: "0px", gap: "0px" });
+         |                                                               ^
+      56 |     }
+      57 |   expect(api).toEqual([]);
+      58 |   expect(errors).toEqual([]);
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-17-isolation.demo.spec.ts:55:63
+
+    attachment #1: external-controls (application/json) ────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-afff5-fers-demo-offer-burger-edit-chromium\attachments\external-controls-6e3eb0cf4be50782f37ef7bdb31c4050ac269859.json
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-17-isolation.demo-UX-afff5-fers-demo-offer-burger-edit-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ux-ui-17-isolation.demo-UX-afff5-fers-demo-offer-burger-edit-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ux-ui-17-isolation.demo-UX-afff5-fers-demo-offer-burger-edit-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8 failed
+    [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 390px 
+    [chromium] › e2e\ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 1440px 
+    [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at / 
+    [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /categories 
+    [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /recipes 
+    [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/edit 
+    [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers 
+    [chromium] › e2e\ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers/demo-offer-burger/edit 

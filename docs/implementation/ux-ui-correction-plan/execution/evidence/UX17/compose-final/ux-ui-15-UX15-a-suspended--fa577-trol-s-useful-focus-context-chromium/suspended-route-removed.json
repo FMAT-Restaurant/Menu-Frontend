@@ -1,0 +1,27 @@
+{
+  "url": "http://127.0.0.1:4173/entries/new",
+  "title": "Nueva entrada | FMAT Restaurant",
+  "focus": {
+    "tag": "H1",
+    "text": "Nueva entrada",
+    "id": "",
+    "returnKey": null,
+    "heading": true,
+    "box": {
+      "top": 76,
+      "bottom": 112,
+      "left": 120,
+      "right": 1160
+    }
+  },
+  "headings": [
+    "Nueva entrada"
+  ],
+  "statuses": [],
+  "dialogs": 0,
+  "extraLiveAnnouncements": 0,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  }
+}

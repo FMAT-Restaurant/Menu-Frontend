@@ -1,0 +1,86 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test --config playwright.demo.config.ts --list
+Listing tests:
+  [chromium] › demo-mode.e2e.ts:28:1 › categories and recipes can be created and edited through their real dialogs without a backend
+  [chromium] › demo-mode.e2e.ts:66:1 › entry uploads, editing, offer composition and state changes work without API calls
+  [chromium] › ux-ui-01.demo.spec.ts:64:3 › U01: Individual and Combo con bebida remain below their image at 390px
+  [chromium] › ux-ui-01.demo.spec.ts:80:5 › U01: square upload cannot cover long presentation or price at 390px
+  [chromium] › ux-ui-01.demo.spec.ts:80:5 › U01: portrait upload cannot cover long presentation or price at 390px
+  [chromium] › ux-ui-01.demo.spec.ts:80:5 › U01: landscape upload cannot cover long presentation or price at 390px
+  [chromium] › ux-ui-01.demo.spec.ts:111:3 › U01: failed image preserves fallback and text separation at 390px
+  [chromium] › ux-ui-01.demo.spec.ts:64:3 › U01: Individual and Combo con bebida remain below their image at 1440px
+  [chromium] › ux-ui-01.demo.spec.ts:80:5 › U01: square upload cannot cover long presentation or price at 1440px
+  [chromium] › ux-ui-01.demo.spec.ts:80:5 › U01: portrait upload cannot cover long presentation or price at 1440px
+  [chromium] › ux-ui-01.demo.spec.ts:80:5 › U01: landscape upload cannot cover long presentation or price at 1440px
+  [chromium] › ux-ui-01.demo.spec.ts:111:3 › U01: failed image preserves fallback and text separation at 1440px
+  [chromium] › ux-ui-02.demo.spec.ts:24:1 › shared search controls follow module width, preserve keyboard focus and leave external controls alone
+  [chromium] › ux-ui-02.demo.spec.ts:80:1 › all task routes retain their real content within the shared module at desktop and mobile widths
+  [chromium] › ux-ui-03.demo.spec.ts:46:3 › archived entry: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session
+  [chromium] › ux-ui-03.demo.spec.ts:46:3 › inactive offer: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session
+  [chromium] › ux-ui-03.demo.spec.ts:46:3 › recipe: one native backdrop, safe focus, scroll lock, Cancel and Escape restore the exact session
+  [chromium] › ux-ui-03.demo.spec.ts:88:1 › narrow forms in a wide module use 48px controls and scroll internally while the document stays fixed
+  [chromium] › ux-ui-03.demo.spec.ts:124:1 › nested existing recipe flow shares its lock and only its top native backdrop is colored
+  [chromium] › ux-ui-03.demo.spec.ts:153:3 › touch emulation › a touch gesture on the backdrop leaves the long catalog in place
+  [chromium] › ux-ui-04.demo.spec.ts:30:3 › U05/U06: nine routes begin with a local task header at 390px
+  [chromium] › ux-ui-04.demo.spec.ts:30:3 › U05/U06: nine routes begin with a local task header at 1440px
+  [chromium] › ux-ui-04.demo.spec.ts:80:1 › U05/U24: local back links retain catalog filters and offer origins without a brand navigation row
+  [chromium] › ux-ui-04.demo.spec.ts:110:1 › V18: saving an entry with its category panel open delivers one click after the shorter header
+  [chromium] › ux-ui-05.demo.spec.ts:5:3 › UX05 category validation and keyboard correction at 390px
+  [chromium] › ux-ui-05.demo.spec.ts:5:3 › UX05 category validation and keyboard correction at 1024px
+  [chromium] › ux-ui-06.demo.spec.ts:73:1 › U11/U19: catalog actions, columns and page size stay legible across the useful-width boundaries
+  [chromium] › ux-ui-06.demo.spec.ts:95:1 › V02: a narrow module in a wide host uses its own grid and touch controls
+  [chromium] › ux-ui-06.demo.spec.ts:110:1 › U11/V05/V06: long categorized cards expose separate keyboard routes and explain restricted deletion
+  [chromium] › ux-ui-07.demo.spec.ts:21:1 › UX07 missing demo entry has context and a catalog exit without an empty form
+  [chromium] › ux-ui-07.demo.spec.ts:35:1 › UX07 entry geometry follows actual form width and retains image and assigned categories
+  [chromium] › ux-ui-07.demo.spec.ts:81:1 › UX07 validation summary still reveals the invalid field above the existing footer
+  [chromium] › ux-ui-08.demo.spec.ts:24:3 › UX08 management keeps unmatched query and restores its three recipes
+  [chromium] › ux-ui-08.demo.spec.ts:24:3 › UX08 selection keeps unmatched query and restores its three recipes
+  [chromium] › ux-ui-08.demo.spec.ts:46:1 › UX08 validates locally with summary links and adapts supplies to actual module width
+  [chromium] › ux-ui-09.demo.spec.ts:41:1 › UX09 composition follows viewport, module and own form width without horizontal traversal
+  [chromium] › ux-ui-09.demo.spec.ts:79:1 › UX09 existing inventory option remains editable and image replacement works by keyboard and touch
+  [chromium] › ux-ui-09.demo.spec.ts:106:1 › UX09 cards retain untagged offers, independent state, deletion restriction and catalog return
+  [chromium] › ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 390px
+  [chromium] › ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 1024px
+  [chromium] › ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 600px
+  [chromium] › ux-ui-10.demo.spec.ts:27:3 › UX10 one modal preserves query, recipe and option drafts at 740px
+  [chromium] › ux-ui-11.demo.spec.ts:24:3 › UX11 category keeps edits in its original modal and closes directly after reversal
+  [chromium] › ux-ui-11.demo.spec.ts:24:3 › UX11 recipe keeps edits in its original modal and closes directly after reversal
+  [chromium] › ux-ui-11.demo.spec.ts:52:1 › UX11 browser back keeps entry image/categories and discards once to the exact filtered catalog
+  [chromium] › ux-ui-11.demo.spec.ts:93:1 › UX11 route exit protects a retained recipe even when the offer and option remain unchanged
+  [chromium] › ux-ui-11.demo.spec.ts:126:1 › UX11 reload uses the native warning only while a category has unsaved changes
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 320 and module 320
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 390 and module 390
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 600 and module 600
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 740 and module 740
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 1024 and module 1024
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 1440 and module 1440
+  [chromium] › ux-ui-12.demo.spec.ts:5:3 › UX12 money remains readable at viewport 1440 and module 390
+  [chromium] › ux-ui-13.demo.spec.ts:36:3 › UX13 entry actions remain usable at 390x844
+  [chromium] › ux-ui-13.demo.spec.ts:36:3 › UX13 entry actions remain usable at 390x568
+  [chromium] › ux-ui-13.demo.spec.ts:36:3 › UX13 entry actions remain usable at 844x390
+  [chromium] › ux-ui-13.demo.spec.ts:36:3 › UX13 entry actions remain usable at 768x1024
+  [chromium] › ux-ui-13.demo.spec.ts:36:3 › UX13 entry actions remain usable at 1440x1100
+  [chromium] › ux-ui-13.demo.spec.ts:65:1 › UX13 offer edits announce the named result once and preserve list context
+  [chromium] › ux-ui-13.demo.spec.ts:85:1 › UX13 CSS 200 percent zoom emulation retains entry focus and one local save
+  [chromium] › ux-ui-14.demo.spec.ts:21:3 › UX14 image help and selection rounds stay consistent at 320px
+  [chromium] › ux-ui-14.demo.spec.ts:21:3 › UX14 image help and selection rounds stay consistent at 390px
+  [chromium] › ux-ui-14.demo.spec.ts:21:3 › UX14 image help and selection rounds stay consistent at 1024px
+  [chromium] › ux-ui-15.demo.spec.ts:14:1 › UX15 restores nested entry and offer origins through back links and browser history
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task / has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task /categories has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task /recipes has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task /entries/new has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task /entries/demo-entry-burger/edit has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task /entries/demo-entry-burger/offers/new has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:39:3 › UX15 direct task /ux15-missing has a local focus and demo document title
+  [chromium] › ux-ui-15.demo.spec.ts:49:1 › UX15 filtering preserves the search focus and a local dialog retains its own focus
+  [chromium] › ux-ui-15.demo.spec.ts:67:1 › UX15 a confirmed save keeps one local receipt after the route state is consumed
+  [chromium] › ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 390px
+  [chromium] › ux-ui-17-foundations.demo.spec.ts:13:3 › UX17 equivalent component titles and spacing follow DESIGN at 1440px
+  [chromium] › ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /
+  [chromium] › ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /categories
+  [chromium] › ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /recipes
+  [chromium] › ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/edit
+  [chromium] › ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers
+  [chromium] › ux-ui-17-isolation.demo.spec.ts:14:1 › UX17 external controls keep their own styles at /entries/demo-entry-burger/offers/demo-offer-burger/edit
+Total: 82 tests in 18 files

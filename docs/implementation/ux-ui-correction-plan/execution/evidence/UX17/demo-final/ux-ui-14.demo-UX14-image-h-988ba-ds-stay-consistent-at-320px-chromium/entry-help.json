@@ -1,0 +1,6 @@
+{
+  "width": 320,
+  "overflow": false,
+  "visibleText": "← Volver a entradas\nNueva entrada\n\nNombre, descripción, categorías e imagen de referencia.\n\nIdentidad de la entrada\nNombre comercial\nDescripción\nCategorías\n\nPuedes asignar varias o guardar sin clasificación.\n\nSeleccionar categorías\nImagen de referencia\nSelecciona una imagen de referencia\nSeleccionar imagen\n\nImagen obligatoria para la nueva entrada.\n\nJPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.\n\nCancelar\nGuardar entrada",
+  "modalCount": 0
+}

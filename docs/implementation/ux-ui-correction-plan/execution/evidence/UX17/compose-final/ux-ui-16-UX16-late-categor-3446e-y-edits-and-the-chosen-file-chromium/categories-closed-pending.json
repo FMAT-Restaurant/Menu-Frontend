@@ -1,0 +1,52 @@
+{
+  "width": 390,
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "overflow": false,
+  "heading": [
+    {
+      "x": 16,
+      "y": 76,
+      "width": 358,
+      "height": 36
+    }
+  ],
+  "filters": [],
+  "reservation": [],
+  "images": [
+    {
+      "x": 46,
+      "y": 764,
+      "width": 298,
+      "height": 176
+    }
+  ],
+  "content": [
+    {
+      "x": 17,
+      "y": 190,
+      "width": 356,
+      "height": 915
+    }
+  ],
+  "imageZones": [
+    {
+      "x": 33,
+      "y": 751,
+      "width": 324,
+      "height": 262
+    }
+  ],
+  "actions": [
+    {
+      "x": 17,
+      "y": 771,
+      "width": 356,
+      "height": 73
+    }
+  ],
+  "animation": [],
+  "focus": "INPUT"
+}

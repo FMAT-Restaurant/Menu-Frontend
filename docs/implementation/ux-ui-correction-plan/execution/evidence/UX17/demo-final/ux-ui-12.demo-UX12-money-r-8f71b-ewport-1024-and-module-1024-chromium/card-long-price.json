@@ -1,0 +1,108 @@
+{
+  "module": {
+    "left": 0,
+    "right": 1024,
+    "top": 0,
+    "bottom": 1000,
+    "width": 1024,
+    "height": 1000
+  },
+  "viewport": 1024,
+  "scroll": 1024,
+  "fields": [
+    {
+      "selector": ".offer-card__price",
+      "text": "MXN 123,456,789.50",
+      "left": 45,
+      "right": 479,
+      "top": 586,
+      "bottom": 610,
+      "width": 434,
+      "height": 24,
+      "parent": {
+        "left": 25,
+        "right": 499,
+        "top": 390,
+        "bottom": 642,
+        "width": 474,
+        "height": 252
+      },
+      "textRects": [
+        {
+          "left": 309.84375,
+          "right": 479
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    },
+    {
+      "selector": ".offer-card__price",
+      "text": "MXN 185.00",
+      "left": 545,
+      "right": 979,
+      "top": 586,
+      "bottom": 610,
+      "width": 434,
+      "height": 24,
+      "parent": {
+        "left": 525,
+        "right": 999,
+        "top": 390,
+        "bottom": 642,
+        "width": 474,
+        "height": 252
+      },
+      "textRects": [
+        {
+          "left": 878.140625,
+          "right": 979
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    }
+  ],
+  "controls": [
+    {
+      "text": "Desactivar oferta",
+      "minimum": 48,
+      "left": 191.15625,
+      "right": 332.84375,
+      "top": 679,
+      "bottom": 727,
+      "width": 141.6875,
+      "height": 48
+    },
+    {
+      "text": "Eliminar oferta",
+      "minimum": 48,
+      "left": 37,
+      "right": 487,
+      "top": 784,
+      "bottom": 832,
+      "width": 450,
+      "height": 48
+    },
+    {
+      "text": "Activar oferta",
+      "minimum": 48,
+      "left": 701.875,
+      "right": 822.125,
+      "top": 679,
+      "bottom": 727,
+      "width": 120.25,
+      "height": 48
+    },
+    {
+      "text": "Eliminar oferta",
+      "minimum": 48,
+      "left": 537,
+      "right": 987,
+      "top": 784,
+      "bottom": 832,
+      "width": 450,
+      "height": 48
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "url": "http://127.0.0.1:5174/ux15-missing",
+  "title": "[DEMO] Página no encontrada | FMAT Restaurant",
+  "focus": {
+    "tag": "H1",
+    "text": "Página no encontrada",
+    "id": "",
+    "returnKey": null,
+    "heading": true,
+    "box": {
+      "top": 24,
+      "bottom": 60,
+      "left": 320,
+      "right": 960
+    }
+  },
+  "headings": [
+    "Página no encontrada"
+  ],
+  "statuses": [],
+  "dialogs": 0,
+  "extraLiveAnnouncements": 0,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "width": 1024,
+  "viewport": {
+    "width": 1024,
+    "height": 844
+  },
+  "overflow": false,
+  "heading": [
+    {
+      "x": 24,
+      "y": 84,
+      "width": 814.734375,
+      "height": 36
+    }
+  ],
+  "filters": [
+    {
+      "x": 49,
+      "y": 222,
+      "width": 926,
+      "height": 82
+    }
+  ],
+  "reservation": [],
+  "images": [],
+  "content": [
+    {
+      "x": 49,
+      "y": 324,
+      "width": 926,
+      "height": 135
+    }
+  ],
+  "actions": [],
+  "animation": [],
+  "focus": "H1"
+}
