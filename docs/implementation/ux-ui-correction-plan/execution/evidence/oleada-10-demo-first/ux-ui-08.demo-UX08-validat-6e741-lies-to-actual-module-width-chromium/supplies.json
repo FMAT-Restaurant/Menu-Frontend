@@ -1,0 +1,712 @@
+[
+  {
+    "moduleWidth": 320,
+    "viewport": 1440,
+    "dialogWidth": 288,
+    "scrollWidth": 288,
+    "clientWidth": 288,
+    "rowDisplay": "grid",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 240,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 240,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 116,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 240,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 116,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 240,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 116,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 390,
+    "viewport": 1440,
+    "dialogWidth": 358,
+    "scrollWidth": 358,
+    "clientWidth": 358,
+    "rowDisplay": "grid",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 310,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 310,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 151,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 310,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 151,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 310,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 151,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 600,
+    "viewport": 1440,
+    "dialogWidth": 568,
+    "scrollWidth": 568,
+    "clientWidth": 568,
+    "rowDisplay": "grid",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 520,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 520,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 256,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 520,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 256,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 520,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 256,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 740,
+    "viewport": 1440,
+    "dialogWidth": 708,
+    "scrollWidth": 708,
+    "clientWidth": 708,
+    "rowDisplay": "grid",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 660,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 660,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 326,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 660,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 326,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 660,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 326,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 767,
+    "viewport": 1440,
+    "dialogWidth": 735,
+    "scrollWidth": 735,
+    "clientWidth": 735,
+    "rowDisplay": "grid",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 687,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 687,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 339.5,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 687,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 339.5,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 687,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 339.5,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 768,
+    "viewport": 1440,
+    "dialogWidth": 736,
+    "scrollWidth": 736,
+    "clientWidth": 736,
+    "rowDisplay": "grid",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 688,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 688,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 340,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 688,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 340,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 688,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 340,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 1024,
+    "viewport": 1440,
+    "dialogWidth": 960,
+    "scrollWidth": 960,
+    "clientWidth": 960,
+    "rowDisplay": "table-row",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 912,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 1199,
+    "viewport": 1440,
+    "dialogWidth": 960,
+    "scrollWidth": 960,
+    "clientWidth": 960,
+    "rowDisplay": "table-row",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 912,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 1200,
+    "viewport": 1440,
+    "dialogWidth": 960,
+    "scrollWidth": 960,
+    "clientWidth": 960,
+    "rowDisplay": "table-row",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 912,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  },
+  {
+    "moduleWidth": 1440,
+    "viewport": 1440,
+    "dialogWidth": 960,
+    "scrollWidth": 960,
+    "clientWidth": 960,
+    "rowDisplay": "table-row",
+    "controls": [
+      {
+        "name": "Cerrar formulario",
+        "width": 48,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "recipe-name",
+        "width": 912,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-1-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-2-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-item",
+        "width": 289.46875,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "supply-row-3-quantity",
+        "width": 313.140625,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Cancelar",
+        "width": 88.34375,
+        "height": 48,
+        "radius": "8px"
+      },
+      {
+        "name": "Guardar receta",
+        "width": 127.953125,
+        "height": 48,
+        "radius": "8px"
+      }
+    ],
+    "radius": "12px"
+  }
+]

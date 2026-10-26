@@ -1,0 +1,163 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: demo-mode.e2e.ts >> entry uploads, editing, offer composition and state changes work without API calls
+- Location: e2e\demo-mode.e2e.ts:66:1
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+# Page snapshot
+
+```yaml
+- main [ref=f2e5]:
+  - generic [ref=f2e7]:
+    - heading "Entradas del menú" [active] [level=1] [ref=f2e9]
+    - generic [ref=f2e10]:
+      - link "Biblioteca de recetas" [ref=f2e11] [cursor=pointer]:
+        - /url: /recipes
+      - link "Categorías" [ref=f2e12] [cursor=pointer]:
+        - /url: /categories
+      - link "Nueva entrada" [ref=f2e13] [cursor=pointer]:
+        - /url: /entries/new
+  - region "Filtros de entradas" [ref=f2e14]:
+    - search [ref=f2e15]:
+      - generic [ref=f2e16]: Buscar entradas
+      - generic [ref=f2e17]:
+        - searchbox "Buscar entradas" [ref=f2e22]
+        - button "Buscar ahora" [ref=f2e23] [cursor=pointer]: Buscar
+    - generic [ref=f2e24]:
+      - generic [ref=f2e25]:
+        - generic [ref=f2e26]: Categoría
+        - combobox "Categoría" [ref=f2e27]:
+          - option "Todas las categorías" [selected]
+          - option "Sin categoría"
+          - option "Platos fuertes"
+          - option "Bebidas"
+          - option "Postres"
+      - generic [ref=f2e28]:
+        - generic [ref=f2e29]: Estado administrativo
+        - combobox "Estado administrativo" [ref=f2e30]:
+          - option "Todos los estados" [selected]
+          - option "Activa"
+          - option "Inactiva"
+          - option "Archivada"
+    - button "Limpiar filtros" [disabled] [ref=f2e31]
+  - generic [ref=f2e32]:
+    - paragraph [ref=f2e34]: Mostrando 1–4 de 4 entradas
+    - generic [ref=f2e35]:
+      - generic [ref=f2e36]: Entradas por página
+      - combobox "Entradas por página" [ref=f2e37]:
+        - option "6"
+        - option "12" [selected]
+        - option "24"
+  - generic "Entradas administrativas" [ref=f2e39]:
+    - article [ref=f2e40]:
+      - generic [ref=f2e41]:
+        - img "Imagen de Hamburguesa clásica" [ref=f2e42]
+        - generic [ref=f2e43]: Activa
+      - generic [ref=f2e45]:
+        - heading "Hamburguesa clásica" [level=2] [ref=f2e46]
+        - paragraph [ref=f2e47]: Carne de res, queso cheddar y pan brioche.
+        - generic "Categorías" [ref=f2e48]: Platos fuertes
+        - generic [ref=f2e50]:
+          - generic [ref=f2e51]:
+            - text: "Estado:"
+            - strong [ref=f2e52]: Activa
+          - generic [ref=f2e53]:
+            - text: "Ofertas:"
+            - strong [ref=f2e54]: "2"
+        - generic [ref=f2e55]:
+          - link "Ver ofertas de Hamburguesa clásica" [ref=f2e56] [cursor=pointer]:
+            - /url: /entries/demo-entry-burger/offers
+            - text: Ver ofertas
+          - link "Editar Hamburguesa clásica" [ref=f2e57] [cursor=pointer]:
+            - /url: /entries/demo-entry-burger/edit
+            - text: Editar
+        - generic [ref=f2e58]:
+          - button "Eliminar definitivamente Hamburguesa clásica" [disabled] [ref=f2e59]: Eliminar
+          - paragraph [ref=f2e60]: Solo se pueden eliminar entradas archivadas.
+    - article [ref=f2e61]:
+      - generic [ref=f2e62]:
+        - img "Imagen de Limonada natural" [ref=f2e63]
+        - generic [ref=f2e64]: Activa
+      - generic [ref=f2e66]:
+        - heading "Limonada natural" [level=2] [ref=f2e67]
+        - paragraph [ref=f2e68]: Jugo de limón recién exprimido con agua mineral.
+        - generic "Categorías" [ref=f2e69]: Bebidas
+        - generic [ref=f2e71]:
+          - generic [ref=f2e72]:
+            - text: "Estado:"
+            - strong [ref=f2e73]: Activa
+          - generic [ref=f2e74]:
+            - text: "Ofertas:"
+            - strong [ref=f2e75]: "1"
+        - generic [ref=f2e76]:
+          - link "Ver ofertas de Limonada natural" [ref=f2e77] [cursor=pointer]:
+            - /url: /entries/demo-entry-lemonade/offers
+            - text: Ver ofertas
+          - link "Editar Limonada natural" [ref=f2e78] [cursor=pointer]:
+            - /url: /entries/demo-entry-lemonade/edit
+            - text: Editar
+        - generic [ref=f2e79]:
+          - button "Eliminar definitivamente Limonada natural" [disabled] [ref=f2e80]: Eliminar
+          - paragraph [ref=f2e81]: Solo se pueden eliminar entradas archivadas.
+    - article [ref=f2e82]:
+      - generic [ref=f2e83]:
+        - img "Imagen de Brownie de chocolate" [ref=f2e84]
+        - generic [ref=f2e85]: Inactiva
+      - generic [ref=f2e87]:
+        - heading "Brownie de chocolate" [level=2] [ref=f2e88]
+        - paragraph [ref=f2e89]: Brownie tibio con una porción de helado.
+        - generic "Categorías" [ref=f2e90]: Postres
+        - generic [ref=f2e92]:
+          - generic [ref=f2e93]:
+            - text: "Estado:"
+            - strong [ref=f2e94]: Inactiva
+          - generic [ref=f2e95]:
+            - text: "Ofertas:"
+            - strong [ref=f2e96]: "0"
+        - generic [ref=f2e97]:
+          - link "Ver ofertas de Brownie de chocolate" [ref=f2e98] [cursor=pointer]:
+            - /url: /entries/demo-entry-brownie/offers
+            - text: Ver ofertas
+          - link "Editar Brownie de chocolate" [ref=f2e99] [cursor=pointer]:
+            - /url: /entries/demo-entry-brownie/edit
+            - text: Editar
+        - generic [ref=f2e100]:
+          - button "Eliminar definitivamente Brownie de chocolate" [disabled] [ref=f2e101]: Eliminar
+          - paragraph [ref=f2e102]: Solo se pueden eliminar entradas archivadas.
+    - article [ref=f2e103]:
+      - generic [ref=f2e104]:
+        - img "Imagen de Especial de temporada" [ref=f2e105]
+        - generic [ref=f2e106]: Archivada
+      - generic [ref=f2e108]:
+        - heading "Especial de temporada" [level=2] [ref=f2e109]
+        - paragraph [ref=f2e110]: Entrada archivada para explorar los cambios de estado.
+        - generic "Categorías" [ref=f2e111]: Platos fuertes
+        - generic [ref=f2e113]:
+          - generic [ref=f2e114]:
+            - text: "Estado:"
+            - strong [ref=f2e115]: Archivada
+          - generic [ref=f2e116]:
+            - text: "Ofertas:"
+            - strong [ref=f2e117]: "0"
+        - generic [ref=f2e118]:
+          - link "Ver ofertas de Especial de temporada" [ref=f2e119] [cursor=pointer]:
+            - /url: /entries/demo-entry-seasonal/offers
+            - text: Ver ofertas
+          - link "Editar Especial de temporada" [ref=f2e120] [cursor=pointer]:
+            - /url: /entries/demo-entry-seasonal/edit
+            - text: Editar
+        - generic [ref=f2e121]:
+          - button "Eliminar definitivamente Especial de temporada" [ref=f2e122] [cursor=pointer]: Eliminar
+          - paragraph [ref=f2e123]: La eliminación es definitiva.
+```

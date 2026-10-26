@@ -1,0 +1,6 @@
+
+Test Suites: 3 passed, 3 total
+Tests:       45 passed, 45 total
+Snapshots:   0 total
+Time:        14.551 s
+Ran all test suites within paths "src/features/categories/CategoryPage.test.tsx", "src/features/recipes/RecipePage.test.tsx", "src/features/recipes/RecipeSelectionTask.test.tsx".

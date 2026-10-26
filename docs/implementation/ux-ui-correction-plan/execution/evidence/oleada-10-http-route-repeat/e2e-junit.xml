@@ -1,0 +1,53 @@
+<testsuites id="" name="" tests="2" failures="1" skipped="0" errors="0" time="10.718827">
+<testsuite name="ux-ui-15.spec.ts" timestamp="2026-10-26T04:32:42.407Z" hostname="chromium" tests="2" failures="1" skipped="0" time="6.932" errors="0">
+<testcase name="UX15 delayed entry context updates the task title without moving the user&apos;s focus" classname="ux-ui-15.spec.ts" time="1.143">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-15-UX15-delayed-entr-3f76d-out-moving-the-user-s-focus-chromium\attachments\late-context-8309aee8fea325f708d96215c3a98208ead17951.json]]
+
+[[ATTACHMENT|ux-ui-15-UX15-delayed-entr-3f76d-out-moving-the-user-s-focus-chromium\attachments\late-context-image-fd4bd42917782ca78c12500ec6c5a23ed8c4e36b.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="UX15 a suspended editor does not steal focus after another interaction" classname="ux-ui-15.spec.ts" time="5.789">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|ux-ui-15-UX15-a-suspended--9c9c1-s-after-another-interaction-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|ux-ui-15-UX15-a-suspended--9c9c1-s-after-another-interaction-chromium\error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toBeVisible() failed" type="expect.toBeVisible">
+<![CDATA[  [chromium] › ux-ui-15.spec.ts:24:1 › UX15 a suspended editor does not steal focus after another interaction 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Cargando página…', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Cargando página…', { exact: true }) with timeout 5000ms
+      - waiting for getByText('Cargando página…', { exact: true })
+
+
+      34 |   await page.locator(".task-header").getByRole("link", { name: "Nueva entrada", exact: true }).click();
+      35 |   await requestedChunk;
+    > 36 |   await expect(page.getByText("Cargando página…", { exact: true })).toBeVisible();
+         |                                                                     ^
+      37 |   await page.keyboard.press("Tab");
+      38 |   release();
+      39 |   await expect(page.getByRole("heading", { name: "Nueva entrada", exact: true })).toBeVisible();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-15.spec.ts:36:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\ux-ui-15-UX15-a-suspended--9c9c1-s-after-another-interaction-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\ux-ui-15-UX15-a-suspended--9c9c1-s-after-another-interaction-chromium\error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+</testsuites>

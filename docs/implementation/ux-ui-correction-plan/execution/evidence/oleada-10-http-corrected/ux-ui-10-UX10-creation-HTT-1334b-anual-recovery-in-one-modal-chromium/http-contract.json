@@ -1,0 +1,34 @@
+{
+  "posts": [
+    {
+      "key": "6f527cd8-7383-48fa-bff7-23df79fa56a8",
+      "body": {
+        "description": "Descripción UX10",
+        "instructions": "Mezclar",
+        "name": "Nueva UX10",
+        "supplies": [
+          {
+            "inventoryItemId": "flour",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "key": "33e5d9ac-e049-4238-9fa2-dcd2b0cbacbe",
+      "body": {
+        "description": "Descripción UX10",
+        "instructions": "Mezclar",
+        "name": "Nueva UX10",
+        "supplies": [
+          {
+            "inventoryItemId": "flour",
+            "quantity": 1
+          }
+        ]
+      }
+    }
+  ],
+  "offerPosts": [],
+  "finalModalCount": 0
+}

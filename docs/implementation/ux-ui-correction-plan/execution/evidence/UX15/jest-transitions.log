@@ -1,0 +1,47 @@
+FAIL src/App.test.tsx (5.271 s)
+  ● App routing and lazy loading (T15) › opens the entry form routes for creation and editing
+
+    Unable to find role="heading" and name "Nueva entrada"
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="menu-module"
+          data-menu-module="true"
+        >
+          <span
+            data-route-context="true"
+            hidden=""
+          />
+          <div
+            aria-live="polite"
+            class="app-shell loading-shell"
+            role="status"
+          >
+            <p>
+              Cargando página…
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+
+      236 |     render(<App repository={repository} />);
+      237 |
+    > 238 |     expect(await screen.findByRole("heading", { name: "Editar oferta", level: 1 })).toBeVisible();
+          |                                  ^
+      239 |     expect(screen.getByRole("link", { name: /Volver a ofertas/ })).toHaveAttribute("href", returnTo);
+      240 |   });
+      241 |
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/App.test.tsx:238:34)
+
+
+Test Suites: 1 failed, 2 passed, 3 total
+Tests:       1 failed, 22 passed, 23 total
+Snapshots:   0 total
+Time:        12.741 s
+Ran all test suites within paths "src/shared/RouteContext.test.tsx", "src/App.test.tsx", "src/features/offers/OfferCard.route-context.test.tsx".

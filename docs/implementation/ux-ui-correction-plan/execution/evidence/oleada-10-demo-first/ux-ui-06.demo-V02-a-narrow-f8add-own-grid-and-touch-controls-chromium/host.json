@@ -1,0 +1,2453 @@
+[
+  {
+    "viewport": 1440,
+    "moduleWidth": 320,
+    "main": {
+      "x": 16,
+      "y": 0,
+      "width": 288,
+      "height": 2581,
+      "right": 304,
+      "bottom": 2581
+    },
+    "columns": 1,
+    "scrollWidth": 1440,
+    "pageSize": {
+      "value": "12",
+      "label": "12",
+      "x": 155.578125,
+      "y": 441,
+      "width": 88,
+      "height": 48,
+      "right": 243.578125,
+      "bottom": 489
+    },
+    "cards": [
+      {
+        "x": 16,
+        "y": 505,
+        "width": 288,
+        "height": 489,
+        "right": 304,
+        "bottom": 994,
+        "title": {
+          "x": 33,
+          "y": 714,
+          "width": 254,
+          "height": 26,
+          "right": 287,
+          "bottom": 740
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 864,
+            "width": 123,
+            "height": 48,
+            "right": 156,
+            "bottom": 912
+          },
+          {
+            "x": 164,
+            "y": 864,
+            "width": 123,
+            "height": 48,
+            "right": 287,
+            "bottom": 912
+          },
+          {
+            "x": 33,
+            "y": 929,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 977
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 1010,
+        "width": 288,
+        "height": 489,
+        "right": 304,
+        "bottom": 1499,
+        "title": {
+          "x": 33,
+          "y": 1219,
+          "width": 254,
+          "height": 26,
+          "right": 287,
+          "bottom": 1245
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 1369,
+            "width": 123,
+            "height": 48,
+            "right": 156,
+            "bottom": 1417
+          },
+          {
+            "x": 164,
+            "y": 1369,
+            "width": 123,
+            "height": 48,
+            "right": 287,
+            "bottom": 1417
+          },
+          {
+            "x": 33,
+            "y": 1434,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 1482
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 1515,
+        "width": 288,
+        "height": 489,
+        "right": 304,
+        "bottom": 2004,
+        "title": {
+          "x": 33,
+          "y": 1724,
+          "width": 254,
+          "height": 26,
+          "right": 287,
+          "bottom": 1750
+        },
+        "status": "Inactiva",
+        "statusDotColor": "rgb(217, 119, 6)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 1874,
+            "width": 123,
+            "height": 48,
+            "right": 156,
+            "bottom": 1922
+          },
+          {
+            "x": 164,
+            "y": 1874,
+            "width": 123,
+            "height": 48,
+            "right": 287,
+            "bottom": 1922
+          },
+          {
+            "x": 33,
+            "y": 1939,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 1987
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 2020,
+        "width": 288,
+        "height": 489,
+        "right": 304,
+        "bottom": 2509,
+        "title": {
+          "x": 33,
+          "y": 2229,
+          "width": 254,
+          "height": 26,
+          "right": 287,
+          "bottom": 2255
+        },
+        "status": "Archivada",
+        "statusDotColor": "rgb(107, 114, 128)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 2379,
+            "width": 123,
+            "height": 48,
+            "right": 156,
+            "bottom": 2427
+          },
+          {
+            "x": 164,
+            "y": 2379,
+            "width": 123,
+            "height": 48,
+            "right": 287,
+            "bottom": 2427
+          },
+          {
+            "x": 33,
+            "y": 2444,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 2492
+          }
+        ]
+      }
+    ],
+    "controls": [
+      {
+        "name": "Biblioteca de recetas",
+        "x": 16,
+        "y": 68,
+        "width": 171.8125,
+        "height": 48,
+        "right": 187.8125,
+        "bottom": 116
+      },
+      {
+        "name": "Categorías",
+        "x": 195.8125,
+        "y": 68,
+        "width": 108.1875,
+        "height": 48,
+        "right": 304,
+        "bottom": 116
+      },
+      {
+        "name": "Nueva entrada",
+        "x": 16,
+        "y": 124,
+        "width": 288,
+        "height": 48,
+        "right": 304,
+        "bottom": 172
+      },
+      {
+        "name": "entry-search",
+        "x": 66,
+        "y": 271,
+        "width": 145.265625,
+        "height": 48,
+        "right": 211.265625,
+        "bottom": 319
+      },
+      {
+        "name": "Buscar ahora",
+        "x": 211.265625,
+        "y": 271,
+        "width": 74.734375,
+        "height": 48,
+        "right": 286,
+        "bottom": 319
+      },
+      {
+        "name": "Filtros",
+        "x": 33,
+        "y": 328,
+        "width": 124,
+        "height": 48,
+        "right": 157,
+        "bottom": 376
+      },
+      {
+        "name": "Limpiar filtros",
+        "x": 165,
+        "y": 328,
+        "width": 122,
+        "height": 48,
+        "right": 287,
+        "bottom": 376
+      },
+      {
+        "name": "61224",
+        "x": 155.578125,
+        "y": 441,
+        "width": 88,
+        "height": 48,
+        "right": 243.578125,
+        "bottom": 489
+      },
+      {
+        "name": "Ver ofertas de Hamburguesa clásica",
+        "x": 33,
+        "y": 864,
+        "width": 123,
+        "height": 48,
+        "right": 156,
+        "bottom": 912
+      },
+      {
+        "name": "Editar Hamburguesa clásica",
+        "x": 164,
+        "y": 864,
+        "width": 123,
+        "height": 48,
+        "right": 287,
+        "bottom": 912
+      },
+      {
+        "name": "Eliminar definitivamente Hamburguesa clásica",
+        "x": 33,
+        "y": 929,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 977
+      },
+      {
+        "name": "Ver ofertas de Limonada natural",
+        "x": 33,
+        "y": 1369,
+        "width": 123,
+        "height": 48,
+        "right": 156,
+        "bottom": 1417
+      },
+      {
+        "name": "Editar Limonada natural",
+        "x": 164,
+        "y": 1369,
+        "width": 123,
+        "height": 48,
+        "right": 287,
+        "bottom": 1417
+      },
+      {
+        "name": "Eliminar definitivamente Limonada natural",
+        "x": 33,
+        "y": 1434,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 1482
+      },
+      {
+        "name": "Ver ofertas de Brownie de chocolate",
+        "x": 33,
+        "y": 1874,
+        "width": 123,
+        "height": 48,
+        "right": 156,
+        "bottom": 1922
+      },
+      {
+        "name": "Editar Brownie de chocolate",
+        "x": 164,
+        "y": 1874,
+        "width": 123,
+        "height": 48,
+        "right": 287,
+        "bottom": 1922
+      },
+      {
+        "name": "Eliminar definitivamente Brownie de chocolate",
+        "x": 33,
+        "y": 1939,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 1987
+      },
+      {
+        "name": "Ver ofertas de Especial de temporada",
+        "x": 33,
+        "y": 2379,
+        "width": 123,
+        "height": 48,
+        "right": 156,
+        "bottom": 2427
+      },
+      {
+        "name": "Editar Especial de temporada",
+        "x": 164,
+        "y": 2379,
+        "width": 123,
+        "height": 48,
+        "right": 287,
+        "bottom": 2427
+      },
+      {
+        "name": "Eliminar definitivamente Especial de temporada",
+        "x": 33,
+        "y": 2444,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 2492
+      }
+    ]
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 740,
+    "main": {
+      "x": 16,
+      "y": 0,
+      "width": 708,
+      "height": 2413,
+      "right": 724,
+      "bottom": 2413
+    },
+    "columns": 1,
+    "scrollWidth": 1440,
+    "pageSize": {
+      "value": "12",
+      "label": "12",
+      "x": 636,
+      "y": 353,
+      "width": 88,
+      "height": 48,
+      "right": 724,
+      "bottom": 401
+    },
+    "cards": [
+      {
+        "x": 16,
+        "y": 417,
+        "width": 708,
+        "height": 469,
+        "right": 724,
+        "bottom": 886,
+        "title": {
+          "x": 33,
+          "y": 626,
+          "width": 674,
+          "height": 26,
+          "right": 707,
+          "bottom": 652
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 756,
+            "width": 333,
+            "height": 48,
+            "right": 366,
+            "bottom": 804
+          },
+          {
+            "x": 374,
+            "y": 756,
+            "width": 333,
+            "height": 48,
+            "right": 707,
+            "bottom": 804
+          },
+          {
+            "x": 33,
+            "y": 821,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 869
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 902,
+        "width": 708,
+        "height": 469,
+        "right": 724,
+        "bottom": 1371,
+        "title": {
+          "x": 33,
+          "y": 1111,
+          "width": 674,
+          "height": 26,
+          "right": 707,
+          "bottom": 1137
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 1241,
+            "width": 333,
+            "height": 48,
+            "right": 366,
+            "bottom": 1289
+          },
+          {
+            "x": 374,
+            "y": 1241,
+            "width": 333,
+            "height": 48,
+            "right": 707,
+            "bottom": 1289
+          },
+          {
+            "x": 33,
+            "y": 1306,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 1354
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 1387,
+        "width": 708,
+        "height": 469,
+        "right": 724,
+        "bottom": 1856,
+        "title": {
+          "x": 33,
+          "y": 1596,
+          "width": 674,
+          "height": 26,
+          "right": 707,
+          "bottom": 1622
+        },
+        "status": "Inactiva",
+        "statusDotColor": "rgb(217, 119, 6)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 1726,
+            "width": 333,
+            "height": 48,
+            "right": 366,
+            "bottom": 1774
+          },
+          {
+            "x": 374,
+            "y": 1726,
+            "width": 333,
+            "height": 48,
+            "right": 707,
+            "bottom": 1774
+          },
+          {
+            "x": 33,
+            "y": 1791,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 1839
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 1872,
+        "width": 708,
+        "height": 469,
+        "right": 724,
+        "bottom": 2341,
+        "title": {
+          "x": 33,
+          "y": 2081,
+          "width": 674,
+          "height": 26,
+          "right": 707,
+          "bottom": 2107
+        },
+        "status": "Archivada",
+        "statusDotColor": "rgb(107, 114, 128)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 2211,
+            "width": 333,
+            "height": 48,
+            "right": 366,
+            "bottom": 2259
+          },
+          {
+            "x": 374,
+            "y": 2211,
+            "width": 333,
+            "height": 48,
+            "right": 707,
+            "bottom": 2259
+          },
+          {
+            "x": 33,
+            "y": 2276,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 2324
+          }
+        ]
+      }
+    ],
+    "controls": [
+      {
+        "name": "Biblioteca de recetas",
+        "x": 16,
+        "y": 68,
+        "width": 264.453125,
+        "height": 48,
+        "right": 280.453125,
+        "bottom": 116
+      },
+      {
+        "name": "Categorías",
+        "x": 288.453125,
+        "y": 68,
+        "width": 200.84375,
+        "height": 48,
+        "right": 489.296875,
+        "bottom": 116
+      },
+      {
+        "name": "Nueva entrada",
+        "x": 497.296875,
+        "y": 68,
+        "width": 226.703125,
+        "height": 48,
+        "right": 724,
+        "bottom": 116
+      },
+      {
+        "name": "entry-search",
+        "x": 66,
+        "y": 215,
+        "width": 565.265625,
+        "height": 48,
+        "right": 631.265625,
+        "bottom": 263
+      },
+      {
+        "name": "Buscar ahora",
+        "x": 631.265625,
+        "y": 215,
+        "width": 74.734375,
+        "height": 48,
+        "right": 706,
+        "bottom": 263
+      },
+      {
+        "name": "Filtros",
+        "x": 33,
+        "y": 272,
+        "width": 544,
+        "height": 48,
+        "right": 577,
+        "bottom": 320
+      },
+      {
+        "name": "Limpiar filtros",
+        "x": 585,
+        "y": 272,
+        "width": 122,
+        "height": 48,
+        "right": 707,
+        "bottom": 320
+      },
+      {
+        "name": "61224",
+        "x": 636,
+        "y": 353,
+        "width": 88,
+        "height": 48,
+        "right": 724,
+        "bottom": 401
+      },
+      {
+        "name": "Ver ofertas de Hamburguesa clásica",
+        "x": 33,
+        "y": 756,
+        "width": 333,
+        "height": 48,
+        "right": 366,
+        "bottom": 804
+      },
+      {
+        "name": "Editar Hamburguesa clásica",
+        "x": 374,
+        "y": 756,
+        "width": 333,
+        "height": 48,
+        "right": 707,
+        "bottom": 804
+      },
+      {
+        "name": "Eliminar definitivamente Hamburguesa clásica",
+        "x": 33,
+        "y": 821,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 869
+      },
+      {
+        "name": "Ver ofertas de Limonada natural",
+        "x": 33,
+        "y": 1241,
+        "width": 333,
+        "height": 48,
+        "right": 366,
+        "bottom": 1289
+      },
+      {
+        "name": "Editar Limonada natural",
+        "x": 374,
+        "y": 1241,
+        "width": 333,
+        "height": 48,
+        "right": 707,
+        "bottom": 1289
+      },
+      {
+        "name": "Eliminar definitivamente Limonada natural",
+        "x": 33,
+        "y": 1306,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 1354
+      },
+      {
+        "name": "Ver ofertas de Brownie de chocolate",
+        "x": 33,
+        "y": 1726,
+        "width": 333,
+        "height": 48,
+        "right": 366,
+        "bottom": 1774
+      },
+      {
+        "name": "Editar Brownie de chocolate",
+        "x": 374,
+        "y": 1726,
+        "width": 333,
+        "height": 48,
+        "right": 707,
+        "bottom": 1774
+      },
+      {
+        "name": "Eliminar definitivamente Brownie de chocolate",
+        "x": 33,
+        "y": 1791,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 1839
+      },
+      {
+        "name": "Ver ofertas de Especial de temporada",
+        "x": 33,
+        "y": 2211,
+        "width": 333,
+        "height": 48,
+        "right": 366,
+        "bottom": 2259
+      },
+      {
+        "name": "Editar Especial de temporada",
+        "x": 374,
+        "y": 2211,
+        "width": 333,
+        "height": 48,
+        "right": 707,
+        "bottom": 2259
+      },
+      {
+        "name": "Eliminar definitivamente Especial de temporada",
+        "x": 33,
+        "y": 2276,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 2324
+      }
+    ]
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 767,
+    "main": {
+      "x": 16,
+      "y": 0,
+      "width": 735,
+      "height": 2413,
+      "right": 751,
+      "bottom": 2413
+    },
+    "columns": 1,
+    "scrollWidth": 1440,
+    "pageSize": {
+      "value": "12",
+      "label": "12",
+      "x": 663,
+      "y": 353,
+      "width": 88,
+      "height": 48,
+      "right": 751,
+      "bottom": 401
+    },
+    "cards": [
+      {
+        "x": 16,
+        "y": 417,
+        "width": 735,
+        "height": 469,
+        "right": 751,
+        "bottom": 886,
+        "title": {
+          "x": 33,
+          "y": 626,
+          "width": 701,
+          "height": 26,
+          "right": 734,
+          "bottom": 652
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 756,
+            "width": 346.5,
+            "height": 48,
+            "right": 379.5,
+            "bottom": 804
+          },
+          {
+            "x": 387.5,
+            "y": 756,
+            "width": 346.5,
+            "height": 48,
+            "right": 734,
+            "bottom": 804
+          },
+          {
+            "x": 33,
+            "y": 821,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 869
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 902,
+        "width": 735,
+        "height": 469,
+        "right": 751,
+        "bottom": 1371,
+        "title": {
+          "x": 33,
+          "y": 1111,
+          "width": 701,
+          "height": 26,
+          "right": 734,
+          "bottom": 1137
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 1241,
+            "width": 346.5,
+            "height": 48,
+            "right": 379.5,
+            "bottom": 1289
+          },
+          {
+            "x": 387.5,
+            "y": 1241,
+            "width": 346.5,
+            "height": 48,
+            "right": 734,
+            "bottom": 1289
+          },
+          {
+            "x": 33,
+            "y": 1306,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 1354
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 1387,
+        "width": 735,
+        "height": 469,
+        "right": 751,
+        "bottom": 1856,
+        "title": {
+          "x": 33,
+          "y": 1596,
+          "width": 701,
+          "height": 26,
+          "right": 734,
+          "bottom": 1622
+        },
+        "status": "Inactiva",
+        "statusDotColor": "rgb(217, 119, 6)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 1726,
+            "width": 346.5,
+            "height": 48,
+            "right": 379.5,
+            "bottom": 1774
+          },
+          {
+            "x": 387.5,
+            "y": 1726,
+            "width": 346.5,
+            "height": 48,
+            "right": 734,
+            "bottom": 1774
+          },
+          {
+            "x": 33,
+            "y": 1791,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 1839
+          }
+        ]
+      },
+      {
+        "x": 16,
+        "y": 1872,
+        "width": 735,
+        "height": 469,
+        "right": 751,
+        "bottom": 2341,
+        "title": {
+          "x": 33,
+          "y": 2081,
+          "width": 701,
+          "height": 26,
+          "right": 734,
+          "bottom": 2107
+        },
+        "status": "Archivada",
+        "statusDotColor": "rgb(107, 114, 128)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 33,
+            "y": 2211,
+            "width": 346.5,
+            "height": 48,
+            "right": 379.5,
+            "bottom": 2259
+          },
+          {
+            "x": 387.5,
+            "y": 2211,
+            "width": 346.5,
+            "height": 48,
+            "right": 734,
+            "bottom": 2259
+          },
+          {
+            "x": 33,
+            "y": 2276,
+            "width": 85.28125,
+            "height": 48,
+            "right": 118.28125,
+            "bottom": 2324
+          }
+        ]
+      }
+    ],
+    "controls": [
+      {
+        "name": "Biblioteca de recetas",
+        "x": 16,
+        "y": 68,
+        "width": 273.453125,
+        "height": 48,
+        "right": 289.453125,
+        "bottom": 116
+      },
+      {
+        "name": "Categorías",
+        "x": 297.453125,
+        "y": 68,
+        "width": 209.84375,
+        "height": 48,
+        "right": 507.296875,
+        "bottom": 116
+      },
+      {
+        "name": "Nueva entrada",
+        "x": 515.296875,
+        "y": 68,
+        "width": 235.703125,
+        "height": 48,
+        "right": 751,
+        "bottom": 116
+      },
+      {
+        "name": "entry-search",
+        "x": 66,
+        "y": 215,
+        "width": 592.265625,
+        "height": 48,
+        "right": 658.265625,
+        "bottom": 263
+      },
+      {
+        "name": "Buscar ahora",
+        "x": 658.265625,
+        "y": 215,
+        "width": 74.734375,
+        "height": 48,
+        "right": 733,
+        "bottom": 263
+      },
+      {
+        "name": "Filtros",
+        "x": 33,
+        "y": 272,
+        "width": 571,
+        "height": 48,
+        "right": 604,
+        "bottom": 320
+      },
+      {
+        "name": "Limpiar filtros",
+        "x": 612,
+        "y": 272,
+        "width": 122,
+        "height": 48,
+        "right": 734,
+        "bottom": 320
+      },
+      {
+        "name": "61224",
+        "x": 663,
+        "y": 353,
+        "width": 88,
+        "height": 48,
+        "right": 751,
+        "bottom": 401
+      },
+      {
+        "name": "Ver ofertas de Hamburguesa clásica",
+        "x": 33,
+        "y": 756,
+        "width": 346.5,
+        "height": 48,
+        "right": 379.5,
+        "bottom": 804
+      },
+      {
+        "name": "Editar Hamburguesa clásica",
+        "x": 387.5,
+        "y": 756,
+        "width": 346.5,
+        "height": 48,
+        "right": 734,
+        "bottom": 804
+      },
+      {
+        "name": "Eliminar definitivamente Hamburguesa clásica",
+        "x": 33,
+        "y": 821,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 869
+      },
+      {
+        "name": "Ver ofertas de Limonada natural",
+        "x": 33,
+        "y": 1241,
+        "width": 346.5,
+        "height": 48,
+        "right": 379.5,
+        "bottom": 1289
+      },
+      {
+        "name": "Editar Limonada natural",
+        "x": 387.5,
+        "y": 1241,
+        "width": 346.5,
+        "height": 48,
+        "right": 734,
+        "bottom": 1289
+      },
+      {
+        "name": "Eliminar definitivamente Limonada natural",
+        "x": 33,
+        "y": 1306,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 1354
+      },
+      {
+        "name": "Ver ofertas de Brownie de chocolate",
+        "x": 33,
+        "y": 1726,
+        "width": 346.5,
+        "height": 48,
+        "right": 379.5,
+        "bottom": 1774
+      },
+      {
+        "name": "Editar Brownie de chocolate",
+        "x": 387.5,
+        "y": 1726,
+        "width": 346.5,
+        "height": 48,
+        "right": 734,
+        "bottom": 1774
+      },
+      {
+        "name": "Eliminar definitivamente Brownie de chocolate",
+        "x": 33,
+        "y": 1791,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 1839
+      },
+      {
+        "name": "Ver ofertas de Especial de temporada",
+        "x": 33,
+        "y": 2211,
+        "width": 346.5,
+        "height": 48,
+        "right": 379.5,
+        "bottom": 2259
+      },
+      {
+        "name": "Editar Especial de temporada",
+        "x": 387.5,
+        "y": 2211,
+        "width": 346.5,
+        "height": 48,
+        "right": 734,
+        "bottom": 2259
+      },
+      {
+        "name": "Eliminar definitivamente Especial de temporada",
+        "x": 33,
+        "y": 2276,
+        "width": 85.28125,
+        "height": 48,
+        "right": 118.28125,
+        "bottom": 2324
+      }
+    ]
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 768,
+    "main": {
+      "x": 24,
+      "y": 0,
+      "width": 720,
+      "height": 1471,
+      "right": 744,
+      "bottom": 1471
+    },
+    "columns": 2,
+    "scrollWidth": 1440,
+    "pageSize": {
+      "value": "12",
+      "label": "12",
+      "x": 656,
+      "y": 457,
+      "width": 88,
+      "height": 48,
+      "right": 744,
+      "bottom": 505
+    },
+    "cards": [
+      {
+        "x": 24,
+        "y": 521,
+        "width": 352,
+        "height": 421,
+        "right": 376,
+        "bottom": 942,
+        "title": {
+          "x": 41,
+          "y": 682,
+          "width": 318,
+          "height": 26,
+          "right": 359,
+          "bottom": 708
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 41,
+            "y": 812,
+            "width": 155,
+            "height": 48,
+            "right": 196,
+            "bottom": 860
+          },
+          {
+            "x": 204,
+            "y": 812,
+            "width": 155,
+            "height": 48,
+            "right": 359,
+            "bottom": 860
+          },
+          {
+            "x": 41,
+            "y": 877,
+            "width": 85.28125,
+            "height": 48,
+            "right": 126.28125,
+            "bottom": 925
+          }
+        ]
+      },
+      {
+        "x": 392,
+        "y": 521,
+        "width": 352,
+        "height": 421,
+        "right": 744,
+        "bottom": 942,
+        "title": {
+          "x": 409,
+          "y": 682,
+          "width": 318,
+          "height": 26,
+          "right": 727,
+          "bottom": 708
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 409,
+            "y": 812,
+            "width": 155,
+            "height": 48,
+            "right": 564,
+            "bottom": 860
+          },
+          {
+            "x": 572,
+            "y": 812,
+            "width": 155,
+            "height": 48,
+            "right": 727,
+            "bottom": 860
+          },
+          {
+            "x": 409,
+            "y": 877,
+            "width": 85.28125,
+            "height": 48,
+            "right": 494.28125,
+            "bottom": 925
+          }
+        ]
+      },
+      {
+        "x": 24,
+        "y": 958,
+        "width": 352,
+        "height": 441,
+        "right": 376,
+        "bottom": 1399,
+        "title": {
+          "x": 41,
+          "y": 1119,
+          "width": 318,
+          "height": 26,
+          "right": 359,
+          "bottom": 1145
+        },
+        "status": "Inactiva",
+        "statusDotColor": "rgb(217, 119, 6)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 41,
+            "y": 1269,
+            "width": 155,
+            "height": 48,
+            "right": 196,
+            "bottom": 1317
+          },
+          {
+            "x": 204,
+            "y": 1269,
+            "width": 155,
+            "height": 48,
+            "right": 359,
+            "bottom": 1317
+          },
+          {
+            "x": 41,
+            "y": 1334,
+            "width": 85.28125,
+            "height": 48,
+            "right": 126.28125,
+            "bottom": 1382
+          }
+        ]
+      },
+      {
+        "x": 392,
+        "y": 958,
+        "width": 352,
+        "height": 441,
+        "right": 744,
+        "bottom": 1399,
+        "title": {
+          "x": 409,
+          "y": 1119,
+          "width": 318,
+          "height": 26,
+          "right": 727,
+          "bottom": 1145
+        },
+        "status": "Archivada",
+        "statusDotColor": "rgb(107, 114, 128)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 409,
+            "y": 1269,
+            "width": 155,
+            "height": 48,
+            "right": 564,
+            "bottom": 1317
+          },
+          {
+            "x": 572,
+            "y": 1269,
+            "width": 155,
+            "height": 48,
+            "right": 727,
+            "bottom": 1317
+          },
+          {
+            "x": 409,
+            "y": 1334,
+            "width": 85.28125,
+            "height": 48,
+            "right": 494.28125,
+            "bottom": 1382
+          }
+        ]
+      }
+    ],
+    "controls": [
+      {
+        "name": "Biblioteca de recetas",
+        "x": 24,
+        "y": 76,
+        "width": 165.03125,
+        "height": 48,
+        "right": 189.03125,
+        "bottom": 124
+      },
+      {
+        "name": "Categorías",
+        "x": 197.03125,
+        "y": 76,
+        "width": 101.40625,
+        "height": 48,
+        "right": 298.4375,
+        "bottom": 124
+      },
+      {
+        "name": "Nueva entrada",
+        "x": 306.4375,
+        "y": 76,
+        "width": 127.28125,
+        "height": 48,
+        "right": 433.71875,
+        "bottom": 124
+      },
+      {
+        "name": "entry-search",
+        "x": 74,
+        "y": 223,
+        "width": 577.265625,
+        "height": 48,
+        "right": 651.265625,
+        "bottom": 271
+      },
+      {
+        "name": "Buscar ahora",
+        "x": 651.265625,
+        "y": 223,
+        "width": 74.734375,
+        "height": 48,
+        "right": 726,
+        "bottom": 271
+      },
+      {
+        "name": "Todas las categoríasSin categoríaPlatos fuertesBebidasPostres",
+        "x": 41,
+        "y": 316,
+        "width": 337,
+        "height": 48,
+        "right": 378,
+        "bottom": 364
+      },
+      {
+        "name": "Todos los estadosActivaInactivaArchivada",
+        "x": 390,
+        "y": 316,
+        "width": 337,
+        "height": 48,
+        "right": 727,
+        "bottom": 364
+      },
+      {
+        "name": "Limpiar filtros",
+        "x": 605,
+        "y": 376,
+        "width": 122,
+        "height": 48,
+        "right": 727,
+        "bottom": 424
+      },
+      {
+        "name": "61224",
+        "x": 656,
+        "y": 457,
+        "width": 88,
+        "height": 48,
+        "right": 744,
+        "bottom": 505
+      },
+      {
+        "name": "Ver ofertas de Hamburguesa clásica",
+        "x": 41,
+        "y": 812,
+        "width": 155,
+        "height": 48,
+        "right": 196,
+        "bottom": 860
+      },
+      {
+        "name": "Editar Hamburguesa clásica",
+        "x": 204,
+        "y": 812,
+        "width": 155,
+        "height": 48,
+        "right": 359,
+        "bottom": 860
+      },
+      {
+        "name": "Eliminar definitivamente Hamburguesa clásica",
+        "x": 41,
+        "y": 877,
+        "width": 85.28125,
+        "height": 48,
+        "right": 126.28125,
+        "bottom": 925
+      },
+      {
+        "name": "Ver ofertas de Limonada natural",
+        "x": 409,
+        "y": 812,
+        "width": 155,
+        "height": 48,
+        "right": 564,
+        "bottom": 860
+      },
+      {
+        "name": "Editar Limonada natural",
+        "x": 572,
+        "y": 812,
+        "width": 155,
+        "height": 48,
+        "right": 727,
+        "bottom": 860
+      },
+      {
+        "name": "Eliminar definitivamente Limonada natural",
+        "x": 409,
+        "y": 877,
+        "width": 85.28125,
+        "height": 48,
+        "right": 494.28125,
+        "bottom": 925
+      },
+      {
+        "name": "Ver ofertas de Brownie de chocolate",
+        "x": 41,
+        "y": 1269,
+        "width": 155,
+        "height": 48,
+        "right": 196,
+        "bottom": 1317
+      },
+      {
+        "name": "Editar Brownie de chocolate",
+        "x": 204,
+        "y": 1269,
+        "width": 155,
+        "height": 48,
+        "right": 359,
+        "bottom": 1317
+      },
+      {
+        "name": "Eliminar definitivamente Brownie de chocolate",
+        "x": 41,
+        "y": 1334,
+        "width": 85.28125,
+        "height": 48,
+        "right": 126.28125,
+        "bottom": 1382
+      },
+      {
+        "name": "Ver ofertas de Especial de temporada",
+        "x": 409,
+        "y": 1269,
+        "width": 155,
+        "height": 48,
+        "right": 564,
+        "bottom": 1317
+      },
+      {
+        "name": "Editar Especial de temporada",
+        "x": 572,
+        "y": 1269,
+        "width": 155,
+        "height": 48,
+        "right": 727,
+        "bottom": 1317
+      },
+      {
+        "name": "Eliminar definitivamente Especial de temporada",
+        "x": 409,
+        "y": 1334,
+        "width": 85.28125,
+        "height": 48,
+        "right": 494.28125,
+        "bottom": 1382
+      }
+    ]
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1199,
+    "main": {
+      "x": 24,
+      "y": 0,
+      "width": 1151,
+      "height": 1399,
+      "right": 1175,
+      "bottom": 1399
+    },
+    "columns": 2,
+    "scrollWidth": 1440,
+    "pageSize": {
+      "value": "12",
+      "label": "12",
+      "x": 1087,
+      "y": 405,
+      "width": 88,
+      "height": 48,
+      "right": 1175,
+      "bottom": 453
+    },
+    "cards": [
+      {
+        "x": 24,
+        "y": 469,
+        "width": 567.5,
+        "height": 421,
+        "right": 591.5,
+        "bottom": 890,
+        "title": {
+          "x": 41,
+          "y": 630,
+          "width": 533.5,
+          "height": 26,
+          "right": 574.5,
+          "bottom": 656
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 41,
+            "y": 760,
+            "width": 262.75,
+            "height": 48,
+            "right": 303.75,
+            "bottom": 808
+          },
+          {
+            "x": 311.75,
+            "y": 760,
+            "width": 262.75,
+            "height": 48,
+            "right": 574.5,
+            "bottom": 808
+          },
+          {
+            "x": 41,
+            "y": 825,
+            "width": 85.28125,
+            "height": 48,
+            "right": 126.28125,
+            "bottom": 873
+          }
+        ]
+      },
+      {
+        "x": 607.5,
+        "y": 469,
+        "width": 567.5,
+        "height": 421,
+        "right": 1175,
+        "bottom": 890,
+        "title": {
+          "x": 624.5,
+          "y": 630,
+          "width": 533.5,
+          "height": 26,
+          "right": 1158,
+          "bottom": 656
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 624.5,
+            "y": 760,
+            "width": 262.75,
+            "height": 48,
+            "right": 887.25,
+            "bottom": 808
+          },
+          {
+            "x": 895.25,
+            "y": 760,
+            "width": 262.75,
+            "height": 48,
+            "right": 1158,
+            "bottom": 808
+          },
+          {
+            "x": 624.5,
+            "y": 825,
+            "width": 85.28125,
+            "height": 48,
+            "right": 709.78125,
+            "bottom": 873
+          }
+        ]
+      },
+      {
+        "x": 24,
+        "y": 906,
+        "width": 567.5,
+        "height": 421,
+        "right": 591.5,
+        "bottom": 1327,
+        "title": {
+          "x": 41,
+          "y": 1067,
+          "width": 533.5,
+          "height": 26,
+          "right": 574.5,
+          "bottom": 1093
+        },
+        "status": "Inactiva",
+        "statusDotColor": "rgb(217, 119, 6)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 41,
+            "y": 1197,
+            "width": 262.75,
+            "height": 48,
+            "right": 303.75,
+            "bottom": 1245
+          },
+          {
+            "x": 311.75,
+            "y": 1197,
+            "width": 262.75,
+            "height": 48,
+            "right": 574.5,
+            "bottom": 1245
+          },
+          {
+            "x": 41,
+            "y": 1262,
+            "width": 85.28125,
+            "height": 48,
+            "right": 126.28125,
+            "bottom": 1310
+          }
+        ]
+      },
+      {
+        "x": 607.5,
+        "y": 906,
+        "width": 567.5,
+        "height": 421,
+        "right": 1175,
+        "bottom": 1327,
+        "title": {
+          "x": 624.5,
+          "y": 1067,
+          "width": 533.5,
+          "height": 26,
+          "right": 1158,
+          "bottom": 1093
+        },
+        "status": "Archivada",
+        "statusDotColor": "rgb(107, 114, 128)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 624.5,
+            "y": 1197,
+            "width": 262.75,
+            "height": 48,
+            "right": 887.25,
+            "bottom": 1245
+          },
+          {
+            "x": 895.25,
+            "y": 1197,
+            "width": 262.75,
+            "height": 48,
+            "right": 1158,
+            "bottom": 1245
+          },
+          {
+            "x": 624.5,
+            "y": 1262,
+            "width": 85.28125,
+            "height": 48,
+            "right": 709.78125,
+            "bottom": 1310
+          }
+        ]
+      }
+    ],
+    "controls": [
+      {
+        "name": "Biblioteca de recetas",
+        "x": 765.28125,
+        "y": 24,
+        "width": 165.03125,
+        "height": 48,
+        "right": 930.3125,
+        "bottom": 72
+      },
+      {
+        "name": "Categorías",
+        "x": 938.3125,
+        "y": 24,
+        "width": 101.40625,
+        "height": 48,
+        "right": 1039.71875,
+        "bottom": 72
+      },
+      {
+        "name": "Nueva entrada",
+        "x": 1047.71875,
+        "y": 24,
+        "width": 127.28125,
+        "height": 48,
+        "right": 1175,
+        "bottom": 72
+      },
+      {
+        "name": "entry-search",
+        "x": 74,
+        "y": 171,
+        "width": 1008.265625,
+        "height": 48,
+        "right": 1082.265625,
+        "bottom": 219
+      },
+      {
+        "name": "Buscar ahora",
+        "x": 1082.265625,
+        "y": 171,
+        "width": 74.734375,
+        "height": 48,
+        "right": 1157,
+        "bottom": 219
+      },
+      {
+        "name": "Todas las categoríasSin categoríaPlatos fuertesBebidasPostres",
+        "x": 41,
+        "y": 264,
+        "width": 552.5,
+        "height": 48,
+        "right": 593.5,
+        "bottom": 312
+      },
+      {
+        "name": "Todos los estadosActivaInactivaArchivada",
+        "x": 605.5,
+        "y": 264,
+        "width": 552.5,
+        "height": 48,
+        "right": 1158,
+        "bottom": 312
+      },
+      {
+        "name": "Limpiar filtros",
+        "x": 1036,
+        "y": 324,
+        "width": 122,
+        "height": 48,
+        "right": 1158,
+        "bottom": 372
+      },
+      {
+        "name": "61224",
+        "x": 1087,
+        "y": 405,
+        "width": 88,
+        "height": 48,
+        "right": 1175,
+        "bottom": 453
+      },
+      {
+        "name": "Ver ofertas de Hamburguesa clásica",
+        "x": 41,
+        "y": 760,
+        "width": 262.75,
+        "height": 48,
+        "right": 303.75,
+        "bottom": 808
+      },
+      {
+        "name": "Editar Hamburguesa clásica",
+        "x": 311.75,
+        "y": 760,
+        "width": 262.75,
+        "height": 48,
+        "right": 574.5,
+        "bottom": 808
+      },
+      {
+        "name": "Eliminar definitivamente Hamburguesa clásica",
+        "x": 41,
+        "y": 825,
+        "width": 85.28125,
+        "height": 48,
+        "right": 126.28125,
+        "bottom": 873
+      },
+      {
+        "name": "Ver ofertas de Limonada natural",
+        "x": 624.5,
+        "y": 760,
+        "width": 262.75,
+        "height": 48,
+        "right": 887.25,
+        "bottom": 808
+      },
+      {
+        "name": "Editar Limonada natural",
+        "x": 895.25,
+        "y": 760,
+        "width": 262.75,
+        "height": 48,
+        "right": 1158,
+        "bottom": 808
+      },
+      {
+        "name": "Eliminar definitivamente Limonada natural",
+        "x": 624.5,
+        "y": 825,
+        "width": 85.28125,
+        "height": 48,
+        "right": 709.78125,
+        "bottom": 873
+      },
+      {
+        "name": "Ver ofertas de Brownie de chocolate",
+        "x": 41,
+        "y": 1197,
+        "width": 262.75,
+        "height": 48,
+        "right": 303.75,
+        "bottom": 1245
+      },
+      {
+        "name": "Editar Brownie de chocolate",
+        "x": 311.75,
+        "y": 1197,
+        "width": 262.75,
+        "height": 48,
+        "right": 574.5,
+        "bottom": 1245
+      },
+      {
+        "name": "Eliminar definitivamente Brownie de chocolate",
+        "x": 41,
+        "y": 1262,
+        "width": 85.28125,
+        "height": 48,
+        "right": 126.28125,
+        "bottom": 1310
+      },
+      {
+        "name": "Ver ofertas de Especial de temporada",
+        "x": 624.5,
+        "y": 1197,
+        "width": 262.75,
+        "height": 48,
+        "right": 887.25,
+        "bottom": 1245
+      },
+      {
+        "name": "Editar Especial de temporada",
+        "x": 895.25,
+        "y": 1197,
+        "width": 262.75,
+        "height": 48,
+        "right": 1158,
+        "bottom": 1245
+      },
+      {
+        "name": "Eliminar definitivamente Especial de temporada",
+        "x": 624.5,
+        "y": 1262,
+        "width": 85.28125,
+        "height": 48,
+        "right": 709.78125,
+        "bottom": 1310
+      }
+    ]
+  },
+  {
+    "viewport": 1440,
+    "moduleWidth": 1200,
+    "main": {
+      "x": 24,
+      "y": 0,
+      "width": 1152,
+      "height": 1211,
+      "right": 1176,
+      "bottom": 1211
+    },
+    "columns": 3,
+    "scrollWidth": 1440,
+    "pageSize": {
+      "value": "12",
+      "label": "12",
+      "x": 1088,
+      "y": 237,
+      "width": 88,
+      "height": 40,
+      "right": 1176,
+      "bottom": 277
+    },
+    "cards": [
+      {
+        "x": 24,
+        "y": 293,
+        "width": 373.328125,
+        "height": 405,
+        "right": 397.328125,
+        "bottom": 698,
+        "title": {
+          "x": 41,
+          "y": 454,
+          "width": 339.328125,
+          "height": 26,
+          "right": 380.328125,
+          "bottom": 480
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 41,
+            "y": 584,
+            "width": 165.65625,
+            "height": 40,
+            "right": 206.65625,
+            "bottom": 624
+          },
+          {
+            "x": 214.65625,
+            "y": 584,
+            "width": 165.671875,
+            "height": 40,
+            "right": 380.328125,
+            "bottom": 624
+          },
+          {
+            "x": 41,
+            "y": 641,
+            "width": 85.28125,
+            "height": 40,
+            "right": 126.28125,
+            "bottom": 681
+          }
+        ]
+      },
+      {
+        "x": 413.328125,
+        "y": 293,
+        "width": 373.328125,
+        "height": 405,
+        "right": 786.65625,
+        "bottom": 698,
+        "title": {
+          "x": 430.328125,
+          "y": 454,
+          "width": 339.328125,
+          "height": 26,
+          "right": 769.65625,
+          "bottom": 480
+        },
+        "status": "Activa",
+        "statusDotColor": "rgb(22, 163, 74)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 430.328125,
+            "y": 584,
+            "width": 165.65625,
+            "height": 40,
+            "right": 595.984375,
+            "bottom": 624
+          },
+          {
+            "x": 603.984375,
+            "y": 584,
+            "width": 165.671875,
+            "height": 40,
+            "right": 769.65625,
+            "bottom": 624
+          },
+          {
+            "x": 430.328125,
+            "y": 641,
+            "width": 85.28125,
+            "height": 40,
+            "right": 515.609375,
+            "bottom": 681
+          }
+        ]
+      },
+      {
+        "x": 802.65625,
+        "y": 293,
+        "width": 373.34375,
+        "height": 405,
+        "right": 1176,
+        "bottom": 698,
+        "title": {
+          "x": 819.65625,
+          "y": 454,
+          "width": 339.34375,
+          "height": 26,
+          "right": 1159,
+          "bottom": 480
+        },
+        "status": "Inactiva",
+        "statusDotColor": "rgb(217, 119, 6)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 819.65625,
+            "y": 584,
+            "width": 165.671875,
+            "height": 40,
+            "right": 985.328125,
+            "bottom": 624
+          },
+          {
+            "x": 993.328125,
+            "y": 584,
+            "width": 165.671875,
+            "height": 40,
+            "right": 1159,
+            "bottom": 624
+          },
+          {
+            "x": 819.65625,
+            "y": 641,
+            "width": 85.28125,
+            "height": 40,
+            "right": 904.9375,
+            "bottom": 681
+          }
+        ]
+      },
+      {
+        "x": 24,
+        "y": 714,
+        "width": 373.328125,
+        "height": 425,
+        "right": 397.328125,
+        "bottom": 1139,
+        "title": {
+          "x": 41,
+          "y": 875,
+          "width": 339.328125,
+          "height": 26,
+          "right": 380.328125,
+          "bottom": 901
+        },
+        "status": "Archivada",
+        "statusDotColor": "rgb(107, 114, 128)",
+        "titleFont": "18px",
+        "titleLineHeight": "26px",
+        "captionFont": "12px",
+        "captionLineHeight": "16px",
+        "radius": "12px",
+        "actions": [
+          {
+            "x": 41,
+            "y": 1025,
+            "width": 165.65625,
+            "height": 40,
+            "right": 206.65625,
+            "bottom": 1065
+          },
+          {
+            "x": 214.65625,
+            "y": 1025,
+            "width": 165.671875,
+            "height": 40,
+            "right": 380.328125,
+            "bottom": 1065
+          },
+          {
+            "x": 41,
+            "y": 1082,
+            "width": 85.28125,
+            "height": 40,
+            "right": 126.28125,
+            "bottom": 1122
+          }
+        ]
+      }
+    ],
+    "controls": [
+      {
+        "name": "Biblioteca de recetas",
+        "x": 766.28125,
+        "y": 24,
+        "width": 165.03125,
+        "height": 40,
+        "right": 931.3125,
+        "bottom": 64
+      },
+      {
+        "name": "Categorías",
+        "x": 939.3125,
+        "y": 24,
+        "width": 101.40625,
+        "height": 40,
+        "right": 1040.71875,
+        "bottom": 64
+      },
+      {
+        "name": "Nueva entrada",
+        "x": 1048.71875,
+        "y": 24,
+        "width": 127.28125,
+        "height": 40,
+        "right": 1176,
+        "bottom": 64
+      },
+      {
+        "name": "entry-search",
+        "x": 74,
+        "y": 163,
+        "width": 371.265625,
+        "height": 40,
+        "right": 445.265625,
+        "bottom": 203
+      },
+      {
+        "name": "Buscar ahora",
+        "x": 445.265625,
+        "y": 163,
+        "width": 74.734375,
+        "height": 40,
+        "right": 520,
+        "bottom": 203
+      },
+      {
+        "name": "Todas las categoríasSin categoríaPlatos fuertesBebidasPostres",
+        "x": 533,
+        "y": 164,
+        "width": 240,
+        "height": 40,
+        "right": 773,
+        "bottom": 204
+      },
+      {
+        "name": "Todos los estadosActivaInactivaArchivada",
+        "x": 785,
+        "y": 164,
+        "width": 240,
+        "height": 40,
+        "right": 1025,
+        "bottom": 204
+      },
+      {
+        "name": "Limpiar filtros",
+        "x": 1037,
+        "y": 164,
+        "width": 122,
+        "height": 40,
+        "right": 1159,
+        "bottom": 204
+      },
+      {
+        "name": "61224",
+        "x": 1088,
+        "y": 237,
+        "width": 88,
+        "height": 40,
+        "right": 1176,
+        "bottom": 277
+      },
+      {
+        "name": "Ver ofertas de Hamburguesa clásica",
+        "x": 41,
+        "y": 584,
+        "width": 165.65625,
+        "height": 40,
+        "right": 206.65625,
+        "bottom": 624
+      },
+      {
+        "name": "Editar Hamburguesa clásica",
+        "x": 214.65625,
+        "y": 584,
+        "width": 165.671875,
+        "height": 40,
+        "right": 380.328125,
+        "bottom": 624
+      },
+      {
+        "name": "Eliminar definitivamente Hamburguesa clásica",
+        "x": 41,
+        "y": 641,
+        "width": 85.28125,
+        "height": 40,
+        "right": 126.28125,
+        "bottom": 681
+      },
+      {
+        "name": "Ver ofertas de Limonada natural",
+        "x": 430.328125,
+        "y": 584,
+        "width": 165.65625,
+        "height": 40,
+        "right": 595.984375,
+        "bottom": 624
+      },
+      {
+        "name": "Editar Limonada natural",
+        "x": 603.984375,
+        "y": 584,
+        "width": 165.671875,
+        "height": 40,
+        "right": 769.65625,
+        "bottom": 624
+      },
+      {
+        "name": "Eliminar definitivamente Limonada natural",
+        "x": 430.328125,
+        "y": 641,
+        "width": 85.28125,
+        "height": 40,
+        "right": 515.609375,
+        "bottom": 681
+      },
+      {
+        "name": "Ver ofertas de Brownie de chocolate",
+        "x": 819.65625,
+        "y": 584,
+        "width": 165.671875,
+        "height": 40,
+        "right": 985.328125,
+        "bottom": 624
+      },
+      {
+        "name": "Editar Brownie de chocolate",
+        "x": 993.328125,
+        "y": 584,
+        "width": 165.671875,
+        "height": 40,
+        "right": 1159,
+        "bottom": 624
+      },
+      {
+        "name": "Eliminar definitivamente Brownie de chocolate",
+        "x": 819.65625,
+        "y": 641,
+        "width": 85.28125,
+        "height": 40,
+        "right": 904.9375,
+        "bottom": 681
+      },
+      {
+        "name": "Ver ofertas de Especial de temporada",
+        "x": 41,
+        "y": 1025,
+        "width": 165.65625,
+        "height": 40,
+        "right": 206.65625,
+        "bottom": 1065
+      },
+      {
+        "name": "Editar Especial de temporada",
+        "x": 214.65625,
+        "y": 1025,
+        "width": 165.671875,
+        "height": 40,
+        "right": 380.328125,
+        "bottom": 1065
+      },
+      {
+        "name": "Eliminar definitivamente Especial de temporada",
+        "x": 41,
+        "y": 1082,
+        "width": 85.28125,
+        "height": 40,
+        "right": 126.28125,
+        "bottom": 1122
+      }
+    ]
+  }
+]

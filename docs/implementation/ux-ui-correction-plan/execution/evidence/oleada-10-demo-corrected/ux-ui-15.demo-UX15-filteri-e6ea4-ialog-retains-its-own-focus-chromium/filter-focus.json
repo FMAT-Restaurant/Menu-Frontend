@@ -1,0 +1,27 @@
+{
+  "url": "http://127.0.0.1:5174/?q=Hamburguesa",
+  "title": "[DEMO] Entradas del menú | FMAT Restaurant",
+  "focus": {
+    "tag": "INPUT",
+    "text": "",
+    "id": "entry-search",
+    "returnKey": null,
+    "heading": false,
+    "box": {
+      "top": 163,
+      "bottom": 203,
+      "left": 114,
+      "right": 485.265625
+    }
+  },
+  "headings": [
+    "Entradas del menú"
+  ],
+  "statuses": [],
+  "dialogs": 0,
+  "extraLiveAnnouncements": 0,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  }
+}

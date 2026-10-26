@@ -1,0 +1,317 @@
+{
+  "module": {
+    "left": 0,
+    "right": 1440,
+    "top": -77,
+    "bottom": 1611,
+    "width": 1440,
+    "height": 1688
+  },
+  "viewport": 1440,
+  "scroll": 1440,
+  "fields": [
+    {
+      "selector": "#offer-price-preview",
+      "text": "MXN 145.13",
+      "left": 169,
+      "right": 708,
+      "top": 720,
+      "bottom": 744,
+      "width": 539,
+      "height": 24,
+      "parent": {
+        "left": 169,
+        "right": 708,
+        "top": 640,
+        "bottom": 768,
+        "width": 539,
+        "height": 128
+      },
+      "textRects": [
+        {
+          "left": 618.359375,
+          "right": 708
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    },
+    {
+      "selector": "label[for=offer-price-input]",
+      "text": "Precio base (MXN)",
+      "left": 169,
+      "right": 708,
+      "top": 640,
+      "bottom": 664,
+      "width": 539,
+      "height": 24,
+      "parent": {
+        "left": 169,
+        "right": 708,
+        "top": 640,
+        "bottom": 768,
+        "width": 539,
+        "height": 128
+      },
+      "textRects": [
+        {
+          "left": 169,
+          "right": 286.6875
+        }
+      ],
+      "align": "start",
+      "weight": "600"
+    },
+    {
+      "selector": ".price-prefix",
+      "text": "MXN",
+      "left": 169,
+      "right": 234.96875,
+      "top": 672,
+      "bottom": 712,
+      "width": 65.96875,
+      "height": 40,
+      "parent": {
+        "left": 169,
+        "right": 708,
+        "top": 672,
+        "bottom": 712,
+        "width": 539,
+        "height": 40
+      },
+      "textRects": [
+        {
+          "left": 184,
+          "right": 220.96875
+        }
+      ],
+      "align": "start",
+      "weight": "600"
+    },
+    {
+      "selector": "#offer-price-input",
+      "text": "",
+      "left": 234.96875,
+      "right": 708,
+      "top": 672,
+      "bottom": 712,
+      "width": 473.03125,
+      "height": 40,
+      "parent": {
+        "left": 169,
+        "right": 708,
+        "top": 672,
+        "bottom": 712,
+        "width": 539,
+        "height": 40
+      },
+      "textRects": [],
+      "align": "right",
+      "weight": "600"
+    },
+    {
+      "selector": ".offer-review-price span",
+      "text": "Precio base (MXN)",
+      "left": 161,
+      "right": 291.4375,
+      "top": 283,
+      "bottom": 307,
+      "width": 130.4375,
+      "height": 24,
+      "parent": {
+        "left": 161,
+        "right": 1279,
+        "top": 283,
+        "bottom": 307,
+        "width": 1118,
+        "height": 24
+      },
+      "textRects": [
+        {
+          "left": 161,
+          "right": 291.4375
+        }
+      ],
+      "align": "start",
+      "weight": "400"
+    },
+    {
+      "selector": ".offer-review-price strong",
+      "text": "MXN 123,456,789.50",
+      "left": 307.4375,
+      "right": 1279,
+      "top": 283,
+      "bottom": 307,
+      "width": 971.5625,
+      "height": 24,
+      "parent": {
+        "left": 161,
+        "right": 1279,
+        "top": 283,
+        "bottom": 307,
+        "width": 1118,
+        "height": 24
+      },
+      "textRects": [
+        {
+          "left": 1128.640625,
+          "right": 1279
+        }
+      ],
+      "align": "right",
+      "weight": "600"
+    }
+  ],
+  "controls": [
+    {
+      "text": "Revisar oferta actual",
+      "minimum": 40,
+      "left": 1005.203125,
+      "right": 1164.0625,
+      "top": 129,
+      "bottom": 169,
+      "width": 158.859375,
+      "height": 40
+    },
+    {
+      "text": "Adoptar versión del servidor",
+      "minimum": 40,
+      "left": 161,
+      "right": 373.1875,
+      "top": 363,
+      "bottom": 403,
+      "width": 212.1875,
+      "height": 40
+    },
+    {
+      "text": "Mantener borrador actual",
+      "minimum": 40,
+      "left": 373.1875,
+      "right": 567.296875,
+      "top": 363,
+      "bottom": 403,
+      "width": 194.109375,
+      "height": 40
+    },
+    {
+      "text": "",
+      "minimum": 40,
+      "left": 169,
+      "right": 708,
+      "top": 560,
+      "bottom": 600,
+      "width": 539,
+      "height": 40
+    },
+    {
+      "text": "",
+      "minimum": 40,
+      "left": 234.96875,
+      "right": 708,
+      "top": 672,
+      "bottom": 712,
+      "width": 473.03125,
+      "height": 40
+    },
+    {
+      "text": "Cambiar imagen",
+      "minimum": 40,
+      "left": 732,
+      "right": 1271,
+      "top": 560,
+      "bottom": 724,
+      "width": 539,
+      "height": 164
+    },
+    {
+      "text": "Editar",
+      "minimum": 40,
+      "left": 186,
+      "right": 248.890625,
+      "top": 1124,
+      "bottom": 1164,
+      "width": 62.890625,
+      "height": 40
+    },
+    {
+      "text": "Retirar grupo",
+      "minimum": 40,
+      "left": 256.890625,
+      "right": 367.5,
+      "top": 1124,
+      "bottom": 1164,
+      "width": 110.609375,
+      "height": 40
+    },
+    {
+      "text": "Desactivar",
+      "minimum": 40,
+      "left": 443.453125,
+      "right": 534.9375,
+      "top": 1282,
+      "bottom": 1322,
+      "width": 91.484375,
+      "height": 40
+    },
+    {
+      "text": "Editar",
+      "minimum": 40,
+      "left": 542.9375,
+      "right": 605.828125,
+      "top": 1282,
+      "bottom": 1322,
+      "width": 62.890625,
+      "height": 40
+    },
+    {
+      "text": "Retirar",
+      "minimum": 40,
+      "left": 613.828125,
+      "right": 682,
+      "top": 1282,
+      "bottom": 1322,
+      "width": 68.171875,
+      "height": 40
+    },
+    {
+      "text": "+ Agregar opción",
+      "minimum": 40,
+      "left": 186,
+      "right": 324.25,
+      "top": 1360,
+      "bottom": 1400,
+      "width": 138.25,
+      "height": 40
+    },
+    {
+      "text": "+Agregar grupo",
+      "minimum": 40,
+      "left": 728,
+      "right": 1271,
+      "top": 1047,
+      "bottom": 1413,
+      "width": 543,
+      "height": 366
+    },
+    {
+      "text": "Cancelar",
+      "minimum": 40,
+      "left": 1081.78125,
+      "right": 1162.125,
+      "top": 948,
+      "bottom": 988,
+      "width": 80.34375,
+      "height": 40
+    },
+    {
+      "text": "Guardar Oferta",
+      "minimum": 40,
+      "left": 1174.125,
+      "right": 1296,
+      "top": 948,
+      "bottom": 988,
+      "width": 121.875,
+      "height": 40
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "url": "http://127.0.0.1:5174/categories",
+  "title": "[DEMO] Catálogo de categorías | FMAT Restaurant",
+  "focus": {
+    "tag": "INPUT",
+    "text": "",
+    "id": "category-name",
+    "returnKey": null,
+    "heading": false,
+    "box": {
+      "top": 280,
+      "bottom": 328,
+      "left": 404,
+      "right": 876
+    }
+  },
+  "headings": [
+    "Catálogo de categorías"
+  ],
+  "statuses": [],
+  "dialogs": 1,
+  "extraLiveAnnouncements": 0,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  }
+}

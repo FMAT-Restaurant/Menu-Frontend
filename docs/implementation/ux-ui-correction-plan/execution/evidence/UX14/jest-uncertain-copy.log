@@ -1,0 +1,19 @@
+FAIL src/features/categories/CategoryPage.test.tsx
+  ● CategoryPage & CategoryFormDialog (T02A) › POST success with edits after submission preserves draft in edit mode and warns user
+
+    expect(element).toHaveTextContent()
+
+    Expected element to have text content:
+      Timeout
+    Received:
+      No sabemos si se creó la categoría. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente.Reintentar
+
+
+
+      at Object.<anonymous> (src/features/categories/CategoryPage.test.tsx:530:53)
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       1 failed, 38 passed, 39 total
+Snapshots:   0 total
+Time:        12.088 s
+Ran all test suites within paths "src/features/categories/CategoryPage.test.tsx", "src/features/recipes/RecipePage.test.tsx".

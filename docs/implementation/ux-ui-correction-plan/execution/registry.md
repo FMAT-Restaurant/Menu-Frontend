@@ -2,6 +2,7 @@
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
 Estado vigente: reanudado por el usuario con «Puedes continuar», desde1f415c4 y directorio limpio. UX13 integrado25c996b. UX14 y UX15 en ejecución con reservas separadas; UX16 sólo preparación de lectura. Las pausas y estados anteriores conservados debajo son históricos.
+Actualización vigente: UX14 integrado68e1ed0 y UX15 b5f70a0,74demo y67HTTP aprobados más tres casos de foco fortalecidos. UX16 asignado a `/root/ux16_execute`; las filas anteriores de preparación y las pausas conservadas son históricas.
 Estado actual: UX12 integrado en6f40514.135 focalizadas,19 demo,7 HTTP nuevos y55 regresiones anteriores pasan, con tipos/build/lint. UX13 queda habilitado; UX13 a UX17 pendientes. Los checkpoints y las pausas siguientes son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
@@ -39,9 +40,9 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX11 | `/root`, continuación del ejecutor tras límite de uso | a9408b8 | Liberada | Integrada | U15 y conservación U26/U27/U28;535 Jest,47 demo,55 HTTP | UX17 repite base final; shell excluido y validaciones manuales pendientes |
 | UX12 | `/root/ux12_money`, importes; root integra | 6f40514 | Liberada | Integrada | U12 acreditado según D02; U01 repetido;135 focalizadas,19 demo,7 HTTP nuevos y55 anteriores | UX17 repite base final; precisión y payload intactos |
 | UX13 | `/root/ux13_finish` y root, guardado y feedback local | UX11/UX12 integrados; implementación25c996b | Reserva liberada; consumidores, helpers, CAS y e2e/ux-ui-13 conservados | Integrado | U17/U18 | 7demo,62HTTP; revisión oleada9; checkpoint y parada solicitados |
-| UX14 | `/root/ux14_execute`, microcopia | 1f415c4; UX13/D03/D05 integrados | Textos y tests de categorías, entradas, ofertas y recetas; SlotOptionItem; sin OfferCard; e2e/ux-ui-14*, consultas de audit-layout/UX08demo/UX12HTTP y editGuard.test; evidence/UX14 | En ejecución | U20 | Ampliaciones de literales informadas antes de adaptar; aporte SVG de vacío CategoryPage; root conserva salidas compartidas |
-| UX15 | `/root/ux15_execute`, contexto de rutas | 1f415c4; UX13 integrado | App/main y App.test, nuevo shared/RouteContext y tests, OfferCard y prueba propia; e2e/ux-ui-15* y evidence/UX15 | En ejecución | U24 | Sin formularios/listados ni OfferComponents compartido; shell excluido, lector pendiente |
-| UX16 | `/root/ux16_prepare`, preparación de lectura concluida | UX14/UX15 aún en revisión | Sólo evidence/UX16/preparation.md | Preparado | U25 | Releer layout integrado antes de implementar |
+| UX14 | `/root/ux14_execute`, microcopia | Implementación68e1ed0 | Reserva liberada; consumidores y pruebas conservados | Integrado | U20 | Revisión oleada10; incertidumbre corregida tras inspección visual |
+| UX15 | `/root/ux15_execute`, contexto de rutas | Implementaciónb5f70a0 | Reserva liberada; App/RouteContext/OfferCard y pruebas conservados | Integrado | U24 | Revisión oleada10; transiciones reales y foco útil, shell excluido y lector pendiente |
+| UX16 | `/root/ux16_execute`, cargas locales | b5f70a0; UX14/UX15 integrados | App fallback, nuevo LoadingState, estados/estilos/tests de páginas y formularios según preparación; e2e/ux-ui-16* y evidence/UX16 | En ejecución | U25 | Sin RouteContext/tarjetas/máquina/API/recibos; root conserva salidas compartidas |
 | UX17 | Root verifica; `/root/ux17_isolation_review` prepara lectura CSS | UX01 a UX16 y decisiones | Sólo evidence/reviews/isolation-preparation.md para revisor | Pendiente de base final | U01 a U28, V01 a V18 | Revisión de aislamiento sin ejecutar navegador ni tocar hojas activas |
 
 ## Recursos

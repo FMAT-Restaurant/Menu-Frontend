@@ -1,0 +1,20 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test e2e/ux-ui-15.spec.ts --workers=1
+[WebServer] npm notice run menu-frontend@0.1.0 preview
+
+[WebServer] npm notice run vite preview --host 0.0.0.0
+
+
+[WebServer] (node:20840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:6836) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/3] [chromium] › e2e\ux-ui-15.spec.ts:4:1 › UX15 delayed entry context updates the task title without moving the user's focus
+[2/3] [chromium] › e2e\ux-ui-15.spec.ts:25:1 › UX15 a suspended editor preserves a persistent control's useful focus context
+[3/3] [chromium] › e2e\ux-ui-15.spec.ts:25:1 › UX15 a suspended editor preserves a removed control's useful focus context
+  3 passed (6.3s)

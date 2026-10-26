@@ -1,0 +1,51 @@
+npm notice run menu-frontend@0.1.0 npx
+npm notice run playwright test e2e/ux-ui-15.spec.ts --workers=1
+[WebServer] npm notice run menu-frontend@0.1.0 preview
+
+[WebServer] npm notice run vite preview --host 0.0.0.0
+
+[WebServer] (node:23852) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 2 tests using 1 worker
+
+
+(node:25792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/2] [chromium] › e2e\ux-ui-15.spec.ts:4:1 › UX15 delayed entry context updates the task title without moving the user's focus
+[2/2] [chromium] › e2e\ux-ui-15.spec.ts:24:1 › UX15 a suspended editor does not steal focus after another interaction
+  1) [chromium] › e2e\ux-ui-15.spec.ts:24:1 › UX15 a suspended editor does not steal focus after another interaction 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Cargando página…', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Cargando página…', { exact: true }) with timeout 5000ms
+      - waiting for getByText('Cargando página…', { exact: true })
+
+
+      34 |   await page.locator(".task-header").getByRole("link", { name: "Nueva entrada", exact: true }).click();
+      35 |   await requestedChunk;
+    > 36 |   await expect(page.getByText("Cargando página…", { exact: true })).toBeVisible();
+         |                                                                     ^
+      37 |   await page.keyboard.press("Tab");
+      38 |   release();
+      39 |   await expect(page.getByRole("heading", { name: "Nueva entrada", exact: true })).toBeVisible();
+        at C:\Users\tony\Desktop\Septimo semestre\vyv\proyecto\repos\Menu-Frontend\e2e\ux-ui-15.spec.ts:36:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\ux-ui-15-UX15-a-suspended--9c9c1-s-after-another-interaction-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ux-ui-15-UX15-a-suspended--9c9c1-s-after-another-interaction-chromium\error-context.md
+
+
+  1 failed
+    [chromium] › e2e\ux-ui-15.spec.ts:24:1 › UX15 a suspended editor does not steal focus after another interaction 
+  1 passed (10.7s)

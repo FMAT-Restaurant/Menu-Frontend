@@ -1,0 +1,21 @@
+{
+  "environment": "controlled HTTP fixtures, not a live backend",
+  "status": 409,
+  "writes": [
+    {
+      "body": {
+        "description": "Datos conservados",
+        "name": "Categoría UX14"
+      },
+      "key": "4ead93fe-5076-496e-ab87-43b86b5aea32"
+    },
+    {
+      "body": {
+        "description": "Datos conservados",
+        "name": "Categoría UX14"
+      },
+      "key": "0a0378c6-988a-4e33-8b08-74254dd7fc66"
+    }
+  ],
+  "errors": []
+}

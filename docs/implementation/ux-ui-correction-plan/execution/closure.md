@@ -1,5 +1,7 @@
 # Verificación de cierre UX/UI
 
+Estado vigente: UX14 integrado68e1ed0 y UX15 b5f70a0. Pasan74demo y67HTTP sobre preview, más tres casos fortalecidos de foco. UX16 en ejecución y UX17 pendiente. [Revisión oleada10](evidence/reviews/oleada-10.md). Las pausas y estados anteriores conservados debajo son históricos.
+
 Estado vigente tras UX13: implementación `25c996b`,7/7 demo y62/62 HTTP sobre preview; [revisión oleada9](evidence/reviews/oleada-09.md). Checkpoint y parada solicitados por el usuario. UX14/UX15 sólo preparados; UX16/UX17 pendientes. Las referencias de estado anteriores conservadas debajo son históricas.
 
 Estado provisional. La implementación completa todavía no está acreditada. Este documento distingue la integración de tickets del resultado por hallazgo; UX17 completará la comprobación final sobre una misma base.
@@ -35,11 +37,11 @@ Alcance vigente: implementar UX00 a UX17, autorizado expresamente por el usuario
 | U17 | UX13 | Acreditado en alcance automatizado | 25c996b; pie por altura útil, foco/resumen/último grupo,7demo y V2 HTTP intacto | Conservar base final; teclado virtual físico manual pendiente |
 | U18 | UX13 | Acreditado en alcance probado | 25c996b; recibo local una vez, listado fallido separado, callback/F5 sin otra creación y CAS seguro | Conservar UX15/UX17; lector de pantalla manual pendiente |
 | U19 | UX09; UX02/06/07/08 | Parcialmente acreditado | Matrices por viewport, módulo y formulario en UX06/07/08/09, controles48 en paneles y tabla por contenedor | Repetir composición final y demás consumidores UX17 |
-| U20 | UX14 | Abierto | D03 y D05 resueltas | Rondas de selección, 10 MiB y restricciones operativas |
+| U20 | UX14 | Acreditado en alcance probado | 68e1ed0; rondas, insumos,10MiB, incertidumbre distinta de rechazo, referencias en detalles y restricciones conservadas | Repetir base final UX17 |
 | U21 | UX09 | Acreditado en oleada5 | 6318581 retira capacidades pendientes y conserva opciones de inventario existentes, sin operaciones nuevas | Conservar en base final |
 | U22 | UX02; UX03/05/06/07/08/09 | Parcialmente acreditado | SVG nuevo y búsqueda adoptada en 8c95f64 | Cierres y demás consumidores |
 | U23 | UX09 | Acreditado en teclado y tacto emulado | 6318581; Cambiar imagen visible, selector y preview funcionales, SVG compartido | Dispositivo físico manual pendiente; conservar base final |
-| U24 | UX15; UX04/06/09 | Abierto | Contrato de marcadores documentado en UX02 | Foco, retorno, títulos, anuncios y lector; shell real excluido |
+| U24 | UX15; UX04/06/09 | Acreditado en alcance automatizado | b5f70a0; origen exacto y ausente, título autónomo, query sin salto, transiciones diferidas y prioridad; revisión oleada10 | Conservar UX16/UX17; lector manual pendiente y shell real excluido |
 | U25 | UX16 | Abierto | Sin entrega | Cargas locales, demoras y conservación de datos |
 | U26 | UX03; conservación UX10/UX11 | Acreditado en oleada 2 | [Revisión UX03](evidence/reviews/oleada-02.md); 20 demo y 47 normales, fondo único y foco Cancelar | Conservar tras UX10/UX11 y repetir en base final |
 | U27 | UX10 | Acreditado en alcance probado | 81fc2fe; mismo nodo,1modal/fondo,0final, Escape local y foco; rechazo/incertidumbre/F5 y borradores | Conservar con UX11; físico y lector manual pendientes |

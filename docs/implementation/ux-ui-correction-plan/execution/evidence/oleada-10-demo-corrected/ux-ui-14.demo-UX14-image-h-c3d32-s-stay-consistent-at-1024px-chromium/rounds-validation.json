@@ -1,0 +1,6 @@
+{
+  "width": 1024,
+  "overflow": false,
+  "visibleText": "← Volver a ofertas\nNueva oferta\n\nEntrada: Hamburguesa clásica\n\n1. Información comercial\nEtiqueta de presentación (opcional)\n\nLa entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.\n\nPrecio base (MXN)\nMXN\n\nEl precio base pertenece a la oferta y no suma automáticamente precios de componentes.\n\nEstado de la oferta\nInactiva\n\nLa oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.\n\nImagen de la oferta (obligatoria)\nArrastra una imagen aquí o haz clic para seleccionar\nSeleccionar archivo\n\nJPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.\n\n2. Composición\n\nCada grupo indica cuántas rondas de selección incluye. En cada ronda se elige entre sus opciones.\n\nLa composición debe contener al menos un grupo con opciones válidas.\n+\nAgregar grupo\nCancelar\nGuardar Oferta\nDefinir nuevo grupo\n\nEscribe un número entero de rondas de selección, igual o mayor que 1.\n\nNombre del grupo\nRondas de selección\n\nIndica cuántas veces se elige entre las opciones de este grupo.\n\nCurso / tiempo sugerido (opcional)\nSin especificar\nEntrada\nPlato fuerte\nPostre\nBebida\nCancelar\nGuardar grupo",
+  "modalCount": 1
+}
