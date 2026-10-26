@@ -1,6 +1,7 @@
 # Registro de ejecución UX/UI
 
 Inicio: 23 de octubre de 2026. Orquestador y único editor de este registro: `/root`.
+Estado vigente: reanudado por el usuario con «Puedes continuar», desde1f415c4 y directorio limpio. UX13 integrado25c996b. UX14 y UX15 en ejecución con reservas separadas; UX16 sólo preparación de lectura. Las pausas y estados anteriores conservados debajo son históricos.
 Estado actual: UX12 integrado en6f40514.135 focalizadas,19 demo,7 HTTP nuevos y55 regresiones anteriores pasan, con tipos/build/lint. UX13 queda habilitado; UX13 a UX17 pendientes. Los checkpoints y las pausas siguientes son históricos.
 Checkpoint del24 de octubre de2026: trabajo detenido a petición del usuario después de finalizar UX04. UX00 a UX04 integradas; UX05 a UX17 pendientes. Sin ejecutores ni reservas activas. Ver [checkpoint.md](checkpoint.md) para reanudar.
 Reanudación posterior al checkpoint: objetivo reactivado y comprobado en estado active. Base0e375aa intacta, directorio limpio y subagentes anteriores terminados. Se asigna la oleada4 con reservas separadas; el checkpoint anterior permanece como referencia histórica.
@@ -38,9 +39,9 @@ U01 acreditado en la base de oleada 1, con repetición obligatoria tras UX09 y U
 | UX11 | `/root`, continuación del ejecutor tras límite de uso | a9408b8 | Liberada | Integrada | U15 y conservación U26/U27/U28;535 Jest,47 demo,55 HTTP | UX17 repite base final; shell excluido y validaciones manuales pendientes |
 | UX12 | `/root/ux12_money`, importes; root integra | 6f40514 | Liberada | Integrada | U12 acreditado según D02; U01 repetido;135 focalizadas,19 demo,7 HTTP nuevos y55 anteriores | UX17 repite base final; precisión y payload intactos |
 | UX13 | `/root/ux13_finish` y root, guardado y feedback local | UX11/UX12 integrados; implementación25c996b | Reserva liberada; consumidores, helpers, CAS y e2e/ux-ui-13 conservados | Integrado | U17/U18 | 7demo,62HTTP; revisión oleada9; checkpoint y parada solicitados |
-| UX14 | `/root/ux14_prepare`, preparación de lectura | UX13/D03 y D05 resueltas | Sólo evidence/UX14/preparation.md | Pendiente | U20 | Inventario de textos; ninguna edición de aplicación antes de UX13 |
-| UX15 | `/root/ux15_prepare`, preparación de lectura | UX13; contrato autónomo D01 | Sólo evidence/UX15/preparation.md | Pendiente | U24 | Contrato de foco/título/anuncios; no implementar antes de UX13; shell excluido |
-| UX16 | Por asignar | UX14/UX15 | Ninguna activa | Pendiente | U25 | Layout final |
+| UX14 | `/root/ux14_execute`, microcopia | 1f415c4; UX13/D03/D05 integrados | Textos y tests de categorías, entradas, ofertas y recetas; sin OfferCard; e2e/ux-ui-14* y evidence/UX14 | En ejecución | U20 | Reservas concretas de preparación; ampliaciones antes de editar; root conserva salidas compartidas |
+| UX15 | `/root/ux15_execute`, contexto de rutas | 1f415c4; UX13 integrado | App/main y App.test, nuevo shared/RouteContext y tests, OfferCard y prueba propia; e2e/ux-ui-15* y evidence/UX15 | En ejecución | U24 | Sin formularios/listados ni OfferComponents compartido; shell excluido, lector pendiente |
+| UX16 | `/root/ux16_prepare`, preparación de lectura | UX14/UX15 aún en ejecución | Sólo evidence/UX16/preparation.md | Preparación | U25 | Releer layout integrado antes de implementar |
 | UX17 | Root verifica | UX01 a UX16 y decisiones | Ninguna activa | Pendiente | U01 a U28, V01 a V18 | Evidencia integrada, shell/dispositivo/lector |
 
 ## Recursos
