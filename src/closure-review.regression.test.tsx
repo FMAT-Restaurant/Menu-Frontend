@@ -61,7 +61,7 @@ test.each(["IDEMPOTENCY_KEY_REUSED", "INVALID_IDEMPOTENCY_KEY"] as const)("RC05:
     <Route path="/entries/entry-1/offers" element={<h1>Ofertas guardadas</h1>} />
   </Routes></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "Guardar Oferta" }));
-  await screen.findByText(`Clave rechazada: ${code}`);
+  await screen.findByText("El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar.");
   const oldKey = repository.updateOffer.mock.calls[0][3];
   fireEvent.change(screen.getByLabelText("Etiqueta de presentación (opcional)"), { target: { value: "Cambios conservados" } });
   const prepare = screen.getByRole("button", { name: "Iniciar nueva operación" });

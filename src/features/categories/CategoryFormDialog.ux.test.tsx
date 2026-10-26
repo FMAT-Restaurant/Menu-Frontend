@@ -67,7 +67,8 @@ test("a retry after an uncertain create preserves the sealed valid payload even 
   fireEvent.change(name, { target: { value: "Nombre enviado" } });
   fireEvent.click(screen.getByRole("button", { name: "Guardar categoría" }));
   const retry = await screen.findByRole("button", { name: "Reintentar" });
-  expect(screen.getByRole("alert")).toHaveTextContent("Timeout");
+  expect(screen.getByRole("alert")).toHaveTextContent("No sabemos si se creó la categoría.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Reintentar recupera el mismo envío");
   fireEvent.change(name, { target: { value: "" } });
   fireEvent.click(retry);
   await waitFor(() => expect(repository.createCategory).toHaveBeenCalledTimes(2));
