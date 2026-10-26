@@ -2,7 +2,7 @@
    Categories Feature Styles
    ========================================================= */
 
-.category-list {
+:where(.menu-module[data-menu-module]) .category-list {
   display: grid;
   gap: 12px;
   margin: 0;
@@ -10,38 +10,38 @@
   list-style: none;
 }
 
-.category-row {
+:where(.menu-module[data-menu-module]) .category-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   border: 1px solid var(--border);
   border-radius: 8px;
 }
 
-.category-row h3 {
+:where(.menu-module[data-menu-module]) .category-row h3 {
   margin: 0;
   color: var(--ink);
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 18px;
+  line-height: 26px;
 }
 
-.category-row p {
+:where(.menu-module[data-menu-module]) .category-row p {
   margin: 4px 0;
   color: var(--text);
   font-size: 14px;
   line-height: 20px;
 }
 
-.category-row span {
+:where(.menu-module[data-menu-module]) .category-row span {
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
 }
 
 /* Category Form Dialog (R06) */
-.category-form-dialog {
+:where(.menu-module[data-menu-module]) .category-form-dialog {
   width: min(calc(100% - 32px), 520px);
   max-height: min(90vh, 720px);
   max-height: min(90dvh, 720px);
@@ -54,12 +54,12 @@
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 10%);
 }
 
-.category-form-dialog[open] {
+:where(.menu-module[data-menu-module]) .category-form-dialog[open] {
   display: flex;
   flex-direction: column;
 }
 
-.category-form-dialog form {
+:where(.menu-module[data-menu-module]) .category-form-dialog form {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -67,7 +67,7 @@
   overflow: hidden;
 }
 
-.category-form-dialog__header {
+:where(.menu-module[data-menu-module]) .category-form-dialog__header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -78,13 +78,13 @@
   background: var(--surface);
 }
 
-.category-form-dialog__header h2 {
+:where(.menu-module[data-menu-module]) .category-form-dialog__header h2 {
   margin: 0;
   font-size: var(--text-h2);
   line-height: var(--leading-h2);
 }
 
-.category-form-dialog__close {
+:where(.menu-module[data-menu-module]) .category-form-dialog__close {
   width: var(--control-height);
   height: var(--control-height);
   border: 0;
@@ -93,11 +93,11 @@
   color: var(--text);
 }
 
-.category-form-dialog__close:hover {
+:where(.menu-module[data-menu-module]) .category-form-dialog__close:hover {
   background: #e5e7eb;
 }
 
-.category-form-dialog__fields {
+:where(.menu-module[data-menu-module]) .category-form-dialog__fields {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -106,20 +106,20 @@
   padding: 24px;
 }
 
-.category-form-dialog__field {
+:where(.menu-module[data-menu-module]) .category-form-dialog__field {
   display: grid;
   gap: 8px;
 }
 
-.category-form-dialog__field label {
+:where(.menu-module[data-menu-module]) .category-form-dialog__field label {
   color: var(--text);
   font-size: 14px;
   line-height: 20px;
   font-weight: 600;
 }
 
-.category-form-dialog__field input,
-.category-form-dialog__field textarea {
+:where(.menu-module[data-menu-module]) .category-form-dialog__field input,
+:where(.menu-module[data-menu-module]) .category-form-dialog__field textarea {
   width: 100%;
   min-height: var(--control-height);
   padding: 8px 12px;
@@ -132,21 +132,21 @@
   line-height: var(--leading-body);
 }
 
-.category-form-dialog__field input {
+:where(.menu-module[data-menu-module]) .category-form-dialog__field input {
   height: var(--control-height);
   padding-block: 0;
 }
 
-.category-form-dialog__field input[aria-invalid="true"] {
+:where(.menu-module[data-menu-module]) .category-form-dialog__field input[aria-invalid="true"] {
   border: 2px solid var(--danger);
 }
 
-.category-form-dialog__field textarea {
+:where(.menu-module[data-menu-module]) .category-form-dialog__field textarea {
   min-height: 96px;
   resize: vertical;
 }
 
-.category-form-dialog__validation {
+:where(.menu-module[data-menu-module]) .category-form-dialog__validation {
   padding: 12px;
   border: 1px solid #fecaca;
   border-radius: var(--radius-control);
@@ -156,11 +156,11 @@
   line-height: 20px;
 }
 
-.category-form-dialog__validation p {
+:where(.menu-module[data-menu-module]) .category-form-dialog__validation p {
   margin: 0;
 }
 
-.category-form-dialog__validation .button {
+:where(.menu-module[data-menu-module]) .category-form-dialog__validation .button {
   margin-top: 4px;
   padding-inline: 0;
   color: inherit;
@@ -168,35 +168,35 @@
   white-space: normal;
 }
 
-.category-form-dialog__error {
+:where(.menu-module[data-menu-module]) .category-form-dialog__error {
   margin: 0;
   color: #991b1b;
   font-size: 14px;
   line-height: 20px;
 }
 
-.category-form-dialog__review {
+:where(.menu-module[data-menu-module]) .category-form-dialog__review {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   overflow-wrap: anywhere;
 }
 
-.category-form-dialog__review h3 {
+:where(.menu-module[data-menu-module]) .category-form-dialog__review h3 {
   margin: 0 0 12px;
 }
 
-.category-form-dialog__review dd {
+:where(.menu-module[data-menu-module]) .category-form-dialog__review dd {
   margin: 0 0 12px;
 }
 
-.category-form-dialog__review-actions {
+:where(.menu-module[data-menu-module]) .category-form-dialog__review-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.category-form-dialog__review-actions button {
+:where(.menu-module[data-menu-module]) .category-form-dialog__review-actions button {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
@@ -206,7 +206,7 @@
   white-space: normal;
 }
 
-.category-form-dialog__actions {
+:where(.menu-module[data-menu-module]) .category-form-dialog__actions {
   flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
@@ -217,22 +217,22 @@
 }
 
 @container menu-dialog (width < 480px) {
-  .category-form-dialog__header,
-  .category-form-dialog__fields,
-  .category-form-dialog__actions {
+  :where(.menu-module[data-menu-module]) .category-form-dialog__header,
+  :where(.menu-module[data-menu-module]) .category-form-dialog__fields,
+  :where(.menu-module[data-menu-module]) .category-form-dialog__actions {
     padding-inline: 16px;
   }
-  .category-form-dialog__actions {
+  :where(.menu-module[data-menu-module]) .category-form-dialog__actions {
     flex-wrap: wrap;
   }
 }
 
 @media (max-width: 700px) {
-  .category-row {
+  :where(.menu-module[data-menu-module]) .category-row {
     align-items: flex-start;
     flex-direction: column;
   }
-  .category-form-dialog__actions {
+  :where(.menu-module[data-menu-module]) .category-form-dialog__actions {
     flex-wrap: wrap;
   }
 }

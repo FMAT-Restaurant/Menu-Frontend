@@ -2,7 +2,7 @@
    Catalog Feature Styles
    ========================================================= */
 
-.filters {
+:where(.menu-module[data-menu-module]) .filters {
   display: grid;
   grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
   align-items: end;
@@ -13,15 +13,15 @@
   background: var(--surface);
 }
 
-.filters__advanced {
+:where(.menu-module[data-menu-module]) .filters__advanced {
   display: contents;
 }
 
-.filters__toggle {
+:where(.menu-module[data-menu-module]) .filters__toggle {
   display: none;
 }
 
-.catalog-page .select-field select {
+:where(.menu-module[data-menu-module]) .catalog-page .select-field select {
   min-width: 0;
   width: 100%;
   min-height: var(--control-height);
@@ -35,11 +35,11 @@
   line-height: 24px;
 }
 
-.filters__clear {
+:where(.menu-module[data-menu-module]) .filters__clear {
   align-self: end;
 }
 
-.catalog-toolbar {
+:where(.menu-module[data-menu-module]) .catalog-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -49,21 +49,21 @@
   margin: 16px 0;
 }
 
-.catalog-toolbar__count {
+:where(.menu-module[data-menu-module]) .catalog-toolbar__count {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
 }
 
-.catalog-toolbar__note {
+:where(.menu-module[data-menu-module]) .catalog-toolbar__note {
   margin: 8px 0 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
 }
 
-.catalog-page .select-field--inline {
+:where(.menu-module[data-menu-module]) .catalog-page .select-field--inline {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
@@ -72,19 +72,19 @@
   line-height: 20px;
 }
 
-.catalog-page .select-field--inline select {
+:where(.menu-module[data-menu-module]) .catalog-page .select-field--inline select {
   flex: 0 0 88px;
   width: 88px;
   min-width: 88px;
 }
 
-.entry-grid {
+:where(.menu-module[data-menu-module]) .entry-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
-.entry-card {
+:where(.menu-module[data-menu-module]) .entry-card {
   position: relative;
   display: flex;
   min-width: 0;
@@ -96,19 +96,19 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
 }
 
-.entry-card:focus-visible {
+:where(.menu-module[data-menu-module]) .entry-card:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
-.entry-card .button[aria-disabled="true"] {
+:where(.menu-module[data-menu-module]) .entry-card .button[aria-disabled="true"] {
   cursor: not-allowed;
   background: #f3f4f6;
   border-color: var(--border);
   color: var(--muted);
 }
 
-.entry-card__image {
+:where(.menu-module[data-menu-module]) .entry-card__image {
   position: relative;
   display: grid;
   height: 144px;
@@ -120,7 +120,7 @@
   font-size: 14px;
 }
 
-.entry-card__image img {
+:where(.menu-module[data-menu-module]) .entry-card__image img {
   position: absolute;
   inset: 0;
   display: block;
@@ -129,19 +129,19 @@
   object-fit: cover;
 }
 
-.entry-card__image-fallback {
+:where(.menu-module[data-menu-module]) .entry-card__image-fallback {
   display: grid;
   justify-items: center;
   gap: 8px;
 }
 
-.entry-card .status {
+:where(.menu-module[data-menu-module]) .entry-card .status {
   gap: 8px;
   padding: 4px 8px;
   line-height: 16px;
 }
 
-.entry-card__body {
+:where(.menu-module[data-menu-module]) .entry-card__body {
   display: flex;
   flex: 1;
   min-width: 0;
@@ -150,7 +150,7 @@
   overflow-wrap: anywhere;
 }
 
-.entry-card h2 {
+:where(.menu-module[data-menu-module]) .entry-card h2 {
   margin: 0;
   color: var(--ink);
   font-size: 18px;
@@ -158,7 +158,7 @@
   font-weight: 600;
 }
 
-.entry-card__description {
+:where(.menu-module[data-menu-module]) .entry-card__description {
   display: -webkit-box;
   min-height: 0;
   margin: 8px 0 12px;
@@ -171,13 +171,13 @@
   line-clamp: 2;
 }
 
-.entry-card__categories {
+:where(.menu-module[data-menu-module]) .entry-card__categories {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 8px;
 }
 
-.category-chip {
+:where(.menu-module[data-menu-module]) .category-chip {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
@@ -188,7 +188,7 @@
   line-height: 16px;
 }
 
-.entry-card__meta {
+:where(.menu-module[data-menu-module]) .entry-card__meta {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -199,23 +199,23 @@
   line-height: 16px;
 }
 
-.entry-card__meta strong {
+:where(.menu-module[data-menu-module]) .entry-card__meta strong {
   color: var(--text);
 }
 
-.entry-card__actions {
+:where(.menu-module[data-menu-module]) .entry-card__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: auto;
 }
 
-.entry-card__actions .button {
+:where(.menu-module[data-menu-module]) .entry-card__actions .button {
   min-width: 0;
   white-space: normal;
 }
 
-.entry-card__secondary-actions {
+:where(.menu-module[data-menu-module]) .entry-card__secondary-actions {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -224,22 +224,22 @@
   border-top: 1px solid var(--border);
 }
 
-.entry-card__delete {
+:where(.menu-module[data-menu-module]) .entry-card__delete {
   flex: 0 0 auto;
   color: var(--muted);
 }
 
-.entry-card__delete:disabled {
+:where(.menu-module[data-menu-module]) .entry-card__delete:disabled {
   background: transparent;
   color: var(--muted);
 }
 
-.entry-card__delete:not(:disabled):hover {
+:where(.menu-module[data-menu-module]) .entry-card__delete:not(:disabled):hover {
   background: #fef2f2;
   color: var(--danger);
 }
 
-.entry-card__delete-help {
+:where(.menu-module[data-menu-module]) .entry-card__delete-help {
   min-width: 0;
   margin: 0;
   color: var(--muted);
@@ -247,11 +247,11 @@
   line-height: 16px;
 }
 
-.catalog-feedback {
+:where(.menu-module[data-menu-module]) .catalog-feedback {
   margin: 8px 0;
 }
 
-.catalog-updating {
+:where(.menu-module[data-menu-module]) .catalog-updating {
   display: block;
   min-height: 24px;
   color: var(--muted);
@@ -259,75 +259,75 @@
   line-height: 20px;
 }
 
-.catalog-results {
+:where(.menu-module[data-menu-module]) .catalog-results {
   min-height: 80px;
 }
 
-.upcoming-view {
+:where(.menu-module[data-menu-module]) .upcoming-view {
   width: min(100% - 48px, 1200px);
   margin: 0 auto;
   padding: 40px 0;
 }
 
-.upcoming-view p:last-child {
+:where(.menu-module[data-menu-module]) .upcoming-view p:last-child {
   color: var(--muted);
 }
 
 @container menu-module (width >= 768px) {
-  .entry-grid {
+  :where(.menu-module[data-menu-module]) .entry-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @container menu-module (width >= 1200px) {
-  .entry-grid {
+  :where(.menu-module[data-menu-module]) .entry-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @container menu-module (768px <= width < 1200px) {
-  .filters {
+  :where(.menu-module[data-menu-module]) .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .filters .search-field {
+  :where(.menu-module[data-menu-module]) .filters .search-field {
     grid-column: 1 / -1;
   }
-  .filters__clear {
+  :where(.menu-module[data-menu-module]) .filters__clear {
     grid-column: 2;
     justify-self: end;
   }
 }
 
 @container menu-module (width < 768px) {
-  .filters {
+  :where(.menu-module[data-menu-module]) .filters {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     padding: 16px;
   }
-  .filters .search-field {
+  :where(.menu-module[data-menu-module]) .filters .search-field {
     grid-column: 1 / -1;
   }
-  .filters__toggle {
+  :where(.menu-module[data-menu-module]) .filters__toggle {
     display: inline-flex;
     min-width: 0;
     white-space: normal;
   }
-  .filters__advanced {
+  :where(.menu-module[data-menu-module]) .filters__advanced {
     display: none;
     grid-column: 1 / -1;
   }
-  .filters__advanced--open {
+  :where(.menu-module[data-menu-module]) .filters__advanced--open {
     display: grid;
     gap: 8px;
   }
-  .filters__clear {
+  :where(.menu-module[data-menu-module]) .filters__clear {
     grid-column: 2;
     grid-row: 2;
   }
-  .catalog-page .select-field--inline label {
+  :where(.menu-module[data-menu-module]) .catalog-page .select-field--inline label {
     white-space: normal;
   }
-  .entry-card__image {
+  :where(.menu-module[data-menu-module]) .entry-card__image {
     height: 192px;
     min-height: 192px;
   }

@@ -2,7 +2,7 @@
    Entries Feature Styles
    ========================================================= */
 
-.entry-form {
+:where(.menu-module[data-menu-module]) .entry-form {
   container: entry-form / inline-size;
   min-width: 0;
   border: 1px solid var(--border);
@@ -10,30 +10,30 @@
   background: var(--surface);
 }
 
-.entry-form__layout {
+:where(.menu-module[data-menu-module]) .entry-form__layout {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 24px;
   padding: 24px;
 }
 
-.entry-form__primary,
-.entry-form__secondary {
+:where(.menu-module[data-menu-module]) .entry-form__primary,
+:where(.menu-module[data-menu-module]) .entry-form__secondary {
   display: grid;
   min-width: 0;
   align-content: start;
   gap: 24px;
 }
 
-.entry-form h2 {
+:where(.menu-module[data-menu-module]) .entry-form h2 {
   margin: 0 0 16px;
   font-size: var(--text-h2);
   line-height: var(--leading-h2);
   font-weight: 700;
 }
 
-.entry-category-selector legend,
-.entry-status-selector legend {
+:where(.menu-module[data-menu-module]) .entry-category-selector legend,
+:where(.menu-module[data-menu-module]) .entry-status-selector legend {
   margin: 0 0 12px;
   color: var(--ink);
   font-size: 18px;
@@ -41,22 +41,22 @@
   font-weight: 600;
 }
 
-.entry-form__field {
+:where(.menu-module[data-menu-module]) .entry-form__field {
   display: grid;
   gap: 8px;
   margin-top: 12px;
 }
 
-.entry-form__field label {
+:where(.menu-module[data-menu-module]) .entry-form__field label {
   color: var(--text);
   font-size: 14px;
   font-weight: 600;
 }
 
-.entry-form__field input,
-.entry-form__field textarea,
-.entry-status-selector select,
-.entry-category-selector__search input {
+:where(.menu-module[data-menu-module]) .entry-form__field input,
+:where(.menu-module[data-menu-module]) .entry-form__field textarea,
+:where(.menu-module[data-menu-module]) .entry-status-selector select,
+:where(.menu-module[data-menu-module]) .entry-category-selector__search input {
   width: 100%;
   min-width: 0;
   padding: 8px 12px;
@@ -69,24 +69,23 @@
   line-height: var(--leading-body);
 }
 
-.entry-form__field input,
-.entry-status-selector select,
-.entry-category-selector__search input {
+:where(.menu-module[data-menu-module]) .entry-form__field input,
+:where(.menu-module[data-menu-module]) .entry-status-selector select,
+:where(.menu-module[data-menu-module]) .entry-category-selector__search input {
   height: var(--control-height);
   padding-block: 0;
 }
 
-.entry-form__field textarea {
+:where(.menu-module[data-menu-module]) .entry-form__field textarea {
   min-height: 80px;
   resize: vertical;
 }
 
-.entry-form :is(input, textarea, select)[aria-invalid="true"],
-.entry-form [data-invalid="true"] {
+:where(.menu-module[data-menu-module]) .entry-form :is(input, textarea, select)[aria-invalid="true"], :where(.menu-module[data-menu-module]) .entry-form [data-invalid="true"] {
   border: 2px solid var(--danger);
 }
 
-.entry-form :is(input, textarea, select, button):focus-visible {
+:where(.menu-module[data-menu-module]) .entry-form :is(input, textarea, select, button):focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
@@ -95,7 +94,7 @@
   scroll-margin-block: 24px calc(var(--form-actions-height, 0px) + 24px);
 }
 
-.entry-form__muted {
+:where(.menu-module[data-menu-module]) .entry-form__muted {
   margin: 8px 0 0;
   color: #4b5563;
   font-size: 14px;
@@ -103,8 +102,8 @@
   overflow-wrap: anywhere;
 }
 
-.entry-category-selector,
-.entry-status-selector {
+:where(.menu-module[data-menu-module]) .entry-category-selector,
+:where(.menu-module[data-menu-module]) .entry-status-selector {
   min-width: 0;
   margin: 0;
   padding: 16px;
@@ -113,13 +112,13 @@
   background: var(--canvas);
 }
 
-.entry-category-selector legend,
-.entry-status-selector legend {
+:where(.menu-module[data-menu-module]) .entry-category-selector legend,
+:where(.menu-module[data-menu-module]) .entry-status-selector legend {
   padding: 0 4px;
   margin-bottom: 0;
 }
 
-.entry-category-selector__trigger {
+:where(.menu-module[data-menu-module]) .entry-category-selector__trigger {
   display: flex;
   width: 100%;
   min-height: var(--control-height);
@@ -137,12 +136,12 @@
   line-height: 20px;
 }
 
-.entry-category-selector__trigger span:first-child {
+:where(.menu-module[data-menu-module]) .entry-category-selector__trigger span:first-child {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.entry-category-selector__chevron {
+:where(.menu-module[data-menu-module]) .entry-category-selector__chevron {
   width: 8px;
   height: 8px;
   flex: 0 0 8px;
@@ -152,7 +151,7 @@
   margin: 0 4px 4px;
 }
 
-.entry-category-selector__search-label {
+:where(.menu-module[data-menu-module]) .entry-category-selector__search-label {
   display: block;
   margin-bottom: 8px;
   font-size: 14px;
@@ -160,7 +159,7 @@
   font-weight: 500;
 }
 
-.entry-category-selector__search {
+:where(.menu-module[data-menu-module]) .entry-category-selector__search {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -169,12 +168,12 @@
   border-radius: var(--radius-control);
 }
 
-.entry-category-selector__search input {
+:where(.menu-module[data-menu-module]) .entry-category-selector__search input {
   border: 0;
   background: transparent;
 }
 
-.entry-category-selector__panel {
+:where(.menu-module[data-menu-module]) .entry-category-selector__panel {
   margin-top: 8px;
   padding: 8px;
   border: 1px solid var(--border);
@@ -183,7 +182,7 @@
   box-shadow: 0 4px 12px rgb(0 0 0 / 5%);
 }
 
-.entry-category-selector__list {
+:where(.menu-module[data-menu-module]) .entry-category-selector__list {
   min-width: 0;
   max-height: 192px;
   margin: 8px 0 0;
@@ -193,14 +192,14 @@
   overscroll-behavior: contain;
 }
 
-.entry-category-selector__list > p {
+:where(.menu-module[data-menu-module]) .entry-category-selector__list > p {
   padding: 8px;
   color: var(--text);
   font-size: 14px;
   line-height: 20px;
 }
 
-.entry-category-selector__option {
+:where(.menu-module[data-menu-module]) .entry-category-selector__option {
   display: flex;
   min-height: var(--control-height);
   align-items: center;
@@ -211,23 +210,23 @@
   font-size: 14px;
 }
 
-.entry-category-selector__option:hover {
+:where(.menu-module[data-menu-module]) .entry-category-selector__option:hover {
   background: var(--canvas);
 }
 
-.entry-category-selector__option span {
+:where(.menu-module[data-menu-module]) .entry-category-selector__option span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.entry-category-selector__option input {
+:where(.menu-module[data-menu-module]) .entry-category-selector__option input {
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
   accent-color: var(--brand);
 }
 
-.entry-category-selector__selection {
+:where(.menu-module[data-menu-module]) .entry-category-selector__selection {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -238,7 +237,7 @@
   list-style: none;
 }
 
-.entry-category-selector__selection li {
+:where(.menu-module[data-menu-module]) .entry-category-selector__selection li {
   display: inline-flex;
   max-width: 100%;
   align-items: center;
@@ -249,13 +248,13 @@
   font-size: 14px;
 }
 
-.entry-category-selector__selection li > span {
+:where(.menu-module[data-menu-module]) .entry-category-selector__selection li > span {
   min-width: 0;
   padding-left: 12px;
   overflow-wrap: anywhere;
 }
 
-.entry-category-selector__selection button {
+:where(.menu-module[data-menu-module]) .entry-category-selector__selection button {
   display: inline-grid;
   place-items: center;
   min-width: var(--control-height);
@@ -267,7 +266,7 @@
   font-size: 20px;
 }
 
-.entry-category-selector__error {
+:where(.menu-module[data-menu-module]) .entry-category-selector__error {
   margin: 8px 0;
   padding: 12px;
   border-radius: var(--radius-control);
@@ -277,11 +276,11 @@
   line-height: 20px;
 }
 
-.entry-category-selector__error p {
+:where(.menu-module[data-menu-module]) .entry-category-selector__error p {
   margin: 0 0 8px;
 }
 
-.entry-category-selector__error button {
+:where(.menu-module[data-menu-module]) .entry-category-selector__error button {
   min-height: var(--control-height);
   margin-right: 8px;
   padding: 4px 0;
@@ -292,15 +291,15 @@
   text-decoration: underline;
 }
 
-.entry-status-selector select {
+:where(.menu-module[data-menu-module]) .entry-status-selector select {
   margin-top: 8px;
 }
 
-.entry-image-field {
+:where(.menu-module[data-menu-module]) .entry-image-field {
   min-width: 0;
 }
 
-.entry-image-field__zone {
+:where(.menu-module[data-menu-module]) .entry-image-field__zone {
   display: flex;
   width: 100%;
   min-width: 0;
@@ -314,12 +313,12 @@
   color: var(--text);
 }
 
-.entry-image-field__zone:hover:not(:disabled) {
+:where(.menu-module[data-menu-module]) .entry-image-field__zone:hover:not(:disabled) {
   border-color: var(--brand);
   background: var(--soft-brand);
 }
 
-.entry-image-field__preview {
+:where(.menu-module[data-menu-module]) .entry-image-field__preview {
   display: grid;
   width: 100%;
   height: clamp(64px, calc(100dvh - 224px), 176px);
@@ -331,14 +330,14 @@
   line-height: 20px;
 }
 
-.entry-image-field__preview img {
+:where(.menu-module[data-menu-module]) .entry-image-field__preview img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.entry-image-field__action {
+:where(.menu-module[data-menu-module]) .entry-image-field__action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -352,13 +351,13 @@
   font-weight: 600;
 }
 
-.entry-image-field__placeholder {
+:where(.menu-module[data-menu-module]) .entry-image-field__placeholder {
   display: grid;
   justify-items: center;
   gap: 12px;
 }
 
-.entry-image-field__input {
+:where(.menu-module[data-menu-module]) .entry-image-field__input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -369,53 +368,53 @@
   clip-path: inset(50%);
 }
 
-.entry-image-field__validation {
+:where(.menu-module[data-menu-module]) .entry-image-field__validation {
   display: block;
   margin-top: 8px;
   color: var(--text);
   font-size: 14px;
 }
 
-.entry-form__error {
+:where(.menu-module[data-menu-module]) .entry-form__error {
   margin: 0;
   color: #991b1b;
   font-size: 14px;
   line-height: 20px;
 }
 
-.entry-form__error:empty {
+:where(.menu-module[data-menu-module]) .entry-form__error:empty {
   display: none;
 }
 
-.entry-form > .feedback,
-.entry-form__review {
+:where(.menu-module[data-menu-module]) .entry-form > .feedback,
+:where(.menu-module[data-menu-module]) .entry-form__review {
   margin: 16px 20px 0;
   overflow-wrap: anywhere;
 }
 
-.entry-form__summary {
+:where(.menu-module[data-menu-module]) .entry-form__summary {
   scroll-margin-top: 20px;
 }
 
-.entry-form__summary p {
+:where(.menu-module[data-menu-module]) .entry-form__summary p {
   margin: 0 0 8px;
 }
 
-.entry-form__summary ul {
+:where(.menu-module[data-menu-module]) .entry-form__summary ul {
   margin: 8px 0;
   padding-left: 20px;
 }
 
-.entry-form__summary li button {
+:where(.menu-module[data-menu-module]) .entry-form__summary li button {
   margin-left: 8px;
 }
 
-.entry-form__uncertain > a {
+:where(.menu-module[data-menu-module]) .entry-form__uncertain > a {
   margin-right: 12px;
   font-weight: 600;
 }
 
-.entry-form__review {
+:where(.menu-module[data-menu-module]) .entry-form__review {
   padding: 16px;
   border: 1px solid #bfdbfe;
   border-radius: var(--radius-control);
@@ -423,34 +422,34 @@
   color: var(--text);
 }
 
-.entry-form__review dl {
+:where(.menu-module[data-menu-module]) .entry-form__review dl {
   display: grid;
   grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
   gap: 8px 16px;
   font-size: 14px;
 }
 
-.entry-form__review dt {
+:where(.menu-module[data-menu-module]) .entry-form__review dt {
   font-weight: 600;
 }
 
-.entry-form__review dd {
+:where(.menu-module[data-menu-module]) .entry-form__review dd {
   min-width: 0;
   margin: 0;
 }
 
-.entry-form__review p {
+:where(.menu-module[data-menu-module]) .entry-form__review p {
   font-size: 14px;
   line-height: 20px;
 }
 
-.entry-form__review-actions {
+:where(.menu-module[data-menu-module]) .entry-form__review-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.entry-form__review-actions button {
+:where(.menu-module[data-menu-module]) .entry-form__review-actions button {
   min-height: var(--control-height);
   max-width: 100%;
   white-space: normal;
@@ -461,13 +460,13 @@
   color: var(--text);
 }
 
-.entry-form__summary button,
-.entry-form__uncertain button,
-.entry-form > .feedback button {
+:where(.menu-module[data-menu-module]) .entry-form__summary button,
+:where(.menu-module[data-menu-module]) .entry-form__uncertain button,
+:where(.menu-module[data-menu-module]) .entry-form > .feedback button {
   min-height: var(--control-height);
 }
 
-.entry-form__review-image {
+:where(.menu-module[data-menu-module]) .entry-form__review-image {
   display: block;
   max-width: 100%;
   max-height: 160px;
@@ -475,7 +474,7 @@
   margin-bottom: 8px;
 }
 
-.entry-missing {
+:where(.menu-module[data-menu-module]) .entry-missing {
   display: grid;
   justify-items: start;
   gap: 12px;
@@ -485,13 +484,13 @@
   background: var(--surface);
 }
 
-.entry-missing p {
+:where(.menu-module[data-menu-module]) .entry-missing p {
   max-width: 64ch;
   margin: 0;
   color: var(--text);
 }
 
-.entry-missing__icon {
+:where(.menu-module[data-menu-module]) .entry-missing__icon {
   display: grid;
   width: 48px;
   height: 48px;
@@ -516,28 +515,28 @@
   box-shadow: 0 -4px 12px rgb(0 0 0 / 4%);
 }
 
-.entry-form__actions .button {
+:where(.menu-module[data-menu-module]) .entry-form__actions .button {
   min-height: var(--control-height);
 }
 
 @container entry-form (width < 768px) {
-  .entry-form > * {
+  :where(.menu-module[data-menu-module]) .entry-form > * {
     --control-height: 48px;
   }
-  .entry-form__layout {
+  :where(.menu-module[data-menu-module]) .entry-form__layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
     padding: 16px;
   }
-  .entry-form > .feedback,
-  .entry-form__review {
+  :where(.menu-module[data-menu-module]) .entry-form > .feedback,
+  :where(.menu-module[data-menu-module]) .entry-form__review {
     margin-inline: 16px;
   }
-  .entry-form__actions {
+  :where(.menu-module[data-menu-module]) .entry-form__actions {
     padding-inline: 16px;
     gap: 8px;
   }
-  .entry-form__actions .button {
+  :where(.menu-module[data-menu-module]) .entry-form__actions .button {
     flex: 1;
     min-width: 0;
     white-space: normal;

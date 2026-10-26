@@ -387,7 +387,7 @@ export function RecipePage({
             </div>
           )}
 
-          {loading && !recipesResult && <LoadingState variant="rows" label="Cargando recetas…" />}
+          {loading && !recipesResult && <LoadingState variant={mode === "selection" ? "recipe-selection" : "recipe-rows"} label="Cargando recetas…" />}
           {loading && recipesResult && <output className="feedback">Actualizando recetas…</output>}
           {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
 

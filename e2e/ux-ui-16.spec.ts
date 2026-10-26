@@ -33,8 +33,8 @@ async function geometry(page: Page, info: TestInfo, name: string) {
 
 for (const width of [390, 1024, 1440]) for (const [path, delayed, variant, visible] of [
   ["/", "/menu/entries", "entries", "Entrada UX16"],
-  ["/categories", "/menu/categories", "rows", "Categoría UX16"],
-  ["/recipes", "/menu/recipes", "rows", "Receta UX16"],
+  ["/categories", "/menu/categories", "category-rows", "Categoría UX16"],
+  ["/recipes", "/menu/recipes", "recipe-rows", "Receta UX16"],
   ["/entries/ux16-entry/offers", "/menu/offers", "offers", "Individual UX16"],
   ["/entries/ux16-entry/offers/new", "/menu/entries/ux16-entry", "offer-form", "Etiqueta de presentación (opcional)"],
   ["/entries/ux16-entry/edit", "/menu/entries/ux16-entry", "entry-form", "Nombre comercial"],
@@ -78,7 +78,7 @@ for (const width of [390, 1024, 1440]) for (const [path, delayed, variant, visib
         expect(Math.abs(resolved.images[0].height - pending.images[0].height)).toBeLessThanOrEqual(1);
         expect(Math.abs(resolved.images[0].width - pending.images[0].width)).toBeLessThanOrEqual(2);
       }
-      if (variant === "offers") expect(pending.content[0].height).toBeGreaterThanOrEqual(resolved.content[0].height * 0.85);
+      if (["offers", "category-rows", "recipe-rows"].includes(variant)) expect(pending.content[0].height).toBeGreaterThanOrEqual(resolved.content[0].height * 0.85);
       const comparison = info.outputPath("comparison.json");
       await writeFile(comparison, JSON.stringify({ environment: "controlled HTTP fixtures", pending, resolved, headingTopDelta: resolved.heading[0].y - pending.heading[0].y }, null, 2));
       await info.attach("comparison", { path: comparison, contentType: "application/json" });

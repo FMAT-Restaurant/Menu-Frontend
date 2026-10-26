@@ -18,7 +18,7 @@ function deferred<T>() {
 const recipe = (id: string): RecipeSummary => ({ id, name: id, description: "Receta confirmada", supplies: [] });
 const page = (id: string): Page<RecipeSummary> => ({ data: [recipe(id)], meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } });
 
-test.each(["entries", "offers", "rows", "entry-form", "offer-form", "options", "task"] as const)("%s loading has one real status and no interactive fake controls", variant => {
+test.each(["entries", "offers", "category-rows", "recipe-rows", "recipe-selection", "entry-form", "offer-form", "options", "task"] as const)("%s loading has one real status and no interactive fake controls", variant => {
   const view = render(<LoadingState variant={variant} label="Cargando contenido…" />);
   expect(screen.getByRole("status")).toHaveTextContent("Cargando contenido…");
   expect(view.container.querySelector("[aria-hidden=true]")).not.toBeNull();

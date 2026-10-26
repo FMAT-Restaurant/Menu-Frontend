@@ -51,7 +51,7 @@ export function RecipeSelector({ repository, state, onChange, onSelect, onCreate
     <SearchField id="recipe-search" label="Buscar recetas" placeholder="Buscar por nombre o descripción…"
       value={state.draftSearch} onChange={draftSearch => onChange({ ...state, draftSearch })}
       onSearch={() => onChange({ ...state, query: state.draftSearch.trim(), page: 1 })} />
-    {loading && !result && <LoadingState variant="rows" label="Cargando recetas…" />}
+    {loading && !result && <LoadingState variant="recipe-selection" label="Cargando recetas…" />}
     {loading && result && <output className="feedback">Actualizando recetas…</output>}
     {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
     {error && <div role="alert" className="feedback feedback--error">No se pudieron cargar las recetas. <button type="button" className="button button--secondary" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div>}

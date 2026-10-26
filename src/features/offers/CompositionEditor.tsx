@@ -1,4 +1,5 @@
 import { type SlotDraft, SlotCard } from "./SlotCard";
+import { Icon } from "../../shared/Icon";
 
 export interface CompositionEditorProps {
   slots: SlotDraft[];
@@ -67,7 +68,7 @@ export function CompositionEditor({
           disabled={disabled}
           aria-label="Agregar grupo"
         >
-          <span className="add-slot-card__icon" aria-hidden="true">+</span>
+          <span className="add-slot-card__icon" aria-hidden="true"><Icon name="add" /></span>
           <span className="add-slot-card__label">Agregar grupo</span>
         </button>
       </div>

@@ -1,6 +1,7 @@
 import type { OfferCourse } from "../../application/catalog";
 import type { OptionDraft } from "./optionDraft";
 import { SlotOptionItem } from "./SlotOptionItem";
+import { Icon } from "../../shared/Icon";
 
 export interface SlotDraft {
   localId?: string;
@@ -126,7 +127,7 @@ export function SlotCard({
           disabled={disabled}
           aria-label={`Agregar opción a ${slot.name}`}
         >
-          + Agregar opción
+          <Icon name="add" /> Agregar opción
         </button>
       </footer>
     </article>

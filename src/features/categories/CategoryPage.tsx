@@ -107,7 +107,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
         <section className="category-panel" aria-labelledby="category-page-title" aria-busy={loading}>
           {notice && <output className="feedback feedback--success">{notice}</output>}
           {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
-          {loading && categories.length === 0 && <LoadingState variant="rows" label="Cargando categorías…" />}
+          {loading && categories.length === 0 && <LoadingState variant="category-rows" label="Cargando categorías…" />}
           {loading && categories.length > 0 && <output className="feedback">Actualizando categorías…</output>}
           {!loading && !error && categories.length === 0 && (
             <div className="empty-state category-empty">
