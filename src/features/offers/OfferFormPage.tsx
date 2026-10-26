@@ -4,6 +4,7 @@ import { revealFormControl, useFormActionsLayout } from "../../shared/useFormAct
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { formatMoney } from "../../shared/formatMoney";
 import { isStrongEtag } from "../../application/entryVersion";
+import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { contractErrorResponse } from "../../api/catalogResponse";
@@ -1155,9 +1156,10 @@ export function OfferFormPage({
       <main className="menu-page offer-form-page">
         <header className="task-header offer-form-page__heading">
           <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
-            ← Volver a ofertas
+            <Icon name="arrow-left" /> Volver a ofertas
           </Link>
           <div className="task-header__content">
+            <p className="eyebrow">Ofertas</p>
             <h1 data-route-heading tabIndex={-1}>{isEditing ? "Editar oferta" : "Nueva oferta"}</h1>
             <p className="task-header__intro offer-form-page__subtitle">Entrada: <strong>{entry?.brandName || "Cargando…"}</strong></p>
           </div>

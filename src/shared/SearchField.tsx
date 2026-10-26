@@ -35,6 +35,11 @@ export function SearchField({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
         />
+        {value && (
+          <button type="button" className="search-field__clear" aria-label="Limpiar búsqueda" onClick={() => onChange("")}>
+            <Icon name="close" />
+          </button>
+        )}
         <button type="submit" className="button button--secondary" aria-label="Buscar ahora">Buscar</button>
       </div>
     </form>

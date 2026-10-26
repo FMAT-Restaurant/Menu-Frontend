@@ -346,11 +346,12 @@ export function RecipePage({
           </button>
         ) : (
           <Link className="back-link category-screen__back" to={returnTo}>
-            {mode === "selection" ? <><Icon name="close" /> Cancelar</> : "Volver al menú"}
+            {mode === "selection" ? <><Icon name="close" /> Cancelar</> : <><Icon name="arrow-left" /> Volver al menú</>}
           </Link>
         )}
           <div className="task-header__row">
             <div className="task-header__content">
+              <p className="eyebrow">Recetas</p>
               <h1 id="recipe-page-title" data-route-heading={onClose ? undefined : true} tabIndex={-1}>{title}</h1>
               <p className="task-header__intro">{subtitle}</p>
             </div>

@@ -5,6 +5,7 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../../application/catalog";
 import { cachedEntries, entryQueryKey, invalidateCatalogCategories, invalidateCatalogEntries, rememberEntries } from "../../application/catalogCache";
 import { loadEntryCategories } from "../../application/entryCategories";
+import { Icon } from "../../shared/Icon";
 import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
@@ -350,14 +351,18 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     <div className="app-shell">
       <main className="menu-page catalog-page">
         <header className="task-header catalog-header">
-          <div className="task-header__row">
+          <div className="task-header__row catalog-header__top">
             <div className="task-header__content">
-              <h1 data-route-heading tabIndex={-1}>Entradas del menú</h1>
+              <p className="eyebrow">Catálogo del menú</p>
+              <h1 aria-label="Entradas del menú" data-route-heading tabIndex={-1}>Entradas</h1>
+              <p className="task-header__intro">Administra las entradas, sus categorías y su disponibilidad.</p>
             </div>
             <div className="task-header__actions catalog-header__actions">
-              <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
-              <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
-              <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
+              <nav className="catalog-header__navigation" aria-label="Administrar el menú">
+                <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
+                <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
+              </nav>
+              <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>
             </div>
           </div>
         </header>

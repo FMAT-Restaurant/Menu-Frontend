@@ -8,6 +8,7 @@ import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStat
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { applyAttemptFailure, applyAttemptSendStart, canManualRetryAttempt, createSealedAttempt, isAttemptWindowExpired, markAttemptExpired, sealJsonPayload, type SealedOperationAttempt } from "../../application/operationAttempt";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
+import { Icon } from "../../shared/Icon";
 import { OfferCard } from "./OfferCard";
 import "./styles.css";
 
@@ -647,9 +648,10 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     <div className="app-shell">
       <main className="menu-page offers-page" aria-busy={entryLoading || offersLoading || updatingOffers}>
         <header className="task-header offers-header">
-          <Link className="back-link" to={backTo}>← Volver a entradas</Link>
+          <Link className="back-link" to={backTo}><Icon name="arrow-left" /> Volver a entradas</Link>
           <div className="task-header__row">
             <div className="task-header__content">
+              <p className="eyebrow">Ofertas</p>
               <h1 data-route-heading tabIndex={-1}>Ofertas de {visibleEntry?.brandName ?? "la entrada"}</h1>
               <p className="task-header__intro">Presentaciones vendibles de la misma identidad comercial.</p>
             </div>

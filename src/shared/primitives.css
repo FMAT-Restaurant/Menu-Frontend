@@ -29,6 +29,11 @@
   background: #fff;
 }
 
+:where(.menu-module) .search-field__control:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--soft-brand);
+}
+
 :where(.menu-module) .search-field__icon {
   display: inline-flex;
   align-items: center;
@@ -51,8 +56,31 @@
 }
 
 :where(.menu-module) .search-field input:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
+  outline: 0;
+}
+
+:where(.menu-module) .search-field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+:where(.menu-module) .search-field__clear {
+  display: inline-flex;
+  flex: 0 0 var(--control-height);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+}
+
+:where(.menu-module) .search-field__clear:hover {
+  background: var(--soft-brand);
+  color: var(--brand);
 }
 
 :where(.menu-module) .search-field__control .button {
@@ -208,6 +236,8 @@
 }
 
 :where(.menu-module) .task-header h1 {
+  width: fit-content;
+  max-width: 100%;
   margin: 0;
   color: var(--ink);
   font-size: var(--text-h1);
@@ -215,6 +245,11 @@
   font-weight: 700;
   letter-spacing: -.02em;
   text-transform: none;
+}
+
+:where(.menu-module) .task-header [data-route-heading]:focus {
+  /* Route announcements focus a heading, rather than an interactive control. */
+  outline: none;
 }
 
 :where(.menu-module) .task-header__intro {
@@ -308,9 +343,32 @@
 :where(.menu-module) .back-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: var(--control-height);
-  color: var(--brand);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
   font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+:where(.menu-module) .back-link:hover:not([aria-disabled="true"]) {
+  border-color: var(--brand);
+  background: var(--soft-brand);
+  color: var(--brand);
+}
+
+:where(.menu-module) .back-link:active:not([aria-disabled="true"]) {
+  background: var(--soft-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.menu-module) .back-link { transition: none; }
 }
 
 :where(.menu-module) .category-empty {

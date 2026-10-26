@@ -95,9 +95,10 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
     <div className="category-screen">
       <main className="menu-page category-screen__main">
         <header className="task-header category-screen__header">
-          <Link className="back-link" to={returnTo}>← Volver al menú</Link>
+          <Link className="back-link" to={returnTo}><Icon name="arrow-left" /> Volver al menú</Link>
           <div className="task-header__row">
             <div className="task-header__content">
+              <p className="eyebrow">Organización del menú</p>
               <h1 id="category-page-title" data-route-heading tabIndex={-1}>Catálogo de categorías</h1>
               <p className="task-header__intro">Organiza las entradas del menú por categorías. Una entrada puede pertenecer a varias categorías.</p>
             </div>

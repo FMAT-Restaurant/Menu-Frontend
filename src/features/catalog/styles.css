@@ -2,6 +2,44 @@
    Catalog Feature Styles
    ========================================================= */
 
+:where(.menu-module[data-menu-module]) .catalog-header {
+  padding-bottom: 24px;
+}
+
+:where(.menu-module[data-menu-module]) .catalog-header__top {
+  align-items: center;
+}
+
+:where(.menu-module[data-menu-module]) .catalog-header .eyebrow {
+  margin-bottom: 4px;
+}
+
+:where(.menu-module[data-menu-module]) .catalog-header__new {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .catalog-header__actions {
+  align-items: center;
+  gap: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .catalog-header__navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+}
+
+@container menu-module (width < 768px) {
+  :where(.menu-module[data-menu-module]) .catalog-header__actions { align-items: stretch; gap: 12px; }
+  :where(.menu-module[data-menu-module]) .catalog-header__navigation { flex: 1 1 100%; padding-right: 0; border-right: 0; }
+  :where(.menu-module[data-menu-module]) .catalog-header__navigation .button { flex: 1 1 120px; }
+  :where(.menu-module[data-menu-module]) .catalog-header__new { width: 100%; }
+}
+
 :where(.menu-module[data-menu-module]) .filters {
   display: grid;
   grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
