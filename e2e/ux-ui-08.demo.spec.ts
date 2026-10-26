@@ -66,7 +66,7 @@ test("UX08 validates locally with summary links and adapts supplies to actual mo
   await page.getByRole("button", { name: "Guardar receta", exact: true }).click();
   await expect(page.getByLabel("Cantidad del insumo 1", { exact: true })).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByRole("dialog")).toBeVisible();
-  await summary.getByRole("link", { name: "Insumo 1: La cantidad de cada ingrediente debe ser mayor a 0." }).click();
+  await summary.getByRole("link", { name: "Insumo 1: La cantidad de cada insumo debe ser mayor a 0." }).click();
   await expect(page.getByLabel("Cantidad del insumo 1", { exact: true })).toBeFocused();
   await page.getByLabel("Cantidad del insumo 1", { exact: true }).fill("125.5");
   await page.getByRole("button", { name: "+ Agregar insumo", exact: true }).click();

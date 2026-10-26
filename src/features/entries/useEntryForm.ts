@@ -408,7 +408,7 @@ export function useEntryForm(
     if (entryId && !isStrongEntryVersion(resources.entry?.etag))
       return entryFailure(
         new Error(
-          "No se recibió una versión fuerte de la entrada. Revisa los datos actuales antes de guardar.",
+          "No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar.",
         ),
       );
     return null;

@@ -85,6 +85,9 @@ test("uncertain creation survives remount without POST and retries sealed payloa
   await openCreate(); fillRecipe();
   fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
   await screen.findByRole("button", { name: "Reintentar" });
+  expect(screen.getByRole("alert")).toHaveTextContent("No sabemos si se creó la receta.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Reintentar recupera el mismo envío");
+  expect(screen.getByRole("alert")).toHaveTextContent("No reintentaremos automáticamente.");
   const first = repo.createRecipe.mock.calls[0];
   fireEvent.change(screen.getByLabelText("Nombre", { exact: true }), { target: { value: "Cambio posterior" } });
   cancel();
@@ -94,6 +97,7 @@ test("uncertain creation survives remount without POST and retries sealed payloa
   view.unmount();
   render(<Task repo={repo} store={store} onSelect={selected} />);
   const retry = await screen.findByRole("button", { name: "Reintentar" });
+  expect(screen.getByRole("alert")).toHaveTextContent("No sabemos si se creó la receta.");
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(screen.getByLabelText("Nombre", { exact: true })).toHaveValue("Cambio posterior");
   expect(repo.createRecipe).toHaveBeenCalledTimes(1);

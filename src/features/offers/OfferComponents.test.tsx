@@ -120,13 +120,15 @@ describe("OfferCommercialInfo Component", () => {
 
     expect(
       screen.getByText(
-        "Toda oferta se crea con estado inactivo (INACTIVE); la composición del borrador local no garantiza la aceptación del servidor ni activa la oferta automáticamente."
+        "La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después."
       )
     ).toBeVisible();
 
     const dropzone = screen.getByRole("button", {
       name: "Seleccionar o arrastrar imagen de la oferta",
     });
+    expect(screen.getByText("JPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.")).toBeVisible();
+    expect(document.querySelector('input[type="file"]')).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
 
     fireEvent.dragOver(dropzone);
 
@@ -164,7 +166,7 @@ describe("OfferCommercialInfo Component", () => {
 
     expect(
       screen.getByText(
-        "El borrador incluye al menos un grupo con opciones activas para solicitar el estado activo. Toda oferta inicia inactiva (INACTIVE) al crearse y la composición local no garantiza la aceptación del servidor hasta guardar."
+        "El borrador tiene un grupo con opciones activas. Al guardar solicitarás la activación; sólo se aplicará si la composición cumple los requisitos."
       )
     ).toBeVisible();
     expect(
@@ -197,7 +199,7 @@ describe("OfferCommercialInfo Component", () => {
 
     const warningAlert = screen.getByRole("alert");
     expect(warningAlert).toHaveTextContent(
-      "La oferta se mantiene inactiva porque no tiene ningún grupo activo en este borrador. Toda oferta nueva inicia inactiva (INACTIVE) y la composición local no activa la oferta automáticamente ni garantiza la aceptación del servidor hasta guardar."
+      "Sin un grupo con opciones activas, la oferta se guardará inactiva. Añade opciones activas para solicitar su activación. Guardar no garantiza que se acepte la solicitud."
     );
     expect(screen.queryByText(/Se activará automáticamente/i)).not.toBeInTheDocument();
   });
@@ -442,6 +444,7 @@ describe("SlotModal Component", () => {
     );
 
     const submitBtn = screen.getByRole("button", { name: "Guardar grupo" });
+    expect(screen.getByLabelText("Rondas de selección")).toHaveAccessibleDescription("Indica cuántas veces se elige entre las opciones de este grupo.");
 
     // Submit empty name
     fireEvent.click(submitBtn);
@@ -452,14 +455,14 @@ describe("SlotModal Component", () => {
     fireEvent.change(screen.getByLabelText("Nombre del grupo"), {
       target: { value: "Postre" },
     });
-    fireEvent.change(screen.getByLabelText(/Unidades incluidas/), {
+    fireEvent.change(screen.getByLabelText(/Rondas de selección/), {
       target: { value: "0" },
     });
     fireEvent.click(submitBtn);
-    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(screen.getByText("Escribe un número entero de rondas de selección, igual o mayor que 1.")).toBeVisible();
 
     // Now set valid quantity
-    fireEvent.change(screen.getByLabelText(/Unidades incluidas/), {
+    fireEvent.change(screen.getByLabelText(/Rondas de selección/), {
       target: { value: "1" },
     });
     fireEvent.click(submitBtn);
@@ -518,7 +521,7 @@ describe("SlotModal Component", () => {
 
     fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Bebidas" } });
     fireEvent.change(screen.getByLabelText(/Curso/), { target: { value: "bebida" } });
-    fireEvent.change(screen.getByLabelText(/Unidades incluidas/), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText(/Rondas de selección/), { target: { value: "3" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
 
     expect(handleSave).toHaveBeenCalledWith({
@@ -536,26 +539,26 @@ describe("SlotModal Component", () => {
 
     const submitBtn = screen.getByRole("button", { name: "Guardar grupo" });
     const nameInput = screen.getByLabelText("Nombre del grupo");
-    const qtyInput = screen.getByLabelText(/Unidades incluidas/);
+    const qtyInput = screen.getByLabelText(/Rondas de selección/);
 
     fireEvent.change(nameInput, { target: { value: "Acompañamiento" } });
 
     // Try float 1.5 -> rejected without truncation
     fireEvent.change(qtyInput, { target: { value: "1.5" } });
     fireEvent.click(submitBtn);
-    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(screen.getByText("Escribe un número entero de rondas de selección, igual o mayor que 1.")).toBeVisible();
     expect(handleSave).not.toHaveBeenCalled();
 
     // Try negative -> rejected
     fireEvent.change(qtyInput, { target: { value: "-1" } });
     fireEvent.click(submitBtn);
-    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(screen.getByText("Escribe un número entero de rondas de selección, igual o mayor que 1.")).toBeVisible();
     expect(handleSave).not.toHaveBeenCalled();
 
     // Try non-numeric -> rejected
     fireEvent.change(qtyInput, { target: { value: "abc" } });
     fireEvent.click(submitBtn);
-    expect(screen.getByText("La cantidad de rondas debe ser al menos 1.")).toBeVisible();
+    expect(screen.getByText("Escribe un número entero de rondas de selección, igual o mayor que 1.")).toBeVisible();
     expect(handleSave).not.toHaveBeenCalled();
 
     // Try 1e2 -> accepted as 100 without truncation
@@ -638,7 +641,7 @@ describe("OptionModal Component", () => {
     );
 
     expect(
-      screen.getByText("Artículo de inventario: Refresco Cola (1 lata)")
+      screen.getByText("Insumo de inventario: Refresco Cola (1 lata)")
     ).toBeVisible();
 
     // Toggle status to inactive
@@ -717,7 +720,10 @@ describe("OptionModal Component", () => {
         onOpenRecipePicker={jest.fn()}
       />
     );
-    expect(screen.getByText("Receta asignada (ID: rec-999)")).toBeVisible();
+    expect(screen.getByText("Receta asignada sin nombre disponible.")).toBeVisible();
+    expect(screen.getByText("rec-999")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Referencia de receta"));
+    expect(screen.getByText("rec-999")).toBeVisible();
 
     const invWithoutName: OptionDraft = {
       optionId: "opt-2",
@@ -736,7 +742,10 @@ describe("OptionModal Component", () => {
         onOpenRecipePicker={jest.fn()}
       />
     );
-    expect(screen.getByText("Artículo de inventario (ID: inv-999)")).toBeVisible();
+    expect(screen.getByText("Insumo asignado sin nombre disponible.")).toBeVisible();
+    expect(screen.getByText("inv-999")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Referencia de insumo"));
+    expect(screen.getByText("inv-999")).toBeVisible();
   });
 
   test("validates recipe without recipeId and inventory item with non-positive quantity", () => {
@@ -1028,7 +1037,7 @@ describe("SlotOptionItem Component", () => {
     );
 
     expect(screen.getByText("Refresco Mediano")).toBeVisible();
-    expect(screen.getByText("Origen: Artículo de inventario")).toBeVisible();
+    expect(screen.getByText("Origen: Insumo de inventario")).toBeVisible();
     expect(screen.getByText("2 u")).toBeVisible();
 
     const statusButton = screen.getByRole("button", {
@@ -1068,7 +1077,7 @@ describe("SlotCard Component", () => {
     );
 
     expect(screen.getByText("Bebidas")).toBeVisible();
-    expect(screen.getByText("2 rondas")).toBeVisible();
+    expect(screen.getByText("2 rondas de selección")).toBeVisible();
     expect(screen.getByText("Bebida")).toBeVisible();
     expect(screen.getByText("Inactivo")).toBeVisible();
     expect(screen.getByText(/Este grupo aún no tiene opciones/)).toBeVisible();
@@ -1115,7 +1124,7 @@ describe("SlotCard Component", () => {
       />
     );
 
-    expect(screen.getByText("1 ronda")).toBeVisible();
+    expect(screen.getByText("1 ronda de selección")).toBeVisible();
     expect(screen.getByText("Activo")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Tacos" }));
@@ -1186,7 +1195,7 @@ describe("CompositionEditor Component", () => {
     );
 
     expect(
-      screen.getByText("La composición debe contener al menos un grupo (slot) con opciones válidas.")
+      screen.getByText("La composición debe contener al menos un grupo con opciones válidas.")
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));

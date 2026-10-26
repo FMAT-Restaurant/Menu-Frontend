@@ -308,7 +308,7 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByRole("heading", { name: "1. Información comercial", level: 2 })).toBeVisible();
     expect(screen.getByLabelText(/Etiqueta de presentación/)).toBeVisible();
     expect(screen.getByLabelText(/Precio base/)).toBeVisible();
-    expect(screen.getByText(/Toda oferta se crea con estado inactivo/)).toBeVisible();
+    expect(screen.getByText(/La oferta se crea inactiva/)).toBeVisible();
 
     // Section 2: Composition
     expect(screen.getByRole("heading", { name: "2. Composición", level: 2 })).toBeVisible();
@@ -330,7 +330,7 @@ describe("OfferFormPage (V4)", () => {
 
 
     expect(
-      screen.getByText("La composición debe contener al menos un grupo (slot) con opciones válidas.")
+      screen.getByText("La composición debe contener al menos un grupo con opciones válidas.")
     ).toBeVisible();
     expect(screen.queryByTestId("slot-card-0")).not.toBeInTheDocument();
     expect(repository.getEntry).toHaveBeenCalledTimes(1);
@@ -351,7 +351,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(screen.getByLabelText("Nombre del grupo"), {
       target: { value: "Acompañamiento" },
     });
-    fireEvent.change(screen.getByLabelText(/Unidades incluidas/), {
+    fireEvent.change(screen.getByLabelText(/Rondas de selección/), {
       target: { value: "2" },
     });
     fireEvent.change(screen.getByLabelText(/Curso \/ tiempo sugerido/), {
@@ -362,7 +362,7 @@ describe("OfferFormPage (V4)", () => {
 
     expect(screen.queryByRole("heading", { name: "Definir nuevo grupo" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Acompañamiento", level: 3 })).toBeVisible();
-    expect(screen.getByText("2 rondas")).toBeVisible();
+    expect(screen.getByText("2 rondas de selección")).toBeVisible();
     expect(screen.getByText("Plato fuerte")).toBeVisible();
     expect(screen.getByText("Inactivo")).toBeVisible(); // Slot with 0 options is Inactivo
   });
@@ -469,7 +469,7 @@ describe("OfferFormPage (V4)", () => {
 
     // Warning appears in commercial info explaining auto-inactivation
     expect(
-      screen.getByText(/La oferta se mantiene inactiva porque no tiene ningún grupo activo/)
+      screen.getByText(/Sin un grupo con opciones activas, la oferta se guardará inactiva/)
     ).toBeVisible();
   });
 
@@ -499,7 +499,7 @@ describe("OfferFormPage (V4)", () => {
 
     // Still missing slots
     fireEvent.click(saveButton);
-    expect(screen.getByText("La composición debe incluir al menos un grupo (slot).")).toBeVisible();
+    expect(screen.getByText("La composición debe incluir al menos un grupo.")).toBeVisible();
   });
 
   test("submits create offer successfully", async () => {
@@ -1427,7 +1427,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(review);
     const region = await screen.findByRole("region", { name: "Versión del servidor" });
     expect(within(region).getByText("MXN\u00a0123,456,789.50", { normalizer: text => text })).toBeVisible();
-    expect(within(region).getByText(/offer-rev-2/)).toBeVisible();
+    expect(within(region).queryByText(/offer-rev-2/)).not.toBeInTheDocument();
     expect(price).toHaveValue(145.125);
     expect(repository.updateOffer).toHaveBeenCalledTimes(1);
     expect(repository.updateOffer.mock.calls[0][1].basePrice).toBe(145.125);
@@ -1436,6 +1436,10 @@ describe("OfferFormPage (V4)", () => {
     expect(price).toHaveValue(145.125);
     expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0145.13");
     expect(repository.updateOffer).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    await waitFor(() => expect(repository.updateOffer).toHaveBeenCalledTimes(2));
+    expect(repository.updateOffer.mock.calls[1][1].basePrice).toBe(145.125);
+    expect(repository.updateOffer.mock.calls[1][2]).toBe('"offer-rev-2"');
   });
 
   test("handles 412 Precondition Failed by preserving local draft and offering review / adoption (A01, A08)", async () => {
@@ -1846,7 +1850,7 @@ describe("OfferFormPage (V4)", () => {
 
     // Attempt 1: submit with 0 slots -> rejected, 0 calls
     fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
-    expect(await screen.findByText("La composición debe incluir al menos un grupo (slot).")).toBeVisible();
+    expect(await screen.findByText("La composición debe incluir al menos un grupo.")).toBeVisible();
     expect(repository.createOffer).not.toHaveBeenCalled();
 
     // Add slot with 0 options

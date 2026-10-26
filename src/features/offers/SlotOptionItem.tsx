@@ -20,7 +20,7 @@ export function SlotOptionItem({
   const isRecipe = option.sourceType === "RECIPE";
   const sourceName = isRecipe
     ? option.recipeName || "Receta de biblioteca"
-    : option.inventoryItemName || "Artículo de inventario";
+    : option.inventoryItemName || "Insumo de inventario";
   const label = option.displayName || sourceName;
   const isActive = option.status === "ACTIVE";
 
@@ -33,7 +33,7 @@ export function SlotOptionItem({
         <div className="slot-option-item__header">
           <strong className="slot-option-item__name">{label}</strong>
           <span className="slot-option-item__source-badge">
-            {isRecipe ? "Receta" : "Inventario"}
+            {isRecipe ? "Receta" : "Insumo"}
           </span>
         </div>
         {option.displayName && option.displayName !== sourceName && (

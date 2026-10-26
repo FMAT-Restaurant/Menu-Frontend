@@ -10,6 +10,9 @@ function EntryReview({ model }: Readonly<{ model: Model }>) {
   if (!model.review) return null;
   const current = model.review;
   const versionValid = isStrongEntryVersion(current.etag);
+  const statusLabels = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };
+  const categories = current.categoryIds.map(id => ({ id, name: model.categories.find(category => category.id === id)?.name }));
+  const unknownCategories = categories.filter(category => !category.name);
 
   let currentImageText = "Sin imagen";
   if (current.image?.url) {
@@ -33,18 +36,23 @@ function EntryReview({ model }: Readonly<{ model: Model }>) {
     <dl>
       <dt>Nombre</dt><dd>{current.brandName}</dd>
       <dt>Descripción</dt><dd>{current.description}</dd>
-      <dt>Estado</dt><dd>{current.status}</dd>
-      <dt>Categorías</dt><dd>{current.categoryIds.join(", ") || "Sin clasificación"}</dd>
+      <dt>Estado</dt><dd>{statusLabels[current.status]}</dd>
+      <dt>Categorías</dt><dd>{categories.map(category => category.name || "Categoría no disponible").join(", ") || "Sin clasificación"}
+        {unknownCategories.length > 0 && <details><summary>Referencias de categorías no disponibles</summary><ul>{unknownCategories.map(category => <li key={category.id}>{category.id}</li>)}</ul></details>}
+      </dd>
       <dt>Imagen actual en servidor</dt>
       <dd>
         {current.image?.url ? <img src={current.image.url} alt="Imagen actual de la entrada en el servidor" className="entry-form__review-image" /> : null}
-        <span>{currentImageText}</span>
+        {currentImageText === "Sin imagen" ? <span>Sin imagen</span> : <>
+          {!current.image?.url && <span>Imagen asignada sin vista previa disponible.</span>}
+          <details><summary>Referencia de imagen actual</summary><span>{currentImageText}</span></details>
+        </>}
       </dd>
       <dt>Imagen en borrador local</dt>
-      <dd>{draftImageText}</dd>
+      <dd>{model.file || draftImageText === "Sin imagen" ? draftImageText : <>Se conserva la imagen previa.<details><summary>Referencia de imagen previa</summary>{draftImageText}</details></>}</dd>
     </dl>
     <p>Tu borrador permanece en el formulario. Elige usar estos datos o conservar tu borrador con la versión que acabas de revisar.</p>
-    {!versionValid && <p>No se recibió una versión fuerte. Reintenta la consulta antes de continuar.</p>}
+    {!versionValid && <p>No pudimos comprobar la versión actual. Reintenta la consulta antes de continuar.</p>}
     <div className="entry-form__review-actions">
       <button type="button" disabled={!versionValid || model.reviewLoading} onClick={() => model.acceptReview(false)}>Usar datos actuales</button>
       <button type="button" disabled={!versionValid || model.reviewLoading} onClick={() => model.acceptReview(true)}>Continuar con mi borrador y versión revisada</button>

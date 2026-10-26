@@ -31,7 +31,7 @@ export function CompositionEditor({
             2. Composición
           </h2>
           <p className="composition-editor__subtitle">
-            Cada grupo define su participación y cantidad; cada opción elige su propia fuente de contenido.
+          Cada grupo indica cuántas rondas de selección incluye. En cada ronda se elige entre sus opciones.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export function CompositionEditor({
 
       {slots.length === 0 && (
         <div className="feedback feedback--warning" role="alert">
-          La composición debe contener al menos un grupo (slot) con opciones válidas.
+          La composición debe contener al menos un grupo con opciones válidas.
         </div>
       )}
 

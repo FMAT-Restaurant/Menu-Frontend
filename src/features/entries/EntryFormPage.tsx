@@ -127,7 +127,7 @@ function EntryFormEditor({
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
         {model.entryLoading && <output className="feedback" aria-live="polite">Cargando la entrada…</output>}
         {model.entryError && <div className="feedback feedback--error" role="alert">{model.entryError} <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
-        {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No se recibió una versión fuerte de la entrada. Revisa los datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
+        {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
         <div className="entry-form__layout">
           <div className="entry-form__primary">
             <EntryIdentity model={model} disabled={disabled} />

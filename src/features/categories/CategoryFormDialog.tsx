@@ -196,7 +196,7 @@ export function CategoryFormDialog({
           setOpeningEtag(undefined);
           setReviewRequired(true);
           setError(
-            "No se recibió la versión de la categoría (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.",
+            "No pudimos comprobar la versión de la categoría. Consulta sus datos actuales antes de guardar.",
           );
         }
         return versioned;
@@ -341,7 +341,7 @@ export function CategoryFormDialog({
     if (mode === "submit" && currentStage) {
       if (currentStage.status === "requires_new_key") {
         setError(
-          "La clave de idempotencia ya fue utilizada o es inválida. Pulsa «Iniciar nueva operación» para generar una nueva clave.",
+          "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío.",
         );
         return;
       }
@@ -377,7 +377,7 @@ export function CategoryFormDialog({
         if (result.hasDraftChangesSinceSubmission) {
           setActiveCategory(created);
           setInfoNotice(
-            "La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario; guarda los cambios para actualizarla.",
+            "La categoría se creó. Conservamos tus cambios posteriores; guárdalos para actualizarla.",
           );
           onCreatedWithPendingEdits(created);
           void loadOpeningCategoryVersion(created.id, { preserveDraft: true });
@@ -460,7 +460,7 @@ export function CategoryFormDialog({
       if (reviewRequired || !isStrongEtag(etagToUse)) {
         setReviewRequired(true);
         setError(
-          "No se recibió la versión de la categoría (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.",
+          "No pudimos comprobar la versión de la categoría. Consulta sus datos actuales antes de guardar.",
         );
         return;
       }
@@ -648,9 +648,13 @@ export function CategoryFormDialog({
           {infoNotice && (
             <output className="feedback feedback--success">{infoNotice}</output>
           )}
-          {error && (
+          {(error || showManualRetryButton) && (
             <div className="category-form-dialog__error" role="alert">
-              <p>{error}</p>
+              <p>{showManualRetryButton
+                ? "No sabemos si se creó la categoría. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente."
+                : pendingAttempt?.status === "requires_new_key"
+                  ? "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío."
+                  : error}</p>
               {showManualRetryButton && retryCountdownMs > 0 && (
                 <p>
                   Espera {Math.ceil(retryCountdownMs / 1000)} s antes de volver a intentar.
@@ -721,7 +725,7 @@ export function CategoryFormDialog({
                 borrador con la versión que acabas de revisar.
               </p>
               {!reviewedEtagStrong && (
-                <p>No se recibió una versión fuerte. Reintenta la consulta antes de continuar.</p>
+                <p>No pudimos comprobar la versión actual. Reintenta la consulta antes de continuar.</p>
               )}
               <div className="category-form-dialog__review-actions">
                 <button

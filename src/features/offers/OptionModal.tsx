@@ -238,11 +238,11 @@ export function OptionModal({
   if (sourceType === "RECIPE" && recipeName) {
     sourceSummary = `Receta asignada: ${recipeName}`;
   } else if (sourceType === "RECIPE" && recipeId) {
-    sourceSummary = `Receta asignada (ID: ${recipeId})`;
+    sourceSummary = "Receta asignada sin nombre disponible.";
   } else if (sourceType === "INVENTORY_ITEM" && inventoryItemName) {
-    sourceSummary = `Artículo de inventario: ${inventoryItemName} (${quantity ?? "—"} ${unit ?? ""})`;
+    sourceSummary = `Insumo de inventario: ${inventoryItemName} (${quantity ?? "—"} ${unit ?? ""})`;
   } else if (sourceType === "INVENTORY_ITEM" && inventoryItemId) {
-    sourceSummary = `Artículo de inventario (ID: ${inventoryItemId})`;
+    sourceSummary = "Insumo asignado sin nombre disponible.";
   }
 
   return (
@@ -301,13 +301,15 @@ export function OptionModal({
               placeholder="Ej. Coca-Cola o Papas a la francesa"
             />
             <p className="field-hint">
-              Puedes usar una etiqueta contextual distinta al nombre de la receta o del artículo.
+              Puedes usar una etiqueta distinta al nombre de la receta o del insumo.
             </p>
           </div>
 
           <div className="option-source-box">
             <span className="option-source-box__title">Contenido actual:</span>
             <p className="option-source-box__summary">{sourceSummary}</p>
+            {sourceType === "RECIPE" && recipeId && !recipeName && <details><summary>Referencia de receta</summary>{recipeId}</details>}
+            {sourceType === "INVENTORY_ITEM" && inventoryItemId && !inventoryItemName && <details><summary>Referencia de insumo</summary>{inventoryItemId}</details>}
           </div>
 
           <div className="form-field">

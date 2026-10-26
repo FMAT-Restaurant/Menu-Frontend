@@ -154,7 +154,7 @@ test.describe("T16 Layout, Dimensions, and Accessibility Audit", () => {
     await expect(slotNameInput).toBeVisible();
     await slotNameInput.fill("Guarnición");
 
-    const slotRoundsInput = page.getByLabel("Unidades incluidas");
+    const slotRoundsInput = page.getByLabel("Rondas de selección");
     await expect(slotRoundsInput).toBeVisible();
     await slotRoundsInput.fill("1");
 

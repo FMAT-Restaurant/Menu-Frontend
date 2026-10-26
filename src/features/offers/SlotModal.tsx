@@ -68,7 +68,7 @@ export function SlotModal({
     }
     const parsedQuantity = parseRoundsQuantity(quantityText);
     if (parsedQuantity === null) {
-      setValidationError("La cantidad de rondas debe ser al menos 1.");
+      setValidationError("Escribe un número entero de rondas de selección, igual o mayor que 1.");
       return;
     }
     onSave({
@@ -128,7 +128,7 @@ export function SlotModal({
           <div className="form-row">
             <div className="form-field">
               <label htmlFor="slot-quantity-input">
-                Unidades incluidas
+                Rondas de selección
               </label>
               <input
                 id="slot-quantity-input"
@@ -137,7 +137,9 @@ export function SlotModal({
                 value={quantityText}
                 onChange={(e) => setQuantityText(e.target.value)}
                 required
+                aria-describedby="slot-rounds-help"
               />
+              <p id="slot-rounds-help" className="field-hint">Indica cuántas veces se elige entre las opciones de este grupo.</p>
             </div>
 
             <div className="form-field">

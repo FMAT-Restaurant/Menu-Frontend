@@ -337,7 +337,9 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
 
     // Primer intento falla por timeout
     await waitFor(() => expect(postCalls).toBe(1));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Timeout");
+    expect(await screen.findByRole("alert")).toHaveTextContent("No sabemos si se creó la categoría.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Reintentar recupera el mismo envío");
+    expect(screen.getByRole("alert")).toHaveTextContent("No reintentaremos automáticamente.");
 
     // Botón de reintento manual aparece
     const retryBtn = screen.getByRole("button", { name: "Reintentar" });
@@ -379,7 +381,8 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
 
     // Primer intento falla por timeout, campos se desbloquean para editar entre intentos inciertos
     await waitFor(() => expect(callCount).toBe(1));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Timeout");
+    expect(await screen.findByRole("alert")).toHaveTextContent("No sabemos si se creó la categoría.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Reintentar recupera el mismo envío");
 
     // Entre intentos, el usuario añade una descripción al borrador
     const descInput = within(dialog).getByRole("textbox", { name: "Descripción" });
@@ -396,7 +399,7 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     await waitFor(() => expect(callCount).toBe(2));
     await waitFor(() =>
       expect(
-        within(dialog).getByText(/La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario/),
+        within(dialog).getByText(/La categoría se creó. Conservamos tus cambios posteriores/),
       ).toBeVisible(),
     );
     expect(within(dialog).getByRole("heading", { name: "Editar categoría" })).toBeVisible();

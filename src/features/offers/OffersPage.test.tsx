@@ -219,7 +219,7 @@ test("handles status PATCH 409 IDEMPOTENCY_IN_PROGRESS and KEY_REUSED with disti
     },
   });
   fireEvent.click(button);
-  expect(await screen.findByRole("alert")).toHaveTextContent("ya fue utilizada");
+  expect(await screen.findByRole("alert")).toHaveTextContent("El cambio de estado fue rechazado");
 
   // Next attempt starts fresh with a new key and new getOffer
   fireEvent.click(button);

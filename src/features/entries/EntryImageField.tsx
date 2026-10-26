@@ -55,7 +55,7 @@ export function EntryImageField({ file, entry, validating, error, disabled, onSe
     </button>
     <input ref={input} className="entry-image-field__input" id="entry-image-file" aria-label="Archivo de imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={select} disabled={disabled} tabIndex={-1} aria-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error" />
     <p id="entry-image-help" className="entry-form__muted">{labels.help}</p>
-    <p className="entry-form__muted">JPEG, PNG o WebP · hasta aprox. 10,49 MB y 4096 × 4096 px.</p>
+    <p className="entry-form__muted">JPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.</p>
     {validating && <output className="entry-image-field__validation" aria-live="polite">Validando archivo e imagen…</output>}
     <p id="entry-image-error" className="entry-form__error" role={error ? "alert" : undefined}>{error}</p>
   </section>;

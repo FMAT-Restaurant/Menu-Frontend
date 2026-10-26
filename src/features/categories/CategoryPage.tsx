@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Icon } from "../../shared/Icon";
 import type { CategoryDraft, MenuCategory, MenuRepository } from "../../application/catalog";
 import { invalidateCatalogCategories, invalidateCatalogEntries } from "../../application/catalogCache";
 import type { PendingOperationChainRecord } from "../../application/operationAttempt";
@@ -108,7 +109,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
           {loading && <output className="feedback">Cargando categorías…</output>}
           {!loading && !error && categories.length === 0 && (
             <div className="empty-state category-empty">
-              <span className="empty-state__icon" aria-hidden="true">⌕</span>
+              <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
               <h3>Aún no hay categorías.</h3>
               <p>Crea una categoría para organizar las entradas del menú.</p>
               <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Crear categoría</button>
@@ -155,7 +156,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
             invalidateCatalogCategories(repository);
             invalidateCatalogEntries(repository);
             setNotice(
-              "La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario; guarda los cambios para actualizarla.",
+              "La categoría se creó. Conservamos tus cambios posteriores; guárdalos para actualizarla.",
             );
             setRetry((current) => current + 1);
           }}

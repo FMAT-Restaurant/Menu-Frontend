@@ -37,7 +37,7 @@ export function SlotCard({
   const hasActiveOption = slot.options.some((opt) => opt.status === "ACTIVE");
   const isSlotActive = slot.options.length > 0 && hasActiveOption;
 
-  const roundsLabel = slot.quantity === 1 ? "1 ronda" : `${slot.quantity} rondas`;
+  const roundsLabel = slot.quantity === 1 ? "1 ronda de selección" : `${slot.quantity} rondas de selección`;
 
   const courseLabels: Record<OfferCourse, string> = {
     entrada: "Entrada",

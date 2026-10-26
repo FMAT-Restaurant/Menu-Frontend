@@ -46,7 +46,7 @@ for (const [width, moduleWidth] of [[320, 320], [390, 390], [600, 600], [740, 74
     await page.getByRole("button", { name: "Revisar oferta actual", exact: true }).click();
     const region = page.getByRole("region", { name: "Versión del servidor", exact: true });
     await expect(region.locator(".offer-review-price strong")).toHaveText("MXN\u00a0123,456,789.50");
-    await expect(region).toContainText('"offer-rev-2"');
+    await expect(region).not.toContainText('"offer-rev-2"');
     await expect(price).toHaveValue("145.125");
     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a0145.13");
     await moneyEvidence(page, info, "server-review-long-price");
@@ -56,6 +56,12 @@ for (const [width, moduleWidth] of [[320, 320], [390, 390], [600, 600], [740, 74
     await expect(region).toHaveCount(0);
     await expect(price).toHaveValue("145.125");
     expect(writes).toHaveLength(1);
+    await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+    await expect.poll(() => writes).toEqual([
+      { price: 145.125, etag: '"offer-rev-1"' },
+      { price: 145.125, etag: '"offer-rev-2"' },
+    ]);
+    expect(reads).toBe(2);
     expect(unexpected).toEqual([]); expect(errors).toEqual([]);
   });
 }

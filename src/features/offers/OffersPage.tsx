@@ -475,7 +475,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         const versioned = await repository.getOffer(offer.id);
         if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
         if (!versioned.etag) {
-          throw new Error("No se recibió una versión fuerte de la oferta.");
+          throw new Error("No pudimos comprobar la versión de la oferta. Actualiza la lista antes de volver a intentarlo.");
         }
         const draft = {
           presentationTag: versioned.data.presentationTag ?? offer.presentationTag ?? "",
@@ -524,7 +524,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
 
       if (errAnalysis.kind === "key_reused_conflict" || errAnalysis.errorCode === "INVALID_IDEMPOTENCY_KEY") {
         pendingStatusMutation.current = null;
-        setActionError(errAnalysis.message);
+        setActionError("El cambio de estado fue rechazado. Vuelve a solicitarlo para preparar un nuevo envío.");
       } else if (errAnalysis.kind === "in_progress_conflict") {
         setActionError(errAnalysis.message);
       } else if (errAnalysis.kind === "precondition_conflict" || statusHttp === 409 || statusHttp === 412) {

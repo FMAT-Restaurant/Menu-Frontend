@@ -144,7 +144,7 @@ function validateOfferForm(
     return "La imagen de la oferta es obligatoria al crear.";
   }
   if (slots.length === 0) {
-    return "La composición debe incluir al menos un grupo (slot).";
+    return "La composición debe incluir al menos un grupo.";
   }
   for (const slot of slots) {
     if (slot.options.length === 0) {
@@ -155,7 +155,7 @@ function validateOfferForm(
       return "Todos los grupos deben tener un nombre.";
     }
     if (!Number.isSafeInteger(slot.quantity) || slot.quantity < 1) {
-      return `La cantidad de rondas del grupo "${slot.name}" debe ser al menos 1.`;
+      return `El número de rondas de selección del grupo "${slot.name}" debe ser al menos 1.`;
     }
     for (const opt of slot.options) {
       const result = validateOptionDraft(opt, isEditing ? "update" : "create");
@@ -1250,11 +1250,11 @@ export function OfferFormPage({
             {reviewedOffer && (
               <div className="feedback feedback--info" role="region" aria-label="Versión del servidor">
                 <p>
-                  <strong>Versión actual en el servidor:</strong> ETag {reviewedOffer.etag}, etiqueta “{reviewedOffer.data.presentationTag}”.
+                  <strong>Versión actual en el servidor:</strong> {reviewedOffer.data.presentationTag || "Sin etiqueta de presentación"}.
                 </p>
                 <p className="offer-review-price"><span>Precio base (MXN)</span><strong>{formatMoney(reviewedOffer.data.basePrice)}</strong></p>
                 <p>
-                  Adoptar esta versión actualizará la composición y versión de apertura del formulario, conservando los demás campos.
+                  Usar estos datos reemplaza la composición del formulario. Conservaremos los demás campos y no enviaremos cambios hasta que guardes.
                 </p>
                 <button
                   type="button"
@@ -1278,7 +1278,7 @@ export function OfferFormPage({
             {savedNotice && <p className="feedback" role="status">{savedNotice}</p>}
             {formError && (
               <p className="feedback feedback--error" role="alert">
-                {formError}
+                {requiresNewOperation && !recoveryExpired ? "El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar." : formError}
                 {!recoveryReady && <button type="button" onClick={() => setRetryCount(count => count + 1)}>Reintentar recuperación</button>}
               </p>
             )}

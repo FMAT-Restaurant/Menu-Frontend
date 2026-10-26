@@ -134,7 +134,7 @@ export function OfferCommercialInfo({
               <div className="status-fixed-box">
                 <span className="offer-state offer-state--inactive">Inactiva</span>
                 <p className="field-hint">
-                  Toda oferta se crea con estado inactivo (INACTIVE); la composición del borrador local no garantiza la aceptación del servidor ni activa la oferta automáticamente.
+                  La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.
                 </p>
               </div>
             ) : (
@@ -170,12 +170,12 @@ export function OfferCommercialInfo({
 
                 {isAutoInactive && (
                   <p className="feedback feedback--warning" role="alert">
-                    La oferta se mantiene inactiva porque no tiene ningún grupo activo en este borrador. Toda oferta nueva inicia inactiva (INACTIVE) y la composición local no activa la oferta automáticamente ni garantiza la aceptación del servidor hasta guardar.
+                    Sin un grupo con opciones activas, la oferta se guardará inactiva. Añade opciones activas para solicitar su activación. Guardar no garantiza que se acepte la solicitud.
                   </p>
                 )}
                 {desiredStatus === "ACTIVE" && hasActiveSlot && (
                   <p className="field-hint">
-                    El borrador incluye al menos un grupo con opciones activas para solicitar el estado activo. Toda oferta inicia inactiva (INACTIVE) al crearse y la composición local no garantiza la aceptación del servidor hasta guardar.
+                    El borrador tiene un grupo con opciones activas. Al guardar solicitarás la activación; sólo se aplicará si la composición cumple los requisitos.
                   </p>
                 )}
               </div>
@@ -236,7 +236,7 @@ export function OfferCommercialInfo({
             )}
 
             <p className="field-hint">
-              Formatos aceptados: JPEG, PNG o WebP. Tamaño máximo: 10 MiB y 4096 × 4096 px.
+              JPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.
             </p>
           </div>
         </div>

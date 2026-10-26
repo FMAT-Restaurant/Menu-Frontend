@@ -971,6 +971,7 @@ test("conflict review displays server image URL, reference, or absence alongside
     .mockResolvedValueOnce({
       ...entry,
       brandName: "Entrada con imagen remota",
+      categoryIds: ["category-1", "category-missing"],
       image: { id: "remote-img-1", url: "https://example.com/remote.png", thumbnailUrl: "https://example.com/remote.png" },
       imageRef: "remote-ref-1",
       etag: '"entry-rev-remote"',
@@ -983,9 +984,20 @@ test("conflict review displays server image URL, reference, or absence alongside
 
   fireEvent.click(await screen.findByRole("button", { name: "Revisar entrada actual" }));
   const reviewSection = await screen.findByRole("region", { name: "Datos actuales de la entrada" });
+  expect(within(reviewSection).getByText("Inactiva", { exact: true })).toBeVisible();
+  expect(within(reviewSection).getByText(/Principales, Categoría no disponible/)).toBeVisible();
+  expect(within(reviewSection).getByText("category-missing")).not.toBeVisible();
+  fireEvent.click(within(reviewSection).getByText("Referencias de categorías no disponibles"));
+  expect(within(reviewSection).getByText("category-missing")).toBeVisible();
+  fireEvent.click(within(reviewSection).getByText("Referencia de imagen actual"));
   expect(within(reviewSection).getByText("https://example.com/remote.png")).toBeVisible();
   expect(within(reviewSection).getByRole("img", { name: "Imagen actual de la entrada en el servidor" })).toHaveAttribute("src", "https://example.com/remote.png");
   expect(within(reviewSection).getByText(/Archivo local: hamburguesa\.png/)).toBeVisible();
+  fireEvent.click(within(reviewSection).getByRole("button", { name: "Usar datos actuales" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  await waitFor(() => expect(api.updateEntry).toHaveBeenCalledTimes(2));
+  expect(api.updateEntry.mock.calls[1][1].categoryIds).toEqual(["category-1", "category-missing"]);
+  expect(api.updateEntry.mock.calls[1][2]).toBe('"entry-rev-remote"');
 });
 
 test("conflict review displays 'Sin imagen' when server has no image (E02 absence)", async () => {

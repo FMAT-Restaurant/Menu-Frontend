@@ -106,15 +106,15 @@ describe("UX08 recipe recovery and field validation", () => {
     const summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
     expect(summary).toHaveFocus();
     const add = screen.getByRole("button", { name: "+ Agregar insumo" });
-    expect(add).toHaveAccessibleDescription("Agrega al menos un ingrediente del inventario.");
-    fireEvent.click(screen.getByRole("link", { name: "Agrega al menos un ingrediente del inventario." }));
+    expect(add).toHaveAccessibleDescription("Agrega al menos un insumo del inventario.");
+    fireEvent.click(screen.getByRole("link", { name: "Agrega al menos un insumo del inventario." }));
     expect(add).toHaveFocus();
     expect(repository.createRecipe).not.toHaveBeenCalled();
     expect(repository.updateRecipe).not.toHaveBeenCalled();
     fireEvent.click(add);
     expect(screen.getByLabelText("Insumo 1")).toBeVisible();
     expect(add).not.toHaveAttribute("aria-describedby");
-    expect(screen.queryByRole("link", { name: "Agrega al menos un ingrediente del inventario." })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Agrega al menos un insumo del inventario." })).not.toBeInTheDocument();
   });
   test.each(["management", "selection"] as const)("keeps an unmatched query in %s and restores three recipes by clearing it", async mode => {
     const repository = createMockRepository();
@@ -483,14 +483,14 @@ describe("RecipePage Component (V6 Integration)", () => {
     // 4. Missing supply item selection
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Inst Test" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Selecciona un artículo de inventario para cada ingrediente.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Selecciona un insumo del inventario en cada fila.");
     expect(repository.createRecipe).not.toHaveBeenCalled();
 
     // 5. Quantity = 0
     fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
     fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("La cantidad de cada ingrediente debe ser mayor a 0.");
+    expect(screen.getByRole("alert")).toHaveTextContent("La cantidad de cada insumo debe ser mayor a 0.");
     expect(repository.createRecipe).not.toHaveBeenCalled();
 
     // 6. Correction to valid quantity -> persists exact payload

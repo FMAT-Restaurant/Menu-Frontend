@@ -83,7 +83,7 @@ test("UX09 existing inventory option remains editable and image replacement work
   try {
     await page.goto("/entries/demo-entry-burger/offers/demo-offer-combo/edit");
     await page.getByRole("button", { name: "Editar opción Agua mineral", exact: true }).click();
-    await expect(page.getByText(/Artículo de inventario: Agua mineral/)).toBeVisible();
+    await expect(page.getByText(/Insumo de inventario: Agua mineral/)).toBeVisible();
     await page.getByLabel("Nombre mostrado (opcional)").fill("Agua mineral en vaso");
     await page.getByRole("button", { name: "Guardar opción", exact: true }).click();
     await expect(page.getByText("Agua mineral en vaso", { exact: true })).toBeVisible();

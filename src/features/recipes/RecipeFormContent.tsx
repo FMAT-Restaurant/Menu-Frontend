@@ -271,11 +271,11 @@ export function RecipeFormContent({
     if (!name.trim()) fieldErrors["recipe-name"] = "Indica el nombre de la receta.";
     if (!description.trim()) fieldErrors["recipe-description"] = "Indica la descripción de la receta.";
     if (!instructions.trim()) fieldErrors["recipe-instructions"] = "Indica las instrucciones de la receta.";
-    if (supplies.length === 0) fieldErrors["recipe-add-supply"] = "Agrega al menos un ingrediente del inventario.";
+    if (supplies.length === 0) fieldErrors["recipe-add-supply"] = "Agrega al menos un insumo del inventario.";
     for (const supply of supplies) {
-      if (!supply.inventoryItemId) fieldErrors[`${supply.key}-item`] = "Selecciona un artículo de inventario para cada ingrediente.";
+      if (!supply.inventoryItemId) fieldErrors[`${supply.key}-item`] = "Selecciona un insumo del inventario en cada fila.";
       const quantity = Number(supply.quantity);
-      if (!Number.isFinite(quantity) || quantity <= 0) fieldErrors[`${supply.key}-quantity`] = "La cantidad de cada ingrediente debe ser mayor a 0.";
+      if (!Number.isFinite(quantity) || quantity <= 0) fieldErrors[`${supply.key}-quantity`] = "La cantidad de cada insumo debe ser mayor a 0.";
     }
   }
   useEffect(() => {
@@ -294,7 +294,7 @@ export function RecipeFormContent({
         stage &&
         (stage.status === "uncertain" || stage.status === "conflict_in_progress")
       ) {
-        return "Existe una operación previa pendiente de confirmación. Puedes reintentarla o continuar.";
+        return "Hay un envío sin confirmar. Reintentar recupera ese envío; tus cambios posteriores se conservan.";
       }
     }
     return "";
@@ -651,7 +651,7 @@ export function RecipeFormContent({
       return { ok: false, error: "Indica las instrucciones de la receta." };
     }
     if (supplies.length === 0) {
-      return { ok: false, error: "Agrega al menos un ingrediente del inventario." };
+      return { ok: false, error: "Agrega al menos un insumo del inventario." };
     }
 
     const parsedSupplies: RecipeSupplyInput[] = [];
@@ -659,14 +659,14 @@ export function RecipeFormContent({
       if (!supply.inventoryItemId) {
         return {
           ok: false,
-          error: "Selecciona un artículo de inventario para cada ingrediente.",
+          error: "Selecciona un insumo del inventario en cada fila.",
         };
       }
       const qty = Number(supply.quantity);
       if (!Number.isFinite(qty) || qty <= 0) {
         return {
           ok: false,
-          error: "La cantidad de cada ingrediente debe ser mayor a 0.",
+          error: "La cantidad de cada insumo debe ser mayor a 0.",
         };
       }
       parsedSupplies.push({
@@ -779,7 +779,7 @@ export function RecipeFormContent({
           setOpeningEtag(result.result.etag);
           setReviewRequired(!isStrongEtag(result.result.etag));
           setInfoNotice(
-            "La receta fue creada en el servidor mientras editabas. Los cambios nuevos están conservados; guárdalos explícitamente para actualizarla.",
+            "La receta se creó. Conservamos tus cambios posteriores; guárdalos para actualizarla.",
           );
           onCreatedWithPendingEdits?.(result.result);
         } else {
@@ -871,7 +871,7 @@ export function RecipeFormContent({
       if (!isStrongEtag(etagToUse)) {
         setReviewRequired(true);
         setError(
-          "No se recibió la versión de la receta (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.",
+          "No pudimos comprobar la versión de la receta. Consulta sus datos actuales antes de guardar.",
         );
         return;
       }
@@ -1253,11 +1253,11 @@ export function RecipeFormContent({
 
           {(error || showManualRetryButton || requiresNewOperationAction) && (
             <div className="recipe-form-dialog__error" role="alert">
-              {error ? (
-                <p>{error}</p>
-              ) : (
-                <p>Existe una operación pendiente de confirmación.</p>
-              )}
+              <p>{showManualRetryButton
+                ? "No sabemos si se creó la receta. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente."
+                : pendingAttempt?.status === "requires_new_key"
+                  ? "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío."
+                  : error || "Hay un envío sin confirmar. Reintentar recupera ese envío; tus cambios posteriores se conservan."}</p>
               {showManualRetryButton && retryCountdownMs > 0 && (
                 <p>
                   Espera {Math.ceil(retryCountdownMs / 1000)} s antes de volver a intentar.
@@ -1333,7 +1333,7 @@ export function RecipeFormContent({
                 borrador con la versión que acabas de revisar.
               </p>
               {!reviewedEtagStrong && (
-                <p>No se recibió una versión fuerte. Reintenta la consulta antes de continuar.</p>
+                <p>No pudimos comprobar la versión actual. Reintenta la consulta antes de continuar.</p>
               )}
               <div className="recipe-form-dialog__review-actions">
                 <button
