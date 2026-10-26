@@ -33,20 +33,30 @@ test.each(["offers", "edit"] as const)("the visible %s action keeps its own dest
   expect(screen.getByRole("status")).toHaveTextContent(`/entries/entry-identity/${action} ${returnTo}`);
 });
 
-test("restricted deletion has visible associated guidance and archived deletion keeps its callback", () => {
+test.each(["ACTIVE", "INACTIVE"] as const)("%s entries omit deletion controls and guidance", status => {
+  render(<MemoryRouter><EntryCard entry={{ ...entry, status }} busy={false} returnTo="/" onDelete={jest.fn()} /></MemoryRouter>);
+  expect(screen.queryByRole("button", { name: /Eliminar definitivamente/ })).not.toBeInTheDocument();
+  expect(screen.queryByText(/eliminación|eliminar entradas/)).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /Ver ofertas de/ })).toBeVisible();
+  expect(screen.getByRole("link", { name: /Editar Entrada/ })).toBeVisible();
+});
+
+test("archiving reveals deletion with its warning and keeps the callback blocked while busy", () => {
   const onDelete = jest.fn();
   const { rerender } = render(<MemoryRouter><EntryCard entry={entry} busy={false} returnTo="/" onDelete={onDelete} /></MemoryRouter>);
-  const remove = screen.getByRole("button", { name: "Eliminar definitivamente Entrada de prueba" });
-  expect(remove).toBeDisabled();
-  expect(remove).toHaveAccessibleDescription("Solo se pueden eliminar entradas archivadas.");
-  expect(screen.getByText("Solo se pueden eliminar entradas archivadas.")).toBeVisible();
-  fireEvent.click(remove);
-  expect(onDelete).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: /Eliminar definitivamente/ })).not.toBeInTheDocument();
   const archived = { ...entry, status: "ARCHIVED" as const };
   rerender(<MemoryRouter><EntryCard entry={archived} busy={false} returnTo="/" onDelete={onDelete} /></MemoryRouter>);
+  const remove = screen.getByRole("button", { name: "Eliminar definitivamente Entrada de prueba" });
   expect(remove).toBeEnabled();
   expect(remove).toHaveAccessibleDescription("La eliminación es definitiva.");
   fireEvent.click(remove);
   expect(onDelete).toHaveBeenCalledTimes(1);
   expect(onDelete).toHaveBeenCalledWith(archived);
+  rerender(<MemoryRouter><EntryCard entry={archived} busy returnTo="/" onDelete={onDelete} /></MemoryRouter>);
+  expect(remove).toBeDisabled();
+  fireEvent.click(remove);
+  expect(onDelete).toHaveBeenCalledTimes(1);
+  rerender(<MemoryRouter><EntryCard entry={entry} busy={false} returnTo="/" onDelete={onDelete} /></MemoryRouter>);
+  expect(screen.queryByRole("button", { name: /Eliminar definitivamente/ })).not.toBeInTheDocument();
 });

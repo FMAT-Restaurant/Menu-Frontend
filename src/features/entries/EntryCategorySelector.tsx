@@ -1,9 +1,10 @@
-import { LoadingState } from "../../shared/LoadingState";
+import { LoadingState, LoadingValue } from "../../shared/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import type { MenuCategory } from "../../application/catalog";
 import { Icon } from "../../shared/Icon";
 
 interface Props {
+  selectionLoading?: boolean;
   categories: MenuCategory[];
   selected: string[];
   loading: boolean;
@@ -33,7 +34,7 @@ function CategoryLoadState({ loading, error, continuing, onRetry, onContinue }: 
   </div>;
 }
 
-export function EntryCategorySelector({ categories, selected, loading, error, fieldError, disabled, continuing, onChange, onRetry, onContinue }: Readonly<Props>) {
+export function EntryCategorySelector({ selectionLoading = false, categories, selected, loading, error, fieldError, disabled, continuing, onChange, onRetry, onContinue }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const root = useRef<HTMLFieldSetElement>(null);
@@ -74,9 +75,9 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
     <legend>Categorías</legend>
     <p className="entry-form__muted">Puedes asignar varias o guardar sin clasificación.</p>
     <CategoryLoadState loading={loading} error={error} continuing={continuing} onRetry={onRetry} onContinue={onContinue} />
-    <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" data-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
+    {selectionLoading ? <LoadingValue /> : <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" data-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
       <span>{selectionLabel(selected.length)}</span><span className="entry-category-selector__chevron" aria-hidden="true" />
-    </button>
+    </button>}
     {open && <div id="entry-category-panel" className="entry-category-selector__panel">
       <label className="entry-category-selector__search-label" htmlFor="entry-category-search">Buscar categorías</label>
       <div className="entry-category-selector__search">

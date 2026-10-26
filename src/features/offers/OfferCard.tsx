@@ -56,9 +56,9 @@ export function OfferCard({ offer, busy, returnTo, catalogReturnTo, onStatusChan
       </Link>
       <div className="offer-card__actions">
         <button className={`offer-card__status-control button button--secondary ${active ? "offer-card__status-control--active" : "offer-card__status-control--inactive"}`} data-return-key={`offer:${offer.id}:status`} type="button" disabled={busy || (!active && offer.slotCount === 0)} onClick={() => onStatusChange(offer, active ? "INACTIVE" : "ACTIVE")} aria-label={`Cambiar estado de oferta ${presentation}: ${active ? "Activa" : "Inactiva"}`} aria-pressed={active}>{active ? "Desactivar oferta" : "Activar oferta"}</button>
-        <button className="offer-card__delete" data-return-key={`offer:${offer.id}:delete`} aria-describedby={active ? `offer-delete-hint-${offer.id}` : undefined} type="button" disabled={busy || active} onClick={() => onDelete(offer)} aria-label={`Eliminar oferta ${presentation}`}>Eliminar oferta</button>
+        {!active && <button className="button offer-card__delete" data-return-key={`offer:${offer.id}:delete`} aria-describedby={`offer-delete-hint-${offer.id}`} type="button" disabled={busy} onClick={() => onDelete(offer)} aria-label={`Eliminar oferta ${presentation}`}>Eliminar oferta</button>}
       </div>
-      {active && <p className="offer-card__hint" id={`offer-delete-hint-${offer.id}`}>Desactiva la oferta antes de eliminarla.</p>}
+      {!active && <p className="offer-card__hint" id={`offer-delete-hint-${offer.id}`}>La eliminación es definitiva.</p>}
       {!active && offer.slotCount === 0 && <p className="offer-card__hint">Agrega una composición válida para activar esta oferta.</p>}
     </article>
   );

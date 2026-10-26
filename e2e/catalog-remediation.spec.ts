@@ -35,7 +35,8 @@ test("keeps catalog cards contained and controls reachable at desktop, mobile an
     if (width === 375 || width === 320) {
       const firstCard = await page.locator(".entry-card").first().boundingBox();
       expect(firstCard!.y).toBeLessThan(812);
-      await expect(page.getByRole("button", { name: "Filtros", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Filtros", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("combobox", { name: "Categoría", exact: true })).toBeVisible();
     }
   }
   await page.setViewportSize({ width: 768, height: 812 });

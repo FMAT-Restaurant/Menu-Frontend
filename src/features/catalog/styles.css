@@ -42,7 +42,7 @@
 
 :where(.menu-module[data-menu-module]) .filters {
   display: grid;
-  grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: end;
   gap: 12px;
   padding: 16px;
@@ -55,8 +55,32 @@
   display: contents;
 }
 
-:where(.menu-module[data-menu-module]) .filters__toggle {
-  display: none;
+:where(.menu-module[data-menu-module]) .filters__header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+:where(.menu-module[data-menu-module]) .filters__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+:where(.menu-module[data-menu-module]) .filters__count {
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--canvas);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
 }
 
 :where(.menu-module[data-menu-module]) .catalog-page .select-field select {
@@ -256,25 +280,29 @@
 :where(.menu-module[data-menu-module]) .entry-card__secondary-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
-:where(.menu-module[data-menu-module]) .entry-card__delete {
+:where(.menu-module[data-menu-module]) .entry-card .entry-card__delete {
   flex: 0 0 auto;
-  color: var(--muted);
-}
-
-:where(.menu-module[data-menu-module]) .entry-card__delete:disabled {
-  background: transparent;
-  color: var(--muted);
-}
-
-:where(.menu-module[data-menu-module]) .entry-card__delete:not(:disabled):hover {
+  border: 1px solid #fecaca;
   background: #fef2f2;
-  color: var(--danger);
+  color: #b91c1c;
+}
+
+:where(.menu-module[data-menu-module]) .entry-card .entry-card__delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+:where(.menu-module[data-menu-module]) .entry-card .entry-card__delete:not(:disabled):hover {
+  border-color: #fca5a5;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 :where(.menu-module[data-menu-module]) .entry-card__delete-help {
@@ -330,37 +358,16 @@
   :where(.menu-module[data-menu-module]) .filters .search-field {
     grid-column: 1 / -1;
   }
-  :where(.menu-module[data-menu-module]) .filters__clear {
-    grid-column: 2;
-    justify-self: end;
-  }
 }
 
 @container menu-module (width < 768px) {
   :where(.menu-module[data-menu-module]) .filters {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
     padding: 16px;
   }
   :where(.menu-module[data-menu-module]) .filters .search-field {
     grid-column: 1 / -1;
-  }
-  :where(.menu-module[data-menu-module]) .filters__toggle {
-    display: inline-flex;
-    min-width: 0;
-    white-space: normal;
-  }
-  :where(.menu-module[data-menu-module]) .filters__advanced {
-    display: none;
-    grid-column: 1 / -1;
-  }
-  :where(.menu-module[data-menu-module]) .filters__advanced--open {
-    display: grid;
-    gap: 8px;
-  }
-  :where(.menu-module[data-menu-module]) .filters__clear {
-    grid-column: 2;
-    grid-row: 2;
   }
   :where(.menu-module[data-menu-module]) .catalog-page .select-field--inline label {
     white-space: normal;

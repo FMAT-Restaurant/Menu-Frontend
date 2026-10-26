@@ -1,8 +1,10 @@
+import { LoadingValue } from "../../shared/LoadingState";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { MenuEntryDetail } from "../../application/catalog";
 import { Icon } from "../../shared/Icon";
 
 interface Props {
+  loading?: boolean;
   file: File | null;
   entry: MenuEntryDetail | null;
   validating: boolean;
@@ -23,7 +25,7 @@ function ImageContent({ source, broken, reference }: Readonly<{ source: string; 
   return <span>Selecciona una imagen de referencia</span>;
 }
 
-export function EntryImageField({ file, entry, validating, error, disabled, onSelect }: Readonly<Props>) {
+export function EntryImageField({ loading = false, file, entry, validating, error, disabled, onSelect }: Readonly<Props>) {
   const input = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState("");
   const [broken, setBroken] = useState(false);
@@ -46,15 +48,15 @@ export function EntryImageField({ file, entry, validating, error, disabled, onSe
 
   return <section className="entry-image-field" aria-labelledby="entry-image-title">
     <h2 id="entry-image-title">Imagen de referencia</h2>
-    <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} data-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
+    {loading ? <LoadingValue kind="image" /> : <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} data-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
       <span className="entry-image-field__preview">
         {source && !broken && <img src={source} alt="Vista previa de la imagen de la entrada" onError={() => setBroken(true)} />}
         {(!source || broken) && <span className="entry-image-field__placeholder"><Icon name="image" /><ImageContent source={source} broken={broken} reference={entry?.imageRef} /></span>}
       </span>
       <span className="entry-image-field__action">{labels.action}</span>
-    </button>
+    </button>}
     <input ref={input} className="entry-image-field__input" id="entry-image-file" aria-label="Archivo de imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={select} disabled={disabled} tabIndex={-1} aria-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error" />
-    <p id="entry-image-help" className="entry-form__muted">{labels.help}</p>
+    <p id="entry-image-help" className="entry-form__muted">{loading ? "La imagen actual se conservará si no seleccionas otra." : labels.help}</p>
     <p className="entry-form__muted">JPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.</p>
     {validating && <output className="entry-image-field__validation" aria-live="polite">Validando archivo e imagen…</output>}
     <p id="entry-image-error" className="entry-form__error" role={error ? "alert" : undefined}>{error}</p>

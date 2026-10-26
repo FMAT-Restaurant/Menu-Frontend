@@ -1,4 +1,4 @@
-import { LoadingState } from "../../shared/LoadingState";
+import { LoadingValue } from "../../shared/LoadingState";
 import { receiptState, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
 import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { useEditGuard } from "../../shared/editGuard";
@@ -37,9 +37,9 @@ function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolea
   return <fieldset className="entry-status-selector">
     <legend>Estado administrativo</legend>
     <label className="sr-only" htmlFor="entry-status">Estado administrativo</label>
-    <select id="entry-status" value={model.draft.status} disabled={busy || !model.editingReady} aria-invalid={Boolean(model.failure?.fields.status)} aria-describedby="entry-status-help entry-status-error" onChange={(event) => model.changeStatus(event.target.value as EntryStatus)}>
+    {model.entryLoading ? <LoadingValue /> : <select id="entry-status" value={model.draft.status} disabled={busy || !model.editingReady} aria-invalid={Boolean(model.failure?.fields.status)} aria-describedby="entry-status-help entry-status-error" onChange={(event) => model.changeStatus(event.target.value as EntryStatus)}>
       {statuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
-    </select>
+    </select>}
     <p id="entry-status-help" className="entry-form__muted">{help}</p>
     <p id="entry-status-error" className="entry-form__error">{model.failure?.fields.status}</p>
   </fieldset>;
@@ -50,12 +50,12 @@ function EntryIdentity({ model, disabled }: Readonly<{ model: Model; disabled: b
     <h2 id="entry-identity-title">Identidad de la entrada</h2>
     <div className="entry-form__field">
       <label htmlFor="entry-brandName">Nombre comercial</label>
-      <input id="entry-brandName" value={model.draft.brandName} onChange={(event) => model.changeText("brandName", event.target.value)} maxLength={255} required autoComplete="off" disabled={disabled} aria-invalid={Boolean(model.failure?.fields.brandName)} aria-describedby="entry-brandName-error" />
+      {model.entryLoading ? <LoadingValue /> : <input id="entry-brandName" value={model.draft.brandName} onChange={(event) => model.changeText("brandName", event.target.value)} maxLength={255} required autoComplete="off" disabled={disabled} aria-invalid={Boolean(model.failure?.fields.brandName)} aria-describedby="entry-brandName-error" />}
       <p id="entry-brandName-error" className="entry-form__error">{model.failure?.fields.brandName}</p>
     </div>
     <div className="entry-form__field">
       <label htmlFor="entry-description">Descripción</label>
-      <textarea id="entry-description" value={model.draft.description} onChange={(event) => model.changeText("description", event.target.value)} rows={3} required disabled={disabled} aria-invalid={Boolean(model.failure?.fields.description)} aria-describedby="entry-description-error" />
+      {model.entryLoading ? <LoadingValue kind="multiline" /> : <textarea id="entry-description" value={model.draft.description} onChange={(event) => model.changeText("description", event.target.value)} rows={3} required disabled={disabled} aria-invalid={Boolean(model.failure?.fields.description)} aria-describedby="entry-description-error" />}
       <p id="entry-description-error" className="entry-form__error">{model.failure?.fields.description}</p>
     </div>
   </section>;
@@ -127,16 +127,16 @@ function EntryFormEditor({
         requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actions.current); });
       }}>
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
-        {model.entryLoading && <LoadingState variant="entry-form" label="Cargando la entrada…" />}
+        {model.entryLoading && <p className="sr-only" role="status">Cargando la entrada…</p>}
         {model.entryError && <div className="feedback feedback--error" role="alert">{model.entryError} <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
         {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
-        <div className="entry-form__layout" hidden={model.entryLoading}>
+        <div className="entry-form__layout" aria-busy={model.entryLoading}>
           <div className="entry-form__primary">
             <EntryIdentity model={model} disabled={disabled} />
-            <EntryCategorySelector categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />
+            <EntryCategorySelector selectionLoading={model.entryLoading} categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />
           </div>
           <aside className="entry-form__secondary">
-            <EntryImageField file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
+            <EntryImageField loading={model.entryLoading} file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
             {editing && <EntryStatusField model={model} busy={busy || model.saveSucceeded} />}
           </aside>
         </div>

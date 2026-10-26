@@ -75,16 +75,15 @@ test("matches the offer card mockup with inline status and one footer action", a
   expect(screen.getByRole("heading", { name: "Individual" })).toBeVisible();
   expect(screen.getByRole("heading", { name: "Combo" })).toBeVisible();
   expect(screen.getAllByText("MXN\u00a0180.00", { normalizer: text => text })).toHaveLength(2);
-  expect(screen.getAllByText(/Grupos de composici/)).toHaveLength(2);
+  expect(screen.getAllByText(/grupos de composici/i)).toHaveLength(2);
   expect(screen.getByRole("heading", { name: "Individual" }).closest(".offer-card")?.querySelector(".offer-card__composition strong")).toHaveTextContent("2");
   expect(screen.getByText(/solo se publica si la entrada está activa/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Eliminar oferta Individual" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Eliminar oferta Individual" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Eliminar oferta Individual" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" })).toHaveClass("offer-card__status-control--active");
   expect(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("link", { name: "Abrir oferta Combo para editar" })).toHaveAttribute("href", "/entries/entry-1/offers/offer-2/edit");
   expect(screen.getByRole("button", { name: "Cambiar estado de oferta Combo: Inactiva" })).toHaveClass("offer-card__status-control--inactive");
-  expect(document.querySelectorAll(".offer-card__delete")).toHaveLength(2);
+  expect(document.querySelectorAll(".offer-card__delete")).toHaveLength(1);
   expect(repository.listOffers).toHaveBeenCalledWith("entry-1", 1, 12, expect.any(AbortSignal));
   expect(repository.getEntry).toHaveBeenCalledTimes(1);
 });
@@ -108,10 +107,11 @@ test("falls back to the catalog for malformed and external return locations", as
 test("shows composition groups and keeps delete available in the card footer", async () => {
   renderPage(makeRepository([{ ...inactive, slotCount: 0 }, offer]));
   await screen.findByRole("heading", { name: "Combo" });
-  expect(screen.getAllByText(/Grupos de composici/)).toHaveLength(2);
+  expect(screen.getAllByText(/grupos de composici/i)).toHaveLength(2);
   expect(screen.getByRole("heading", { name: "Combo" }).closest(".offer-card")?.querySelector(".offer-card__composition strong")).toHaveTextContent("0");
   expect(screen.getByText(/Agrega una composición válida/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Eliminar oferta Individual" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Eliminar oferta Combo" })).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "Eliminar oferta Individual" })).not.toBeInTheDocument();
 });
 
 test("changes offer status from its inline status control and refreshes only offers", async () => {
@@ -433,7 +433,7 @@ test("keeps existing results visible when refreshing offers fails and blocks mut
   expect(await screen.findByRole("alert")).toHaveTextContent("La información anterior se conserva");
   expect(screen.getByRole("heading", { name: "Individual" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Cambiar estado de oferta Individual: Activa" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Eliminar oferta Individual" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Eliminar oferta Individual" })).not.toBeInTheDocument();
 
   // O27: Recovery with fresh data unlocks cards
   const page2Offer = { ...inactive, id: "offer-p2", presentationTag: "Combo Página 2" };

@@ -1,5 +1,5 @@
-import { LoadingState } from "../../shared/LoadingState";
 import { receiptState, saveReceiptMessage, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { LoadingValue } from "../../shared/LoadingState";
 import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { formatMoney } from "../../shared/formatMoney";
@@ -1036,6 +1036,7 @@ export function OfferFormPage({
 
   function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading || loadError) return;
     void executeSave("submit");
   }
 
@@ -1161,12 +1162,12 @@ export function OfferFormPage({
           <div className="task-header__content">
             <p className="eyebrow">Ofertas</p>
             <h1 data-route-heading tabIndex={-1}>{isEditing ? "Editar oferta" : "Nueva oferta"}</h1>
-            <p className="task-header__intro offer-form-page__subtitle">Entrada: <strong>{entry?.brandName || "Cargando…"}</strong></p>
+            <p className="task-header__intro offer-form-page__subtitle">Entrada: <strong>{entry?.brandName || (loading ? <LoadingValue kind="line" /> : "No disponible")}</strong></p>
           </div>
         </header>
 
         {loading && (
-          <LoadingState variant="offer-form" label="Cargando datos de la oferta…" />
+          <p className="sr-only" role="status">Cargando datos de la oferta…</p>
         )}
 
         {loadError && (
@@ -1180,8 +1181,8 @@ export function OfferFormPage({
           </div>
         )}
 
-        {!loading && !loadError && (
-          <form ref={formRef} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="offer-form" onFocusCapture={(event) => { const control = event.target; requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actionsRef.current); }); }} onSubmit={handleSaveOffer} aria-busy={saving} noValidate>
+        {!loadError && (
+          <form ref={formRef} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="offer-form" onFocusCapture={(event) => { const control = event.target; requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actionsRef.current); }); }} onSubmit={handleSaveOffer} aria-busy={loading || saving} noValidate>
             {requiresNewOperation && !recoveryExpired && (
               <div className="feedback feedback--warning" role="status">
                 Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
@@ -1285,6 +1286,7 @@ export function OfferFormPage({
             )}
 
             <OfferCommercialInfo
+              loading={loading && isEditing}
               presentationTag={presentationTag}
               onPresentationTagChange={setPresentationTag}
               basePrice={basePrice}
@@ -1299,10 +1301,11 @@ export function OfferFormPage({
               onDropImage={handleDropImage}
               imageError={imageError}
               imageValidating={imageValidating}
-              disabled={saving || exitSucceeded.current}
+              disabled={loading || saving || exitSucceeded.current}
             />
 
             <CompositionEditor
+              loading={loading && isEditing}
               slots={slots}
               onAddSlot={handleOpenAddSlot}
               onEditSlot={handleOpenEditSlot}
@@ -1311,7 +1314,7 @@ export function OfferFormPage({
               onEditOption={handleOpenEditOption}
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
-              disabled={saving || exitSucceeded.current}
+              disabled={loading || saving || exitSucceeded.current}
             />
 
             <footer ref={actionsRef} className="offer-form__actions">
@@ -1321,7 +1324,7 @@ export function OfferFormPage({
               <button
                 type="submit"
                 className="button button--primary"
-                disabled={exitSucceeded.current || !recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
+                disabled={loading || exitSucceeded.current || !recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
                 {saving ? "Guardando…" : "Guardar Oferta"}
               </button>

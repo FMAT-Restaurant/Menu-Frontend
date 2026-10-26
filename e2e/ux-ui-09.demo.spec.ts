@@ -1,6 +1,47 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 
+for (const width of [320, 390, 1280]) {
+  test(`offer deletion appears only while inactive and stays visibly destructive at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/entries/demo-entry-burger/offers");
+    const active = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "Individual", exact: true }) });
+    const inactive = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "Combo con bebida", exact: true }) });
+    await expect(active.getByRole("button", { name: /Eliminar oferta/ })).toHaveCount(0);
+    await expect(active.getByText("La eliminación es definitiva.", { exact: true })).toHaveCount(0);
+    const remove = inactive.getByRole("button", { name: "Eliminar oferta Combo con bebida", exact: true });
+    await expect(remove).toBeVisible();
+    await expect(remove).toHaveAccessibleDescription("La eliminación es definitiva.");
+    expect(await remove.evaluate(element => ({ color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor })))
+      .toEqual({ color: "rgb(185, 28, 28)", background: "rgb(254, 242, 242)" });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    for (const card of [active, inactive]) {
+      const box = await card.boundingBox();
+      for (const button of await card.getByRole("button").all()) {
+        const control = await button.boundingBox();
+        expect(control!.x).toBeGreaterThanOrEqual(box!.x);
+        expect(control!.x + control!.width).toBeLessThanOrEqual(box!.x + box!.width);
+        expect(control!.height).toBeGreaterThanOrEqual(width < 1200 ? 48 : 40);
+      }
+    }
+    await active.screenshot({ path: info.outputPath(`active-${width}.png`) });
+    await inactive.screenshot({ path: info.outputPath(`inactive-${width}.png`) });
+    await remove.click();
+    const dialog = page.getByRole("dialog", { name: "Eliminar oferta inactiva" });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(remove).toBeFocused();
+    const status = active.getByRole("button", { name: /Cambiar estado de oferta/ });
+    await status.click();
+    await expect(status).toHaveAttribute("aria-pressed", "false");
+    await expect(active.getByRole("button", { name: "Eliminar oferta Individual", exact: true })).toBeVisible();
+    await status.click();
+    await expect(status).toHaveAttribute("aria-pressed", "true");
+    await expect(active.getByRole("button", { name: /Eliminar oferta/ })).toHaveCount(0);
+  });
+}
+
 function observe(page: Page) {
   const errors: string[] = [];
   const api: string[] = [];
@@ -116,8 +157,7 @@ test("UX09 cards retain untagged offers, independent state, deletion restriction
   await expect(cards.locator(".offer-state--active")).toHaveText("Activa");
   await expect(cards.locator(".offer-state--inactive")).toHaveText("Inactiva");
   const activeDelete = page.getByRole("button", { name: "Eliminar oferta Individual", exact: true });
-  await expect(activeDelete).toBeDisabled();
-  await expect(activeDelete).toHaveAccessibleDescription("Desactiva la oferta antes de eliminarla.");
+  await expect(activeDelete).toHaveCount(0);
   const keys = await cards.locator("[data-return-key]").evaluateAll(elements => elements.map(el => el.getAttribute("data-return-key")));
   expect(new Set(keys).size).toBe(keys.length);
   await page.getByRole("button", { name: "Eliminar oferta Sin etiqueta de presentación", exact: true }).click();
@@ -125,7 +165,7 @@ test("UX09 cards retain untagged offers, independent state, deletion restriction
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Sin etiqueta de presentación", exact: true })).toBeVisible();
-  await evidence(page, info, "cards", { keys, activeDeletionDisabled: await activeDelete.isDisabled(), returnTo });
+  await evidence(page, info, "cards", { keys, activeDeletionHidden: await activeDelete.count() === 0, returnTo });
   await page.getByRole("link", { name: /Volver a entradas/ }).click();
   await expect(page).toHaveURL(url => url.pathname + url.search === returnTo);
   check();

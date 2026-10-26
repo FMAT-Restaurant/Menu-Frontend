@@ -5,8 +5,6 @@ export interface CatalogFiltersProps {
   search: string;
   onSearchChange(value: string): void;
   onSearch(): void;
-  advancedOpen: boolean;
-  onToggleAdvanced(): void;
   advancedCount: number;
   categories: MenuCategory[];
   categoryId: string;
@@ -22,11 +20,12 @@ export interface CatalogFiltersProps {
 export function CatalogFilters(props: Readonly<CatalogFiltersProps>) {
   return (
     <section className="filters" aria-label="Filtros de entradas">
+      <div className="filters__header">
+        <p className="filters__label">Filtros{props.advancedCount ? <span className="filters__count">{props.advancedCount} activos</span> : null}</p>
+        <button className="button button--secondary filters__clear" type="button" onClick={props.onClear} disabled={!props.hasFilters}>Limpiar filtros</button>
+      </div>
       <SearchField value={props.search} onChange={props.onSearchChange} onSearch={props.onSearch} />
-      <button className="button button--secondary filters__toggle" type="button" aria-expanded={props.advancedOpen} aria-controls="advanced-filters" onClick={props.onToggleAdvanced}>
-        Filtros{props.advancedCount ? ` (${props.advancedCount} activos)` : ""}
-      </button>
-      <div id="advanced-filters" className={`filters__advanced ${props.advancedOpen ? "filters__advanced--open" : ""}`}>
+      <div className="filters__advanced">
         <div className="select-field">
           <label htmlFor="category-filter">Categoría</label>
           <select id="category-filter" value={props.categoryId} onChange={(event) => props.onFilterChange("categoryId", event.target.value)}>
@@ -42,7 +41,6 @@ export function CatalogFilters(props: Readonly<CatalogFiltersProps>) {
           </select>
         </div>
       </div>
-      <button className="button button--quiet filters__clear" type="button" onClick={props.onClear} disabled={!props.hasFilters}>Limpiar filtros</button>
     </section>
   );
 }

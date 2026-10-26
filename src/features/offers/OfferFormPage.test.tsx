@@ -1230,6 +1230,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    await waitFor(() => expect(saveButton).toBeEnabled());
     fireEvent.click(saveButton);
 
     expect(
@@ -1241,7 +1242,7 @@ describe("OfferFormPage (V4)", () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Agregar opción a Plato principal" });
 
     // Open option modal
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));

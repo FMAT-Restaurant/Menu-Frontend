@@ -1,9 +1,11 @@
+import { LoadingValue } from "../../shared/LoadingState";
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
 import { formatMoney } from "../../shared/formatMoney";
 
 export interface OfferCommercialInfoProps {
+  loading?: boolean;
   presentationTag: string;
   onPresentationTagChange: (value: string) => void;
   basePrice: string;
@@ -26,6 +28,7 @@ function handleDragOver(e: DragEvent) {
 }
 
 export function OfferCommercialInfo({
+  loading = false,
   presentationTag,
   onPresentationTagChange,
   basePrice,
@@ -88,14 +91,14 @@ export function OfferCommercialInfo({
         <div className="offer-commercial-info__fields">
           <div className="form-field">
             <label htmlFor="offer-tag-input">Etiqueta de presentación (opcional)</label>
-            <input
+            {loading ? <LoadingValue /> : <input
               id="offer-tag-input"
               type="text"
               value={presentationTag}
               onChange={(e) => onPresentationTagChange(e.target.value)}
               placeholder="Ej. Individual, Mediana o Combo"
               disabled={disabled}
-            />
+            />}
             <p className="field-hint">
               La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
             </p>
@@ -103,7 +106,7 @@ export function OfferCommercialInfo({
 
           <div className="form-field">
             <label htmlFor="offer-price-input">Precio base (MXN)</label>
-            <div className="price-input-wrapper">
+            {loading ? <LoadingValue /> : <div className="price-input-wrapper">
               <span className="price-prefix" aria-hidden="true">MXN</span>
               <input
                 id="offer-price-input"
@@ -117,8 +120,8 @@ export function OfferCommercialInfo({
                 disabled={disabled}
                 aria-describedby={formattedPrice === null ? "offer-price-help" : "offer-price-preview offer-price-help"}
               />
-            </div>
-            {formattedPrice !== null && (
+            </div>}
+            {!loading && formattedPrice !== null && (
               <p id="offer-price-preview" className="offer-money-preview">
                 {formattedPrice}
               </p>
@@ -130,7 +133,7 @@ export function OfferCommercialInfo({
 
           <div className="form-field">
             <span className="field-label" id="offer-status-label">Estado de la oferta</span>
-            {!isEditing ? (
+            {loading ? <LoadingValue /> : !isEditing ? (
               <div className="status-fixed-box">
                 <span className="offer-state offer-state--inactive">Inactiva</span>
                 <p className="field-hint">
@@ -198,7 +201,7 @@ export function OfferCommercialInfo({
               disabled={isImageBlocked}
             />
 
-            <button
+            {loading ? <LoadingValue kind="image" /> : <button
               type="button"
               className={`image-dropzone ${effectivePreview ? "image-dropzone--has-preview" : ""}`}
               onClick={handleTriggerFileSelect}
@@ -224,7 +227,7 @@ export function OfferCommercialInfo({
                   </span>
                 </div>
               )}
-            </button>
+            </button>}
 
             {imageValidating && (
               <p className="feedback feedback--info">Validando imagen…</p>

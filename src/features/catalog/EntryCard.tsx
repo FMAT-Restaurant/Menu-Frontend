@@ -44,10 +44,10 @@ export function EntryCard({ entry, busy, returnTo, onDelete }: Readonly<EntryCar
           <Link className="button button--primary" data-return-key={`${returnKey}:offers`} to={`/entries/${encodedId}/offers`} state={{ returnTo }} aria-label={`Ver ofertas de ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Ver ofertas</Link>
           <Link className="button button--secondary" data-return-key={`${returnKey}:edit`} to={`/entries/${encodedId}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>
         </div>
-        <div className="entry-card__secondary-actions">
-          <button className="button button--quiet entry-card__delete" data-return-key={`${returnKey}:delete`} type="button" disabled={busy || entry.status !== "ARCHIVED"} onClick={() => onDelete(entry)} aria-label={`Eliminar definitivamente ${entry.brandName}`} aria-describedby={deleteHelpId}>Eliminar</button>
-          <p className="entry-card__delete-help" id={deleteHelpId}>{entry.status === "ARCHIVED" ? "La eliminación es definitiva." : "Solo se pueden eliminar entradas archivadas."}</p>
-        </div>
+        {entry.status === "ARCHIVED" && <div className="entry-card__secondary-actions">
+          <p className="entry-card__delete-help" id={deleteHelpId}>La eliminación es definitiva.</p>
+          <button className="button entry-card__delete" data-return-key={`${returnKey}:delete`} type="button" disabled={busy} onClick={() => onDelete(entry)} aria-label={`Eliminar definitivamente ${entry.brandName}`} aria-describedby={deleteHelpId}>Eliminar</button>
+        </div>}
       </div>
     </article>
   );

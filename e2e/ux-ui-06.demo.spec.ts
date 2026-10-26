@@ -35,8 +35,8 @@ async function measureCatalog(page: Page, moduleWidth: number) {
         statusDotColor: getComputedStyle(card.querySelector(".status__dot")!).backgroundColor,
         titleFont: getComputedStyle(card.querySelector("h2")!).fontSize,
         titleLineHeight: getComputedStyle(card.querySelector("h2")!).lineHeight,
-        captionFont: getComputedStyle(card.querySelector(".entry-card__delete-help")!).fontSize,
-        captionLineHeight: getComputedStyle(card.querySelector(".entry-card__delete-help")!).lineHeight,
+        captionFont: card.querySelector(".entry-card__delete-help") ? getComputedStyle(card.querySelector(".entry-card__delete-help")!).fontSize : null,
+        captionLineHeight: card.querySelector(".entry-card__delete-help") ? getComputedStyle(card.querySelector(".entry-card__delete-help")!).lineHeight : null,
         radius: getComputedStyle(card).borderRadius,
         actions: [...card.querySelectorAll("a,button")].map(rect),
       })),
@@ -57,8 +57,13 @@ async function measureCatalog(page: Page, moduleWidth: number) {
   for (const card of geometry.cards) {
     expect(card.titleFont).toBe("18px");
     expect(card.titleLineHeight).toBe("26px");
-    expect(card.captionFont).toBe("12px");
-    expect(card.captionLineHeight).toBe("16px");
+    if (card.status === "Archivada") {
+      expect(card.captionFont).toBe("12px");
+      expect(card.captionLineHeight).toBe("16px");
+    } else {
+      expect(card.captionFont).toBeNull();
+      expect(card.captionLineHeight).toBeNull();
+    }
     expect(card.radius).toBe("12px");
     expect(card.title.right).toBeLessThanOrEqual(card.right);
     for (const action of card.actions) {
@@ -79,13 +84,9 @@ test("U11/U19: catalog actions, columns and page size stay legible across the us
     await page.setViewportSize({ width, height: 900 });
     measurements.push(await measureCatalog(page, width));
     await expect(page.getByRole("link", { name: "Ver ofertas de Hamburguesa clásica", exact: true })).toContainText("Ver ofertas");
-    if (width < 768) {
-      await page.getByRole("button", { name: "Filtros", exact: true }).click();
-      await expect(page.getByRole("combobox", { name: "Categoría", exact: true })).toBeVisible();
-      await expect(page.getByRole("combobox", { name: "Estado administrativo", exact: true })).toBeVisible();
-      measurements.push(await measureCatalog(page, width));
-      await page.getByRole("button", { name: "Filtros", exact: true }).click();
-    }
+    await expect(page.getByRole("button", { name: "Filtros", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("combobox", { name: "Categoría", exact: true })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Estado administrativo", exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`v${width}.png`), fullPage: true });
   }
   await saveJson(testInfo, "viewport.json", measurements);
@@ -123,9 +124,7 @@ test("U11/V05/V06: long categorized cards expose separate keyboard routes and ex
   await expect(card).toBeVisible();
   await expect(card.locator(".category-chip")).toHaveCount(3);
   const remove = card.getByRole("button", { name: `Eliminar definitivamente ${longName}`, exact: true });
-  await expect(remove).toBeDisabled();
-  await expect(remove).toHaveAccessibleDescription("Solo se pueden eliminar entradas archivadas.");
-  await expect(card.getByText("Solo se pueden eliminar entradas archivadas.", { exact: true })).toBeVisible();
+  await expect(remove).toHaveCount(0);
   const keys = await card.evaluate(element => [element, ...element.querySelectorAll("[data-return-key]")].map(node => node.getAttribute("data-return-key")));
   expect(new Set(keys).size).toBe(keys.length);
   for (const width of [390, 1440]) {
@@ -144,6 +143,10 @@ test("U11/V05/V06: long categorized cards expose separate keyboard routes and ex
   await expect(page.getByLabel("Nombre comercial")).toHaveValue(longName);
   await page.getByRole("link", { name: /Volver a entradas/ }).click();
   const archived = page.getByRole("button", { name: "Eliminar definitivamente Especial de temporada", exact: true });
+  const restingStyle = await archived.evaluate(element => ({ color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor }));
+  expect(restingStyle).toEqual({ color: "rgb(185, 28, 28)", background: "rgb(254, 242, 242)" });
+  await page.locator(".filters").screenshot({ path: testInfo.outputPath("filters-information.png") });
+  await page.getByRole("article").filter({ has: archived }).screenshot({ path: testInfo.outputPath("archived-card.png") });
   await archived.focus();
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Eliminar entrada archivada" });

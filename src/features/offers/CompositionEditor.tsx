@@ -1,7 +1,9 @@
+import { LoadingValue } from "../../shared/LoadingState";
 import { type SlotDraft, SlotCard } from "./SlotCard";
 import { Icon } from "../../shared/Icon";
 
 export interface CompositionEditorProps {
+  loading?: boolean;
   slots: SlotDraft[];
   onAddSlot: () => void;
   onEditSlot: (slotIndex: number) => void;
@@ -14,6 +16,7 @@ export interface CompositionEditorProps {
 }
 
 export function CompositionEditor({
+  loading = false,
   slots,
   onAddSlot,
   onEditSlot,
@@ -39,14 +42,15 @@ export function CompositionEditor({
 
       </div>
 
-      {slots.length === 0 && (
+      {!loading && slots.length === 0 && (
         <div className="feedback feedback--warning" role="alert">
           La composición debe contener al menos un grupo con opciones válidas.
         </div>
       )}
 
       <div className="composition-editor__slots-container">
-        {slots.map((slot, index) => (
+        {loading && <LoadingValue kind="composition" />}
+        {!loading && slots.map((slot, index) => (
           <SlotCard
             key={slot.localId || slot.slotId || `slot-${index}`}
             slot={slot}

@@ -81,9 +81,10 @@ test("shows the count of active mobile filters and clears them to exactly root p
   const repository = api();
   page(repository, "/?categoryId=category-1&status=INACTIVE");
   await screen.findByRole("heading", { name: "Bowl de pollo" });
-  const toggle = screen.getByRole("button", { name: "Filtros (2 activos)" });
-  fireEvent.click(toggle);
-  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(screen.queryByRole("button", { name: /^Filtros/ })).not.toBeInTheDocument();
+  expect(screen.getByText("2 activos", { exact: true })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Categoría" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Estado administrativo" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
   await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/"));
 });
@@ -97,7 +98,7 @@ test("keeps cards and their summary visible while a new query loads, then handle
   fireEvent.change(screen.getByRole("combobox", { name: "Estado administrativo" }), { target: { value: "ACTIVE" } });
   expect(screen.getByRole("heading", { name: "Bowl de pollo" })).toBeVisible();
   expect(screen.getByText(/Mostrando resultados anteriores/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Eliminar definitivamente Bowl de pollo" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Eliminar definitivamente Bowl de pollo" })).not.toBeInTheDocument();
   const edit = screen.getByRole("link", { name: "Editar Bowl de pollo" });
   expect(edit).toHaveAttribute("aria-disabled", "true");
   fireEvent.click(edit);

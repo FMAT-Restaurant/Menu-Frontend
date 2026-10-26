@@ -1,30 +1,18 @@
-import { LoadingState } from "./shared/LoadingState";
 import axios from "axios";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
 import { EditGuardProvider } from "./shared/editGuard";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
 import type { MenuRepository } from "./application/catalog";
 
-const CatalogPage = lazy(() =>
-  import("./features/catalog/CatalogPage").then((m) => ({ default: m.CatalogPage })),
-);
-const CategoryPage = lazy(() =>
-  import("./features/categories/CategoryPage").then((m) => ({ default: m.CategoryPage })),
-);
-const EntryFormPage = lazy(() =>
-  import("./features/entries/EntryFormPage").then((m) => ({ default: m.EntryFormPage })),
-);
-const OffersPage = lazy(() =>
-  import("./features/offers/OffersPage").then((m) => ({ default: m.OffersPage })),
-);
-const OfferFormPage = lazy(() =>
-  import("./features/offers/OfferFormPage").then((m) => ({ default: m.OfferFormPage })),
-);
-const RecipePage = lazy(() =>
-  import("./features/recipes/RecipePage").then((m) => ({ default: m.RecipePage })),
-);
+// Route structures are available immediately; only their remote data needs placeholders.
+import { CatalogPage } from "./features/catalog/CatalogPage";
+import { CategoryPage } from "./features/categories/CategoryPage";
+import { EntryFormPage } from "./features/entries/EntryFormPage";
+import { OffersPage } from "./features/offers/OffersPage";
+import { OfferFormPage } from "./features/offers/OfferFormPage";
+import { RecipePage } from "./features/recipes/RecipePage";
 
 export function NotFoundPage() {
   return (
@@ -64,7 +52,7 @@ const defaultRepository = createMenuApi(
 
 export function createMenuRoutes(repository: MenuRepository = defaultRepository, transitions?: ReturnType<typeof createRouteTransitionTracker>) {
   return createRoutesFromElements(
-    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell"><LoadingState variant="task" label="Cargando página…" /></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
+    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Outlet /></EditGuardProvider></div>}>
       <Route path="/" element={<CatalogPage repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
       <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
@@ -91,5 +79,5 @@ export function App({ repository = defaultRepository }: Readonly<{ repository?: 
     setRouter(ownedRouter);
     return () => { unsubscribe(); ownedRouter.dispose(); };
   }, [repository]);
-  return router ? <RouterProvider router={router} /> : <div className="menu-module" data-menu-module><LoadingState variant="task" label="Cargando página…" /></div>;
+  return router ? <RouterProvider router={router} /> : null;
 }

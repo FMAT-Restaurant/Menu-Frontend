@@ -67,8 +67,8 @@ test("shows administrative identity, classification and navigation without claim
   expect(screen.queryByText(/publicada/i)).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
   expect(screen.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/offers");
-  expect(card.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
-  expect(card.getAllByRole("button")).toHaveLength(1);
+  expect(card.queryByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).not.toBeInTheDocument();
+  expect(card.queryAllByRole("button")).toHaveLength(0);
   expect(card.getByText("Ver ofertas", { exact: true })).toBeVisible();
   expect(screen.getByRole("link", { name: "Nueva entrada" })).toHaveAttribute("href", "/entries/new");
   expect(screen.getByRole("link", { name: "Categorías" })).toHaveAttribute("href", "/categories");
@@ -159,13 +159,13 @@ test("uses the page metadata returned by the server for pagination, renders page
   });
 });
 
-test("shows only edit and delete actions without changing status from the catalog", async () => {
+test("keeps edit and offers available without exposing deletion for active entries", async () => {
   const api = repository();
   renderPage(api);
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
-  expect(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Archivar|Inactivar|Desarchivar|Activar/ })).not.toBeInTheDocument();
   expect(api.deleteArchivedEntry).not.toHaveBeenCalled();
 });
@@ -202,7 +202,7 @@ test("directs status changes to the edit form for inactive entries", async () =>
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
   expect(screen.getByRole("link", { name: "Editar Hamburguesa Hawaiana" })).toHaveAttribute("href", "/entries/entry-1/edit");
-  expect(screen.getByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Activar Hamburguesa Hawaiana" })).not.toBeInTheDocument();
 });
 
