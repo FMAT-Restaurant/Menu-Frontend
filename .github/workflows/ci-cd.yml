@@ -102,6 +102,7 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+          PLAYWRIGHT_USE_EXTERNAL_SERVER: "true"
 
       - name: Upload Playwright report and traces
         if: ${{ always() }}

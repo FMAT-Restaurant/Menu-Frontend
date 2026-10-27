@@ -1,6 +1,14 @@
 import axios from "axios";
 
-export type CatalogErrorKind = "network" | "access" | "missing" | "conflict" | "validation" | "temporary" | "invalid";
+export type CatalogErrorKind =
+  | "network"
+  | "access"
+  | "missing"
+  | "conflict"
+  | "validation"
+  | "temporary"
+  | "invalid"
+  | "rate_limit";
 
 export function catalogErrorKind(error: unknown): CatalogErrorKind {
   if (error instanceof Error && error.message.startsWith("Respuesta de ")) return "invalid";
@@ -9,6 +17,7 @@ export function catalogErrorKind(error: unknown): CatalogErrorKind {
   if (status === 404) return "missing";
   if (status === 412 || status === 428) return "conflict";
   if (status === 400 || status === 422) return "validation";
+  if (status === 429) return "rate_limit";
   if (typeof status === "number" && status >= 500) return "temporary";
   return "network";
 }
@@ -26,6 +35,7 @@ export function catalogErrorMessage(kind: CatalogErrorKind, action: "load" | "ch
   if (kind === "missing") return "La entrada ya no está disponible. Actualiza la lista.";
   if (kind === "conflict") return "La entrada cambió desde que la abriste. Actualiza la lista antes de volver a intentarlo.";
   if (kind === "validation") return "El servidor rechazó el cambio por las reglas de la entrada. Revisa su estado y vuelve a intentarlo.";
+  if (kind === "rate_limit") return "Demasiadas solicitudes. Espera un momento antes de volver a intentarlo.";
   if (action === "load") return "No se pudieron cargar las entradas. Comprueba tu conexión y vuelve a intentarlo.";
   if (action === "delete") return "No se pudo confirmar la eliminación. Actualiza la lista antes de repetirla.";
   return "No se pudo confirmar el cambio. Actualiza la lista antes de repetirlo.";

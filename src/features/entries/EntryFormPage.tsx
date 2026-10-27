@@ -1,10 +1,23 @@
+import { LoadingValue } from "../../shared/LoadingState";
+import { receiptState, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
+import { useEditGuard } from "../../shared/editGuard";
 import { useCallback, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { EntryStatus, MenuRepository } from "../../application/catalog";
+import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
+import { Icon } from "../../shared/Icon";
 import { EntryCategorySelector } from "./EntryCategorySelector";
 import { EntryImageField } from "./EntryImageField";
 import { EntryFormFeedback } from "./EntryFormFeedback";
 import { useEntryForm } from "./useEntryForm";
+import "./styles.css";
+
+function entryFormTitle(missing: boolean, editing: boolean): string {
+  if (missing) return "Entrada no encontrada";
+  if (editing) return "Editar entrada";
+  return "Nueva entrada";
+}
 
 const statusLabels: Record<EntryStatus, string> = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };
 const progressLabels = { idle: "Guardar entrada", upload: "Subiendo imagen…", persist: "Guardando entrada…" };
@@ -22,16 +35,6 @@ function safeReturnPath(state: unknown) {
 
 type Model = ReturnType<typeof useEntryForm>;
 
-function revealFocusedControl(control: HTMLElement, footer: HTMLElement | null) {
-  if (!footer || footer.contains(control)) return;
-  const actions = footer.getBoundingClientRect();
-  if (!actions.height) return;
-  const bounds = control.getBoundingClientRect();
-  const offset = bounds.bottom - actions.top + 12;
-  // A resized textarea or long summary may exceed the available height: keep its start readable.
-  if (offset > 0) window.scrollBy({ top: Math.min(offset, bounds.top - 12), behavior: "instant" });
-}
-
 function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolean }>) {
   const archived = model.entry?.status === "ARCHIVED";
   const statuses: EntryStatus[] = archived ? ["ARCHIVED", "INACTIVE"] : ["ACTIVE", "INACTIVE", "ARCHIVED"];
@@ -40,9 +43,9 @@ function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolea
   return <fieldset className="entry-status-selector">
     <legend>Estado administrativo</legend>
     <label className="sr-only" htmlFor="entry-status">Estado administrativo</label>
-    <select id="entry-status" value={model.draft.status} disabled={busy || !model.editingReady} aria-invalid={Boolean(model.failure?.fields.status)} aria-describedby="entry-status-help entry-status-error" onChange={(event) => model.changeStatus(event.target.value as EntryStatus)}>
+    {model.entryLoading ? <LoadingValue /> : <select id="entry-status" value={model.draft.status} disabled={busy || !model.editingReady} aria-invalid={Boolean(model.failure?.fields.status)} aria-describedby="entry-status-help entry-status-error" onChange={(event) => model.changeStatus(event.target.value as EntryStatus)}>
       {statuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
-    </select>
+    </select>}
     <p id="entry-status-help" className="entry-form__muted">{help}</p>
     <p id="entry-status-error" className="entry-form__error">{model.failure?.fields.status}</p>
   </fieldset>;
@@ -53,70 +56,107 @@ function EntryIdentity({ model, disabled }: Readonly<{ model: Model; disabled: b
     <h2 id="entry-identity-title">Identidad de la entrada</h2>
     <div className="entry-form__field">
       <label htmlFor="entry-brandName">Nombre comercial</label>
-      <input id="entry-brandName" value={model.draft.brandName} onChange={(event) => model.changeText("brandName", event.target.value)} maxLength={255} required autoComplete="off" disabled={disabled} aria-invalid={Boolean(model.failure?.fields.brandName)} aria-describedby="entry-brandName-error" />
+      {model.entryLoading ? <LoadingValue /> : <input id="entry-brandName" value={model.draft.brandName} onChange={(event) => model.changeText("brandName", event.target.value)} maxLength={255} required autoComplete="off" disabled={disabled} aria-invalid={Boolean(model.failure?.fields.brandName)} aria-describedby="entry-brandName-error" />}
       <p id="entry-brandName-error" className="entry-form__error">{model.failure?.fields.brandName}</p>
     </div>
     <div className="entry-form__field">
       <label htmlFor="entry-description">Descripción</label>
-      <textarea id="entry-description" value={model.draft.description} onChange={(event) => model.changeText("description", event.target.value)} rows={3} required disabled={disabled} aria-invalid={Boolean(model.failure?.fields.description)} aria-describedby="entry-description-error" />
+      {model.entryLoading ? <LoadingValue kind="multiline" /> : <textarea id="entry-description" value={model.draft.description} onChange={(event) => model.changeText("description", event.target.value)} rows={3} required disabled={disabled} aria-invalid={Boolean(model.failure?.fields.description)} aria-describedby="entry-description-error" />}
       <p id="entry-description-error" className="entry-form__error">{model.failure?.fields.description}</p>
     </div>
   </section>;
 }
 
-function EntryFormEditor({ repository, entryId, returnTo }: Readonly<{ repository: MenuRepository; entryId?: string; returnTo: string }>) {
+export type EntryFormRepository = Pick<
+  MenuRepository,
+  "listCategories" | "getEntry" | "uploadEntryImage" | "createEntry" | "updateEntry"
+>;
+
+export interface EntryFormPageProps {
+  repository: EntryFormRepository;
+  storage?: PendingOperationStorageAdapter;
+  onSaved?: (receipt: LocalSaveReceipt) => Promise<void>;
+}
+
+function EntryFormEditor({
+  repository,
+  entryId,
+  returnTo,
+  storage,
+  returnState,
+  onSaved: customOnSaved,
+}: Readonly<{
+  repository: EntryFormRepository;
+  entryId?: string;
+  returnTo: string;
+  returnState: unknown;
+  storage?: PendingOperationStorageAdapter;
+  onSaved?: (receipt: LocalSaveReceipt) => Promise<void>;
+}>) {
   const navigate = useNavigate();
-  const editing = Boolean(entryId);
-  const onSaved = useCallback(async () => { await navigate(returnTo, { replace: true }); }, [navigate, returnTo]);
-  const model = useEntryForm(repository, entryId, onSaved);
+
+  const defaultOnSaved = useCallback(async (receipt: LocalSaveReceipt) => { await navigate(returnTo, { replace: true, state: receiptState(returnState, receipt) }); }, [navigate, returnTo, returnState]);
+  const model = useEntryForm(repository, entryId, customOnSaved ?? defaultOnSaved, storage);
+  const guard = useEditGuard({ get dirty() { return model.dirty; }, get blocked() { return model.exitBlocked; } }, model.abandon);
+  const editing = model.editing;
   const summary = useRef<HTMLDivElement>(null);
   const actions = useRef<HTMLElement>(null);
+  const form = useRef<HTMLFormElement>(null);
+  const actionLayout = useFormActionsLayout(form, actions);
   const busy = model.stage !== "idle";
-  const disabled = busy || !model.editingReady;
+  const disabled = busy || model.saveSucceeded || !model.editingReady;
   const conflict = editing && model.failure?.kind === "conflict";
-  const saveDisabled = disabled || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
+  const missing = editing && model.entryLoadFailure?.kind === "notFound";
+  const catalogReturnTo = returnTo === "/" || returnTo.startsWith("/?") ? returnTo : "/";
+  const saveDisabled = !model.recoveryReady || disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
   let saveLabel = progressLabels[model.stage];
   if (editing && !busy) saveLabel = "Guardar cambios";
 
   useEffect(() => { if (model.failureEpoch) summary.current?.focus(); }, [model.failureEpoch]);
 
-  return <div className="app-shell entry-form-shell">
-    <nav className="global-nav" aria-label="Navegación principal"><div className="entry-form-nav">
-      <Link className="brand" to={returnTo} onClick={(event) => { if (busy) event.preventDefault(); }}><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
-      <span className="global-nav__section">Administración del menú</span>
-    </div></nav>
-    <main className="entry-form-page">
-      <Link className="back-link" to={returnTo} aria-disabled={busy} onClick={(event) => { if (busy) event.preventDefault(); }}>← Volver a entradas</Link>
-      <header className="entry-form-page__heading"><p className="eyebrow">Administración / Menú</p><h1>{editing ? "Editar entrada" : "Nueva entrada"}</h1><p>Nombre, descripción, categorías e imagen de referencia.</p></header>
-      <form className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
+  return <div className="app-shell entry-form-shell">{guard.confirmation}
+    <main className="menu-page menu-page--form entry-form-page">
+      <header className="task-header entry-form-page__heading">
+        <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) event.preventDefault(); }}><Icon name="arrow-left" /> {missing ? "Volver al catálogo" : "Volver a entradas"}</Link>
+        <div className="task-header__content">
+          <p className="eyebrow">Entradas</p>
+          <h1 data-route-heading tabIndex={-1}>{entryFormTitle(missing, editing)}</h1>
+          <p className="task-header__intro">{missing ? "No pudimos abrir la entrada que intentas editar." : "Nombre, descripción, categorías e imagen de referencia."}</p>
+        </div>
+      </header>
+      {missing ? <section className="entry-missing" role="alert" aria-label="Entrada no encontrada">
+        <span className="entry-missing__icon"><Icon name="image" /></span>
+        <p>La entrada solicitada ya no existe.</p>
+        <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
+      </section> : <form ref={form} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="entry-form" noValidate onSubmit={(event) => { void model.save(event); }} aria-busy={busy} onFocusCapture={(event) => {
         const control = event.target;
-        requestAnimationFrame(() => { if (document.activeElement === control) revealFocusedControl(control, actions.current); });
+        requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actions.current); });
       }}>
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
-        {model.entryLoading && <output className="feedback" aria-live="polite">Cargando la entrada…</output>}
+        {model.entryLoading && <output className="sr-only">Cargando la entrada…</output>}
         {model.entryError && <div className="feedback feedback--error" role="alert">{model.entryError} <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
-        {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No se recibió una versión fuerte de la entrada. Revisa los datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
-        <div className="entry-form__layout">
+        {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
+        <div className="entry-form__layout" aria-busy={model.entryLoading}>
           <div className="entry-form__primary">
             <EntryIdentity model={model} disabled={disabled} />
-            <EntryCategorySelector categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />
+            <EntryCategorySelector selectionLoading={model.entryLoading} categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />
           </div>
           <aside className="entry-form__secondary">
-            <EntryImageField file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
-            {editing && <EntryStatusField model={model} busy={busy} />}
+            <EntryImageField loading={model.entryLoading} file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
+            {editing && <EntryStatusField model={model} busy={busy || model.saveSucceeded} />}
           </aside>
         </div>
         <footer ref={actions} className="entry-form__actions">
           <button className="button button--secondary" type="button" disabled={busy} onClick={() => { void navigate(returnTo); }}>Cancelar</button>
           <button className="button button--primary" type="submit" disabled={saveDisabled}>{saveLabel}</button>
         </footer>
-      </form>
+      </form>}
     </main>
   </div>;
 }
 
-export function EntryFormPage({ repository }: Readonly<{ repository: MenuRepository }>) {
+export function EntryFormPage({ repository, storage, onSaved }: Readonly<EntryFormPageProps>) {
   const { entryId } = useParams();
   const location = useLocation();
-  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} />;
+  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} returnState={location.state} storage={storage} onSaved={onSaved} />;
 }

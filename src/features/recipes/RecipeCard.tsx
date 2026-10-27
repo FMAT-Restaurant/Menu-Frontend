@@ -1,22 +1,28 @@
 import type { RecipeSummary } from "../../application/catalog";
 
-interface RecipeCardProps {
+interface BaseRecipeCardProps {
   recipe: RecipeSummary;
-  mode: "management" | "selection";
-  onEdit?(recipe: RecipeSummary): void;
-  onDelete?(recipe: RecipeSummary): void;
-  onSelect?(recipe: RecipeSummary): void;
   isBusy?: boolean;
 }
 
-export function RecipeCard({
-  recipe,
-  mode,
-  onEdit,
-  onDelete,
-  onSelect,
-  isBusy = false,
-}: Readonly<RecipeCardProps>) {
+export interface ManagementRecipeCardProps extends BaseRecipeCardProps {
+  mode: "management";
+  onEdit: (recipe: RecipeSummary) => void;
+  onDelete: (recipe: RecipeSummary) => void;
+  onSelect?: never;
+}
+
+export interface SelectionRecipeCardProps extends BaseRecipeCardProps {
+  mode: "selection";
+  onSelect: (recipe: RecipeSummary) => void;
+  onEdit?: never;
+  onDelete?: never;
+}
+
+export type RecipeCardProps = ManagementRecipeCardProps | SelectionRecipeCardProps;
+
+export function RecipeCard(props: Readonly<RecipeCardProps>) {
+  const { recipe, mode, isBusy = false } = props;
   const suppliesText = recipe.supplies
     .map((supply) => {
       const name = supply.inventoryItem?.name ?? supply.inventoryItemId;
@@ -37,7 +43,7 @@ export function RecipeCard({
             <button
               type="button"
               className="button button--primary"
-              onClick={() => onSelect?.(recipe)}
+              onClick={() => props.onSelect(recipe)}
               disabled={isBusy}
             >
               Asignar
@@ -47,7 +53,7 @@ export function RecipeCard({
               <button
                 type="button"
                 className="button button--secondary"
-                onClick={() => onEdit?.(recipe)}
+                onClick={() => props.onEdit(recipe)}
                 disabled={isBusy}
                 aria-label={`Editar ${recipe.name}`}
               >
@@ -55,8 +61,11 @@ export function RecipeCard({
               </button>
               <button
                 type="button"
-                className="button button--danger"
-                onClick={() => onDelete?.(recipe)}
+                className="button button--quiet recipe-card__delete"
+                onClick={(e) => {
+                  e.currentTarget.focus();
+                  props.onDelete(recipe);
+                }}
                 disabled={isBusy}
                 aria-label={`Eliminar ${recipe.name}`}
               >

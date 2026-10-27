@@ -25,7 +25,40 @@ npm ci
 npm run dev
 ```
 
-Abre `http://localhost:5173`. Comandos de calidad y pruebas:
+Abre `http://localhost:5173`.
+
+### Modo demo sin backend
+
+```sh
+npm run dev:mock
+```
+
+Abre `http://127.0.0.1:5174`. El título de la pestaña empieza con `[DEMO]`.
+Este modo carga las pantallas reales con un repositorio en memoria y datos de
+ejemplo de entradas, categorías, ofertas, recetas e insumos. Permite buscar,
+filtrar, crear, editar, cambiar estados, cargar imágenes locales y eliminar los
+registros que cumplan las reglas de estado o asociación del demo, sin llamar a
+los servicios de Menu, Inventory o Media.
+
+Los cambios duran mientras navegas en la misma pestaña. Al recargar la página,
+abrir otra pestaña o reiniciar el servidor, se recuperan los datos iniciales. El
+puerto separado mantiene el almacenamiento del navegador del demo aislado del
+desarrollo normal en el puerto 5173. El puerto es fijo; si está ocupado, detén la
+instancia anterior antes de iniciar otra.
+
+Es una herramienta de desarrollo para explorar la interfaz; no sustituye las
+pruebas contra el contrato HTTP ni reproduce todas las reglas del backend. Se
+activa únicamente con Vite en desarrollo y `--mode demo`. `npm run dev` mantiene
+la conexión real y los builds de producción excluyen el repositorio y los datos
+del demo, incluso si se usa `vite build --mode demo`.
+
+Para verificar los flujos del demo con Chromium de Playwright instalado:
+
+```sh
+npm run test:e2e:demo
+```
+
+### Comandos de calidad
 
 | Comando | Propósito |
 | --- | --- |

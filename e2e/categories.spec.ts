@@ -40,7 +40,14 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", { name: "Descripción" }).fill("Borrador descartado");
   await dialog.getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.getByRole("button", { name: "Seguir editando", exact: true })).toBeFocused();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(1);
+  await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+  await expect(dialog.getByRole("textbox", { name: "Descripción" })).toHaveValue("Borrador descartado");
+  await dialog.getByRole("button", { name: "Cancelar" }).click();
+  await page.getByRole("button", { name: "Descartar cambios", exact: true }).click();
   await expect(dialog).not.toBeVisible();
+  await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
   expect(mutations).toEqual([]);
 
   await page.getByRole("button", { name: "Editar Bebidas" }).click();

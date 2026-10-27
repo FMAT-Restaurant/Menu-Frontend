@@ -1,12 +1,28 @@
 export type EntryStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 
+export type VersionedResource<T> = Readonly<{
+  data: T;
+  etag?: string;
+}>;
+
+export interface MenuCategoryReference {
+  id: string;
+  name: string;
+}
+
+export interface CatalogImage {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+}
+
 export interface MenuEntry {
   id: string;
   brandName: string;
   description: string;
   status: EntryStatus;
-  image: { id: string; url: string; thumbnailUrl: string } | null;
-  categories: { id: string; name: string }[];
+  image: CatalogImage | null;
+  categories: MenuCategoryReference[];
   offerCount: number;
 }
 
@@ -52,8 +68,10 @@ export type OfferCourse = "entrada" | "plato fuerte" | "postre" | "bebida";
 export interface RecipeSlotOptionInput {
   sourceType: "RECIPE";
   recipeId: string;
-  recipeRevision?: number;
   displayName: string;
+  inventoryItemId?: never;
+  quantity?: never;
+  unit?: never;
 }
 
 export interface InventoryItemSlotOptionInput {
@@ -62,21 +80,30 @@ export interface InventoryItemSlotOptionInput {
   quantity: number;
   unit: string;
   displayName: string;
+  recipeId?: never;
 }
 
 export type SlotOptionInput = RecipeSlotOptionInput | InventoryItemSlotOptionInput;
 
-export interface SlotOptionDetail {
+export interface RecipeSlotOptionDetail {
   optionId: string;
   displayName: string;
-  status: OfferStatus;
-  sourceType: "RECIPE" | "INVENTORY_ITEM";
-  recipeId?: string;
-  recipeRevision?: number;
-  inventoryItemId?: string;
-  quantity?: number;
-  unit?: string;
+  status?: OfferStatus;
+  sourceType: "RECIPE";
+  recipeId: string;
 }
+
+export interface InventorySlotOptionDetail {
+  optionId: string;
+  displayName: string;
+  status?: OfferStatus;
+  sourceType: "INVENTORY_ITEM";
+  inventoryItemId: string;
+  quantity: number;
+  unit: string;
+}
+
+export type SlotOptionDetail = RecipeSlotOptionDetail | InventorySlotOptionDetail;
 
 export interface CompositionSlotInput {
   name: string;
@@ -99,6 +126,7 @@ export interface CompositionDetail {
 }
 
 export interface MenuOfferDetail {
+  etag?: string;
   id: string;
   entryId: string;
   presentationTag: string;
@@ -116,6 +144,54 @@ export interface OfferCreateDraft {
   };
 }
 
+type RecipeOptionSource = {
+  sourceType: "RECIPE";
+  inventoryItemId?: never;
+  quantity?: never;
+  unit?: never;
+};
+
+type InventoryOptionSource = {
+  sourceType: "INVENTORY_ITEM";
+  recipeId?: never;
+};
+
+export type NewRecipeSlotOptionUpdate = RecipeOptionSource & {
+  optionId?: never;
+  displayName: string;
+  status: OfferStatus;
+  recipeId: string;
+};
+
+export type ExistingRecipeSlotOptionUpdate = RecipeOptionSource & {
+  optionId: string;
+  displayName?: string;
+  status?: OfferStatus;
+  recipeId?: string;
+};
+
+export type NewInventoryItemSlotOptionUpdate = InventoryOptionSource & {
+  optionId?: never;
+  displayName: string;
+  status: OfferStatus;
+  inventoryItemId: string;
+  quantity: number;
+  unit: string;
+};
+
+export type ExistingInventoryItemSlotOptionUpdate = InventoryOptionSource & {
+  optionId: string;
+  displayName?: string;
+  status?: OfferStatus;
+  inventoryItemId?: string;
+  quantity?: number;
+  unit?: string;
+};
+
+export type RecipeSlotOptionUpdate = NewRecipeSlotOptionUpdate | ExistingRecipeSlotOptionUpdate;
+export type InventoryItemSlotOptionUpdate = NewInventoryItemSlotOptionUpdate | ExistingInventoryItemSlotOptionUpdate;
+export type SlotOptionUpdate = RecipeSlotOptionUpdate | InventoryItemSlotOptionUpdate;
+
 export interface OfferUpdateDraft {
   presentationTag: string;
   basePrice?: number;
@@ -126,19 +202,14 @@ export interface OfferUpdateDraft {
       name?: string;
       quantity?: number;
       course?: OfferCourse | null;
-      options?: Array<{
-        optionId?: string;
-        displayName?: string;
-        status?: OfferStatus;
-        sourceType: "RECIPE" | "INVENTORY_ITEM";
-        recipeId?: string;
-        recipeRevision?: number;
-        inventoryItemId?: string;
-        quantity?: number;
-        unit?: string;
-      }>;
+      options?: SlotOptionUpdate[];
     }>;
   };
+}
+
+export interface OfferStatusDraft {
+  presentationTag: string;
+  status: OfferStatus;
 }
 
 export interface EntryCreateDraft {
@@ -148,7 +219,7 @@ export interface EntryCreateDraft {
 }
 
 export interface EntryUpdateDraft extends EntryCreateDraft {
-  status: EntryStatus;
+  status?: EntryStatus;
   imageId?: string;
 }
 
@@ -194,6 +265,7 @@ export interface RecipeSummary {
 }
 
 export interface RecipeDetail extends RecipeSummary {
+  etag?: string;
   instructions: string;
 }
 
@@ -224,25 +296,26 @@ export interface InventoryQuery {
 export interface MenuRepository {
   listEntries(query: EntryQuery, signal?: AbortSignal): Promise<Page<MenuEntry>>;
   listCategories(signal?: AbortSignal): Promise<MenuCategory[]>;
-  createCategory(draft: CategoryDraft): Promise<MenuCategory>;
-  updateCategory(id: string, draft: CategoryDraft): Promise<MenuCategory>;
+  getCategory(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuCategory>>;
+  createCategory(draft: CategoryDraft, idempotencyKey: string): Promise<MenuCategory>;
+  updateCategory(id: string, draft: CategoryDraft, etag: string): Promise<MenuCategory>;
   setEntryStatus(id: string, status: EntryStatus): Promise<void>;
   deleteArchivedEntry(id: string): Promise<void>;
   getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail>;
-  uploadEntryImage(image: File): Promise<string>;
-  createEntry(draft: EntryCreateRequest): Promise<MenuEntryDetail>;
+  uploadImage(image: File, idempotencyKey: string): Promise<string>;
+  uploadEntryImage(image: File, idempotencyKey: string): Promise<string>;
+  createEntry(draft: EntryCreateRequest, idempotencyKey: string): Promise<MenuEntryDetail>;
   updateEntry(id: string, draft: EntryUpdateDraft, etag: string): Promise<MenuEntryDetail>;
   listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
-  getOffer(id: string, signal?: AbortSignal): Promise<MenuOfferDetail>;
-  createOffer(entryId: string, draft: OfferCreateDraft, image: File): Promise<MenuOfferDetail>;
-  updateOffer(id: string, draft: OfferUpdateDraft, image?: File): Promise<MenuOfferDetail>;
-  setOfferStatus(id: string, status: OfferStatus): Promise<void>;
+  getOffer(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuOfferDetail>>;
+  createOffer(entryId: string, draft: OfferCreateDraft, imageId: string, idempotencyKey: string): Promise<MenuOfferDetail>;
+  updateOffer(id: string, draft: OfferUpdateDraft, etag: string, idempotencyKey: string, imageId?: string): Promise<MenuOfferDetail>;
+  setOfferStatus(id: string, draft: OfferStatusDraft, etag: string, idempotencyKey: string): Promise<MenuOfferDetail>;
   deleteInactiveOffer(id: string): Promise<void>;
   listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>>;
-  getRecipe(id: string, signal?: AbortSignal): Promise<RecipeDetail>;
-  createRecipe(draft: RecipeDraft): Promise<RecipeDetail>;
-  updateRecipe(id: string, draft: RecipeDraft): Promise<RecipeDetail>;
+  getRecipe(id: string, signal?: AbortSignal): Promise<VersionedResource<RecipeDetail>>;
+  createRecipe(draft: RecipeDraft, idempotencyKey: string): Promise<RecipeDetail>;
+  updateRecipe(id: string, draft: RecipeDraft, etag: string): Promise<RecipeDetail>;
   deleteRecipe(id: string): Promise<void>;
   listInventoryItems(query?: InventoryQuery, signal?: AbortSignal): Promise<Page<InventoryItem>>;
 }
-

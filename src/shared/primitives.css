@@ -1,0 +1,437 @@
+/* Shared primitives stay inside the module; area-specific adoption follows in UX04–UX09. */
+
+:where(.menu-module) .eyebrow {
+  margin: 0 0 8px;
+  color: var(--brand);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+:where(.menu-module) .search-field,
+:where(.menu-module) .select-field {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:where(.menu-module) .search-field__control {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--control-height);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: #fff;
+}
+
+:where(.menu-module) .search-field__control:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--soft-brand);
+}
+
+:where(.menu-module) .search-field__icon {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+:where(.menu-module) .search-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
+  padding: 0 8px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+:where(.menu-module) .search-field input:focus-visible {
+  outline: 0;
+}
+
+:where(.menu-module) .search-field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+:where(.menu-module) .search-field__clear {
+  display: inline-flex;
+  flex: 0 0 var(--control-height);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+}
+
+:where(.menu-module) .search-field__clear:hover {
+  background: var(--soft-brand);
+  color: var(--brand);
+}
+
+:where(.menu-module) .search-field__control .button {
+  align-self: stretch;
+  min-height: var(--control-height);
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+:where(.menu-module) .pagination {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+:where(.menu-module) .pagination__number {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  border: 1px solid #d1d5db;
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--text);
+}
+
+:where(.menu-module) .pagination__number--current {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+:where(.menu-module) .pagination__ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  color: #6b7280;
+  user-select: none;
+}
+
+:where(.menu-module) .dialog-backdrop {
+  display: contents;
+}
+
+/* The native top layer owns the only backdrop, for confirmations and task forms. */
+:where(.menu-module) .menu-task-dialog {
+  container: menu-dialog / inline-size;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-card);
+}
+
+:where(.menu-module) .menu-task-dialog::backdrop {
+  background: rgb(17 24 39 / 40%);
+}
+
+:where(.menu-module) .menu-task-dialog[data-modal-covered]::backdrop {
+  background: transparent;
+}
+
+:where(.menu-module) .menu-task-dialog :is(button, input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: var(--control-height);
+}
+
+:where(.menu-module) .menu-task-dialog :is(.modal-close, .category-form-dialog__close, .recipe-form-dialog__close) {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 8px;
+  border-radius: var(--radius-control);
+}
+
+:where(.menu-module) .menu-task-dialog :is(.modal-body, .category-form-dialog__fields, .recipe-form-dialog__fields) {
+  overscroll-behavior: contain;
+}
+
+@container menu-dialog (width < 1200px) {
+  :where(.menu-module) .menu-task-dialog > * {
+    --control-height: 48px;
+  }
+}
+
+:where(.menu-module) .confirm-dialog {
+  width: min(100%, 440px);
+  margin: auto;
+  padding: 24px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 12%);
+}
+
+:where(.menu-module) .confirm-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+:where(.menu-module) .confirm-dialog p {
+  color: var(--text);
+  line-height: 24px;
+}
+
+:where(.menu-module) .confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+:where(.menu-module) .category-screen {
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+:where(.menu-module) .menu-page {
+  width: min(calc(100% - 48px), 1152px);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 24px 0 72px;
+}
+
+/* Entry forms and plain messages keep a readable line length inside the common gutter. */
+:where(.menu-module) .menu-page--form {
+  max-width: 1040px;
+}
+
+:where(.menu-module) .menu-page--message {
+  max-width: 640px;
+}
+
+:where(.menu-module) .task-header {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+:where(.menu-module) .task-header__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+:where(.menu-module) .task-header__content {
+  flex: 1 1 320px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+:where(.menu-module) .task-header h1 {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  text-transform: none;
+}
+
+:where(.menu-module) .task-header [data-route-heading]:focus {
+  /* Route announcements focus a heading, rather than an interactive control. */
+  outline: none;
+}
+
+:where(.menu-module) .task-header__intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+:where(.menu-module) .task-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:where(.menu-module) .task-header > :is(.back-link, .category-screen__back) {
+  justify-self: start;
+}
+
+:where(.menu-module) .category-panel {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(17 24 39 / 4%);
+}
+
+@container menu-module (width < 768px) {
+  :where(.menu-module) .menu-page {
+    width: calc(100% - 32px);
+    padding-top: 16px;
+  }
+  :where(.menu-module) .task-header__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  :where(.menu-module) .task-header__content {
+    flex-basis: auto;
+  }
+  :where(.menu-module) .task-header__actions .button {
+    flex: 1 1 auto;
+    white-space: normal;
+  }
+  :where(.menu-module) .category-panel {
+    padding: 16px;
+  }
+}
+
+:where(.menu-module) .catalog-header__intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module) .empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 64px 24px;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: center;
+}
+
+:where(.menu-module) .empty-state__icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 30px;
+}
+
+:where(.menu-module) .empty-state h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+:where(.menu-module) .empty-state p {
+  max-width: 440px;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module) .back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--control-height);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+:where(.menu-module) .back-link:hover:not([aria-disabled="true"]) {
+  border-color: var(--brand);
+  background: var(--soft-brand);
+  color: var(--brand);
+}
+
+:where(.menu-module) .back-link:active:not([aria-disabled="true"]) {
+  background: var(--soft-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.menu-module) .back-link { transition: none; }
+}
+
+:where(.menu-module) .category-empty {
+  margin-top: 8px;
+}
+
+/* Placeholders reserve remote content only. Static labels and controls belong to each view. */
+:where(.menu-module[data-menu-module]) .menu-loading { position: relative; min-width: 0; }
+:where(.menu-module[data-menu-module]) .menu-loading__shapes { display: grid; gap: 16px; }
+:where(.menu-module[data-menu-module]) .menu-loading span,
+:where(.menu-module[data-menu-module]) .menu-loading__image,
+:where(.menu-module[data-menu-module]) .loading-value {
+  display: block;
+  min-width: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--border);
+}
+:where(.menu-module[data-menu-module]) .menu-loading :where(span) { height: 16px; }
+:where(.menu-module[data-menu-module]) .menu-loading__image { height: 144px; width: 100%; border-radius: 0; background: var(--surface-container, #f1f5f9); }
+:where(.menu-module[data-menu-module]) .menu-loading :is(.menu-loading__entry, .menu-loading__offer) { overflow: hidden; }
+:where(.menu-module[data-menu-module]) .menu-loading__row-title { height: 26px; width: 68%; max-width: 240px; }
+:where(.menu-module[data-menu-module]) .menu-loading__row-description { height: 20px; margin-top: 4px; width: 85%; max-width: 280px; }
+:where(.menu-module[data-menu-module]) .menu-loading__description { display: grid; gap: 6px; margin: 8px 0 12px; }
+:where(.menu-module[data-menu-module]) .menu-loading__description span:last-child { width: 72%; }
+:where(.menu-module[data-menu-module]) .menu-loading__chip { width: 100px; height: 24px; border-radius: 999px; }
+:where(.menu-module[data-menu-module]) .menu-loading .entry-card__meta span { width: 35%; }
+:where(.menu-module[data-menu-module]) .menu-loading__row-action { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-height); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--canvas); font-size: 14px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+:where(.menu-module[data-menu-module]) .menu-loading .menu-loading__action-measure { display: inline; visibility: hidden; width: auto; height: auto; background: none; }
+:where(.menu-module[data-menu-module]) .menu-loading__hint { flex: 1; max-width: 200px; }
+:where(.menu-module[data-menu-module]) .menu-loading--offers .menu-loading__shapes { gap: 24px; }
+:where(.menu-module[data-menu-module]) .menu-loading__price { width: 88px; height: 28px; }
+:where(.menu-module[data-menu-module]) .menu-loading__state { width: 64px; }
+:where(.menu-module[data-menu-module]) .menu-loading__count { width: 150px; height: 24px; }
+:where(.menu-module[data-menu-module]) .menu-loading__edit { width: 100px; height: 20px; }
+:where(.menu-module[data-menu-module]) .menu-loading--category-rows .menu-loading__shapes { gap: 12px; }
+:where(.menu-module[data-menu-module]) .menu-loading__row-text { flex: 1; min-width: 0; width: 100%; }
+:where(.menu-module[data-menu-module]) .menu-loading__row-meta { height: var(--leading-body); display: flex; align-items: center; margin-top: 4px; }
+:where(.menu-module[data-menu-module]) .menu-loading__row-meta span { height: var(--leading-caption); width: 120px; }
+:where(.menu-module[data-menu-module]) .menu-loading__supplies-line { height: var(--leading-small); width: 80%; }
+:where(.menu-module[data-menu-module]) .menu-loading__option { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px; }
+:where(.menu-module[data-menu-module]) .menu-loading__option span:first-child { width: 18px; height: 18px; }
+:where(.menu-module[data-menu-module]) .menu-loading__option span:last-child { width: 60%; }
+:where(.menu-module[data-menu-module]) .loading-value { width: 100%; height: var(--control-height, 40px); border: 1px solid transparent; }
+:where(.menu-module[data-menu-module]) .loading-value--multiline { height: 96px; }
+:where(.menu-module[data-menu-module]) .loading-value--image { height: 160px; background: var(--surface-container, #f1f5f9); }
+:where(.menu-module[data-menu-module]) .entry-image-field .loading-value--image { height: clamp(64px, calc(100dvh - 224px), 176px); }
+:where(.menu-module[data-menu-module]) .loading-value--line { display: inline-block; vertical-align: middle; width: 180px; max-width: 100%; height: 20px; }
+:where(.menu-module[data-menu-module]) .loading-value--composition { height: 180px; border: 1px solid var(--border); background: linear-gradient(var(--border), var(--border)) 16px 20px / 40% 20px no-repeat, linear-gradient(var(--border), var(--border)) 16px 56px / 65% 16px no-repeat, linear-gradient(var(--border), var(--border)) 16px 100px / calc(100% - 32px) 48px no-repeat, var(--canvas); border-radius: var(--radius-card); }
+@container menu-module (width < 768px) {
+  :where(.menu-module[data-menu-module]) .menu-loading--entries .menu-loading__image { height: 192px; }
+}
+@container menu-module (width >= 768px) {
+  :where(.menu-module[data-menu-module]) .menu-loading--entries .menu-loading__shapes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container menu-module (width >= 1200px) {
+  :where(.menu-module[data-menu-module]) .menu-loading--entries .menu-loading__shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container offers (width >= 768px) {
+  :where(.menu-module[data-menu-module]) .menu-loading--offers .menu-loading__shapes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container offers (width < 1200px) {
+  :where(.menu-module[data-menu-module]) .menu-loading__offer { --control-height: 48px; }
+}
+@container offers (width >= 1200px) {
+  :where(.menu-module[data-menu-module]) .menu-loading--offers .menu-loading__shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

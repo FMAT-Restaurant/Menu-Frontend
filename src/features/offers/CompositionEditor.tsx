@@ -1,6 +1,9 @@
+import { LoadingValue } from "../../shared/LoadingState";
 import { type SlotDraft, SlotCard } from "./SlotCard";
+import { Icon } from "../../shared/Icon";
 
 export interface CompositionEditorProps {
+  loading?: boolean;
   slots: SlotDraft[];
   onAddSlot: () => void;
   onEditSlot: (slotIndex: number) => void;
@@ -12,11 +15,8 @@ export interface CompositionEditorProps {
   disabled?: boolean;
 }
 
-function handleCopyFromAnotherOffer() {
-  // TODO: Copying composition from another offer will be implemented in V8.
-}
-
 export function CompositionEditor({
+  loading = false,
   slots,
   onAddSlot,
   onEditSlot,
@@ -35,30 +35,24 @@ export function CompositionEditor({
             2. Composición
           </h2>
           <p className="composition-editor__subtitle">
-            Cada grupo define su participación y cantidad; cada opción elige su propia fuente de contenido.
+          Cada grupo indica cuántas rondas de selección incluye. En cada ronda se elige entre sus opciones.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={handleCopyFromAnotherOffer}
-          disabled={disabled}
-        >
-          Copiar composición desde otra oferta
-        </button>
+
       </div>
 
-      {slots.length === 0 && (
+      {!loading && slots.length === 0 && (
         <div className="feedback feedback--warning" role="alert">
-          La composición debe contener al menos un grupo (slot) con opciones válidas.
+          La composición debe contener al menos un grupo con opciones válidas.
         </div>
       )}
 
       <div className="composition-editor__slots-container">
-        {slots.map((slot, index) => (
+        {loading && <LoadingValue kind="composition" />}
+        {!loading && slots.map((slot, index) => (
           <SlotCard
-            key={slot.slotId || `slot-${index}`}
+            key={slot.localId || slot.slotId || `slot-${index}`}
             slot={slot}
             slotIndex={index}
             onEdit={() => onEditSlot(index)}
@@ -78,7 +72,7 @@ export function CompositionEditor({
           disabled={disabled}
           aria-label="Agregar grupo"
         >
-          <span className="add-slot-card__icon" aria-hidden="true">+</span>
+          <span className="add-slot-card__icon" aria-hidden="true"><Icon name="add" /></span>
           <span className="add-slot-card__label">Agregar grupo</span>
         </button>
       </div>

@@ -1,4 +1,4 @@
-import type { OptionDraft } from "./OptionModal";
+import type { OptionDraft } from "./optionDraft";
 
 export interface SlotOptionItemProps {
   option: OptionDraft;
@@ -20,7 +20,7 @@ export function SlotOptionItem({
   const isRecipe = option.sourceType === "RECIPE";
   const sourceName = isRecipe
     ? option.recipeName || "Receta de biblioteca"
-    : option.inventoryItemName || "Artículo de inventario";
+    : option.inventoryItemName || "Insumo de inventario";
   const label = option.displayName || sourceName;
   const isActive = option.status === "ACTIVE";
 
@@ -33,7 +33,7 @@ export function SlotOptionItem({
         <div className="slot-option-item__header">
           <strong className="slot-option-item__name">{label}</strong>
           <span className="slot-option-item__source-badge">
-            {isRecipe ? "Receta" : "Inventario"}
+            {isRecipe ? "Receta" : "Insumo"}
           </span>
         </div>
         {option.displayName && option.displayName !== sourceName && (
@@ -46,16 +46,18 @@ export function SlotOptionItem({
         )}
       </div>
 
+      <span className={`offer-state ${isActive ? "offer-state--active" : "offer-state--inactive"}`}>{isActive ? "Activa" : "Inactiva"}</span>
       <div className="slot-option-item__actions">
         <button
           type="button"
-          className={`option-status-badge ${isActive ? "option-status-badge--active" : "option-status-badge--inactive"}`}
+          className="button button--small button--secondary"
           onClick={onToggleStatus}
           disabled={disabled}
           title={isActive ? "Hacer inactiva" : "Hacer activa"}
           aria-label={`Cambiar estado de ${label}`}
+          aria-pressed={isActive}
         >
-          {isActive ? "Activa" : "Inactiva"}
+          {isActive ? "Desactivar" : "Activar"}
         </button>
 
         <button
@@ -70,12 +72,13 @@ export function SlotOptionItem({
 
         <button
           type="button"
-          className="button button--small button--danger"
+          className="button button--small button--secondary"
           onClick={onDelete}
           disabled={disabled}
           aria-label={`Eliminar opción ${label}`}
+          title="Retirar esta opción del borrador; se aplica al guardar"
         >
-          ✕
+          Retirar
         </button>
       </div>
     </div>

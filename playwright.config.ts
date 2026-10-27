@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/*.demo.spec.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -16,6 +17,15 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
+  ...(process.env.PLAYWRIGHT_USE_EXTERNAL_SERVER === "true"
+    ? {}
+    : {
+        webServer: {
+          command: "npm run preview",
+          port: 4173,
+          reuseExistingServer: !process.env.CI,
+        },
+      }),
   projects: [
     {
       name: "chromium",

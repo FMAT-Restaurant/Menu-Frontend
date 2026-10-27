@@ -1,0 +1,51 @@
+import { act, renderHook } from "@testing-library/react";
+import { useFormActionsLayout } from "./useFormActionsLayout";
+
+test("actions become persistent only for a long form with room for editable controls and respond to viewport changes", () => {
+  const form = document.createElement("form");
+  const footer = document.createElement("footer");
+  const input = document.createElement("input");
+  form.append(input, footer);
+  let height = 400;
+  form.getBoundingClientRect = () => ({ height } as DOMRect);
+  footer.getBoundingClientRect = () => ({ height: 80 } as DOMRect);
+  input.getBoundingClientRect = () => ({ height: 48 } as DOMRect);
+  const previous = window.innerHeight;
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: 568 });
+  const view = renderHook(() => useFormActionsLayout({ current: form }, { current: footer }));
+  expect(view.result.current.persistent).toBe(false);
+  height = 1100;
+  act(() => window.dispatchEvent(new Event("resize")));
+  expect(view.result.current.persistent).toBe(true);
+  expect(form.style.getPropertyValue("--form-actions-height")).toBe("80px");
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: 180 });
+  act(() => window.dispatchEvent(new Event("resize")));
+  expect(view.result.current.persistent).toBe(false);
+  expect(form.style.getPropertyValue("--form-actions-height")).toBe("0px");
+  view.unmount();
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: previous });
+});
+
+test("a task header can push an otherwise shorter form below the viewport without changing the decision on scroll", () => {
+  const form = document.createElement("form");
+  const footer = document.createElement("footer");
+  const input = document.createElement("input");
+  form.append(input, footer);
+  const previousHeight = window.innerHeight;
+  const previousScroll = window.scrollY;
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: 1024 });
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+  form.getBoundingClientRect = () => ({ height: 900, top: 197 - window.scrollY } as DOMRect);
+  footer.getBoundingClientRect = () => ({ height: 80 } as DOMRect);
+  input.getBoundingClientRect = () => ({ height: 48 } as DOMRect);
+  const view = renderHook(() => useFormActionsLayout({ current: form }, { current: footer }));
+  expect(view.result.current.persistent).toBe(true);
+  expect(view.result.current.available).toBe(827);
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 250 });
+  act(() => window.dispatchEvent(new Event("resize")));
+  expect(view.result.current.persistent).toBe(true);
+  expect(view.result.current.available).toBe(827);
+  view.unmount();
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: previousHeight });
+  Object.defineProperty(window, "scrollY", { configurable: true, value: previousScroll });
+});

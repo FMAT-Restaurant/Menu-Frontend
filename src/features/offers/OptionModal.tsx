@@ -1,178 +1,353 @@
-import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
+import { Icon } from "../../shared/Icon";
+import { useTaskDialog } from "../../shared/useTaskDialog";
+import { useEffect, useRef, useState, type ReactNode, type SubmitEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
-export interface OptionDraft {
-  optionId?: string;
-  displayName: string;
-  status: OfferStatus;
-  sourceType: "RECIPE" | "INVENTORY_ITEM" | null;
-  recipeId?: string;
-  recipeRevision?: number;
-  recipeName?: string;
-  inventoryItemId?: string;
-  inventoryItemName?: string;
-  quantity?: number;
-  unit?: string;
+import { validateOptionDraft, type OptionDraft, type ValidatedOptionDraft } from "./optionDraft";
+export type { OptionDraft } from "./optionDraft";
+
+function draftSnapshot(draft: OptionDraft | null) {
+  return { displayName: draft?.displayName ?? "", status: draft?.status ?? "ACTIVE", sourceType: draft?.sourceType ?? null,
+    recipeId: draft?.recipeId, recipeName: draft?.recipeName, hasRecipeAssignmentIntent: draft?.hasRecipeAssignmentIntent,
+    recipeAssignmentToken: draft?.recipeAssignmentToken, inventoryItemId: draft?.inventoryItemId, inventoryItemName: draft?.inventoryItemName, quantity: draft?.quantity, unit: draft?.unit };
 }
 
 export interface OptionModalProps {
   isOpen: boolean;
   slotName: string;
   initialData: OptionDraft | null;
-  onSave: (data: OptionDraft) => void;
+  isCreateMode?: boolean;
+  isNestedPickerOpen?: boolean;
+  onSave: (data: ValidatedOptionDraft) => void;
   onClose: () => void;
   onOpenRecipePicker: () => void;
+  onChangeDraft?: (data: OptionDraft) => void;
+  children?: ReactNode;
+  recipeStep?: boolean;
+  onNestedBack?: () => void;
+  hasNestedChanges?: () => boolean;
+  onDiscardNested?: () => boolean | void;
+  isNestedBlocked?: () => boolean;
 }
 
-function handleInventoryClick() {
-  // TODO: Interactive selection of inventory items will be implemented in V7.
+function sourceDraftFields(
+  sourceType: OptionDraft["sourceType"],
+  recipe: Pick<OptionDraft, "recipeId" | "recipeName" | "hasRecipeAssignmentIntent" | "recipeAssignmentToken">,
+  inventory: Pick<OptionDraft, "inventoryItemId" | "inventoryItemName" | "quantity" | "unit">,
+): Partial<OptionDraft> {
+  if (sourceType === "RECIPE") return recipe;
+  if (sourceType === "INVENTORY_ITEM") return inventory;
+  return {};
+}
+
+function optionDialogLabelId(
+  confirmClose: boolean,
+  isNestedPickerOpen: boolean,
+  recipeStep: boolean,
+): string {
+  if (confirmClose) return "option-discard-title";
+  if (!isNestedPickerOpen) return "option-modal-title";
+  if (recipeStep) return "recipe-form-title";
+  return "recipe-selector-title";
+}
+
+interface InitialOptionState {
+  displayName: string;
+  status: OfferStatus;
+  sourceType: OptionDraft["sourceType"];
+  recipeId?: string;
+  recipeName?: string;
+  hasRecipeAssignmentIntent?: boolean;
+  inventoryItemId?: string;
+  inventoryItemName?: string;
+  quantity?: number;
+  unit?: string;
+}
+
+function getInitialOptionState(
+  initialData: OptionDraft | null,
+  isCreateMode: boolean,
+): InitialOptionState {
+  if (!initialData) {
+    return { displayName: "", status: "ACTIVE", sourceType: null };
+  }
+  const isRecipe = initialData.sourceType === "RECIPE";
+  const isInventoryItem = initialData.sourceType === "INVENTORY_ITEM";
+  return {
+    displayName: initialData.displayName || "",
+    status: isCreateMode ? "ACTIVE" : initialData.status,
+    sourceType: initialData.sourceType,
+    recipeId: isRecipe ? initialData.recipeId : undefined,
+    recipeName: isRecipe ? initialData.recipeName : undefined,
+    hasRecipeAssignmentIntent: isRecipe ? initialData.hasRecipeAssignmentIntent : undefined,
+    inventoryItemId: isInventoryItem ? initialData.inventoryItemId : undefined,
+    inventoryItemName: isInventoryItem ? initialData.inventoryItemName : undefined,
+    quantity: isInventoryItem ? initialData.quantity : undefined,
+    unit: isInventoryItem ? initialData.unit : undefined,
+  };
+}
+
+function getOptionSourceSummary(
+  sourceType: OptionDraft["sourceType"],
+  recipeId: string | undefined,
+  recipeName: string | undefined,
+  inventoryItemId: string | undefined,
+  inventoryItemName: string | undefined,
+  quantity: number | undefined,
+  unit: string | undefined,
+): string {
+  if (sourceType === "RECIPE" && recipeName) return `Receta asignada: ${recipeName}`;
+  if (sourceType === "RECIPE" && recipeId) return "Receta asignada sin nombre disponible.";
+  if (sourceType === "INVENTORY_ITEM" && inventoryItemName) {
+    return `Insumo de inventario: ${inventoryItemName} (${quantity ?? "—"} ${unit ?? ""})`;
+  }
+  if (sourceType === "INVENTORY_ITEM" && inventoryItemId) {
+    return "Insumo asignado sin nombre disponible.";
+  }
+  return "Elige una receta de la biblioteca para esta opción.";
+}
+
+interface OptionSubmitContext {
+  draft: OptionDraft;
+  mode: "create" | "update";
+  isNestedBlocked?: () => boolean;
+  hasNestedChanges?: () => boolean;
+  onSave: (data: ValidatedOptionDraft) => void;
+  setValidationError: (message: string) => void;
+  setPendingSave: (data: ValidatedOptionDraft | null) => void;
+  setConfirmClose: (confirm: boolean) => void;
+  setConfirmationTrigger: (trigger: HTMLButtonElement | null) => void;
+}
+
+function submitOptionForm(
+  event: SubmitEvent<HTMLFormElement>,
+  context: OptionSubmitContext,
+) {
+  event.preventDefault();
+  const result = validateOptionDraft(context.draft, context.mode);
+  if (!result.valid) {
+    context.setValidationError(result.message);
+    return;
+  }
+  if (context.isNestedBlocked?.()) return;
+  if (context.hasNestedChanges?.()) {
+    context.setConfirmationTrigger(event.currentTarget.querySelector<HTMLButtonElement>('button[type="submit"]'));
+    context.setPendingSave(result.value);
+    context.setConfirmClose(true);
+    return;
+  }
+  context.onSave(result.value);
 }
 
 export function OptionModal({
   isOpen,
   slotName,
   initialData,
+  isCreateMode = false,
+  isNestedPickerOpen = false,
   onSave,
   onClose,
   onOpenRecipePicker,
+  onChangeDraft,
+  children,
+  recipeStep = false,
+  onNestedBack,
+  hasNestedChanges,
+  onDiscardNested,
+  isNestedBlocked,
 }: Readonly<OptionModalProps>) {
   const [displayName, setDisplayName] = useState("");
   const [status, setStatus] = useState<OfferStatus>("ACTIVE");
   const [sourceType, setSourceType] = useState<"RECIPE" | "INVENTORY_ITEM" | null>(null);
   const [recipeId, setRecipeId] = useState<string | undefined>(undefined);
-  const [recipeRevision, setRecipeRevision] = useState<number | undefined>(undefined);
   const [recipeName, setRecipeName] = useState<string | undefined>(undefined);
+  const [hasRecipeAssignmentIntent, setHasRecipeAssignmentIntent] = useState<boolean | undefined>(undefined);
   const [inventoryItemId, setInventoryItemId] = useState<string | undefined>(undefined);
   const [inventoryItemName, setInventoryItemName] = useState<string | undefined>(undefined);
   const [quantity, setQuantity] = useState<number | undefined>(undefined);
   const [unit, setUnit] = useState<string | undefined>(undefined);
 
   const [validationError, setValidationError] = useState("");
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [pendingSave, setPendingSave] = useState<ValidatedOptionDraft | null>(null);
+  const openingDraftRef = useRef(draftSnapshot(initialData));
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const confirmationTriggerRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (initialData) {
-      setDisplayName(initialData.displayName || "");
-      setStatus(initialData.status);
-      setSourceType(initialData.sourceType);
-      setRecipeId(initialData.recipeId);
-      setRecipeRevision(initialData.recipeRevision);
-      setRecipeName(initialData.recipeName);
-      setInventoryItemId(initialData.inventoryItemId);
-      setInventoryItemName(initialData.inventoryItemName);
-      setQuantity(initialData.quantity);
-      setUnit(initialData.unit);
-    } else {
-      setDisplayName("");
-      setStatus("ACTIVE");
-      setSourceType(null);
-      setRecipeId(undefined);
-      setRecipeRevision(undefined);
-      setRecipeName(undefined);
-      setInventoryItemId(undefined);
-      setInventoryItemName(undefined);
-      setQuantity(undefined);
-      setUnit(undefined);
-    }
-    setValidationError("");
-  }, [initialData, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const dialog = dialogRef.current;
-    if (typeof dialog?.showModal === "function") {
-      if (!dialog.open) dialog.showModal();
-    } else {
-      dialog?.setAttribute("open", "");
-    }
-    return () => {
-      if (dialog?.open && typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog?.removeAttribute("open");
-      }
-    };
+    if (isOpen) { openingDraftRef.current = draftSnapshot(initialData); setConfirmClose(false); setPendingSave(null); }
+    // Capture the opening snapshot, not every keystroke emitted to the parent.
   }, [isOpen]);
+  const currentDraft = { ...draftSnapshot(initialData), displayName, status: isCreateMode ? "ACTIVE" : status, sourceType, recipeId, recipeName, hasRecipeAssignmentIntent, inventoryItemId, inventoryItemName, quantity, unit };
+  const guard = useEditGuard({ get dirty() { return !sameDraft(currentDraft, openingDraftRef.current) || Boolean(hasNestedChanges?.()); }, get blocked() { return Boolean(isNestedBlocked?.()); } }, undefined, isOpen);
+  function requestClose() { guard.request(() => { if (onDiscardNested?.() !== false) onClose(); }); }
+  function requestStepBack() {
+    if (isNestedPickerOpen) { onNestedBack?.(); return; }
+    if (confirmClose) { setConfirmClose(false); setPendingSave(null); }
+    else requestClose();
+  }
+  const previousConfirmRef = useRef(false);
+  useEffect(() => {
+    if (confirmClose) confirmRef.current?.focus();
+    else if (previousConfirmRef.current) {
+      const trigger = confirmationTriggerRef.current;
+      if (trigger && trigger !== document.body && trigger.isConnected && !trigger.closest("[hidden]")) trigger.focus();
+      else recipePickerBtnRef.current?.focus();
+    }
+    previousConfirmRef.current = confirmClose;
+  }, [confirmClose]);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const recipePickerBtnRef = useRef<HTMLButtonElement>(null);
+  const wasNestedPickerOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!isOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
+    const initialState = getInitialOptionState(initialData, isCreateMode);
+    setDisplayName(initialState.displayName);
+    setStatus(initialState.status);
+    setSourceType(initialState.sourceType);
+    setRecipeId(initialState.recipeId);
+    setRecipeName(initialState.recipeName);
+    setHasRecipeAssignmentIntent(initialState.hasRecipeAssignmentIntent);
+    setInventoryItemId(initialState.inventoryItemId);
+    setInventoryItemName(initialState.inventoryItemName);
+    setQuantity(initialState.quantity);
+    setUnit(initialState.unit);
+    setValidationError("");
+  }, [initialData, isOpen, isCreateMode]);
+
+  useTaskDialog(dialogRef, isOpen);
+
+  // Focus restoration when nested picker closes
+  useEffect(() => {
+    if (wasNestedPickerOpenRef.current && !isNestedPickerOpen && isOpen) {
+      recipePickerBtnRef.current?.focus();
     }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+    wasNestedPickerOpenRef.current = Boolean(isNestedPickerOpen);
+  }, [isNestedPickerOpen, isOpen]);
 
   if (!isOpen) return null;
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!sourceType) {
-      setValidationError("Debes seleccionar un origen de contenido (receta o artículo de inventario).");
-      return;
+  function handleDisplayNameChange(val: string) {
+    setDisplayName(val);
+    if (onChangeDraft) {
+      onChangeDraft({
+        localId: initialData?.localId,
+        optionId: initialData?.optionId,
+        originalSourceType: initialData?.originalSourceType,
+        displayName: val,
+        status: isCreateMode ? "ACTIVE" : status,
+        sourceType,
+        ...sourceDraftFields(sourceType,
+          { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+          { inventoryItemId, inventoryItemName, quantity, unit }),
+      });
     }
-    if (sourceType === "RECIPE" && !recipeId) {
-      setValidationError("Debes elegir una receta de la biblioteca.");
-      return;
-    }
-    if (sourceType === "INVENTORY_ITEM" && (!inventoryItemId || (quantity ?? 0) <= 0)) {
-      setValidationError("El artículo de inventario requiere una cantidad positiva.");
-      return;
-    }
+  }
 
-    onSave({
+  function handleStatusChange(val: OfferStatus) {
+    const nextStatus = isCreateMode ? "ACTIVE" : val;
+    setStatus(nextStatus);
+    if (onChangeDraft) {
+      onChangeDraft({
+        localId: initialData?.localId,
+        optionId: initialData?.optionId,
+        originalSourceType: initialData?.originalSourceType,
+        displayName,
+        status: nextStatus,
+        sourceType,
+        ...sourceDraftFields(sourceType,
+          { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+          { inventoryItemId, inventoryItemName, quantity, unit }),
+      });
+    }
+  }
+
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    submitOptionForm(event, {
+      draft: {
+      localId: initialData?.localId,
       optionId: initialData?.optionId,
-      displayName: displayName.trim(),
+      originalSourceType: initialData?.originalSourceType,
+      displayName,
       status,
       sourceType,
-      recipeId,
-      recipeRevision: recipeRevision ?? 1,
-      recipeName,
-      inventoryItemId,
-      inventoryItemName,
-      quantity,
-      unit,
+      ...sourceDraftFields(sourceType,
+        { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+        { inventoryItemId, inventoryItemName, quantity, unit }),
+      },
+      mode: isCreateMode ? "create" : "update",
+      isNestedBlocked,
+      hasNestedChanges,
+      onSave,
+      setValidationError,
+      setPendingSave,
+      setConfirmClose,
+      setConfirmationTrigger: (trigger) => { confirmationTriggerRef.current = trigger; },
     });
   }
 
-  const title = initialData ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
+  const title = initialData?.optionId ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
 
-  let sourceSummary = "Elige una receta de la biblioteca o un artículo de inventario para esta opción.";
-  if (sourceType === "RECIPE" && recipeName) {
-    sourceSummary = `Receta asignada: ${recipeName}`;
-  } else if (sourceType === "RECIPE" && recipeId) {
-    sourceSummary = `Receta asignada (ID: ${recipeId})`;
-  } else if (sourceType === "INVENTORY_ITEM" && inventoryItemName) {
-    sourceSummary = `Artículo de inventario: ${inventoryItemName} (${quantity ?? 1} ${unit ?? "u"})`;
-  } else if (sourceType === "INVENTORY_ITEM" && inventoryItemId) {
-    sourceSummary = `Artículo de inventario (ID: ${inventoryItemId})`;
-  }
+  const sourceSummary = getOptionSourceSummary(
+    sourceType,
+    recipeId,
+    recipeName,
+    inventoryItemId,
+    inventoryItemName,
+    quantity,
+    unit,
+  );
 
   return (
     <dialog
       ref={dialogRef}
-      className="option-modal-dialog"
-      aria-labelledby="option-modal-title"
+      className="option-modal-dialog menu-task-dialog"
+      aria-labelledby={optionDialogLabelId(confirmClose, isNestedPickerOpen, recipeStep)}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        // Repeated native close requests may emit a non-cancelable cancel event.
+        // Handle the task transition before the browser requests that close.
+        event.preventDefault();
+        event.stopPropagation();
+        if (!event.repeat) requestStepBack();
+      }}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        event.stopPropagation();
+        requestStepBack();
       }}
     >
-      <header className="modal-header">
+      {guard.confirmation}
+      {confirmClose && <section className="option-discard" aria-labelledby="option-discard-title">
+        <h2 id="option-discard-title">{pendingSave ? "¿Descartar el borrador de receta y guardar la opción?" : "¿Descartar los cambios de esta opción?"}</h2>
+        <p>{pendingSave ? "Hay una receta sin guardar que conservaste al volver. Puedes seguir editándola o descartarla antes de guardar la opción." : "La opción y los borradores de receta sin guardar se conservan si continúas editando."}</p>
+        <button ref={confirmRef} type="button" className="button button--secondary" onClick={() => { setConfirmClose(false); setPendingSave(null); }}>Continuar editando</button>
+        <button type="button" className="button button--primary" onClick={() => {
+          if (isNestedBlocked?.() || onDiscardNested?.() === false) {
+            return;
+          }
+          setConfirmClose(false);
+          if (pendingSave) {
+            onSave(pendingSave);
+            setPendingSave(null);
+          } else {
+            onClose();
+          }
+        }}>{pendingSave ? "Descartar receta y guardar opción" : "Descartar cambios"}</button>
+      </section>}
+      <header className="modal-header" hidden={isNestedPickerOpen || confirmClose}>
         <h2 id="option-modal-title">{title}</h2>
         <button
           type="button"
           className="modal-close"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Cerrar modal de opción"
         >
-          ✕
+          <Icon name="close" />
         </button>
       </header>
 
-      <form onSubmit={handleSubmit} className="option-form" noValidate>
+      <form onSubmit={handleSubmit} className="option-form" noValidate hidden={isNestedPickerOpen || confirmClose}>
         <div className="modal-body">
           {validationError && (
             <p className="feedback feedback--error" role="alert">
@@ -186,23 +361,26 @@ export function OptionModal({
               id="option-display-name"
               type="text"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => handleDisplayNameChange(e.target.value)}
               placeholder="Ej. Coca-Cola o Papas a la francesa"
             />
             <p className="field-hint">
-              Puedes usar una etiqueta contextual distinta al nombre de la receta o del artículo.
+              Puedes usar una etiqueta distinta al nombre de la receta o del insumo.
             </p>
           </div>
 
           <div className="option-source-box">
             <span className="option-source-box__title">Contenido actual:</span>
             <p className="option-source-box__summary">{sourceSummary}</p>
+            {sourceType === "RECIPE" && recipeId && !recipeName && <details><summary>Referencia de receta</summary>{recipeId}</details>}
+            {sourceType === "INVENTORY_ITEM" && inventoryItemId && !inventoryItemName && <details><summary>Referencia de insumo</summary>{inventoryItemId}</details>}
           </div>
 
           <div className="form-field">
             <span className="field-label">Origen del contenido de esta opción</span>
             <div className="source-picker-buttons">
               <button
+                ref={recipePickerBtnRef}
                 type="button"
                 className="source-btn"
                 onClick={onOpenRecipePicker}
@@ -212,55 +390,47 @@ export function OptionModal({
                   Seleccionar una preparación de la biblioteca.
                 </span>
               </button>
-              <button
-                type="button"
-                className="source-btn"
-                onClick={handleInventoryClick}
-              >
-                <span className="source-btn__title">Elegir artículo de inventario</span>
-                <span className="source-btn__desc">
-                  Seleccionar un artículo directamente de stock.
-                </span>
-              </button>
+
             </div>
+
           </div>
 
-          <div className="form-field">
-            <span className="field-label" id="option-status-label">Estado de la opción</span>
-            <div className="radio-group" role="radiogroup" aria-labelledby="option-status-label">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="option-status"
-                  value="ACTIVE"
-                  checked={status === "ACTIVE"}
-                  onChange={() => setStatus("ACTIVE")}
-                />
-                <span>Activa</span>
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="option-status"
-                  value="INACTIVE"
-                  checked={status === "INACTIVE"}
-                  onChange={() => setStatus("INACTIVE")}
-                />
-                <span>Inactiva</span>
-              </label>
+          {isCreateMode ? (
+            <div className="form-field">
+              <span className="field-label">Disponibilidad</span>
+              <p className="field-hint">Las opciones se crean activas por defecto.</p>
             </div>
-            <p className="field-hint">
-              Una opción inactiva no se ofrece para nuevas selecciones. Si todas las opciones de un grupo están inactivas, el grupo pasa a estar inactivo.
-            </p>
-          </div>
+          ) : (
+            <fieldset className="form-fieldset">
+              <legend>Disponibilidad</legend>
+              <div className="radio-group">
+                <label className="radio-option">
+                  <input
+                    type="radio"
+                    name="option-status"
+                    value="ACTIVE"
+                    checked={status === "ACTIVE"}
+                    onChange={() => handleStatusChange("ACTIVE")}
+                  />
+                  <span>Activa</span>
+                </label>
+                <label className="radio-option">
+                  <input
+                    type="radio"
+                    name="option-status"
+                    value="INACTIVE"
+                    checked={status === "INACTIVE"}
+                    onChange={() => handleStatusChange("INACTIVE")}
+                  />
+                  <span>Inactiva</span>
+                </label>
+              </div>
+            </fieldset>
+          )}
         </div>
 
         <footer className="modal-footer">
-          <button
-            type="button"
-            className="button button--secondary"
-            onClick={onClose}
-          >
+          <button type="button" className="button button--secondary" onClick={requestClose}>
             Cancelar
           </button>
           <button
@@ -272,6 +442,7 @@ export function OptionModal({
           </button>
         </footer>
       </form>
+      <div hidden={confirmClose}>{children}</div>
     </dialog>
   );
 }

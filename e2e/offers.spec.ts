@@ -22,14 +22,17 @@ test("opens an entry's offers and returns to the catalog without losing the quer
   }));
 
   await page.goto("/?q=hawai");
-  const card = await page.getByRole("article").boundingBox();
-  await page.mouse.click(card!.x + 24, card!.y + 24);
+  await page.getByRole("link", { name: "Ver ofertas de Hamburguesa Hawaiana", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Combo" })).toBeVisible();
   await expect(page.getByText(/solo se publica si la entrada está activa/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Eliminar oferta Combo" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cambiar estado de oferta Combo: Inactiva" })).toHaveCSS("border-radius", "999px");
-  await expect(page.locator(".offer-card__composition")).toHaveCSS("justify-content", "center");
+  const statusControl = page.getByRole("button", { name: "Cambiar estado de oferta Combo: Inactiva" });
+  await expect(statusControl).toHaveCSS("border-radius", "8px");
+  await expect(statusControl).toHaveText("Activar oferta");
+  await expect(statusControl).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".offer-state--inactive")).toHaveText("Inactiva");
+  await expect(page.locator(".offer-card__composition")).toHaveCSS("align-items", "center");
   await page.getByRole("link", { name: "Abrir oferta Combo para editar" }).click();
   await expect(page.getByRole("heading", { name: "Editar oferta" })).toBeVisible();
   await page.getByRole("link", { name: /Volver a ofertas/ }).click();
@@ -52,7 +55,7 @@ test("keeps the offers view inside narrow screens and reconciles an out-of-range
   await page.route("**/api/v1/menu/entries/entry-1", (route) => route.fulfill({ json: { data: { ...entry, categoryIds: [] } } }));
   await page.route("**/api/v1/menu/offers/offer-13", async (route) => {
     if (route.request().method() === "GET") {
-      await route.fulfill({ headers: { ETag: '"offer-rev-13"' }, json: { data: { id: "offer-13", entryId: "entry-1", entryName: entry.brandName, presentationTag: "Familiar", basePrice: 240, status: "INACTIVE", image: null, slotCount: 1 } } });
+      await route.fulfill({ headers: { ETag: '"offer-rev-13"' }, json: { data: { id: "offer-13", entryId: "entry-1", entryName: entry.brandName, presentationTag: "Familiar", basePrice: 240, status: "INACTIVE", image: null, slotCount: 1, composition: { slots: [] } } } });
       return;
     }
     if (route.request().method() === "DELETE") total = 12;
@@ -95,4 +98,113 @@ test("keeps the single empty-state CTA visible at 1024x600 and prevents horizont
   await page.setViewportSize({ width: 320, height: 568 });
   const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.viewport);
+});
+
+test("separately verifies delete dialog cancel button and Escape key restore focus to trigger without mutating", async ({ page }) => {
+  let deleteAttempts = 0;
+  const entry = { id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Con piña", status: "INACTIVE", image: null, categories: [], offerCount: 1 };
+  const offer = {
+    id: "offer-1", entryId: "entry-1", entryName: entry.brandName, presentationTag: "Combo",
+    basePrice: 180, status: "INACTIVE", image: null, slotCount: 1,
+  };
+  await page.route("**/api/v1/menu/entries/entry-1", (route) => route.fulfill({ json: { data: { ...entry, categoryIds: [] } } }));
+  await page.route("**/api/v1/menu/offers?*", (route) => route.fulfill({ json: { data: [offer], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } } }));
+  await page.route("**/api/v1/menu/offers/offer-1", (route) => {
+    if (route.request().method() === "DELETE") {
+      deleteAttempts++;
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill({ json: { data: offer } });
+  });
+
+  await page.goto("/entries/entry-1/offers");
+  await expect(page.getByRole("heading", { name: "Combo" })).toBeVisible();
+
+  // Test 1: Cancel button
+  const trigger = page.getByRole("button", { name: "Eliminar oferta Combo" });
+  await trigger.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const cancelBtn = dialog.getByRole("button", { name: "Cancelar" });
+  await expect(cancelBtn).toBeFocused();
+  await cancelBtn.click();
+  await expect(dialog).toBeHidden();
+  expect(deleteAttempts).toBe(0);
+  await expect(trigger).toBeFocused();
+
+  // Test 2: Escape key
+  await trigger.click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(deleteAttempts).toBe(0);
+  await expect(trigger).toBeFocused();
+});
+
+test("handles delete error with single alert and recovery reachable inside the modal dialog", async ({ page }) => {
+  let deleteCount = 0;
+  const entry = { id: "entry-1", brandName: "Hamburguesa Hawaiana", description: "Con piña", status: "INACTIVE", image: null, categories: [], offerCount: 1 };
+  const offer = {
+    id: "offer-1", entryId: "entry-1", entryName: entry.brandName, presentationTag: "Combo",
+    basePrice: 180, status: "INACTIVE", image: null, slotCount: 1,
+  };
+
+  await page.route("**/api/v1/menu/entries/entry-1", (route) => route.fulfill({ json: { data: { ...entry, categoryIds: [] } } }));
+  await page.route("**/api/v1/menu/offers?*", (route) => {
+    if (deleteCount > 1) {
+      return route.fulfill({ json: { data: [], meta: { page: 1, pageSize: 12, total: 0, totalPages: 0 } } });
+    }
+    return route.fulfill({ json: { data: [offer], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } } });
+  });
+  await page.route("**/api/v1/menu/offers/offer-1", async (route) => {
+    if (route.request().method() === "DELETE") {
+      deleteCount++;
+      if (deleteCount === 1) {
+        // First delete attempt returns 412 precondition failed
+        return route.fulfill({ status: 412, json: { error: { message: "Los datos cambiaron desde que se cargaron." } } });
+      }
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill({
+      headers: { ETag: '"offer-rev-1"' },
+      json: {
+        data: {
+          ...offer,
+          composition: { slots: [] },
+        },
+      },
+    });
+  });
+
+  await page.goto("/entries/entry-1/offers");
+  await expect(page.getByRole("heading", { name: "Combo" })).toBeVisible();
+  await page.getByRole("button", { name: "Eliminar oferta Combo" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Eliminar oferta", exact: true }).click();
+
+  // O26: Single alert, rendered inside active modal dialog
+  await expect(dialog.getByRole("alert")).toContainText("Los datos cambiaron");
+  await expect(page.getByRole("alert")).toHaveCount(1);
+
+  // O24: Delete button disabled, "Actualizar lista" button visible inside modal
+  const deleteBtn = dialog.getByRole("button", { name: "Eliminar oferta", exact: true });
+  await expect(deleteBtn).toBeDisabled();
+  const reconcileBtn = dialog.getByRole("button", { name: "Actualizar lista" });
+  await expect(reconcileBtn).toBeVisible();
+
+  // Click "Actualizar lista" inside modal dialog
+  await reconcileBtn.click();
+
+  // After list update where item was still present, delete button is re-enabled
+  await expect(deleteBtn).toBeEnabled();
+
+  // Now delete again (second call returns 204)
+  await deleteBtn.click();
+
+  // Modal closes, success notice displayed, item removed
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Oferta eliminada.")).toBeVisible();
+  await expect(page.getByText("No hay ofertas configuradas.")).toBeVisible();
 });

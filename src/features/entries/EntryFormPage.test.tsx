@@ -1,9 +1,16 @@
+import { GuardedMemoryRouter as MemoryRouter } from "../../shared/GuardedMemoryRouter.test-helper";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { AxiosError, AxiosHeaders } from "axios";
-import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import type { MenuEntryDetail, MenuRepository } from "../../application/catalog";
+import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
+import {
+  createControllableIndexedDbHarness,
+  createIndexedDbPendingOperationStorage,
+} from "../../shared/pendingOperationStorage";
 import { EntryFormPage } from "./EntryFormPage";
+import { buildEntryCreateScope } from "./useEntryForm";
 
 const categories = [
   { id: "category-1", name: "Principales", entryCount: 2 },
@@ -20,38 +27,43 @@ const entry: MenuEntryDetail = {
   categoryIds: ["category-1"],
 };
 
-function repository(): jest.Mocked<MenuRepository> {
+type EntryFormRepository = Pick<
+  MenuRepository,
+  "listCategories" | "getEntry" | "uploadEntryImage" | "createEntry" | "updateEntry"
+>;
+
+function repository(): jest.Mocked<EntryFormRepository> {
   return {
-    listEntries: jest.fn(),
     listCategories: jest.fn().mockResolvedValue(categories),
-    createCategory: jest.fn(),
-    updateCategory: jest.fn(),
-    setEntryStatus: jest.fn(),
-    deleteArchivedEntry: jest.fn(),
     getEntry: jest.fn().mockResolvedValue(entry),
-    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"), createEntry: jest.fn().mockResolvedValue(entry),
+    uploadEntryImage: jest.fn().mockResolvedValue("image-uploaded"),
+    createEntry: jest.fn().mockResolvedValue(entry),
     updateEntry: jest.fn().mockResolvedValue(entry),
-    listOffers: jest.fn(),
-    getOffer: jest.fn(),
-    createOffer: jest.fn(),
-    updateOffer: jest.fn(),
-    setOfferStatus: jest.fn(),
-    deleteInactiveOffer: jest.fn(),
-    listRecipes: jest.fn(),
-    getRecipe: jest.fn(),
-    createRecipe: jest.fn(),
-    updateRecipe: jest.fn(),
-    deleteRecipe: jest.fn(),
-    listInventoryItems: jest.fn(),
   };
 }
 
-function renderPage(api: MenuRepository, path = "/entries/new", state?: unknown) {
+function renderPage(
+  api: EntryFormRepository,
+  path = "/entries/new",
+  state?: unknown,
+  storage?: PendingOperationStorageAdapter,
+  onSaved?: () => Promise<void>,
+) {
+  const harness = storage ? null : createControllableIndexedDbHarness();
+  const actualStorage =
+    storage ??
+    createIndexedDbPendingOperationStorage({ idbFactory: harness!.factory });
   return render(
     <MemoryRouter initialEntries={[{ pathname: path, state }]}>
       <Routes>
-        <Route path="/entries/new" element={<EntryFormPage repository={api} />} />
-        <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={api} />} />
+        <Route
+          path="/entries/new"
+          element={<EntryFormPage repository={api} storage={actualStorage} onSaved={onSaved} />}
+        />
+        <Route
+          path="/entries/:entryId/edit"
+          element={<EntryFormPage repository={api} storage={actualStorage} onSaved={onSaved} />}
+        />
         <Route path="/" element={<CatalogDestination />} />
       </Routes>
     </MemoryRouter>,
@@ -62,6 +74,46 @@ function CatalogDestination() {
   const location = useLocation();
   return <h1>Catálogo restaurado {location.search}</h1>;
 }
+
+const originalDescriptors = {
+  createImageBitmap: Object.getOwnPropertyDescriptor(globalThis, "createImageBitmap"),
+  createObjectURL: Object.getOwnPropertyDescriptor(URL, "createObjectURL"),
+  revokeObjectURL: Object.getOwnPropertyDescriptor(URL, "revokeObjectURL"),
+  requestAnimationFrame: Object.getOwnPropertyDescriptor(window, "requestAnimationFrame"),
+  scrollBy: Object.getOwnPropertyDescriptor(window, "scrollBy"),
+  scrollTo: Object.getOwnPropertyDescriptor(window, "scrollTo"),
+};
+
+function restoreGlobal(target: object, prop: string, original: PropertyDescriptor | undefined) {
+  if (original) {
+    Object.defineProperty(target, prop, original);
+  } else {
+    Reflect.deleteProperty(target, prop);
+  }
+}
+
+beforeEach(() => {
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    writable: true,
+    value: jest.fn().mockReturnValue("blob:default-preview"),
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    writable: true,
+    value: jest.fn(),
+  });
+});
+
+afterEach(() => {
+  restoreGlobal(globalThis, "createImageBitmap", originalDescriptors.createImageBitmap);
+  restoreGlobal(URL, "createObjectURL", originalDescriptors.createObjectURL);
+  restoreGlobal(URL, "revokeObjectURL", originalDescriptors.revokeObjectURL);
+  restoreGlobal(window, "requestAnimationFrame", originalDescriptors.requestAnimationFrame);
+  restoreGlobal(window, "scrollBy", originalDescriptors.scrollBy);
+  restoreGlobal(window, "scrollTo", originalDescriptors.scrollTo);
+  jest.restoreAllMocks();
+});
 
 async function chooseValidImage() {
   const bitmap = { width: 800, height: 600, close: jest.fn() };
@@ -102,8 +154,8 @@ test("creates an entry inactive with one image and multiple optional categories"
     description: "Pollo con arroz.",
     categoryIds: ["category-1", "category-2"],
     imageId: "image-uploaded",
-  }));
-  expect(api.uploadEntryImage).toHaveBeenCalledWith(created);
+  }, expect.any(String)));
+  expect(api.uploadEntryImage).toHaveBeenCalledWith(created, expect.any(String));
   expect(await screen.findByRole("heading", { name: "Catálogo restaurado" })).toBeVisible();
   expect(api.getEntry).not.toHaveBeenCalled();
 });
@@ -122,8 +174,8 @@ test("allows creating an entry without selecting categories", async () => {
     description: "Preparada cada mañana.",
     categoryIds: [],
     imageId: "image-uploaded",
-  }));
-  expect(api.uploadEntryImage).toHaveBeenCalledWith(image);
+  }, expect.any(String)));
+  expect(api.uploadEntryImage).toHaveBeenCalledWith(image, expect.any(String));
 });
 
 test("loads an entry for editing and keeps its current image when no replacement is selected", async () => {
@@ -141,7 +193,6 @@ test("loads an entry for editing and keeps its current image when no replacement
     brandName: "Hamburguesa de la casa",
     description: "Descripción actualizada.",
     categoryIds: ["category-1"],
-    status: "INACTIVE",
   }, '"entry-rev-1"'));
   expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?q=pollo" })).toBeVisible();
 });
@@ -157,7 +208,7 @@ test("replaces an image only after validating it and sends the replacement with 
     categoryIds: ["category-1"],
     imageId: "image-uploaded",
   }), '"entry-rev-1"'));
-  expect(api.uploadEntryImage).toHaveBeenCalledWith(replacement);
+  expect(api.uploadEntryImage).toHaveBeenCalledWith(replacement, expect.any(String));
 });
 
 test("rejects invalid images without calling create or changing the entry", async () => {
@@ -188,18 +239,36 @@ test("keeps the form open and its values when the server rejects a save", async 
 
   expect(await screen.findByRole("alert")).toHaveTextContent("La categoría no pertenece al menú.");
   expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl de pollo");
-  expect(api.createEntry).toHaveBeenCalledWith({ brandName: "Bowl de pollo", description: "Pollo con arroz.", categoryIds: [], imageId: "image-uploaded" });
-  expect(api.uploadEntryImage).toHaveBeenCalledWith(image);
+  expect(api.createEntry).toHaveBeenCalledWith({ brandName: "Bowl de pollo", description: "Pollo con arroz.", categoryIds: [], imageId: "image-uploaded" }, expect.any(String));
+  expect(api.uploadEntryImage).toHaveBeenCalledWith(image, expect.any(String));
 });
 
-test("cancel discards the draft and returns to the catalog filters", async () => {
+test("cancel discards the draft after modifying fields and image, and reopening shows clean initial state", async () => {
   const api = repository();
   renderPage(api, "/entries/new", { returnTo: "/?status=ARCHIVED" });
   await screen.findByRole("button", { name: "Guardar entrada" });
+  await chooseValidImage();
+  fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Borrador a cancelar" } });
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción a cancelar" } });
+
   fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Seguir editando" }));
+  expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Borrador a cancelar");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("Descripción a cancelar");
+  expect(screen.getByRole("img", { name: "Vista previa de la imagen de la entrada" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Descartar cambios" }));
 
   expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?status=ARCHIVED" })).toBeVisible();
   expect(api.createEntry).not.toHaveBeenCalled();
+  expect(api.updateEntry).not.toHaveBeenCalled();
+
+  renderPage(api, "/entries/new", { returnTo: "/?status=ARCHIVED" });
+  expect(await screen.findByLabelText("Nombre comercial")).toHaveValue("");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("");
+  expect(screen.queryByRole("img", { name: "Vista previa de la imagen de la entrada" })).not.toBeInTheDocument();
+  expect(api.createEntry).not.toHaveBeenCalled();
+  expect(api.updateEntry).not.toHaveBeenCalled();
 });
 
 test("unarchiving sets INACTIVE and requires a later explicit activation", async () => {
@@ -252,8 +321,8 @@ test("shows structured server validation details and keeps the draft", async () 
   expect(summary).toHaveTextContent("Datos inválidos.");
   expect(summary).toHaveTextContent("Categoría ajena al menú.");
   expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
-  expect(api.createEntry).toHaveBeenCalledWith({ brandName: "Bowl", description: "Con arroz", categoryIds: [], imageId: "image-uploaded" });
-  expect(api.uploadEntryImage).toHaveBeenCalledWith(image);
+  expect(api.createEntry).toHaveBeenCalledWith({ brandName: "Bowl", description: "Con arroz", categoryIds: [], imageId: "image-uploaded" }, expect.any(String));
+  expect(api.uploadEntryImage).toHaveBeenCalledWith(image, expect.any(String));
 });
 
 test("falls back to the catalog for an unsafe return path", async () => {
@@ -293,12 +362,18 @@ function fillIdentity() {
   fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Con arroz" } });
 }
 
-test("back navigation is visible immediately and preserves query, filters and page without saving", () => {
+test("back navigation is visible immediately and preserves query, filters and page without saving", async () => {
   const api = repository();
   renderPage(api, "/entries/new", { returnTo: "/?q=arroz&status=INACTIVE&page=3" });
   fillIdentity();
   fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
-  expect(screen.getByRole("heading", { name: "Catálogo restaurado ?q=arroz&status=INACTIVE&page=3" })).toBeVisible();
+  fireEvent.click(await screen.findByRole("button", { name: "Seguir editando" }));
+  expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("Con arroz");
+  fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Descartar cambios" }));
+  expect(await screen.findByRole("heading", { name: "Catálogo restaurado ?q=arroz&status=INACTIVE&page=3" })).toBeVisible();
+  expect(api.updateEntry).not.toHaveBeenCalled();
   expect(api.createEntry).not.toHaveBeenCalled();
 });
 
@@ -388,7 +463,15 @@ test("category failure keeps assigned categories and retry does not reread the e
 
 test("StrictMode and reopening reuse categories rather than sending duplicate completed GETs", async () => {
   const api = repository();
-  const first = render(<StrictMode><MemoryRouter><EntryFormPage repository={api} /></MemoryRouter></StrictMode>);
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+  const first = render(
+    <StrictMode>
+      <MemoryRouter>
+        <EntryFormPage repository={api} storage={storage} />
+      </MemoryRouter>
+    </StrictMode>,
+  );
   fireEvent.click(screen.getByRole("button", { name: "Seleccionar categorías" }));
   await screen.findByRole("checkbox", { name: "Principales" });
   expect(api.listCategories).toHaveBeenCalledTimes(1);
@@ -430,7 +513,7 @@ test.each([false, true])("reuses the same upload after a confirmed persistence r
   fireEvent.click(screen.getByRole("button", { name: /Guardar/ }));
   await screen.findByRole("heading", { name: "Catálogo restaurado" });
   expect(api.uploadEntryImage).toHaveBeenCalledTimes(1);
-  expect(api.uploadEntryImage).toHaveBeenCalledWith(image);
+  expect(api.uploadEntryImage).toHaveBeenCalledWith(image, expect.any(String));
   expect(write).toHaveBeenCalledTimes(2);
   expect(api.getEntry).toHaveBeenCalledTimes(editing ? 1 : 0);
 });
@@ -460,7 +543,7 @@ test("selecting another file invalidates the cached upload even if its name is u
   await waitFor(() => expect(screen.getByRole("button", { name: "Guardar entrada" })).toBeEnabled());
   fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
   await screen.findByRole("heading", { name: "Catálogo restaurado" });
-  expect(api.createEntry).toHaveBeenLastCalledWith(expect.objectContaining({ imageId: "image-second" }));
+  expect(api.createEntry).toHaveBeenLastCalledWith(expect.objectContaining({ imageId: "image-second" }), expect.any(String));
   expect(api.uploadEntryImage).toHaveBeenCalledTimes(2);
 });
 
@@ -615,10 +698,12 @@ test("duplicate submits cannot overlap upload or persistence, and navigation is 
   fireEvent.submit(document.querySelector("form")!); fireEvent.submit(document.querySelector("form")!);
   expect(await screen.findByRole("button", { name: "Subiendo imagen…" })).toBeDisabled();
   fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
-  fireEvent.click(screen.getByRole("link", { name: /FMAT Restaurant/ }));
   expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
   await act(async () => { upload.resolve("uploaded-1"); });
   expect(screen.getByRole("button", { name: "Guardando entrada…" })).toBeDisabled();
+  // The local back link remains blocked throughout persistence after the shell brand is removed.
+  fireEvent.click(screen.getByRole("link", { name: /Volver a entradas/ }));
+  expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bowl");
   fireEvent.submit(document.querySelector("form")!);
   await act(async () => { write.resolve(entry); });
   expect(api.uploadEntryImage).toHaveBeenCalledTimes(1); expect(api.createEntry).toHaveBeenCalledTimes(1);
@@ -637,16 +722,18 @@ test("a failed upload can be retried and an uncertain upload does not start pers
   fireEvent.click(screen.getByRole("button", { name: /He verificado el resultado/ }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
   await screen.findByRole("heading", { name: "Catálogo restaurado" });
-  expect(api.createEntry).toHaveBeenCalledWith(expect.objectContaining({ imageId: "image-recovered" }));
+  expect(api.createEntry).toHaveBeenCalledWith(expect.objectContaining({ imageId: "image-recovered" }), expect.any(String));
 });
 
 test("a response for an entry abandoned by navigation never replaces the new entry", async () => {
   const api = repository();
   const old = pending<MenuEntryDetail>();
   api.getEntry.mockReturnValueOnce(old.promise).mockResolvedValue({ ...entry, id: "entry-2", brandName: "Entrada siguiente" });
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
   function Navigation() {
     const navigate = useNavigate();
-    return <><button onClick={() => { void navigate("/entries/entry-2/edit"); }}>Cambiar entrada</button><EntryFormPage repository={api} /></>;
+    return <><button onClick={() => { void navigate("/entries/entry-2/edit"); }}>Cambiar entrada</button><EntryFormPage repository={api} storage={storage} /></>;
   }
   render(<MemoryRouter initialEntries={["/entries/entry-1/edit"]}><Routes><Route path="/entries/:entryId/edit" element={<Navigation />} /></Routes></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: "Cambiar entrada" }));
@@ -706,4 +793,337 @@ test("an upload completing after leaving V2 does not start a late persistence re
   view.unmount();
   await act(async () => { upload.resolve("late-image"); });
   expect(api.createEntry).not.toHaveBeenCalled();
+});
+
+test("pre-send storage failure displays error message and makes 0 HTTP calls", async () => {
+  const api = repository();
+  const failingStorage: PendingOperationStorageAdapter = {
+    saveRecord: jest.fn().mockRejectedValue(new Error("Disk quota exceeded")),
+    getRecord: jest.fn().mockResolvedValue(null),
+    deleteRecord: jest.fn().mockResolvedValue(undefined),
+    listByTab: jest.fn().mockResolvedValue([]),
+  };
+
+  renderPage(api, "/entries/new", undefined, failingStorage);
+  await screen.findByRole("button", { name: "Guardar entrada" });
+  await chooseValidImage();
+  fillIdentity();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo completar la operación. Tu borrador se conserva.");
+  expect(api.createEntry).not.toHaveBeenCalled();
+  expect(api.uploadEntryImage).not.toHaveBeenCalled();
+});
+
+test("restores pending draft on mount from storage without any HTTP POST", async () => {
+  const api = repository();
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+
+  const scope = buildEntryCreateScope();
+  await storage.saveRecord({
+    storageKey: `${scope.tabId}::entry-form::entry-create`,
+    scope,
+    createdAt: Date.now() - 5000,
+    updatedAt: Date.now() - 5000,
+    currentStageIndex: 1,
+    stages: [
+      {
+        attemptId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        operationKind: "image.upload",
+        method: "POST",
+        endpointPath: "/media/images",
+        idempotencyKey: "11111111-2222-4333-8444-555555555555",
+        payload: {
+          kind: "multipart-file",
+          fileName: "restored.png",
+          mimeType: "image/png",
+          byteSize: 100,
+          fileBlob: new Blob(["dummy bytes"], { type: "image/png" }),
+        },
+        createdAt: Date.now() - 5000,
+        firstSentAt: Date.now() - 5000,
+        firstConfirmedAt: Date.now() - 4000,
+        lastAttemptAt: Date.now() - 5000,
+        status: "succeeded",
+        retryAfterSeconds: null,
+        retryAfterUntil: null,
+        retryAfterInvalid: false,
+        possibleWriteApplied: false,
+        lastErrorCode: null,
+        lastErrorMessage: null,
+        attemptCount: 1,
+        submittedDraftVersion: 1,
+      },
+      {
+        attemptId: "ffffffff-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        operationKind: "entry.create",
+        method: "POST",
+        endpointPath: "/menu/entries",
+        idempotencyKey: "22222222-3333-4444-8555-666666666666",
+        payload: {
+          kind: "json",
+          serializedBody: JSON.stringify({ brandName: "Restored Bowl", description: "Restored Desc", categoryIds: [], imageId: "img-confirmed" }),
+          payloadSnapshot: { brandName: "Restored Bowl", description: "Restored Desc", categoryIds: [], imageId: "img-confirmed" },
+        },
+        createdAt: Date.now() - 4000,
+        firstSentAt: Date.now() - 4000,
+        firstConfirmedAt: null,
+        lastAttemptAt: Date.now() - 4000,
+        status: "uncertain",
+        retryAfterSeconds: null,
+        retryAfterUntil: null,
+        retryAfterInvalid: false,
+        possibleWriteApplied: true,
+        lastErrorCode: "REQUEST_TIMEOUT",
+        lastErrorMessage: "Tiempo de espera agotado.",
+        attemptCount: 1,
+        submittedDraftVersion: 1,
+      },
+    ],
+    confirmedImageId: "img-confirmed",
+    ifMatch: null,
+    editableDraft: { brandName: "Restored Bowl", description: "Restored Desc", categoryIds: [] },
+    submittedDraftVersion: 1,
+    currentDraftVersion: 1,
+  });
+
+  renderPage(api, "/entries/new", undefined, storage);
+  expect(await screen.findByDisplayValue("Restored Bowl")).toBeVisible();
+  expect(screen.getByDisplayValue("Restored Desc")).toBeVisible();
+  expect(api.createEntry).not.toHaveBeenCalled();
+  expect(api.uploadEntryImage).not.toHaveBeenCalled();
+});
+
+test("acceptReview keeping draft when reviewed entry is ARCHIVED sets active draft to INACTIVE", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(412));
+  api.getEntry.mockResolvedValueOnce({ ...entry, status: "ACTIVE" })
+    .mockResolvedValueOnce({ ...entry, status: "ARCHIVED", etag: '"entry-rev-archived"' });
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Revisar entrada actual" }));
+  const continueBtn = await screen.findByRole("button", { name: "Continuar con mi borrador y versión revisada" });
+  fireEvent.click(continueBtn);
+  expect(screen.getByRole("combobox", { name: "Estado administrativo" })).toHaveValue("INACTIVE");
+});
+
+test("rejection of image upload during submit prevents calling createEntry (A07)", async () => {
+  const api = repository();
+  api.uploadEntryImage.mockRejectedValueOnce(
+    new AxiosError("Upload rejected", "ERR_BAD_REQUEST", undefined, {}, {
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: { error: { message: "Formato de imagen inválido." } },
+    }),
+  );
+  renderPage(api);
+  await screen.findByLabelText("Archivo de imagen");
+  await chooseValidImage();
+  fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Bowl de pollo" } });
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Pollo con arroz." } });
+
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Formato de imagen inválido.");
+  expect(api.uploadEntryImage).toHaveBeenCalledTimes(1);
+  expect(api.createEntry).not.toHaveBeenCalled();
+});
+
+test("HTTP 428 Precondition Required is classified as conflict and enables version review (E01)", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(428));
+  api.getEntry
+    .mockResolvedValueOnce(entry)
+    .mockResolvedValueOnce({ ...entry, brandName: "Cambio concurrente 428", etag: '"entry-rev-428"' });
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Modificación con 428" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  const alert = await screen.findByRole("alert", { name: "Error al guardar entrada" });
+  expect(alert).toHaveTextContent("Revisa los datos enviados.");
+  expect(within(alert).getByRole("button", { name: "Revisar entrada actual" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
+
+  fireEvent.click(screen.getByRole("button", { name: "Revisar entrada actual" }));
+  await screen.findByText("Cambio concurrente 428");
+  expect(screen.getByLabelText("Descripción")).toHaveValue("Modificación con 428");
+
+  fireEvent.click(screen.getByRole("button", { name: "Continuar con mi borrador y versión revisada" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  await screen.findByRole("heading", { name: "Catálogo restaurado" });
+  expect(api.updateEntry).toHaveBeenLastCalledWith(
+    entry.id,
+    expect.objectContaining({ description: "Modificación con 428" }),
+    '"entry-rev-428"',
+  );
+});
+
+test("conflict review displays server image URL, reference, or absence alongside draft image (E02)", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(412));
+  api.getEntry
+    .mockResolvedValueOnce(entry)
+    .mockResolvedValueOnce({
+      ...entry,
+      brandName: "Entrada con imagen remota",
+      categoryIds: ["category-1", "category-missing"],
+      image: { id: "remote-img-1", url: "https://example.com/remote.png", thumbnailUrl: "https://example.com/remote.png" },
+      imageRef: "remote-ref-1",
+      etag: '"entry-rev-remote"',
+    });
+
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  await chooseValidImage();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: "Revisar entrada actual" }));
+  const reviewSection = await screen.findByRole("region", { name: "Datos actuales de la entrada" });
+  expect(within(reviewSection).getByText("Inactiva", { exact: true })).toBeVisible();
+  expect(within(reviewSection).getByText(/Principales, Categoría no disponible/)).toBeVisible();
+  expect(within(reviewSection).getByText("category-missing")).not.toBeVisible();
+  fireEvent.click(within(reviewSection).getByText("Referencias de categorías no disponibles"));
+  expect(within(reviewSection).getByText("category-missing")).toBeVisible();
+  fireEvent.click(within(reviewSection).getByText("Referencia de imagen actual"));
+  expect(within(reviewSection).getByText("https://example.com/remote.png")).toBeVisible();
+  expect(within(reviewSection).getByRole("img", { name: "Imagen actual de la entrada en el servidor" })).toHaveAttribute("src", "https://example.com/remote.png");
+  expect(within(reviewSection).getByText(/Archivo local: hamburguesa\.png/)).toBeVisible();
+  fireEvent.click(within(reviewSection).getByRole("button", { name: "Usar datos actuales" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  await waitFor(() => expect(api.updateEntry).toHaveBeenCalledTimes(2));
+  expect(api.updateEntry.mock.calls[1][1].categoryIds).toEqual(["category-1", "category-missing"]);
+  expect(api.updateEntry.mock.calls[1][2]).toBe('"entry-rev-remote"');
+});
+
+test("conflict review displays 'Sin imagen' when server has no image (E02 absence)", async () => {
+  const api = repository();
+  api.updateEntry.mockRejectedValueOnce(rejected(412));
+  api.getEntry
+    .mockResolvedValueOnce({ ...entry, image: null, imageRef: undefined })
+    .mockResolvedValueOnce({
+      ...entry,
+      brandName: "Entrada sin imagen",
+      image: null,
+      imageRef: undefined,
+      etag: '"entry-rev-no-img"',
+    });
+
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: "Revisar entrada actual" }));
+  const reviewSection = await screen.findByRole("region", { name: "Datos actuales de la entrada" });
+  expect(within(reviewSection).getAllByText("Sin imagen")[0]).toBeVisible();
+});
+
+test("editing text of an ACTIVE entry does NOT include status in update payload (E03)", async () => {
+  const api = repository();
+  api.getEntry.mockResolvedValueOnce({ ...entry, status: "ACTIVE" });
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Texto editado sin cambio de estado" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  await waitFor(() => {
+    expect(api.updateEntry).toHaveBeenCalledWith(
+      "entry-1",
+      expect.not.objectContaining({ status: expect.anything() }),
+      '"entry-rev-1"',
+    );
+  });
+  expect(api.updateEntry).toHaveBeenCalledWith(
+    "entry-1",
+    {
+      brandName: "Hamburguesa de la casa",
+      description: "Texto editado sin cambio de estado",
+      categoryIds: ["category-1"],
+    },
+    '"entry-rev-1"',
+  );
+});
+
+test("transitioning an entry to ACTIVE sends status: ACTIVE, and server rejection preserves draft and confirmed status (E03)", async () => {
+  const api = repository();
+  api.getEntry.mockResolvedValueOnce({ ...entry, status: "INACTIVE" });
+  api.updateEntry.mockRejectedValueOnce(
+    new AxiosError("Activation rejected", "ERR_BAD_REQUEST", undefined, {}, {
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: { error: { message: "No se puede activar: no tiene ofertas activas asociadas." } },
+    }),
+  );
+  renderPage(api, "/entries/entry-1/edit");
+  await screen.findByDisplayValue(entry.brandName);
+  fireEvent.change(screen.getByRole("combobox", { name: "Estado administrativo" }), { target: { value: "ACTIVE" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+  await waitFor(() => {
+    expect(api.updateEntry).toHaveBeenCalledWith(
+      "entry-1",
+      expect.objectContaining({ status: "ACTIVE" }),
+      '"entry-rev-1"',
+    );
+  });
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent("No se puede activar: no tiene ofertas activas asociadas.");
+  expect(screen.getByRole("combobox", { name: "Estado administrativo" })).toHaveValue("ACTIVE");
+});
+
+test("onSaved failure after successful creation does not mark write uncertain or allow a second createEntry (E04)", async () => {
+  const api = repository();
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+  const onSaved = jest.fn().mockRejectedValue(new Error("Callback navigation failed"));
+
+  renderPage(api, "/entries/new", undefined, storage, onSaved);
+
+  await screen.findByLabelText("Archivo de imagen");
+  await chooseValidImage();
+  fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Bowl único" } });
+  fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción única" } });
+
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+
+  await waitFor(() => expect(api.createEntry).toHaveBeenCalledTimes(1));
+  expect(onSaved).toHaveBeenCalledTimes(1);
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.queryByText(/El servidor pudo haber recibido/)).not.toBeInTheDocument();
+
+  expect(screen.getByRole("button", { name: "Guardar entrada" })).toBeDisabled();
+
+  fireEvent.submit(document.querySelector("form")!);
+  expect(api.createEntry).toHaveBeenCalledTimes(1);
+});
+
+test("a confirmed creation survives reload after navigation failure and never restores a new POST", async () => {
+  const api = repository();
+  const harness = createControllableIndexedDbHarness();
+  const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
+  const onSaved = jest.fn().mockRejectedValue(new Error("Navigation failed"));
+  const view = renderPage(api, "/entries/new", undefined, storage, onSaved);
+  await chooseValidImage(); fillIdentity();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar entrada" }));
+  await screen.findByRole("button", { name: "Volver al listado" });
+  expect(onSaved).toHaveBeenCalledTimes(1);
+  const confirmed = await storage.getRecord(buildEntryCreateScope());
+  expect(confirmed?.confirmedResult).toMatchObject({ id: entry.id });
+  expect(confirmed?.stages.at(-1)?.status).toBe("succeeded");
+  view.unmount();
+  renderPage(api, "/entries/new", undefined, storage, onSaved);
+  await screen.findByRole("button", { name: "Volver al listado" });
+  fireEvent.submit(document.querySelector("form")!);
+  expect(api.createEntry).toHaveBeenCalledTimes(1);
+  expect(onSaved).toHaveBeenCalledTimes(1);
+  expect(screen.getByLabelText("Nombre comercial")).toBeDisabled();
+  expect(screen.queryByText(/El servidor pudo haber recibido/)).not.toBeInTheDocument();
+  expect((await storage.getRecord(buildEntryCreateScope()))?.stages.at(-1)?.idempotencyKey).toBe(confirmed?.stages.at(-1)?.idempotencyKey);
 });

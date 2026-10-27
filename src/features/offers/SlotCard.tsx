@@ -1,8 +1,10 @@
 import type { OfferCourse } from "../../application/catalog";
-import type { OptionDraft } from "./OptionModal";
+import type { OptionDraft } from "./optionDraft";
 import { SlotOptionItem } from "./SlotOptionItem";
+import { Icon } from "../../shared/Icon";
 
 export interface SlotDraft {
+  localId?: string;
   slotId?: string;
   name: string;
   quantity: number;
@@ -36,7 +38,7 @@ export function SlotCard({
   const hasActiveOption = slot.options.some((opt) => opt.status === "ACTIVE");
   const isSlotActive = slot.options.length > 0 && hasActiveOption;
 
-  const roundsLabel = slot.quantity === 1 ? "1 ronda" : `${slot.quantity} rondas`;
+  const roundsLabel = slot.quantity === 1 ? "1 ronda de selección" : `${slot.quantity} rondas de selección`;
 
   const courseLabels: Record<OfferCourse, string> = {
     entrada: "Entrada",
@@ -83,17 +85,19 @@ export function SlotCard({
           </button>
           <button
             type="button"
-            className="button button--small button--danger"
+            className="button button--small button--secondary"
             onClick={onDelete}
             disabled={disabled}
             aria-label={`Eliminar grupo ${slot.name}`}
+            aria-describedby={`slot-draft-hint-${slotIndex}`}
           >
-            Eliminar
+            Retirar grupo
           </button>
         </div>
       </header>
 
       <div className="slot-card__body">
+        <p id={`slot-draft-hint-${slotIndex}`} className="field-hint">Retirar grupos u opciones modifica este borrador. Se aplica al guardar la oferta.</p>
         {slot.options.length === 0 ? (
           <p className="slot-card__empty-notice">
             Este grupo aún no tiene opciones. Debe incluir al menos una opción para ser válido.
@@ -102,7 +106,7 @@ export function SlotCard({
           <div className="slot-card__options-list">
             {slot.options.map((option, optIdx) => (
               <SlotOptionItem
-                key={option.optionId || `opt-${optIdx}`}
+                key={option.localId || option.optionId || `opt-${optIdx}`}
                 option={option}
                 optionIndex={optIdx}
                 onEdit={() => onEditOption(optIdx)}
@@ -123,7 +127,7 @@ export function SlotCard({
           disabled={disabled}
           aria-label={`Agregar opción a ${slot.name}`}
         >
-          + Agregar opción
+          <Icon name="add" /> Agregar opción
         </button>
       </footer>
     </article>

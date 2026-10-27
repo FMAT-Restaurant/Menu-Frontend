@@ -1,0 +1,1046 @@
+/* =========================================================
+   Offers Feature Styles
+   ========================================================= */
+
+:where(.menu-module[data-menu-module]) .offers-header__action {
+  flex: 0 0 auto;
+}
+
+:where(.menu-module[data-menu-module]) .offers-page__context {
+  max-width: 780px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .offers-page__count {
+  display: block;
+  margin: 0 0 16px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:where(.menu-module[data-menu-module]) .offers-page__page {
+  align-self: center;
+  color: var(--text);
+  font-size: 14px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 24px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-grid--updating {
+  opacity: .72;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(17 24 39 / 5%);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card:has(.offer-card__content:hover) {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 10px rgb(17 24 39 / 8%);
+}
+
+:where(.menu-module[data-menu-module]) .offer-card:has(.offer-card__content:active) {
+  border-color: #9ca3af;
+  box-shadow: 0 1px 3px rgb(17 24 39 / 5%);
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__content {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__content:focus-visible {
+  outline-offset: -3px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__content:hover .offer-card__edit {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__identity { min-width: 0; }
+
+:where(.menu-module[data-menu-module]) .offer-card__content h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__image {
+  position: relative;
+  display: grid;
+  height: 144px;
+  min-width: 0;
+  overflow: hidden;
+  place-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--canvas);
+  color: #4b5563;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__image img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__image-placeholder {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__entry {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__price {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 28px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__details p {
+  margin: 0;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__composition {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__composition strong {
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  place-items: center;
+  border: 1px solid #dbe3ec;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__edit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__edit .menu-icon { width: 16px; height: 16px; }
+
+:where(.menu-module[data-menu-module]) .offer-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--surface);
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__status-control {
+  flex: 0 1 auto;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card__status-control--inactive:not(:disabled) {
+  background: var(--surface);
+  color: var(--text);
+}
+
+:where(.menu-module[data-menu-module]) .offer-card .offer-card__delete {
+  width: auto;
+  flex: 0 1 auto;
+  min-height: var(--control-height, 40px);
+  padding: 8px 12px;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-control);
+  background: #fef2f2;
+  color: #b91c1c;
+  font: inherit;
+  line-height: 20px;
+  cursor: pointer;
+}
+:where(.menu-module[data-menu-module]) .offer-card .offer-card__delete:hover:not(:disabled) { border-color: #fca5a5; background: #fee2e2; color: #991b1b; }
+:where(.menu-module[data-menu-module]) .offer-card .offer-card__delete:disabled { opacity: 0.55; cursor: not-allowed; }
+
+:where(.menu-module[data-menu-module]) .offer-card__hint {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .offers-empty {
+  min-height: 180px;
+  padding: 28px 20px;
+}
+
+/* =========================================================
+   Offer Form & Commercial Info (R05)
+   ========================================================= */
+
+:where(.menu-module[data-menu-module]) .offer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 100%;
+  min-width: 0;
+  container: offer-form / inline-size;
+  box-sizing: border-box;
+}
+
+:where(.menu-module[data-menu-module]) .offer-commercial-info,
+:where(.menu-module[data-menu-module]) .composition-editor {
+  padding: 24px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+:where(.menu-module[data-menu-module]) .offer-commercial-info__title,
+:where(.menu-module[data-menu-module]) .composition-editor__title {
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 30px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-commercial-info__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+:where(.menu-module[data-menu-module]) .offer-commercial-info__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+:where(.menu-module[data-menu-module]) .price-input-wrapper {
+  display: flex;
+  align-items: stretch;
+  max-width: 100%;
+}
+
+:where(.menu-module[data-menu-module]) .price-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+:where(.menu-module[data-menu-module]) .price-input-wrapper input {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+:where(.menu-module[data-menu-module]) .offer-money-preview {
+  display: block;
+  margin: 0;
+  max-width: 100%;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+:where(.menu-module[data-menu-module]) .offer-review-price {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-review-price strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+:where(.menu-module[data-menu-module]) .radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+:where(.menu-module[data-menu-module]) .radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+:where(.menu-module[data-menu-module]) .status-fixed-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .image-dropzone {
+  min-height: 160px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #d1d5db;
+  border-radius: var(--radius-control);
+  background: #f9fafb;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: border-color .15s ease, background-color .15s ease;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+}
+
+:where(.menu-module[data-menu-module]) .image-dropzone:hover {
+  border-color: #9ca3af;
+  background: #f3f4f6;
+}
+
+:where(.menu-module[data-menu-module]) .image-dropzone__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+:where(.menu-module[data-menu-module]) .image-dropzone__icon {
+  width: 32px;
+  height: 32px;
+  font-size: 28px;
+}
+
+:where(.menu-module[data-menu-module]) .image-dropzone__text {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+:where(.menu-module[data-menu-module]) .image-preview {
+  width: 100%;
+  height: 160px;
+  position: relative;
+}
+
+:where(.menu-module[data-menu-module]) .image-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+:where(.menu-module[data-menu-module]) .image-preview__overlay {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 1;
+}
+
+:where(.menu-module[data-menu-module]) .image-dropzone:hover .image-preview__overlay {
+  opacity: 1;
+}
+
+/* =========================================================
+   Composition Editor
+   ========================================================= */
+
+:where(.menu-module[data-menu-module]) .composition-editor__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+  max-width: 100%;
+}
+
+:where(.menu-module[data-menu-module]) .composition-editor__header > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  :where(.menu-module[data-menu-module]) .composition-editor__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  :where(.menu-module[data-menu-module]) .composition-editor__header .button {
+    white-space: normal;
+    width: 100%;
+  }
+}
+
+:where(.menu-module[data-menu-module]) .composition-editor__subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+:where(.menu-module[data-menu-module]) .composition-editor__slots-container {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 12px 0;
+  align-items: stretch;
+}
+
+:where(.menu-module[data-menu-module]) .add-slot-card {
+  min-width: 0;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed #d1d5db;
+  border-radius: var(--radius-control);
+  background: #fafafa;
+  cursor: pointer;
+  color: #6b7280;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+}
+
+:where(.menu-module[data-menu-module]) .add-slot-card:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background: #f3f4f6;
+  color: var(--ink);
+}
+
+:where(.menu-module[data-menu-module]) .add-slot-card__icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+:where(.menu-module[data-menu-module]) .add-slot-card__label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Slot Card (C17) */
+:where(.menu-module[data-menu-module]) .slot-card {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-control);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+
+
+:where(.menu-module[data-menu-module]) .slot-card__header {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__title-row {
+  margin-bottom: 12px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__badge--rounds {
+  background: var(--canvas);
+  color: var(--text);
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__badge--course {
+  background: var(--canvas);
+  color: var(--text);
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__badge--active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__badge--inactive {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__empty-notice {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 12px;
+  line-height: 16px;
+  border-radius: 4px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card__footer {
+  padding: 12px 16px;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+/* Slot Option Item (C18) */
+:where(.menu-module[data-menu-module]) .slot-option-item {
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+:where(.menu-module[data-menu-module]) .slot-option-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__name {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__source-badge {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e5e7eb;
+  color: #374151;
+  text-transform: none;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__source-ref,
+:where(.menu-module[data-menu-module]) .slot-option-item__quantity {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: #6b7280;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* =========================================================
+   Modals (C31, C32, R06)
+   ========================================================= */
+
+:where(.menu-module[data-menu-module]) .slot-modal-dialog,
+:where(.menu-module[data-menu-module]) .option-modal-dialog {
+  width: min(calc(100% - 32px), 540px);
+  max-height: 90vh;
+  max-height: 90dvh;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  container: offer-dialog / inline-size;
+}
+
+:where(.menu-module[data-menu-module]) .slot-modal-dialog[open],
+:where(.menu-module[data-menu-module]) .option-modal-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+:where(.menu-module[data-menu-module]) .slot-modal-dialog form,
+:where(.menu-module[data-menu-module]) .option-modal-dialog form,
+:where(.menu-module[data-menu-module]) .slot-modal-form,
+:where(.menu-module[data-menu-module]) .option-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:where(.menu-module[data-menu-module]) .modal-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+:where(.menu-module[data-menu-module]) .modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+:where(.menu-module[data-menu-module]) .modal-close {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+}
+
+:where(.menu-module[data-menu-module]) .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+:where(.menu-module[data-menu-module]) .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+:where(.menu-module[data-menu-module]) .form-row .form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+:where(.menu-module[data-menu-module]) .form-row .form-field label {
+  min-height: 38px;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+:where(.menu-module[data-menu-module]) .form-row .form-field input,
+:where(.menu-module[data-menu-module]) .form-row .form-field select {
+  height: 40px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  :where(.menu-module[data-menu-module]) .form-row {
+    grid-template-columns: 1fr;
+  }
+  :where(.menu-module[data-menu-module]) .form-row .form-field label {
+    min-height: auto;
+  }
+}
+
+:where(.menu-module[data-menu-module]) .option-source-box {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #f9fafb;
+}
+
+:where(.menu-module[data-menu-module]) .option-source-box__title {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+:where(.menu-module[data-menu-module]) .option-source-box__summary {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+:where(.menu-module[data-menu-module]) .source-picker-buttons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+:where(.menu-module[data-menu-module]) .source-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: var(--radius-control);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+:where(.menu-module[data-menu-module]) .source-btn:hover {
+  border-color: #4b5563;
+  background: #f9fafb;
+}
+
+:where(.menu-module[data-menu-module]) .source-btn__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+:where(.menu-module[data-menu-module]) .source-btn__desc {
+  font-size: 12px;
+  line-height: 16px;
+  color: #6b7280;
+}
+
+/* Recipe picker retains the modal viewport margin and scrolls its content. */
+:where(.menu-module[data-menu-module]) .recipe-picker-modal {
+  position: fixed;
+  inset: 0;
+  width: min(calc(100% - 32px), 1200px);
+  height: 90vh;
+  height: 90dvh;
+  max-width: calc(100vw - 32px);
+  max-height: 90vh;
+  max-height: 90dvh;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  z-index: 60;
+  background: #fff;
+  overflow-y: auto;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-picker-modal .category-screen {
+  min-height: 0;
+}
+
+:where(.menu-module[data-menu-module]) .offer-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  background: var(--surface);
+}
+
+/* Responsive Offers Media Queries */
+@media (min-width: 768px) {
+  :where(.menu-module[data-menu-module]) .offer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  :where(.menu-module[data-menu-module]) .offer-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  :where(.menu-module[data-menu-module]) .offers-page__context {
+    overflow-wrap: anywhere;
+  }
+}
+
+@container offers (width < 480px) {
+  :where(.menu-module[data-menu-module]) .offer-card__actions .button { flex: 1 1 140px; }
+}
+
+@media (max-width: 480px) {
+  :where(.menu-module[data-menu-module]) .offer-commercial-info,
+  :where(.menu-module[data-menu-module]) .composition-editor {
+    padding: 12px;
+  }
+  :where(.menu-module[data-menu-module]) .offer-commercial-info__grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+:where(.menu-module[data-menu-module]) .offers-page { container: offers / inline-size; }
+:where(.menu-module[data-menu-module]) .offer-card, :where(.menu-module[data-menu-module]) .slot-card, :where(.menu-module[data-menu-module]) .offer-commercial-info, :where(.menu-module[data-menu-module]) .composition-editor {
+  border-radius: var(--radius-card);
+}
+:where(.menu-module[data-menu-module]) .offer-form :is(.button, .source-btn), :where(.menu-module[data-menu-module]) .offer-card :is(button, .button) {
+  min-height: var(--control-height, 40px);
+  height: auto;
+  line-height: 20px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+:where(.menu-module[data-menu-module]) .offer-form :is(.button, .source-btn) { padding: 9px 12px; }
+:where(.menu-module[data-menu-module]) .offer-form :is(input:not([type=radio]), select) {
+  min-height: var(--control-height, 40px);
+  border-radius: var(--radius-control);
+}
+:where(.menu-module[data-menu-module]) .offer-form :is(.radio-label, .radio-option), :where(.menu-module[data-menu-module]) .option-modal-dialog .radio-option {
+  min-height: var(--control-height, 40px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+:where(.menu-module[data-menu-module]) .offer-form input[type=radio], :where(.menu-module[data-menu-module]) .option-modal-dialog input[type=radio] { accent-color: var(--brand); }
+
+:where(.menu-module[data-menu-module]) .option-modal-dialog[open] [hidden] { display: none; }
+:where(.menu-module[data-menu-module]) .option-modal-dialog:has(.recipe-selection-task:not([hidden])) { width: min(calc(100% - 32px), calc(100cqw - 32px), 960px); }
+:where(.menu-module[data-menu-module]) .option-modal-dialog:has(.recipe-selection-task:not([hidden])) > div:last-child { min-height: 0; overflow-y: auto; }
+:where(.menu-module[data-menu-module]) .option-discard { padding: 24px; }
+:where(.menu-module[data-menu-module]) .option-discard button { margin: 8px 8px 0 0; }
+:where(.menu-module[data-menu-module]) .offer-state, :where(.menu-module[data-menu-module]) .slot-card__badge--active, :where(.menu-module[data-menu-module]) .slot-card__badge--inactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+:where(.menu-module[data-menu-module]) .offer-state::before, :where(.menu-module[data-menu-module]) .slot-card__badge--active::before, :where(.menu-module[data-menu-module]) .slot-card__badge--inactive::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+:where(.menu-module[data-menu-module]) .offer-state--active { color: #15803d; }
+:where(.menu-module[data-menu-module]) .offer-state--inactive { color: #92400e; }
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.menu-module[data-menu-module]) .offer-card,
+  :where(.menu-module[data-menu-module]) .offer-card__body { transition: none; }
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__header, :where(.menu-module[data-menu-module]) .slot-option-item__actions, :where(.menu-module[data-menu-module]) .slot-card__header-actions { flex-wrap: wrap; gap: 8px; }
+:where(.menu-module[data-menu-module]) .slot-option-item__main, :where(.menu-module[data-menu-module]) .slot-option-item { min-width: 0; overflow-wrap: anywhere; }
+:where(.menu-module[data-menu-module]) .composition-editor__subtitle, :where(.menu-module[data-menu-module]) .image-dropzone__text { line-height: 20px; }
+:where(.menu-module[data-menu-module]) .image-dropzone:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@container offer-form (width < 768px) {
+  :where(.menu-module[data-menu-module]) .offer-form > * { --control-height: 48px; }
+  :where(.menu-module[data-menu-module]) .offer-commercial-info, :where(.menu-module[data-menu-module]) .composition-editor { padding: 16px; }
+  :where(.menu-module[data-menu-module]) .offer-commercial-info__grid { grid-template-columns: minmax(0, 1fr); }
+  :where(.menu-module[data-menu-module]) .offer-form__actions { flex-wrap: wrap; }
+}
+@container offer-form (width >= 768px) {
+  :where(.menu-module[data-menu-module]) .composition-editor__slots-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container offers (width < 768px) {
+  :where(.menu-module[data-menu-module]) .offer-grid { grid-template-columns: minmax(0, 1fr); }
+  :where(.menu-module[data-menu-module]) .offer-card { --control-height: 48px; }
+}
+@container offers (width < 360px) {
+  :where(.menu-module[data-menu-module]) .offer-card__summary { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  :where(.menu-module[data-menu-module]) .offer-card__price { text-align: left; }
+}
+@container offers (768px <= width < 1200px) {
+  :where(.menu-module[data-menu-module]) .offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :where(.menu-module[data-menu-module]) .offer-card { --control-height: 48px; }
+}
+@container offers (width >= 1200px) {
+  :where(.menu-module[data-menu-module]) .offer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+:where(.menu-module[data-menu-module]) .slot-modal-dialog .modal-header h2, :where(.menu-module[data-menu-module]) .option-modal-dialog .modal-header h2 {
+  font-size: 22px; line-height: 30px; text-transform: none; letter-spacing: normal; overflow-wrap: anywhere;
+}
+:where(.menu-module[data-menu-module]) :is(.slot-modal-dialog, .option-modal-dialog) :is(button, input:not([type=radio]), select) {
+  min-height: var(--control-height, 40px); height: auto; white-space: normal; line-height: 20px;
+}
+:where(.menu-module[data-menu-module]) :is(.slot-modal-dialog, .option-modal-dialog) .modal-close { min-width: var(--control-height, 40px); }
+:where(.menu-module[data-menu-module]) :is(.slot-modal-dialog, .option-modal-dialog) .modal-footer { flex-wrap: wrap; gap: 8px; }
+@container offer-dialog (width < 768px) {
+  :where(.menu-module[data-menu-module]) :is(.modal-header, .modal-body, .modal-footer) { --control-height: 48px; padding-inline: 16px; }
+  :where(.menu-module[data-menu-module]) .form-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+:where(.menu-module[data-menu-module]) .option-modal-dialog { container: menu-dialog offer-dialog / inline-size; }
+@container menu-dialog (width < 1200px) {
+  :where(.menu-module[data-menu-module]) .option-modal-dialog > * { --control-height: 48px; }
+}
+
+:where(.menu-module[data-menu-module]) .offer-form[data-actions-persistent="true"] .offer-form__actions { position: sticky; bottom: 0; z-index: 5; border-top: 1px solid var(--border); }
+:where(.menu-module[data-menu-module]) .offer-form :is(input, textarea, select, button, [tabindex]) { scroll-margin-block: 24px calc(var(--form-actions-height, 0px) + 24px); }

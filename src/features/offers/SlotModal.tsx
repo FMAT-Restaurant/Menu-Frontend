@@ -1,3 +1,6 @@
+import { sameDraft, useEditGuard } from "../../shared/editGuard";
+import { Icon } from "../../shared/Icon";
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import type { OfferCourse } from "../../application/catalog";
 
@@ -14,6 +17,16 @@ export interface SlotModalProps {
   onClose: () => void;
 }
 
+function parseRoundsQuantity(text: string): number | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  if (!Number.isFinite(num) || !Number.isSafeInteger(num) || num < 1) {
+    return null;
+  }
+  return num;
+}
+
 export function SlotModal({
   isOpen,
   initialData,
@@ -21,7 +34,7 @@ export function SlotModal({
   onClose,
 }: Readonly<SlotModalProps>) {
   const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantityText, setQuantityText] = useState("1");
   const [course, setCourse] = useState<OfferCourse | "">("");
   const [validationError, setValidationError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -29,43 +42,20 @@ export function SlotModal({
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
-      setQuantity(initialData.quantity > 0 ? initialData.quantity : 1);
+      setQuantityText(String(initialData.quantity > 0 ? initialData.quantity : 1));
       setCourse(initialData.course ?? "");
     } else {
       setName("");
-      setQuantity(1);
+      setQuantityText("1");
       setCourse("");
     }
     setValidationError("");
   }, [initialData, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const dialog = dialogRef.current;
-    if (typeof dialog?.showModal === "function") {
-      if (!dialog.open) dialog.showModal();
-    } else {
-      dialog?.setAttribute("open", "");
-    }
-    return () => {
-      if (dialog?.open && typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog?.removeAttribute("open");
-      }
-    };
-  }, [isOpen]);
+  useTaskDialog(dialogRef, isOpen);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  const guard = useEditGuard({ dirty: !sameDraft({ name, quantity: quantityText, course }, { name: initialData?.name ?? "", quantity: String(initialData?.quantity ?? 1), course: initialData?.course ?? "" }), blocked: false }, undefined, isOpen);
+  const requestClose = () => guard.request(onClose);
 
   if (!isOpen) return null;
 
@@ -76,13 +66,14 @@ export function SlotModal({
       setValidationError("El nombre del grupo es obligatorio.");
       return;
     }
-    if (quantity < 1 || !Number.isFinite(quantity)) {
-      setValidationError("La cantidad de rondas debe ser al menos 1.");
+    const parsedQuantity = parseRoundsQuantity(quantityText);
+    if (parsedQuantity === null) {
+      setValidationError("Escribe un número entero de rondas de selección, igual o mayor que 1.");
       return;
     }
     onSave({
       name: cleanName,
-      quantity,
+      quantity: parsedQuantity,
       course: course === "" ? null : course,
     });
   }
@@ -92,22 +83,24 @@ export function SlotModal({
   return (
     <dialog
       ref={dialogRef}
-      className="slot-modal-dialog"
+      className="slot-modal-dialog menu-task-dialog"
       aria-labelledby="slot-modal-title"
+      onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!event.repeat) requestClose(); } }}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        requestClose();
       }}
     >
+      {guard.confirmation}
       <header className="modal-header">
         <h2 id="slot-modal-title">{title}</h2>
         <button
           type="button"
           className="modal-close"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Cerrar modal de grupo"
         >
-          ✕
+          <Icon name="close" />
         </button>
       </header>
 
@@ -135,17 +128,18 @@ export function SlotModal({
           <div className="form-row">
             <div className="form-field">
               <label htmlFor="slot-quantity-input">
-                Unidades incluidas
+                Rondas de selección
               </label>
               <input
                 id="slot-quantity-input"
-                type="number"
-                min="1"
-                step="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Number.parseInt(e.target.value, 10) || 0)}
+                type="text"
+                inputMode="numeric"
+                value={quantityText}
+                onChange={(e) => setQuantityText(e.target.value)}
                 required
+                aria-describedby="slot-rounds-help"
               />
+              <p id="slot-rounds-help" className="field-hint">Indica cuántas veces se elige entre las opciones de este grupo.</p>
             </div>
 
             <div className="form-field">
@@ -171,7 +165,7 @@ export function SlotModal({
           <button
             type="button"
             className="button button--secondary"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Cancelar
           </button>

@@ -1,14 +1,20 @@
+import { useLocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../../application/catalog";
-import { cachedCategories, cachedEntries, entryQueryKey, invalidateCatalogCategories, invalidateCatalogEntries, rememberCategories, rememberEntries } from "../../application/catalogCache";
+import { cachedEntries, entryQueryKey, invalidateCatalogCategories, invalidateCatalogEntries, rememberEntries } from "../../application/catalogCache";
+import { loadEntryCategories } from "../../application/entryCategories";
+import { Icon } from "../../shared/Icon";
 import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
+import "./styles.css";
 
 const pageSizes = new Set([6, 12, 24]);
 const statuses: EntryStatus[] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
 
+export type CatalogRepository = Pick<MenuRepository, "listEntries" | "listCategories" | "deleteArchivedEntry">;
 interface Feedback { kind: CatalogErrorKind; message: string }
 
 function positiveNumber(value: string | null, fallback: number) {
@@ -46,6 +52,7 @@ interface CatalogFeedbackProps {
   hasDisplayed: boolean;
   busyId: string | null;
   needsReconcile: boolean;
+  dialogOpen: boolean;
   onRetryCategories(): void;
   onRetryEntries(): void;
 }
@@ -54,15 +61,16 @@ function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
   return <>
     {props.categoryError && <div className="feedback feedback--error catalog-feedback" role="alert">No se pudieron cargar las categorías. El listado sigue disponible. <button type="button" onClick={props.onRetryCategories}>Reintentar categorías</button></div>}
     {props.entryError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
-    {props.actionError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
+    {!props.dialogOpen && props.actionError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
     {props.notice && <output className="feedback feedback--success">{props.notice}</output>}
-    {props.fetching && <output className="catalog-updating">{props.hasDisplayed ? "Actualizando entradas…" : "Cargando entradas…"}</output>}
+    {props.fetching && props.hasDisplayed && <output className="catalog-updating">Actualizando entradas…</output>}
     {props.busyId && <output className="catalog-updating">Actualizando entrada…</output>}
   </>;
 }
 
-export function CatalogPage({ repository }: Readonly<{ repository: MenuRepository }>) {
+export function CatalogPage({ repository }: Readonly<{ repository: CatalogRepository }>) {
   const location = useLocation();
+  const saveMessage = useLocalSaveReceipt("entry");
   const [searchParams, setSearchParams] = useSearchParams();
   const query = queryFromUrl(searchParams);
   const key = entryQueryKey(query);
@@ -72,7 +80,6 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
   paramsRef.current = searchParams;
   const [draftSearch, setDraftSearch] = useState(query.q ?? "");
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [displayed, setDisplayed] = useState<DisplayedPage | null>(null);
   const [fetching, setFetching] = useState(true);
@@ -89,7 +96,13 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
 
-  useEffect(() => setDraftSearch(query.q ?? ""), [query.q]);
+  useEffect(() => {
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+    setDraftSearch(query.q ?? "");
+  }, [query.q]);
 
   useEffect(() => {
     setActionError(null);
@@ -97,43 +110,39 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
   }, [key]);
 
   useEffect(() => () => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
   }, []);
+
+  useTaskDialog(deleteDialogRef, Boolean(entryToDelete), cancelDeleteRef);
 
   useEffect(() => {
     if (!entryToDelete) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const dialog = deleteDialogRef.current;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    cancelDeleteRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !actionInProgress.current) setEntryToDelete(null);
+      if (event.key === "Escape" && !actionInProgress.current) closeDeleteDialog();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
-      previouslyFocused?.focus();
     };
   }, [entryToDelete]);
 
   useEffect(() => {
-    const cached = cachedCategories(repository);
-    if (cached) {
-      setCategories(cached);
-      setCategoryError(false);
-      return;
-    }
     const controller = new AbortController();
     setCategoryError(false);
-    repository.listCategories(controller.signal).then((loaded) => {
-      if (controller.signal.aborted) return;
-      rememberCategories(repository, loaded);
-      setCategories(loaded);
-    }).catch(() => {
-      if (!controller.signal.aborted) setCategoryError(true);
-    });
+    loadEntryCategories(repository, controller.signal, categoryRetry > 0)
+      .then((loaded) => {
+        if (!controller.signal.aborted) {
+          setCategories(loaded);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted && !(error instanceof DOMException && error.name === "AbortError")) {
+          setCategoryError(true);
+        }
+      });
     return () => controller.abort();
   }, [repository, categoryRetry]);
 
@@ -174,7 +183,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
     return () => controller.abort();
   }, [repository, key, entryRetry, setSearchParams]);
 
-  function updateFilter(name: string, value: string) {
+  function updateFilter(name: "categoryId" | "status" | "q" | "pageSize", value: string) {
     const next = new URLSearchParams(paramsRef.current);
     if (value) next.set(name, value);
     else next.delete(name);
@@ -183,30 +192,95 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
   }
 
   function submitSearch() {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
     if (draftSearch.trim() !== (query.q ?? "")) updateFilter("q", draftSearch.trim());
   }
 
   function changeSearch(value: string) {
     setDraftSearch(value);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (value.trim() !== (query.q ?? "")) searchTimer.current = setTimeout(() => updateFilter("q", value.trim()), 300);
+    if (value.trim() !== (query.q ?? "")) {
+      searchTimer.current = setTimeout(() => updateFilter("q", value.trim()), 300);
+    }
+  }
+
+  function clearFilters() {
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+    setDraftSearch("");
+    setSearchParams(new URLSearchParams());
   }
 
   function changePage(nextPage: number) {
     const next = new URLSearchParams(paramsRef.current);
-    next.set("page", String(nextPage));
+    if (nextPage <= 1) next.delete("page");
+    else next.set("page", String(nextPage));
     setSearchParams(next);
+  }
+
+  function closeDeleteDialog() {
+    if (actionInProgress.current) return;
+    setEntryToDelete(null);
+    setActionError(null);
+    setNeedsReconcile(false);
   }
 
   function retryEntries() {
     setEntryToDelete(null);
+    setActionError(null);
+    setNeedsReconcile(false);
     invalidateCatalogEntries(repository);
     setEntryRetry((current) => current + 1);
   }
 
   function retryCategories() {
     setCategoryRetry((current) => current + 1);
+  }
+
+  async function reconcileFromDialog() {
+    if (actionInProgress.current) return;
+    actionInProgress.current = true;
+    setBusyId(entryToDelete?.id ?? "reconcile");
+    try {
+      invalidateCatalogEntries(repository);
+      const { key: latestKey, query: latestQuery } = currentQuery.current;
+      const updated = await repository.listEntries(latestQuery);
+      if (latestKey === currentQuery.current.key) {
+        const corrected = validPage(updated, latestQuery.page);
+        if (corrected !== latestQuery.page) {
+          const correctedQuery = { ...latestQuery, page: corrected };
+          const correctedResult = await repository.listEntries(correctedQuery);
+          if (latestKey === currentQuery.current.key) {
+            rememberEntries(repository, correctedQuery, correctedResult);
+            setDisplayed({ key: entryQueryKey(correctedQuery), query: correctedQuery, result: correctedResult });
+            changePage(corrected);
+          }
+        } else {
+          rememberEntries(repository, latestQuery, updated);
+          setDisplayed({ key: latestKey, query: latestQuery, result: updated });
+        }
+      }
+      const entryStillExists = updated.data.some((e) => e.id === entryToDelete?.id);
+      if (!entryStillExists) {
+        setNotice("Entrada eliminada.");
+        setEntryToDelete(null);
+        setActionError(null);
+        setNeedsReconcile(false);
+      } else {
+        setNeedsReconcile(false);
+        setActionError(null);
+      }
+    } catch {
+      setActionError({ kind: "temporary", message: "No se pudo actualizar la lista. Vuelve a intentarlo." });
+    } finally {
+      actionInProgress.current = false;
+      setBusyId(null);
+    }
   }
 
   async function deleteEntry(entry: MenuEntry) {
@@ -222,24 +296,35 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
       const { key: latestKey, query: latestQuery } = currentQuery.current;
       try {
         const updated = await repository.listEntries(latestQuery);
-        if (latestKey === currentQuery.current.key) {
-          const corrected = validPage(updated, latestQuery.page);
-          if (corrected !== latestQuery.page) {
-            const correctedQuery = { ...latestQuery, page: corrected };
-            const correctedResult = await repository.listEntries(correctedQuery);
-            rememberEntries(repository, correctedQuery, correctedResult);
-            setDisplayed({ key: entryQueryKey(correctedQuery), query: correctedQuery, result: correctedResult });
-            changePage(corrected);
-          } else {
-            rememberEntries(repository, latestQuery, updated);
-            setDisplayed({ key: latestKey, query: latestQuery, result: updated });
+        if (latestKey !== currentQuery.current.key) {
+          setEntryToDelete(null);
+          setActionError(null);
+          setNeedsReconcile(false);
+          return;
+        }
+        const corrected = validPage(updated, latestQuery.page);
+        if (corrected !== latestQuery.page) {
+          const correctedQuery = { ...latestQuery, page: corrected };
+          const correctedResult = await repository.listEntries(correctedQuery);
+          if (latestKey !== currentQuery.current.key) {
+            setEntryToDelete(null);
+            setActionError(null);
+            setNeedsReconcile(false);
+            return;
           }
+          rememberEntries(repository, correctedQuery, correctedResult);
+          setDisplayed({ key: entryQueryKey(correctedQuery), query: correctedQuery, result: correctedResult });
+          changePage(corrected);
+        } else {
+          rememberEntries(repository, latestQuery, updated);
+          setDisplayed({ key: latestKey, query: latestQuery, result: updated });
         }
         setNeedsReconcile(false);
         if (latestKey === currentQuery.current.key) {
           setNotice("Entrada eliminada.");
         }
         setEntryToDelete(null);
+        setActionError(null);
       } catch {
         setNeedsReconcile(true);
         setActionError({ kind: "temporary", message: "El cambio se aplicó, pero no se pudo actualizar la lista. Actualízala antes de continuar." });
@@ -257,32 +342,82 @@ export function CatalogPage({ repository }: Readonly<{ repository: MenuRepositor
   const shown = displayed?.result;
   const olderResults = Boolean(displayed && (displayed.key !== key || entryError || needsReconcile));
   const actionsDisabled = Boolean(busyId || fetching || olderResults);
-  const hasFilters = Boolean(query.q || query.categoryId || query.status);
+  const hasFilters = Boolean(draftSearch.trim() || query.q || query.categoryId || query.status);
   const advancedCount = Number(Boolean(query.categoryId)) + Number(Boolean(query.status));
   const returnTo = location.pathname + location.search;
 
   return (
     <div className="app-shell">
-      <nav className="global-nav" aria-label="Navegación principal">
-        <Link className="brand" to="/"><span className="brand__mark" aria-hidden="true">F</span><span>FMAT <strong>Restaurant</strong></span></Link>
-        <span className="global-nav__section">Administración del menú</span>
-      </nav>
-      <main className="catalog-page">
-        <header className="catalog-header">
-          <div>
-            <p className="eyebrow">Administración / Menú</p>
-            <h1>Entradas del menú</h1>
-          </div>
-          <div className="catalog-header__actions">
-            <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
-            <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
-            <Link className="button button--primary" to="/entries/new" state={{ returnTo: location.pathname + location.search }}>Nueva entrada</Link>
+      <main className="menu-page catalog-page">
+        <header className="task-header catalog-header">
+          <div className="task-header__row catalog-header__top">
+            <div className="task-header__content">
+              <p className="eyebrow">Catálogo del menú</p>
+              <h1 aria-label="Entradas del menú" data-route-heading tabIndex={-1}>Entradas</h1>
+              <p className="task-header__intro">Administra las entradas, sus categorías y su disponibilidad.</p>
+            </div>
+            <div className="task-header__actions catalog-header__actions">
+              <nav className="catalog-header__navigation" aria-label="Administrar el menú">
+                <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
+                <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
+              </nav>
+              <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>
+            </div>
           </div>
         </header>
-        <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedOpen={advancedOpen} onToggleAdvanced={() => setAdvancedOpen((value) => !value)} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={() => setSearchParams(new URLSearchParams())} />
-        <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} notice={notice} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
-        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={() => setSearchParams(new URLSearchParams())} onDelete={setEntryToDelete} />
-        {entryToDelete && <div className="dialog-backdrop"><dialog ref={deleteDialogRef} className="confirm-dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={(event) => { event.preventDefault(); if (!actionInProgress.current) setEntryToDelete(null); }}><h2 id="delete-title">Eliminar entrada archivada</h2><p id="delete-description">Se eliminará definitivamente “{entryToDelete.brandName}”. Confirma solo si deseas retirar esta entrada.</p><div className="confirm-dialog__actions"><button ref={cancelDeleteRef} className="button button--secondary" type="button" disabled={Boolean(busyId)} onClick={() => setEntryToDelete(null)} aria-label="Cancelar eliminación">Cancelar</button><button className="button button--danger" type="button" disabled={Boolean(busyId)} onClick={() => { void deleteEntry(entryToDelete); }} aria-label="Confirmar eliminación">Eliminar entrada</button></div></dialog></div>}
+        <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={clearFilters} />
+        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
+        <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} notice={notice} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} dialogOpen={Boolean(entryToDelete)} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
+        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={setEntryToDelete} />
+        {entryToDelete && (
+          <div className="dialog-backdrop">
+            <dialog
+              ref={deleteDialogRef}
+              className="confirm-dialog menu-task-dialog"
+              aria-modal="true"
+              aria-labelledby="delete-title"
+              aria-describedby="delete-description"
+              onCancel={(event) => {
+                event.preventDefault();
+                if (!actionInProgress.current) closeDeleteDialog();
+              }}
+            >
+              <h2 id="delete-title">Eliminar entrada archivada</h2>
+              <p id="delete-description">Se eliminará definitivamente “{entryToDelete.brandName}”. Confirma solo si deseas retirar esta entrada.</p>
+              {actionError && (
+                <div className="feedback feedback--error dialog-feedback" role="alert">
+                  {actionError.message}{" "}
+                  {(actionError.kind === "conflict" || needsReconcile) && (
+                    <button type="button" onClick={() => { void reconcileFromDialog(); }}>
+                      Actualizar lista
+                    </button>
+                  )}
+                </div>
+              )}
+              <div className="confirm-dialog__actions">
+                <button
+                  ref={cancelDeleteRef}
+                  className="button button--secondary"
+                  type="button"
+                  disabled={Boolean(busyId)}
+                  onClick={closeDeleteDialog}
+                  aria-label="Cancelar eliminación"
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="button button--danger"
+                  type="button"
+                  disabled={Boolean(busyId) || needsReconcile}
+                  onClick={() => { void deleteEntry(entryToDelete); }}
+                  aria-label="Confirmar eliminación"
+                >
+                  Eliminar entrada
+                </button>
+              </div>
+            </dialog>
+          </div>
+        )}
       </main>
     </div>
   );

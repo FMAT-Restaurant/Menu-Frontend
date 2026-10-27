@@ -1,7 +1,10 @@
+import { LoadingState, LoadingValue } from "../../shared/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import type { MenuCategory } from "../../application/catalog";
+import { Icon } from "../../shared/Icon";
 
 interface Props {
+  selectionLoading?: boolean;
   categories: MenuCategory[];
   selected: string[];
   loading: boolean;
@@ -31,7 +34,7 @@ function CategoryLoadState({ loading, error, continuing, onRetry, onContinue }: 
   </div>;
 }
 
-export function EntryCategorySelector({ categories, selected, loading, error, fieldError, disabled, continuing, onChange, onRetry, onContinue }: Readonly<Props>) {
+export function EntryCategorySelector({ selectionLoading = false, categories, selected, loading, error, fieldError, disabled, continuing, onChange, onRetry, onContinue }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const root = useRef<HTMLFieldSetElement>(null);
@@ -46,17 +49,19 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
   useEffect(() => {
     if (!open) return;
     search.current?.focus();
-    function outside(event: PointerEvent) {
+    function outside(event: MouseEvent) {
       if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
     }
     function escape(event: KeyboardEvent) {
       if (event.key !== "Escape" || !(event.target instanceof Node) || !root.current?.contains(event.target)) return;
       event.preventDefault(); setOpen(false); trigger.current?.focus();
     }
-    document.addEventListener("pointerdown", outside);
+    // Collapsing this in-flow panel on pointerdown can move a submit button
+    // before pointerup, preventing its click. Dismiss after the click is delivered.
+    document.addEventListener("click", outside);
     document.addEventListener("keydown", escape);
     return () => {
-      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("click", outside);
       document.removeEventListener("keydown", escape);
     };
   }, [open]);
@@ -66,18 +71,22 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
     else onChange([...selected, id]);
   }
 
-  return <fieldset ref={root} className="entry-category-selector">
+  return <fieldset ref={root} className="entry-category-selector" aria-busy={loading}>
     <legend>Categorías</legend>
     <p className="entry-form__muted">Puedes asignar varias o guardar sin clasificación.</p>
     <CategoryLoadState loading={loading} error={error} continuing={continuing} onRetry={onRetry} onContinue={onContinue} />
-    <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" data-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
-      <span>{selectionLabel(selected.length)}</span><span aria-hidden="true">⌄</span>
-    </button>
+    {selectionLoading ? <LoadingValue /> : <button ref={trigger} id="entry-categoryIds" className="entry-category-selector__trigger" type="button" aria-expanded={open} aria-controls="entry-category-panel" data-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" disabled={disabled} onClick={() => setOpen((value) => !value)}>
+      <span>{selectionLabel(selected.length)}</span><span className="entry-category-selector__chevron" aria-hidden="true" />
+    </button>}
     {open && <div id="entry-category-panel" className="entry-category-selector__panel">
-      <label className="sr-only" htmlFor="entry-category-search">Buscar categorías</label>
-      <input ref={search} id="entry-category-search" type="search" placeholder="Buscar categorías…" value={query} onChange={(event) => setQuery(event.target.value)} disabled={disabled} />
+      <label className="entry-category-selector__search-label" htmlFor="entry-category-search">Buscar categorías</label>
+      <div className="entry-category-selector__search">
+        <Icon name="search" />
+        <input ref={search} id="entry-category-search" type="search" placeholder="Nombre de categoría" value={query} onChange={(event) => setQuery(event.target.value)} disabled={disabled} />
+      </div>
       <fieldset className="entry-category-selector__list">
         <legend className="sr-only">Categorías disponibles</legend>
+        {loading && available.length === 0 && <LoadingState variant="options" />}
         {filtered.map((category) => <label className="entry-category-selector__option" key={category.id}>
           <input type="checkbox" checked={selected.includes(category.id)} onChange={() => toggle(category.id)} disabled={disabled} aria-invalid={Boolean(fieldError)} aria-describedby="entry-categoryIds-error" />
           <span>{category.name}</span>
@@ -87,7 +96,7 @@ export function EntryCategorySelector({ categories, selected, loading, error, fi
       </fieldset>
     </div>}
     {selected.length > 0 && <ul className="entry-category-selector__selection" aria-label="Categorías seleccionadas">
-      {selected.map((id) => <li key={id}><span>{nameFor(id)}</span><button type="button" aria-label={`Retirar categoría ${nameFor(id)}`} disabled={disabled} onClick={() => toggle(id)}>×</button></li>)}
+      {selected.map((id) => <li key={id}><span>{nameFor(id)}</span><button type="button" aria-label={`Retirar categoría ${nameFor(id)}`} disabled={disabled} onClick={() => toggle(id)}><Icon name="close" /></button></li>)}
     </ul>}
     <p id="entry-categoryIds-error" className="entry-form__error">{fieldError}</p>
   </fieldset>;

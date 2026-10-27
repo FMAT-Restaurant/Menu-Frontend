@@ -5,6 +5,9 @@ module.exports = {
     "^.+\\.[jt]sx?$": "babel-jest",
   },
   setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
+  moduleNameMapper: {
+    "\\.css$": "<rootDir>/src/test-setup.ts",
+  },
   coverageProvider: "babel",
   coverageDirectory: "<rootDir>/coverage",
   coverageReporters: ["text", "lcov"],
@@ -23,6 +26,7 @@ module.exports = {
     "./src/features/entries/useEntryResources.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/entries/entryError.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/entries/entryImage.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
+    "./src/shared/imageValidation.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/application/entryCategories.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/application/entryVersion.ts": { branches: 80, functions: 80, lines: 80, statements: 80 },
     "./src/features/catalog/CatalogFilters.tsx": { branches: 80, functions: 80, lines: 80, statements: 80 },

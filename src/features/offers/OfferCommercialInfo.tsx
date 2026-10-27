@@ -1,7 +1,11 @@
-import { type ChangeEvent, type DragEvent, useRef } from "react";
+import { LoadingValue } from "../../shared/LoadingState";
+import { Icon } from "../../shared/Icon";
+import { type ChangeEvent, type DragEvent, type KeyboardEvent, type ReactNode, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
+import { formatMoney } from "../../shared/formatMoney";
 
 export interface OfferCommercialInfoProps {
+  loading?: boolean;
   presentationTag: string;
   onPresentationTagChange: (value: string) => void;
   basePrice: string;
@@ -19,11 +23,68 @@ export interface OfferCommercialInfoProps {
   disabled?: boolean;
 }
 
+interface OfferStatusFieldProps {
+  loading: boolean;
+  desiredStatus: OfferStatus;
+  onStatusChange: (value: OfferStatus) => void;
+  hasActiveSlot: boolean;
+  isEditing: boolean;
+  disabled: boolean;
+}
+
+function OfferStatusField({
+  loading,
+  desiredStatus,
+  onStatusChange,
+  hasActiveSlot,
+  isEditing,
+  disabled,
+}: Readonly<OfferStatusFieldProps>) {
+  let statusContent: ReactNode;
+  if (loading) {
+    statusContent = <LoadingValue />;
+  } else if (!isEditing) {
+    statusContent = <div className="status-fixed-box">
+        <span className="offer-state offer-state--inactive">Inactiva</span>
+        <p className="field-hint">
+          La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.
+        </p>
+      </div>;
+  } else {
+    statusContent = <div>
+        <div className="radio-group" role="radiogroup" aria-labelledby="offer-status-label">
+          <label className="radio-label">
+            <input type="radio" name="offer-form-status" value="ACTIVE" checked={desiredStatus === "ACTIVE"}
+              onChange={() => onStatusChange("ACTIVE")} disabled={disabled} />
+            <span>Activa</span>
+          </label>
+          <label className="radio-label">
+            <input type="radio" name="offer-form-status" value="INACTIVE" checked={desiredStatus === "INACTIVE"}
+              onChange={() => onStatusChange("INACTIVE")} disabled={disabled} />
+            <span>Inactiva</span>
+          </label>
+        </div>
+        {isEditing && desiredStatus === "ACTIVE" && !hasActiveSlot && <p className="feedback feedback--warning" role="alert">
+          Sin un grupo con opciones activas, la oferta se guardará inactiva. Añade opciones activas para solicitar su activación. Guardar no garantiza que se acepte la solicitud.
+        </p>}
+        {desiredStatus === "ACTIVE" && hasActiveSlot && <p className="field-hint">
+          El borrador tiene un grupo con opciones activas. Al guardar solicitarás la activación; sólo se aplicará si la composición cumple los requisitos.
+        </p>}
+      </div>;
+  }
+
+  return <div className="form-field">
+    <span className="field-label" id="offer-status-label">Estado de la oferta</span>
+    {statusContent}
+  </div>;
+}
+
 function handleDragOver(e: DragEvent) {
   e.preventDefault();
 }
 
 export function OfferCommercialInfo({
+  loading = false,
   presentationTag,
   onPresentationTagChange,
   basePrice,
@@ -41,10 +102,32 @@ export function OfferCommercialInfo({
   disabled = false,
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isImageBlocked = disabled || imageValidating;
+  const numericPrice = basePrice.trim() === "" ? null : Number(basePrice);
+  const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice)
+    ? formatMoney(numericPrice)
+    : null;
+
+  function handleTriggerFileSelect() {
+    if (isImageBlocked) return;
+    fileInputRef.current?.click();
+  }
+
+  function handleDropzoneKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleTriggerFileSelect();
+    }
+  }
+
+  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
+    if (isImageBlocked) return;
+    onSelectImage(e);
+  }
 
   function handleDrop(e: DragEvent) {
     e.preventDefault();
-    if (disabled) return;
+    if (isImageBlocked) return;
     const file = e.dataTransfer.files?.[0];
     if (file) {
       onDropImage(file);
@@ -52,8 +135,6 @@ export function OfferCommercialInfo({
   }
 
   const effectivePreview = previewUrl || existingImage?.url || existingImage?.thumbnailUrl;
-  const isAutoInactive = isEditing && desiredStatus === "ACTIVE" && !hasActiveSlot;
-
   return (
     <section className="offer-commercial-info" aria-labelledby="commercial-info-title">
       <h2 id="commercial-info-title" className="offer-commercial-info__title">
@@ -64,23 +145,23 @@ export function OfferCommercialInfo({
         <div className="offer-commercial-info__fields">
           <div className="form-field">
             <label htmlFor="offer-tag-input">Etiqueta de presentación (opcional)</label>
-            <input
+            {loading ? <LoadingValue /> : <input
               id="offer-tag-input"
               type="text"
               value={presentationTag}
               onChange={(e) => onPresentationTagChange(e.target.value)}
               placeholder="Ej. Individual, Mediana o Combo"
               disabled={disabled}
-            />
+            />}
             <p className="field-hint">
               La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
             </p>
           </div>
 
           <div className="form-field">
-            <label htmlFor="offer-price-input">Precio base</label>
-            <div className="price-input-wrapper">
-              <span className="price-prefix" aria-hidden="true">$</span>
+            <label htmlFor="offer-price-input">Precio base (MXN)</label>
+            {loading ? <LoadingValue /> : <div className="price-input-wrapper">
+              <span className="price-prefix" aria-hidden="true">MXN</span>
               <input
                 id="offer-price-input"
                 type="number"
@@ -91,66 +172,21 @@ export function OfferCommercialInfo({
                 placeholder="0.00"
                 required
                 disabled={disabled}
+                aria-describedby={formattedPrice === null ? "offer-price-help" : "offer-price-preview offer-price-help"}
               />
-            </div>
-            <p className="field-hint">
+            </div>}
+            {!loading && formattedPrice !== null && (
+              <p id="offer-price-preview" className="offer-money-preview">
+                {formattedPrice}
+              </p>
+            )}
+            <p className="field-hint" id="offer-price-help">
               El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
             </p>
           </div>
 
-          <div className="form-field">
-            <span className="field-label" id="offer-status-label">Estado de la oferta</span>
-            {!isEditing ? (
-              <div className="status-fixed-box">
-                <span className="badge badge--inactive">Inactiva</span>
-                <p className="field-hint">
-                  Toda oferta se crea con estado inactivo y debe activarse manualmente después.
-                </p>
-              </div>
-            ) : (
-              <div>
-                <div
-                  className="radio-group"
-                  role="radiogroup"
-                  aria-labelledby="offer-status-label"
-                >
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="offer-form-status"
-                      value="ACTIVE"
-                      checked={desiredStatus === "ACTIVE"}
-                      onChange={() => onStatusChange("ACTIVE")}
-                      disabled={disabled}
-                    />
-                    <span>Activa</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="offer-form-status"
-                      value="INACTIVE"
-                      checked={desiredStatus === "INACTIVE"}
-                      onChange={() => onStatusChange("INACTIVE")}
-                      disabled={disabled}
-                    />
-                    <span>Inactiva</span>
-                  </label>
-                </div>
-
-                {isAutoInactive && (
-                  <p className="feedback feedback--warning" role="alert">
-                    La oferta se mantiene inactiva porque no tiene ningún grupo activo. Se activará automáticamente cuando exista al menos un grupo activo con opciones disponibles.
-                  </p>
-                )}
-                {desiredStatus === "ACTIVE" && hasActiveSlot && (
-                  <p className="field-hint">
-                    La oferta cuenta con grupos activos y cumple las condiciones para permanecer activa.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+          <OfferStatusField loading={loading} desiredStatus={desiredStatus} onStatusChange={onStatusChange}
+            hasActiveSlot={hasActiveSlot} isEditing={isEditing} disabled={disabled} />
         </div>
 
         <div className="offer-commercial-info__image-column">
@@ -163,17 +199,19 @@ export function OfferCommercialInfo({
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              onChange={onSelectImage}
+              onChange={handleInputChange}
               style={{ display: "none" }}
-              disabled={disabled || imageValidating}
+              disabled={isImageBlocked}
             />
 
-            <button
+            {loading ? <LoadingValue kind="image" /> : <button
               type="button"
               className={`image-dropzone ${effectivePreview ? "image-dropzone--has-preview" : ""}`}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleTriggerFileSelect}
+              onKeyDown={handleDropzoneKeyDown}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
+              disabled={isImageBlocked}
               aria-label="Seleccionar o arrastrar imagen de la oferta"
             >
               {effectivePreview ? (
@@ -183,7 +221,7 @@ export function OfferCommercialInfo({
                 </div>
               ) : (
                 <div className="image-dropzone__placeholder">
-                  <span className="image-dropzone__icon" aria-hidden="true">🖼</span>
+                  <Icon name="image" className="image-dropzone__icon" />
                   <span className="image-dropzone__text">
                     Arrastra una imagen aquí o haz clic para seleccionar
                   </span>
@@ -192,7 +230,7 @@ export function OfferCommercialInfo({
                   </span>
                 </div>
               )}
-            </button>
+            </button>}
 
             {imageValidating && (
               <p className="feedback feedback--info">Validando imagen…</p>
@@ -204,7 +242,7 @@ export function OfferCommercialInfo({
             )}
 
             <p className="field-hint">
-              Formatos aceptados: JPEG, PNG o WebP. Tamaño máximo: 10 MiB y 4096 × 4096 px.
+              JPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.
             </p>
           </div>
         </div>

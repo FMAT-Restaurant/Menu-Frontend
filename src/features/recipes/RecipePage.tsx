@@ -1,16 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { LoadingState } from "../../shared/LoadingState";
+import { useTaskDialog } from "../../shared/useTaskDialog";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type {
-  InventoryItem,
   MenuRepository,
   Page,
   RecipeDetail,
   RecipeDraft,
   RecipeSummary,
+  VersionedResource,
 } from "../../application/catalog";
+import type {
+  PendingOperationChainRecord,
+  PendingOperationStorageAdapter,
+} from "../../application/operationAttempt";
 import { SearchField } from "../../shared/SearchField";
+import { Icon } from "../../shared/Icon";
+import { analyzeNonIdempotentWriteError } from "../../api/idempotencyResponse";
+import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
-import { RecipeFormDialog } from "./RecipeFormDialog";
+import { RecipeFormDialog, buildRecipeCreateScope } from "./RecipeFormDialog";
+import "./styles.css";
 
 export type RecipeRepository = Pick<
   MenuRepository,
@@ -22,6 +32,193 @@ export interface RecipePageProps {
   mode?: "management" | "selection";
   onSelectRecipe?: (recipe: RecipeSummary) => void;
   onClose?: () => void;
+  storage?: PendingOperationStorageAdapter;
+  nestedContext?: Readonly<Record<string, unknown>>;
+}
+
+interface RecipeResultsContentProps {
+  notice: string;
+  actionError: string;
+  showActionError: boolean;
+  error: string;
+  onRetry(): void;
+  loading: boolean;
+  hasResults: boolean;
+  mode: "management" | "selection";
+  olderResults: boolean;
+  displayedContext: { query: string; page: number } | null;
+  recipes: RecipeSummary[];
+  confirmedQuery: string;
+  onClearSearch(): void;
+  onCreate(): void;
+  resultsBusy: boolean;
+  onSelect(recipe: RecipeSummary): void;
+  onEdit(recipe: RecipeSummary): void;
+  onDelete(recipe: RecipeSummary): void;
+  recipesResult: Page<RecipeSummary> | null;
+  currentPage: number;
+  onPageChange(page: number): void;
+}
+
+function RecipeResultsContent({
+  notice, actionError, showActionError, error, onRetry, loading, hasResults, mode,
+  olderResults, displayedContext, recipes, confirmedQuery, onClearSearch, onCreate,
+  resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
+}: Readonly<RecipeResultsContentProps>) {
+  return <>
+    {notice && <output className="feedback feedback--success">{notice}</output>}
+    {showActionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
+    {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={onRetry}>Reintentar</button></div>}
+    {loading && !hasResults && <LoadingState variant={mode === "selection" ? "recipe-selection" : "recipe-rows"} label="Cargando recetas…" />}
+    {loading && hasResults && <output className="feedback">Actualizando recetas…</output>}
+    {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
+    {!loading && !error && !olderResults && recipes.length === 0 && <RecipeEmptyState query={confirmedQuery} onClearSearch={onClearSearch} onCreate={onCreate} />}
+    {recipes.length > 0 && <RecipeResultList
+      recipes={recipes}
+      mode={mode}
+      resultsBusy={resultsBusy}
+      onSelect={onSelect}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      recipesResult={recipesResult}
+      currentPage={currentPage}
+      onPageChange={onPageChange}
+    />}
+  </>;
+}
+
+function RecipeEmptyState({ query, onClearSearch, onCreate }: Readonly<{
+  query: string;
+  onClearSearch(): void;
+  onCreate(): void;
+}>) {
+  return <div className="empty-state category-empty">
+    <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
+    <h3>{query ? "No hay recetas que coincidan con tu búsqueda." : "Aún no hay recetas registradas."}</h3>
+    <p>{query
+      ? `No encontramos resultados para “${query}”. Cambia el término o limpia la búsqueda.`
+      : "Crea una receta para asociar insumos y pasos de preparación."}</p>
+    {query
+      ? <button type="button" className="button button--secondary" onClick={onClearSearch}>Limpiar búsqueda</button>
+      : <button className="button button--primary" type="button" onClick={onCreate}>Crear receta</button>}
+  </div>;
+}
+
+function RecipeResultList({
+  recipes, mode, resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
+}: Readonly<{
+  recipes: RecipeSummary[];
+  mode: "management" | "selection";
+  resultsBusy: boolean;
+  onSelect(recipe: RecipeSummary): void;
+  onEdit(recipe: RecipeSummary): void;
+  onDelete(recipe: RecipeSummary): void;
+  recipesResult: Page<RecipeSummary> | null;
+  currentPage: number;
+  onPageChange(page: number): void;
+}>) {
+  return <>
+    <ul className="recipe-list">
+      {recipes.map((recipe) => <li key={recipe.id} className="recipe-list__item">
+        {mode === "selection"
+          ? <RecipeCard recipe={recipe} mode="selection" onSelect={onSelect} isBusy={resultsBusy} />
+          : <RecipeCard recipe={recipe} mode="management" onEdit={onEdit} onDelete={onDelete} isBusy={resultsBusy} />}
+      </li>)}
+    </ul>
+    {recipesResult && recipesResult.meta.totalPages > 1 && <nav className="pagination" aria-label="Páginas de recetas">
+      <button type="button" className="button button--secondary" disabled={(recipesResult.meta.page ?? 1) <= 1 || resultsBusy} onClick={() => onPageChange(currentPage - 1)} aria-label="Página anterior">Anterior</button>
+      <span className="pagination__info">Página {recipesResult.meta.page} de {recipesResult.meta.totalPages}</span>
+      <button type="button" className="button button--secondary" disabled={recipesResult.meta.page >= recipesResult.meta.totalPages || resultsBusy} onClick={() => onPageChange(currentPage + 1)} aria-label="Siguiente página">Siguiente</button>
+    </nav>}
+  </>;
+}
+
+function recipeDeleteFailure(error: unknown): { message: string; uncertain: boolean } {
+  const analysis = analyzeNonIdempotentWriteError(error);
+  if (analysis.kind === "resource_in_use") {
+    return { message: analysis.message || "No se puede eliminar la receta porque está referenciada por una oferta vigente.", uncertain: false };
+  }
+  if (analysis.kind === "precondition_conflict") {
+    return { message: analysis.message || "No se pudo eliminar la receta debido a un conflicto de versión. Actualiza la lista e inténtalo de nuevo.", uncertain: false };
+  }
+  if (analysis.status === 403) {
+    return { message: analysis.message || "No tienes permisos para eliminar esta receta.", uncertain: false };
+  }
+  if (analysis.kind === "uncertain_outcome" || analysis.kind === "uncertain_write_response") {
+    return { message: "No se pudo confirmar la eliminación. Se consultó la lista para verificar el estado actual.", uncertain: true };
+  }
+  return { message: analysis.message || "No se pudo eliminar la receta. Inténtalo de nuevo.", uncertain: false };
+}
+
+interface RecipeDeleteDialogProps {
+  recipe: RecipeSummary;
+  actionError: string;
+  isDeleting: boolean;
+  dialogRef: RefObject<HTMLDialogElement | null>;
+  cancelRef: RefObject<HTMLButtonElement | null>;
+  onCancel(): void;
+  onConfirm(): void;
+}
+
+function RecipeDeleteDialog({ recipe, actionError, isDeleting, dialogRef, cancelRef, onCancel, onConfirm }: Readonly<RecipeDeleteDialogProps>) {
+  return <div className="dialog-backdrop">
+    <dialog ref={dialogRef} className="confirm-dialog menu-task-dialog" aria-labelledby="confirm-delete-title" onCancel={(event) => {
+      if (isDeleting) {
+        event.preventDefault();
+        return;
+      }
+      onCancel();
+    }}>
+      <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
+      <p>¿Estás seguro de que deseas eliminar la receta &quot;{recipe.name}&quot;? Esta acción no se puede deshacer.</p>
+      {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
+      <div className="confirm-dialog__actions">
+        <button ref={cancelRef} type="button" className="button button--secondary" disabled={isDeleting} onClick={onCancel}>Cancelar</button>
+        <button type="button" className="button button--danger" disabled={isDeleting} onClick={onConfirm}>
+          {isDeleting ? "Eliminando…" : "Eliminar receta"}
+        </button>
+      </div>
+    </dialog>
+  </div>;
+}
+
+interface RecipePageHeaderProps {
+  mode: "management" | "selection";
+  onClose?: () => void;
+  returnTo: string;
+  title: string;
+  subtitle: string;
+  onCreate(): void;
+}
+
+function RecipePageHeader({ mode, onClose, returnTo, title, subtitle, onCreate }: Readonly<RecipePageHeaderProps>) {
+  const cancelAction = <><Icon name="close" /> Cancelar</>;
+  const menuAction = <><Icon name="arrow-left" /> Volver al menú</>;
+  let backLabel = menuAction;
+  if (mode === "selection") backLabel = cancelAction;
+  else if (onClose) backLabel = <>Volver al menú</>;
+
+  return <header className="task-header category-screen__header">
+    {onClose ? (
+      <button type="button" className="button button--quiet category-screen__back" onClick={onClose}>
+        {backLabel}
+      </button>
+    ) : (
+      <Link className="back-link category-screen__back" to={returnTo}>
+        {backLabel}
+      </Link>
+    )}
+    <div className="task-header__row">
+      <div className="task-header__content">
+        <p className="eyebrow">Recetas</p>
+        <h1 id="recipe-page-title" data-route-heading={onClose ? undefined : true} tabIndex={-1}>{title}</h1>
+        <p className="task-header__intro">{subtitle}</p>
+      </div>
+      <button className="button button--primary" type="button" aria-label="+ Nueva receta" onClick={onCreate}>
+        <Icon name="add" /> Nueva receta
+      </button>
+    </div>
+  </header>;
 }
 
 export function RecipePage({
@@ -29,7 +226,11 @@ export function RecipePage({
   mode: propMode,
   onSelectRecipe,
   onClose,
+  storage: providedStorage,
+  nestedContext,
 }: Readonly<RecipePageProps>) {
+  const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
+  const storage = providedStorage ?? fallbackStorage;
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,42 +242,75 @@ export function RecipePage({
       ? location.state.returnTo
       : "/";
 
+  // URL-driven query and page state when not controlled via propMode
   const urlQ = searchParams.get("q") ?? "";
-  const [draftSearch, setDraftSearch] = useState(urlQ);
-  const [queryText, setQueryText] = useState(urlQ);
+  const urlPage = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  // Local query and page state when propMode is supplied (e.g. selection modal)
+  const [localQuery, setLocalQuery] = useState("");
+  const [localPage, setLocalPage] = useState(1);
+
+  const confirmedQuery = propMode ? localQuery : urlQ;
+  const currentPage = propMode ? localPage : urlPage;
+
+  const [draftSearch, setDraftSearch] = useState(confirmedQuery);
 
   const [recipesResult, setRecipesResult] = useState<Page<RecipeSummary> | null>(null);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [displayedContext, setDisplayedContext] = useState<{ query: string; page: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [retry, setRetry] = useState(0);
 
   const [editingRecipe, setEditingRecipe] = useState<RecipeDetail | RecipeSummary | "new" | null>(null);
+  const [openingResource, setOpeningResource] = useState<VersionedResource<RecipeDetail>>();
+  const [initialPendingRecord, setInitialPendingRecord] =
+    useState<PendingOperationChainRecord<RecipeDraft> | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
   const [actionError, setActionError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const openingRecipeIdRef = useRef<string | null>(null);
+  const openingControllerRef = useRef<AbortController | null>(null);
+
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
+  const previousRecipeToDeleteRef = useRef<RecipeSummary | null>(null);
 
   useEffect(() => {
-    setDraftSearch(urlQ);
-    setQueryText(urlQ);
-  }, [urlQ]);
+    if (previousRecipeToDeleteRef.current && !recipeToDelete) {
+      const target =
+        deleteTriggerRef.current ??
+        document.querySelector<HTMLElement>(
+          `button[aria-label="Eliminar ${previousRecipeToDeleteRef.current.name}"]`,
+        );
+      target?.focus();
+    }
+    previousRecipeToDeleteRef.current = recipeToDelete;
+  }, [recipeToDelete]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    repository
-      .listInventoryItems({ page: 1, pageSize: 100 }, controller.signal)
-      .then((res) => {
-        if (!controller.signal.aborted) {
-          setInventoryItems(res.data);
+    let cancelled = false;
+    storage
+      .getRecord<RecipeDraft>(buildRecipeCreateScope())
+      .then((record) => {
+        if (cancelled || !record) return;
+        const currentStage = record.stages[record.currentStageIndex];
+        if (currentStage && (currentStage.status !== "succeeded" || record.confirmedResult)) {
+          setInitialPendingRecord(record);
+          setEditingRecipe("new");
         }
       })
       .catch(() => {});
-    return () => controller.abort();
-  }, [repository]);
+    return () => {
+      cancelled = true;
+    };
+  }, [storage]);
+
+  useEffect(() => {
+    setDraftSearch(confirmedQuery);
+  }, [confirmedQuery]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -84,10 +318,18 @@ export function RecipePage({
     setError("");
 
     repository
-      .listRecipes({ q: queryText, page: 1, pageSize: 50 }, controller.signal)
+      .listRecipes(
+        {
+          q: confirmedQuery || undefined,
+          page: currentPage,
+          pageSize: 50,
+        },
+        controller.signal,
+      )
       .then((items) => {
         if (!controller.signal.aborted) {
           setRecipesResult(items);
+          setDisplayedContext({ query: confirmedQuery, page: currentPage });
         }
       })
       .catch(() => {
@@ -102,66 +344,113 @@ export function RecipePage({
       });
 
     return () => controller.abort();
-  }, [repository, queryText, retry]);
+  }, [repository, confirmedQuery, currentPage, retry]);
+
+  useTaskDialog(deleteDialogRef, Boolean(recipeToDelete), cancelDeleteRef);
 
   useEffect(() => {
     if (!recipeToDelete) return;
-    const dialog = deleteDialogRef.current;
-    if (typeof dialog?.showModal === "function") dialog.showModal();
-    else dialog?.setAttribute("open", "");
-    cancelDeleteRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setRecipeToDelete(null);
+      if (event.key === "Escape") {
+        if (isDeleting) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        setRecipeToDelete(null);
+        deleteTriggerRef.current?.focus();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      if (dialog?.open && typeof dialog.close === "function") dialog.close();
     };
-  }, [recipeToDelete]);
+  }, [recipeToDelete, isDeleting]);
 
   function handleSearchSubmit() {
-    setQueryText(draftSearch);
-    if (!propMode) {
+    const trimmed = draftSearch.trim();
+    if (propMode) {
+      setLocalQuery(trimmed);
+      setLocalPage(1);
+    } else {
       const nextParams = new URLSearchParams(searchParams);
-      if (draftSearch) nextParams.set("q", draftSearch);
+      if (trimmed) nextParams.set("q", trimmed);
       else nextParams.delete("q");
+      nextParams.set("page", "1");
       setSearchParams(nextParams);
     }
   }
 
-  async function handleOpenEdit(recipe: RecipeSummary) {
-    try {
-      const detail = await repository.getRecipe(recipe.id);
-      setEditingRecipe(detail);
-    } catch {
-      setEditingRecipe(recipe);
+  function handlePageChange(newPage: number) {
+    if (propMode) {
+      setLocalPage(newPage);
+    } else {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("page", String(newPage));
+      setSearchParams(nextParams);
     }
   }
 
-  async function handleSaveRecipe(draft: RecipeDraft) {
-    if (!editingRecipe) return;
-
-    if (editingRecipe === "new") {
-      const created = await repository.createRecipe(draft);
-      setNotice("Receta creada exitosamente.");
-      setEditingRecipe(null);
-      setRetry((r) => r + 1);
-
-      if (mode === "selection") {
-        if (onSelectRecipe) {
-          onSelectRecipe(created);
-        } else {
-          await navigate(returnTo, { state: { selectedRecipe: created } });
-        }
-      }
+  function clearSearch() {
+    setDraftSearch("");
+    if (propMode) {
+      setLocalQuery("");
+      setLocalPage(1);
     } else {
-      await repository.updateRecipe(editingRecipe.id, draft);
-      setNotice("Receta actualizada exitosamente.");
-      setEditingRecipe(null);
-      setRetry((r) => r + 1);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("q");
+      nextParams.set("page", "1");
+      setSearchParams(nextParams);
     }
+    document.getElementById("recipe-search")?.focus();
+  }
+
+  async function handleOpenEdit(recipe: RecipeSummary) {
+    openingControllerRef.current?.abort();
+    const controller = new AbortController();
+    openingControllerRef.current = controller;
+    openingRecipeIdRef.current = recipe.id;
+    setActionError("");
+
+    try {
+      const versioned = await repository.getRecipe(recipe.id, controller.signal);
+      if (controller.signal.aborted || openingRecipeIdRef.current !== recipe.id) return;
+      setEditingRecipe(versioned.data);
+      setOpeningResource(versioned);
+    } catch {
+      if (controller.signal.aborted || openingRecipeIdRef.current !== recipe.id) return;
+      setActionError("No se pudo cargar el detalle completo de la receta.");
+    }
+  }
+
+  function handleRecipeCreated(created: RecipeDetail) {
+    setNotice("Receta creada exitosamente.");
+    setEditingRecipe(null);
+    setInitialPendingRecord(null);
+    openingRecipeIdRef.current = null;
+    setRetry((r) => r + 1);
+
+    if (mode === "selection") {
+      if (onSelectRecipe) {
+        onSelectRecipe(created);
+      } else {
+        void navigate(returnTo, { state: { selectedRecipe: created } });
+      }
+    }
+  }
+
+  function handleRecipeCreatedWithPendingEdits() {
+    setNotice("Receta creada exitosamente. Continuando con las ediciones locales.");
+    setRetry((r) => r + 1);
+  }
+
+  function handleRecipeUpdated() {
+    setNotice("Receta actualizada exitosamente.");
+    setEditingRecipe(null);
+    setInitialPendingRecord(null);
+    openingRecipeIdRef.current = null;
+    setRetry((r) => r + 1);
   }
 
   async function handleConfirmDelete() {
@@ -174,8 +463,17 @@ export function RecipePage({
       setNotice(`Receta "${recipeToDelete.name}" eliminada.`);
       setRecipeToDelete(null);
       setRetry((r) => r + 1);
-    } catch {
-      setActionError("No se puede eliminar la receta porque está referenciada por una oferta vigente.");
+      deleteTriggerRef.current?.focus();
+    } catch (err) {
+      const failure = recipeDeleteFailure(err);
+      if (failure.uncertain) {
+        setRecipeToDelete(null);
+        setRetry((r) => r + 1);
+        setActionError(failure.message);
+        deleteTriggerRef.current?.focus();
+      } else {
+        setActionError(failure.message);
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -189,8 +487,35 @@ export function RecipePage({
     }
   }
 
+  function handleStartCreate() {
+    openingRecipeIdRef.current = null;
+    setEditingRecipe("new");
+  }
+
+  function handleDeleteRequest(recipe: RecipeSummary) {
+    deleteTriggerRef.current =
+      (document.activeElement as HTMLElement | null) ??
+      document.querySelector<HTMLElement>(`button[aria-label="Eliminar ${recipe.name}"]`);
+    setActionError("");
+    setRecipeToDelete(recipe);
+  }
+
+  function handleDeleteCancel() {
+    setRecipeToDelete(null);
+    deleteTriggerRef.current?.focus();
+  }
+
+  function handleDeleteConfirm() {
+    void handleConfirmDelete();
+  }
+
   const recipes = recipesResult?.data ?? [];
+  const olderResults = Boolean(displayedContext && (displayedContext.query !== confirmedQuery || displayedContext.page !== currentPage));
+  const resultsBusy = loading || olderResults;
   const title = mode === "selection" ? "Biblioteca de recetas — elegir opción" : "Biblioteca de recetas";
+  const recipeDialogKey = editingRecipe === "new"
+    ? initialPendingRecord?.storageKey ?? "new"
+    : editingRecipe?.id;
   const subtitle =
     mode === "selection"
       ? "Selecciona una receta para asignarla a la opción de la oferta."
@@ -198,45 +523,16 @@ export function RecipePage({
 
   return (
     <div className="category-screen recipe-screen">
-      <header className="category-screen__header">
-        <div>
-          <p className="eyebrow">Administración del menú</p>
-          <h1>{title}</h1>
-          <p>{subtitle}</p>
-        </div>
-        {onClose ? (
-          <button
-            type="button"
-            className="button category-screen__back"
-            onClick={onClose}
-          >
-            {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
-          </button>
-        ) : (
-          <Link className="button category-screen__back" to={returnTo}>
-            {mode === "selection" ? "✕ Cancelar" : "← Volver al menú"}
-          </Link>
-        )}
-      </header>
-
-      <main className="category-screen__main">
-        <section className="category-panel" aria-labelledby="recipe-list-heading">
-          <div className="category-panel__heading">
-            <div>
-              <h2 id="recipe-list-heading">
-                {mode === "selection" ? "Recetas disponibles" : "Recetas de la biblioteca"}
-              </h2>
-              <p>Las recetas definen los insumos de inventario y preparación.</p>
-            </div>
-            <button
-              className="button button--primary"
-              type="button"
-              onClick={() => setEditingRecipe("new")}
-            >
-              + Nueva receta
-            </button>
-          </div>
-
+      <main className="menu-page category-screen__main">
+      <RecipePageHeader
+        mode={mode}
+        onClose={onClose}
+        returnTo={returnTo}
+        title={title}
+        subtitle={subtitle}
+        onCreate={handleStartCreate}
+      />
+        <section className="category-panel" aria-labelledby="recipe-page-title" aria-busy={loading}>
           <div className="recipe-toolbar">
             <SearchField
               id="recipe-search"
@@ -248,100 +544,61 @@ export function RecipePage({
             />
           </div>
 
-          {notice && <output className="feedback feedback--success">{notice}</output>}
-          {!recipeToDelete && actionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
-          {error && (
-            <div className="feedback feedback--error" role="alert">
-              {error} <button type="button" onClick={() => setRetry((r) => r + 1)}>Reintentar</button>
-            </div>
-          )}
-
-          {loading && <output className="feedback">Cargando recetas…</output>}
-
-          {!loading && !error && recipes.length === 0 && (
-            <div className="empty-state category-empty">
-              <span className="empty-state__icon" aria-hidden="true">⌕</span>
-              <h3>Aún no hay recetas registradas.</h3>
-              <p>
-                {queryText
-                  ? "No se encontraron recetas con el término buscado."
-                  : "Crea una receta para asociar insumos y pasos de preparación."}
-              </p>
-              <button
-                className="button button--primary"
-                type="button"
-                onClick={() => setEditingRecipe("new")}
-              >
-                Crear receta
-              </button>
-            </div>
-          )}
-
-          {!loading && !error && recipes.length > 0 && (
-            <ul className="recipe-list">
-              {recipes.map((recipe) => (
-                <li key={recipe.id} className="recipe-list__item">
-                  <RecipeCard
-                    recipe={recipe}
-                    mode={mode}
-                    onEdit={(rec) => { void handleOpenEdit(rec); }}
-                    onDelete={(rec) => {
-                      setActionError("");
-                      setRecipeToDelete(rec);
-                    }}
-                    onSelect={handleSelect}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
+          <RecipeResultsContent
+            notice={notice}
+            actionError={actionError}
+            showActionError={!recipeToDelete && Boolean(actionError)}
+            error={error}
+            onRetry={() => setRetry((r) => r + 1)}
+            loading={loading}
+            hasResults={Boolean(recipesResult)}
+            mode={mode}
+            olderResults={olderResults}
+            displayedContext={displayedContext}
+            recipes={recipes}
+            confirmedQuery={confirmedQuery}
+            onClearSearch={clearSearch}
+            onCreate={handleStartCreate}
+            resultsBusy={resultsBusy}
+            onSelect={handleSelect}
+            onEdit={(recipe) => { void handleOpenEdit(recipe); }}
+            onDelete={handleDeleteRequest}
+            recipesResult={recipesResult}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+          />
         </section>
       </main>
 
       {editingRecipe && (
         <RecipeFormDialog
-          key={editingRecipe === "new" ? "new" : editingRecipe.id}
+          key={recipeDialogKey}
           recipe={editingRecipe === "new" ? undefined : editingRecipe}
-          inventoryItems={inventoryItems}
-          onClose={() => setEditingRecipe(null)}
-          onSubmit={handleSaveRecipe}
+          openingResource={editingRecipe === "new" ? undefined : openingResource}
+          repository={repository}
+          storage={storage}
+          initialPendingRecord={initialPendingRecord}
+          nestedContext={nestedContext}
+          onClose={() => {
+            setEditingRecipe(null);
+            setInitialPendingRecord(null);
+            openingRecipeIdRef.current = null;
+          }}
+          onCreated={handleRecipeCreated}
+          onCreatedWithPendingEdits={handleRecipeCreatedWithPendingEdits}
+          onUpdated={handleRecipeUpdated}
         />
       )}
 
-      {recipeToDelete && (
-        <div className="dialog-backdrop">
-          <dialog
-            ref={deleteDialogRef}
-            className="confirm-dialog"
-            aria-labelledby="confirm-delete-title"
-          >
-            <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
-            <p>
-              ¿Estás seguro de que deseas eliminar la receta &quot;{recipeToDelete.name}&quot;? Esta acción no se puede deshacer.
-            </p>
-            {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
-            <div className="confirm-dialog__actions">
-              <button
-                ref={cancelDeleteRef}
-                type="button"
-                className="button button--secondary"
-                disabled={isDeleting}
-                onClick={() => setRecipeToDelete(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="button button--danger"
-                disabled={isDeleting}
-                onClick={handleConfirmDelete}
-              >
-                {isDeleting ? "Eliminando…" : "Eliminar receta"}
-              </button>
-            </div>
-          </dialog>
-        </div>
-      )}
+      {recipeToDelete && <RecipeDeleteDialog
+        recipe={recipeToDelete}
+        actionError={actionError}
+        isDeleting={isDeleting}
+        dialogRef={deleteDialogRef}
+        cancelRef={cancelDeleteRef}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />}
     </div>
   );
 }

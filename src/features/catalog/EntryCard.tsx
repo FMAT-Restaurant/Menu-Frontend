@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import type { MenuEntry } from "../../application/catalog";
+import { Icon } from "../../shared/Icon";
 
 const statusLabel = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };
 
-interface EntryCardProps {
+export interface EntryCardProps {
   entry: MenuEntry;
   busy: boolean;
   returnTo: string;
@@ -15,14 +16,16 @@ export function EntryCard({ entry, busy, returnTo, onDelete }: Readonly<EntryCar
   const source = entry.image?.thumbnailUrl || entry.image?.url;
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [source]);
+  const encodedId = encodeURIComponent(entry.id);
+  const deleteHelpId = useId();
+  const returnKey = `entry:${entry.id}`;
   return (
-    <article className="entry-card">
-      <Link className="entry-card__open" to={`/entries/${entry.id}/offers`} state={{ returnTo }} aria-label={`Ver ofertas de ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }} />
+    <article className="entry-card" data-return-key={returnKey} tabIndex={-1}>
       <div className="entry-card__image">
         {source && !imageFailed ? (
           <img src={source} alt={`Imagen de ${entry.brandName}`} loading="lazy" onError={() => setImageFailed(true)} />
         ) : (
-          <span role="img" aria-label={`Sin imagen de ${entry.brandName}`}>Sin imagen</span>
+          <span className="entry-card__image-fallback" role="img" aria-label={`Sin imagen de ${entry.brandName}`}><Icon name="image" /><span>Sin imagen</span></span>
         )}
         <span className={`status status--${entry.status.toLowerCase()}`}>
           <span className="status__dot" aria-hidden="true" />{statusLabel[entry.status]}
@@ -38,9 +41,13 @@ export function EntryCard({ entry, busy, returnTo, onDelete }: Readonly<EntryCar
         </div>
         <div className="entry-card__meta"><span>Estado: <strong>{statusLabel[entry.status]}</strong></span><span>Ofertas: <strong>{entry.offerCount}</strong></span></div>
         <div className="entry-card__actions">
-          <Link className="button button--secondary" to={`/entries/${entry.id}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>
-          <button className="button button--danger-link" type="button" disabled={busy || entry.status !== "ARCHIVED"} onClick={() => onDelete(entry)} aria-label={`Eliminar definitivamente ${entry.brandName}`} title={entry.status === "ARCHIVED" ? undefined : "Solo se puede eliminar una entrada archivada"}>Eliminar</button>
+          <Link className="button button--primary" data-return-key={`${returnKey}:offers`} to={`/entries/${encodedId}/offers`} state={{ returnTo }} aria-label={`Ver ofertas de ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Ver ofertas</Link>
+          <Link className="button button--secondary" data-return-key={`${returnKey}:edit`} to={`/entries/${encodedId}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>
         </div>
+        {entry.status === "ARCHIVED" && <div className="entry-card__secondary-actions">
+          <p className="entry-card__delete-help" id={deleteHelpId}>La eliminación es definitiva.</p>
+          <button className="button entry-card__delete" data-return-key={`${returnKey}:delete`} type="button" disabled={busy} onClick={() => onDelete(entry)} aria-label={`Eliminar definitivamente ${entry.brandName}`} aria-describedby={deleteHelpId}>Eliminar</button>
+        </div>}
       </div>
     </article>
   );

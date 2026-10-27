@@ -10,7 +10,7 @@ async function fixture(page: Page, count = 3, rejectCreation = false, conflictEd
   });
   await page.route("**/api/v1/media/images", (route) => {
     uploads += 1;
-    return route.fulfill({ status: 201, json: { data: { id: "image-uploaded" } } });
+    return route.fulfill({ status: 201, json: { data: { id: "image-uploaded", url: "/images/uploaded.png", thumbnailUrl: "/images/uploaded-thumb.png" } } });
   });
   await page.route("**/api/v1/menu/entries", (route) => {
     creates += 1;
@@ -65,7 +65,7 @@ test("V2 aligns navigation, keeps actions reachable and bounds 100 categories ac
     await list.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await expect(page.getByRole("checkbox").last()).toBeVisible();
     await page.getByRole("searchbox", { name: "Buscar categorías" }).press("Escape");
-    const nav = await page.locator(".entry-form-nav").boundingBox();
+    const nav = await page.locator(".entry-form-page__heading").boundingBox();
     const main = await page.locator(".entry-form-page").boundingBox();
     expect(Math.abs(nav!.x - main!.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(nav!.width - main!.width)).toBeLessThanOrEqual(1);
