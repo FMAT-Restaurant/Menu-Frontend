@@ -230,7 +230,7 @@ function OffersResults({ initialLoading, result, offersLoading, first, last, ...
 
   return <>
     {offersLoading && <output className="feedback" aria-live="polite">Actualizando ofertas…</output>}
-    {!collectionProps.isEmpty && <p className="offers-page__count">Mostrando {first}–{last} de {result.meta.total} ofertas</p>}
+    {!collectionProps.isEmpty && <output className="offers-page__count">Mostrando {first}–{last} de {result.meta.total} ofertas</output>}
     <OffersCollection {...collectionProps} />
     <OffersPagination totalPages={collectionProps.totalPages} isEmpty={collectionProps.isEmpty} page={collectionProps.page} displayedPage={collectionProps.displayedPage} offersLoading={offersLoading} busy={collectionProps.busy} onPageChange={collectionProps.onPageChange} />
   </>;
@@ -441,7 +441,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setPendingAction("Actualizando lista…");
     try {
       const offers = await repository.listOffers(entryId ?? "", page, pageSize);
-      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      if (!isCurrentOperation(expectedContext, opId)) return;
       const stillPresent = offers.data.some((item) => item.id === offerToDelete?.id);
       if (!stillPresent) {
         setResult(offers);
@@ -461,7 +461,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         setActionError("");
       }
     } catch (error: unknown) {
-      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      if (!isCurrentOperation(expectedContext, opId)) return;
       setActionError(failureMessage(error, "offers"));
       setNeedsReconcile(true);
     } finally {
@@ -474,16 +474,84 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     }
   }
 
-  async function changeStatus(offer: MenuOffer, status: OfferStatus) {
-    if (busyId || isCardActionBlocked) return;
+  function isCurrentOperation(expectedContext: string, opId: string): boolean {
+    return currentContextRef.current === expectedContext && activeOperationId.current === opId;
+  }
+
+  function canRequestStatusChange(): boolean {
+    if (busyId || isCardActionBlocked) return false;
     const pending = pendingStatusMutation.current;
-    if (pending && !canManualRetryAttempt(pending.attempt).allowed) {
-      if (isAttemptWindowExpired(pending.attempt)) {
-        setStatusAttempt(markAttemptExpired(pending.attempt));
-        setActionError("La ventana de recuperación de 24 horas expiró. Actualiza los datos para reconciliar la oferta antes de otro cambio de estado.");
-      }
-      return;
+    if (!pending || canManualRetryAttempt(pending.attempt).allowed) return true;
+    if (isAttemptWindowExpired(pending.attempt)) {
+      setStatusAttempt(markAttemptExpired(pending.attempt));
+      setActionError("La ventana de recuperación de 24 horas expiró. Actualiza los datos para reconciliar la oferta antes de otro cambio de estado.");
     }
+    return false;
+  }
+
+  async function prepareStatusMutation(
+    offer: MenuOffer,
+    status: OfferStatus,
+    expectedContext: string,
+    opId: string,
+  ) {
+    const current = pendingStatusMutation.current;
+    if (current?.offerId === offer.id && current.draft.status === status) return current;
+    const versioned = await repository.getOffer(offer.id);
+    if (!isCurrentOperation(expectedContext, opId)) return null;
+    if (!versioned.etag) {
+      throw new Error("No pudimos comprobar la versión de la oferta. Actualiza la lista antes de volver a intentarlo.");
+    }
+    const draft = {
+      presentationTag: versioned.data.presentationTag ?? offer.presentationTag ?? "",
+      status,
+    };
+    const idempotencyKey = crypto.randomUUID();
+    const mutation = {
+      offerId: offer.id,
+      draft,
+      etag: versioned.etag,
+      idempotencyKey,
+      attempt: createSealedAttempt({
+        operationKind: "offer.patch",
+        method: "PATCH",
+        endpointPath: `/menu/offers/${offer.id}`,
+        idempotencyKey,
+        payload: sealJsonPayload(draft, versioned.etag),
+      }),
+    };
+    pendingStatusMutation.current = mutation;
+    return mutation;
+  }
+
+  async function sendStatusMutation(
+    mutation: NonNullable<typeof pendingStatusMutation.current>,
+    onStarted: (attempt: SealedOperationAttempt) => void,
+  ) {
+    const sentAttempt = applyAttemptSendStart(mutation.attempt);
+    pendingStatusMutation.current = { ...mutation, attempt: sentAttempt };
+    setStatusAttempt(sentAttempt);
+    onStarted(sentAttempt);
+    await repository.setOfferStatus(mutation.offerId, mutation.draft, mutation.etag, mutation.idempotencyKey);
+    return sentAttempt;
+  }
+
+  function recordStatusMutationFailure(error: unknown, sentAttempt: SealedOperationAttempt | null) {
+    const statusCode = httpStatus(error);
+    const analysis = analyzeIdempotentAttemptError(error, "offer.patch");
+    const pending = pendingStatusMutation.current;
+    if (sentAttempt && pending?.idempotencyKey === sentAttempt.idempotencyKey) {
+      const failedAttempt = applyAttemptFailure(sentAttempt, analysis);
+      pendingStatusMutation.current = { ...pending, attempt: failedAttempt };
+      setStatusAttempt(failedAttempt);
+    }
+    const failure = statusMutationFailure(error, analysis, statusCode);
+    if (failure.clearPending) pendingStatusMutation.current = null;
+    setActionError(failure.message);
+  }
+
+  async function changeStatus(offer: MenuOffer, status: OfferStatus) {
+    if (!canRequestStatusChange()) return;
     const expectedContext = currentContextRef.current;
     const opId = crypto.randomUUID();
     activeOperationId.current = opId;
@@ -494,40 +562,12 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setPendingAction("Actualizando estado de la oferta…");
     let sentAttempt: SealedOperationAttempt | null = null;
     try {
-      let mutation = pendingStatusMutation.current;
-      if (mutation?.offerId !== offer.id || mutation?.draft.status !== status) {
-        const versioned = await repository.getOffer(offer.id);
-        if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
-        if (!versioned.etag) {
-          throw new Error("No pudimos comprobar la versión de la oferta. Actualiza la lista antes de volver a intentarlo.");
-        }
-        const draft = {
-          presentationTag: versioned.data.presentationTag ?? offer.presentationTag ?? "",
-          status,
-        };
-        const idempotencyKey = crypto.randomUUID();
-        mutation = {
-          offerId: offer.id,
-          draft,
-          etag: versioned.etag,
-          idempotencyKey,
-          attempt: createSealedAttempt({ operationKind: "offer.patch", method: "PATCH",
-            endpointPath: `/menu/offers/${offer.id}`, idempotencyKey,
-            payload: sealJsonPayload(draft, versioned.etag) }),
-        };
-        pendingStatusMutation.current = mutation;
-      }
-
-      sentAttempt = applyAttemptSendStart(mutation.attempt);
-      pendingStatusMutation.current = { ...mutation, attempt: sentAttempt };
-      setStatusAttempt(sentAttempt);
-      await repository.setOfferStatus(
-        mutation.offerId,
-        mutation.draft,
-        mutation.etag,
-        mutation.idempotencyKey,
-      );
-      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
+      const mutation = await prepareStatusMutation(offer, status, expectedContext, opId);
+      if (!mutation) return;
+      sentAttempt = await sendStatusMutation(mutation, (attempt) => {
+        sentAttempt = attempt;
+      });
+      if (!isCurrentOperation(expectedContext, opId)) return;
       pendingStatusMutation.current = null;
       setStatusAttempt(null);
 
@@ -537,20 +577,10 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       invalidateCatalogEntries(repository);
       setNotice(statusNotice(status, updated === "failed"));
     } catch (error: unknown) {
-      if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
-      const statusHttp = httpStatus(error);
-      const errAnalysis = analyzeIdempotentAttemptError(error, "offer.patch");
-      if (sentAttempt && pendingStatusMutation.current?.idempotencyKey === sentAttempt.idempotencyKey) {
-        const failedAttempt = applyAttemptFailure(sentAttempt, errAnalysis);
-        pendingStatusMutation.current = { ...pendingStatusMutation.current, attempt: failedAttempt };
-        setStatusAttempt(failedAttempt);
-      }
-
-      const failure = statusMutationFailure(error, errAnalysis, statusHttp);
-      if (failure.clearPending) pendingStatusMutation.current = null;
-      setActionError(failure.message);
+      if (!isCurrentOperation(expectedContext, opId)) return;
+      recordStatusMutationFailure(error, sentAttempt);
     } finally {
-      if (currentContextRef.current === expectedContext && activeOperationId.current === opId) {
+      if (isCurrentOperation(expectedContext, opId)) {
         setBusyId(null);
         setUpdatingOffers(false);
         setPendingAction("");

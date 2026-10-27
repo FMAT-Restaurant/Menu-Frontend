@@ -281,25 +281,24 @@ export function CategoryFormDialog({
     return () => window.clearTimeout(timer);
   }, [retryCountdownMs, pendingAttempt]);
 
+  function persistEditableDraft(draft: CategoryDraft) {
+    if (activeCategory) return;
+    void getOrInitController().updateEditableDraft(draft);
+  }
+
   function handleNameChange(nextName: string) {
     if (busy) return;
     userEditedRef.current = true;
     setName(nextName);
     if (nameError && nextName.trim()) setNameError("");
-    if (!activeCategory) {
-      const controller = getOrInitController();
-      void controller.updateEditableDraft({ name: nextName, description });
-    }
+    persistEditableDraft({ name: nextName, description });
   }
 
   function handleDescriptionChange(nextDescription: string) {
     if (busy) return;
     userEditedRef.current = true;
     setDescription(nextDescription);
-    if (!activeCategory) {
-      const controller = getOrInitController();
-      void controller.updateEditableDraft({ name, description: nextDescription });
-    }
+    persistEditableDraft({ name, description: nextDescription });
   }
 
   async function abandonEditor() {

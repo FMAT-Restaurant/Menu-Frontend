@@ -13,6 +13,12 @@ import { EntryFormFeedback } from "./EntryFormFeedback";
 import { useEntryForm } from "./useEntryForm";
 import "./styles.css";
 
+function entryFormTitle(missing: boolean, editing: boolean): string {
+  if (missing) return "Entrada no encontrada";
+  if (editing) return "Editar entrada";
+  return "Nueva entrada";
+}
+
 const statusLabels: Record<EntryStatus, string> = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };
 const progressLabels = { idle: "Guardar entrada", upload: "Subiendo imagen…", persist: "Guardando entrada…" };
 
@@ -114,7 +120,7 @@ function EntryFormEditor({
         <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) event.preventDefault(); }}><Icon name="arrow-left" /> {missing ? "Volver al catálogo" : "Volver a entradas"}</Link>
         <div className="task-header__content">
           <p className="eyebrow">Entradas</p>
-          <h1 data-route-heading tabIndex={-1}>{missing ? "Entrada no encontrada" : editing ? "Editar entrada" : "Nueva entrada"}</h1>
+          <h1 data-route-heading tabIndex={-1}>{entryFormTitle(missing, editing)}</h1>
           <p className="task-header__intro">{missing ? "No pudimos abrir la entrada que intentas editar." : "Nombre, descripción, categorías e imagen de referencia."}</p>
         </div>
       </header>

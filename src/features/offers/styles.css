@@ -19,6 +19,7 @@
 }
 
 :where(.menu-module[data-menu-module]) .offers-page__count {
+  display: block;
   margin: 0 0 16px;
   color: var(--text);
   font-size: 14px;
@@ -711,9 +712,10 @@
   margin: auto;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-card);
   background: #fff;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  container: offer-dialog / inline-size;
 }
 
 :where(.menu-module[data-menu-module]) .slot-modal-dialog[open],
@@ -855,7 +857,7 @@
   background: #fff;
   cursor: pointer;
   text-align: left;
-  transition: all .15s ease;
+  transition: border-color .15s ease, background-color .15s ease;
 }
 
 :where(.menu-module[data-menu-module]) .source-btn:hover {
@@ -901,8 +903,10 @@
 :where(.menu-module[data-menu-module]) .offer-form__actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
-  padding-top: 8px;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  background: var(--surface);
 }
 
 /* Responsive Offers Media Queries */
@@ -1020,7 +1024,6 @@
   :where(.menu-module[data-menu-module]) .offer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-:where(.menu-module[data-menu-module]) .slot-modal-dialog, :where(.menu-module[data-menu-module]) .option-modal-dialog { border-radius: var(--radius-card); container: offer-dialog / inline-size; }
 :where(.menu-module[data-menu-module]) .slot-modal-dialog .modal-header h2, :where(.menu-module[data-menu-module]) .option-modal-dialog .modal-header h2 {
   font-size: 22px; line-height: 30px; text-transform: none; letter-spacing: normal; overflow-wrap: anywhere;
 }
@@ -1039,6 +1042,5 @@
   :where(.menu-module[data-menu-module]) .option-modal-dialog > * { --control-height: 48px; }
 }
 
-:where(.menu-module[data-menu-module]) .offer-form__actions { flex-wrap: wrap; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); background: var(--surface); }
 :where(.menu-module[data-menu-module]) .offer-form[data-actions-persistent="true"] .offer-form__actions { position: sticky; bottom: 0; z-index: 5; border-top: 1px solid var(--border); }
 :where(.menu-module[data-menu-module]) .offer-form :is(input, textarea, select, button, [tabindex]) { scroll-margin-block: 24px calc(var(--form-actions-height, 0px) + 24px); }

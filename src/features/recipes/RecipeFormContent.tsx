@@ -1,6 +1,6 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
-import { useEffect, useRef, useState, useImperativeHandle, type Ref, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, useImperativeHandle, type ChangeEvent, type Ref, type SubmitEvent } from "react";
 import type {
   InventoryItem,
   MenuRepository,
@@ -62,12 +62,75 @@ export interface SupplyRow {
   quantity: string | number;
 }
 
+type EditableRecipeFields = Partial<Pick<RecipeDraft, "name" | "description" | "instructions">> & {
+  supplies?: SupplyRow[];
+};
+
+interface RecipeDraftSnapshot {
+  name: string;
+  description: string;
+  instructions: string;
+  supplies: Array<{ inventoryItemId: string; quantity: string }>;
+}
+
 export function buildRecipeCreateScope(tabId = getOrCreateTabId()): OperationFlowScope {
   return {
     tabId,
     formKind: "recipe-form",
     resourceKey: "recipe-create",
   };
+}
+
+function recipeDetailDraft(recipe: RecipeDetail): RecipeDraftSnapshot {
+  return {
+    name: recipe.name,
+    description: recipe.description ?? "",
+    instructions: recipe.instructions ?? "",
+    supplies: recipe.supplies.map(({ inventoryItemId, quantity }) => ({
+      inventoryItemId,
+      quantity: String(quantity),
+    })),
+  };
+}
+
+function initialRecipeSuppliesCount(
+  recipe: RecipeDetail | RecipeSummary | null | undefined,
+  draft: RecipeDraft | undefined,
+): number {
+  if (recipe?.supplies?.length) return recipe.supplies.length;
+  if (draft?.supplies?.length) return draft.supplies.length;
+  return 1;
+}
+
+function initialRecipeBaseDraft(
+  confirmed: RecipeDetail | undefined,
+  recipe: RecipeDetail | RecipeSummary | null | undefined,
+  snapshot: RecipeDraftSnapshot,
+): RecipeDraftSnapshot {
+  if (confirmed) return recipeDetailDraft(confirmed);
+  if (recipe) return snapshot;
+  return { name: "", description: "", instructions: "", supplies: [{ inventoryItemId: "", quantity: "1" }] };
+}
+
+function recipeFieldErrors(
+  attempt: number,
+  name: string,
+  description: string,
+  instructions: string,
+  supplies: SupplyRow[],
+): Record<string, string> {
+  if (attempt === 0) return {};
+  const errors: Record<string, string> = {};
+  if (!name.trim()) errors["recipe-name"] = "Indica el nombre de la receta.";
+  if (!description.trim()) errors["recipe-description"] = "Indica la descripción de la receta.";
+  if (!instructions.trim()) errors["recipe-instructions"] = "Indica las instrucciones de la receta.";
+  if (supplies.length === 0) errors["recipe-add-supply"] = "Agrega al menos un insumo del inventario.";
+  for (const supply of supplies) {
+    if (!supply.inventoryItemId) errors[`${supply.key}-item`] = "Selecciona un insumo del inventario en cada fila.";
+    const quantity = Number(supply.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) errors[`${supply.key}-quantity`] = "La cantidad de cada insumo debe ser mayor a 0.";
+  }
+  return errors;
 }
 
 export interface RecipeFormContentProps extends RecipeFormDialogProps {
@@ -88,6 +151,300 @@ function recipeSubmissionMessage(
     return "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío.";
   }
   return error || "Hay un envío sin confirmar. Reintentar recupera ese envío; tus cambios posteriores se conservan.";
+}
+
+interface RecipeTextFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  disabled: boolean;
+  placeholder: string;
+  onChange(value: string): void;
+  fieldErrors: Record<string, string>;
+  inputRef?: Ref<HTMLInputElement>;
+  rows?: number;
+  maxLength?: number;
+}
+
+function RecipeTextField({
+  id,
+  label,
+  value,
+  disabled,
+  placeholder,
+  onChange,
+  fieldErrors,
+  inputRef,
+  rows,
+  maxLength,
+}: Readonly<RecipeTextFieldProps>) {
+  const error = fieldErrors[id];
+  const errorId = `${id}-error`;
+  const commonProps = {
+    id,
+    "aria-invalid": Boolean(error),
+    "aria-describedby": error ? errorId : undefined,
+    value,
+    disabled,
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
+    placeholder,
+    required: true,
+  };
+  return <div className="recipe-form-dialog__field">
+    <label htmlFor={id}>{label}</label>
+    {rows ? <textarea {...commonProps} rows={rows} /> : <input {...commonProps} ref={inputRef} maxLength={maxLength} />}
+    {error && <p className="recipe-field-error" id={errorId}>{error}</p>}
+  </div>;
+}
+
+function RecipeValidationSummary({
+  fieldErrors,
+  supplies,
+  summaryRef,
+}: Readonly<{
+  fieldErrors: Record<string, string>;
+  supplies: SupplyRow[];
+  summaryRef: Ref<HTMLDivElement>;
+}>) {
+  if (Object.keys(fieldErrors).length === 0) return null;
+  return <div ref={summaryRef} className="recipe-validation-summary" role="alert" aria-labelledby="recipe-validation-title" tabIndex={-1}>
+    <h3 id="recipe-validation-title">Revisa los campos de la receta</h3>
+    <ul>{Object.entries(fieldErrors).map(([id, message]) => {
+      const rowIndex = supplies.findIndex(supply => id.startsWith(`${supply.key}-`));
+      const description = rowIndex >= 0 ? `Insumo ${rowIndex + 1}: ${message}` : message;
+      return <li key={id}><a href={`#${id}`} onClick={event => {
+        event.preventDefault();
+        document.getElementById(id)?.focus();
+      }}>{description}</a></li>;
+    })}</ul>
+  </div>;
+}
+
+interface RecipeSupplyTableProps {
+  supplies: SupplyRow[];
+  fieldErrors: Record<string, string>;
+  currentInventoryItems: InventoryItem[];
+  knownItems: Map<string, { id: string; name: string; unit: string }>;
+  activeRecipe: RecipeDetail | RecipeSummary | undefined;
+  busy: boolean;
+  inventoryLoading: boolean;
+  olderInventory: boolean;
+  onSupplyChange(index: number, field: "inventoryItemId" | "quantity", value: string): void;
+  onRemoveSupply(index: number): void;
+  getUnitForItem(inventoryItemId: string): string;
+}
+
+function RecipeSupplyTable({
+  supplies,
+  fieldErrors,
+  currentInventoryItems,
+  knownItems,
+  activeRecipe,
+  busy,
+  inventoryLoading,
+  olderInventory,
+  onSupplyChange,
+  onRemoveSupply,
+  getUnitForItem,
+}: Readonly<RecipeSupplyTableProps>) {
+  return <table className="recipe-supplies-table">
+    <thead>
+      <tr>
+        <th scope="col">Insumo seleccionado</th>
+        <th scope="col">Cantidad</th>
+        <th scope="col">U. Medida</th>
+        <th scope="col">Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {supplies.map((supply, index) => {
+        const unit = getUnitForItem(supply.inventoryItemId);
+        const itemError = fieldErrors[`${supply.key}-item`];
+        const quantityError = fieldErrors[`${supply.key}-quantity`];
+        const itemIsUnavailable = supply.inventoryItemId &&
+          !currentInventoryItems.some(item => item.id === supply.inventoryItemId);
+        const itemName = knownItems.get(supply.inventoryItemId)?.name ||
+          activeRecipe?.supplies?.find(item => item.inventoryItemId === supply.inventoryItemId)?.inventoryItem?.name ||
+          supply.inventoryItemId;
+        return <tr key={supply.key}>
+          <td data-label="Insumo seleccionado">
+            <select id={`${supply.key}-item`} aria-invalid={Boolean(itemError)}
+              aria-describedby={itemError ? `${supply.key}-item-error` : undefined}
+              aria-label={`Insumo ${index + 1}`} value={supply.inventoryItemId}
+              onChange={event => onSupplyChange(index, "inventoryItemId", event.target.value)}
+              disabled={busy || inventoryLoading || olderInventory} required>
+              <option value="">Seleccione insumo…</option>
+              {itemIsUnavailable && <option value={supply.inventoryItemId}>{itemName}</option>}
+              {currentInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            {itemError && <p className="recipe-field-error" id={`${supply.key}-item-error`}>{itemError}</p>}
+          </td>
+          <td data-label="Cantidad">
+            <input id={`${supply.key}-quantity`} aria-invalid={Boolean(quantityError)}
+              aria-describedby={quantityError ? `${supply.key}-quantity-error` : undefined}
+              type="number" step="any" min="0" aria-label={`Cantidad del insumo ${index + 1}`}
+              value={supply.quantity}
+              onChange={event => onSupplyChange(index, "quantity", event.target.value)}
+              disabled={busy} required />
+            {quantityError && <p className="recipe-field-error" id={`${supply.key}-quantity-error`}>{quantityError}</p>}
+          </td>
+          <td data-label="U. Medida" className="recipe-supplies-table__unit">{unit}</td>
+          <td data-label="Acción">
+            <button type="button" className="button button--quiet" onClick={() => onRemoveSupply(index)}
+              disabled={busy || supplies.length <= 1} aria-label={`Eliminar insumo ${index + 1}`}>
+              <Icon name="close" />
+            </button>
+          </td>
+        </tr>;
+      })}
+    </tbody>
+  </table>;
+}
+
+interface RecipeInventoryControlsProps {
+  inventoryError: string;
+  inventoryLoading: boolean;
+  inventoryCount: number;
+  olderInventory: boolean;
+  displayedInventory: { query: string; page: number } | null;
+  inventorySearchDraft: string;
+  inventoryPage: number;
+  inventoryTotalPages: number;
+  busy: boolean;
+  onRetry(): void;
+  onSearch(query: string): void;
+  onSearchDraftChange(query: string): void;
+  onPageChange(page: number | ((currentPage: number) => number)): void;
+}
+
+function RecipeInventoryControls({
+  inventoryError,
+  inventoryLoading,
+  inventoryCount,
+  olderInventory,
+  displayedInventory,
+  inventorySearchDraft,
+  inventoryPage,
+  inventoryTotalPages,
+  busy,
+  onRetry,
+  onSearch,
+  onSearchDraftChange,
+  onPageChange,
+}: Readonly<RecipeInventoryControlsProps>) {
+  function submitSearch() {
+    onSearch(inventorySearchDraft.trim());
+  }
+
+  return <>
+    {inventoryError && <div className="feedback feedback--error" role="alert" style={{ marginBottom: "0.75rem" }}>
+      <span>{inventoryError}</span>{" "}
+      <button type="button" className="button button--secondary button--small" onClick={onRetry}>Reintentar</button>
+    </div>}
+    {inventoryLoading && inventoryCount === 0 && <output className="feedback">Cargando insumos…</output>}
+    {inventoryLoading && inventoryCount > 0 && <output className="feedback">Actualizando insumos…</output>}
+    {olderInventory && <p className="feedback">
+      Opciones anteriores de insumos: {displayedInventory?.query ? `búsqueda “${displayedInventory.query}”` : "sin filtro"}, página {displayedInventory?.page}. Las selecciones y cantidades del borrador se conservan.
+    </p>}
+    <div className="recipe-inventory-controls" style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+      <input type="search" aria-label="Buscar insumos de inventario" placeholder="Filtrar insumos de inventario…"
+        value={inventorySearchDraft} onChange={event => onSearchDraftChange(event.target.value)}
+        onKeyDown={event => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          submitSearch();
+        }} disabled={busy} />
+      <button type="button" className="button button--secondary button--small" onClick={submitSearch}
+        disabled={busy || inventoryLoading}>Buscar insumos</button>
+      {inventoryTotalPages > 1 && <nav className="pagination" aria-label="Páginas de inventario" style={{ marginLeft: "auto", display: "flex", gap: "0.25rem", alignItems: "center" }}>
+        <button type="button" className="button button--secondary button--small"
+          disabled={inventoryPage <= 1 || inventoryLoading || olderInventory || busy}
+          onClick={() => onPageChange(currentPage => Math.max(1, currentPage - 1))} aria-label="Página anterior de inventario">
+          Anterior
+        </button>
+        <span className="pagination__info">Página {displayedInventory?.page ?? inventoryPage} de {inventoryTotalPages}</span>
+        <button type="button" className="button button--secondary button--small"
+          disabled={inventoryPage >= inventoryTotalPages || inventoryLoading || olderInventory || busy}
+          onClick={() => onPageChange(currentPage => currentPage + 1)} aria-label="Siguiente página de inventario">
+          Siguiente
+        </button>
+      </nav>}
+    </div>
+  </>;
+}
+
+interface RecipeOperationFeedbackProps {
+  infoNotice: string;
+  error: string;
+  showManualRetryButton: boolean;
+  requiresNewOperationAction: boolean;
+  retryCountdownMs: number;
+  retryDisabled: boolean;
+  busy: boolean;
+  editing: boolean;
+  reviewRequired: boolean;
+  reviewLoading: boolean;
+  reviewError: string;
+  reviewedResource: VersionedResource<RecipeDetail> | null;
+  reviewedEtagStrong: boolean;
+  pendingAttempt: SealedOperationAttempt | null;
+  onRetry(): void;
+  onStartNewOperation(): void;
+  onReview(): void;
+  onAdoptReview(keepDraft: boolean): void;
+}
+
+function RecipeOperationFeedback({
+  infoNotice,
+  error,
+  showManualRetryButton,
+  requiresNewOperationAction,
+  retryCountdownMs,
+  retryDisabled,
+  busy,
+  editing,
+  reviewRequired,
+  reviewLoading,
+  reviewError,
+  reviewedResource,
+  reviewedEtagStrong,
+  pendingAttempt,
+  onRetry,
+  onStartNewOperation,
+  onReview,
+  onAdoptReview,
+}: Readonly<RecipeOperationFeedbackProps>) {
+  return <>
+    {infoNotice && <output className="feedback feedback--success">{infoNotice}</output>}
+    {(error || showManualRetryButton || requiresNewOperationAction) && <div className="recipe-form-dialog__error" role="alert">
+      <p>{recipeSubmissionMessage(showManualRetryButton, pendingAttempt, error)}</p>
+      {showManualRetryButton && retryCountdownMs > 0 && <p>Espera {Math.ceil(retryCountdownMs / 1000)} s antes de volver a intentar.</p>}
+      {showManualRetryButton && <button className="button button--secondary" type="button" disabled={retryDisabled} onClick={onRetry}>Reintentar</button>}
+      {requiresNewOperationAction && <button className="button button--secondary" type="button" disabled={busy} onClick={onStartNewOperation}>Iniciar nueva operación</button>}
+      {editing && reviewRequired && <button className="button button--secondary" type="button" disabled={reviewLoading} onClick={onReview}>Revisar receta actual</button>}
+    </div>}
+    {editing && reviewLoading && <output className="feedback" aria-live="polite">
+      Consultando la receta actual; tu borrador se conserva…
+    </output>}
+    {editing && reviewError && <p className="recipe-form-dialog__error" role="alert">{reviewError}</p>}
+    {editing && reviewedResource && <section className="recipe-form-dialog__review" aria-label="Datos actuales de la receta">
+      <h3>Datos actuales de la receta</h3>
+      <dl>
+        <dt>Nombre</dt>
+        <dd>{reviewedResource.data.name}</dd>
+        <dt>Descripción</dt>
+        <dd>{reviewedResource.data.description || "Sin descripción"}</dd>
+        <dt>Instrucciones</dt>
+        <dd>{reviewedResource.data.instructions || "Sin instrucciones"}</dd>
+      </dl>
+      <p>Tu borrador permanece en el formulario. Elige usar estos datos o conservar tu borrador con la versión que acabas de revisar.</p>
+      {!reviewedEtagStrong && <p>No pudimos comprobar la versión actual. Reintenta la consulta antes de continuar.</p>}
+      <div className="recipe-form-dialog__review-actions">
+        <button type="button" disabled={!reviewedEtagStrong || reviewLoading} onClick={() => onAdoptReview(false)}>Usar datos actuales</button>
+        <button type="button" disabled={!reviewedEtagStrong || reviewLoading} onClick={() => onAdoptReview(true)}>Continuar con mi borrador y versión revisada</button>
+      </div>
+    </section>}
+  </>;
 }
 
 /** Owns one recipe editing/recovery session independently of its modal host. */
@@ -224,12 +581,7 @@ export function RecipeFormContent({
 
   const initialDraft = initialPendingRecord?.editableDraft;
 
-  const initialSuppliesCount =
-    recipe?.supplies && recipe.supplies.length > 0
-      ? recipe.supplies.length
-      : initialDraft?.supplies && initialDraft.supplies.length > 0
-        ? initialDraft.supplies.length
-        : 1;
+  const initialSuppliesCount = initialRecipeSuppliesCount(recipe, initialDraft);
   const rowCounterRef = useRef(initialSuppliesCount);
 
   function createNextRowKey(): string {
@@ -271,7 +623,7 @@ export function RecipeFormContent({
 
   const snapshot = { name, description, instructions, supplies: supplies.map(({ inventoryItemId, quantity }) => ({ inventoryItemId, quantity: String(quantity) })) };
   const initialConfirmed = initialPendingRecord?.confirmedResult as RecipeDetail | undefined;
-  const baseDraft = useRef(initialConfirmed ? { name: initialConfirmed.name, description: initialConfirmed.description, instructions: initialConfirmed.instructions, supplies: initialConfirmed.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) } : recipe ? snapshot : { name: "", description: "", instructions: "", supplies: [{ inventoryItemId: "", quantity: "1" }] });
+  const baseDraft = useRef(initialRecipeBaseDraft(initialConfirmed, recipe, snapshot));
   const exitSucceeded = useRef(false);
   const [busy, setBusy] = useState(false);
   const [confirmBack, setConfirmBack] = useState(false);
@@ -284,18 +636,7 @@ export function RecipeFormContent({
   }, [active, confirmBack]);
   const [validationAttempt, setValidationAttempt] = useState(0);
   const validationSummaryRef = useRef<HTMLDivElement>(null);
-  const fieldErrors: Record<string, string> = {};
-  if (validationAttempt > 0) {
-    if (!name.trim()) fieldErrors["recipe-name"] = "Indica el nombre de la receta.";
-    if (!description.trim()) fieldErrors["recipe-description"] = "Indica la descripción de la receta.";
-    if (!instructions.trim()) fieldErrors["recipe-instructions"] = "Indica las instrucciones de la receta.";
-    if (supplies.length === 0) fieldErrors["recipe-add-supply"] = "Agrega al menos un insumo del inventario.";
-    for (const supply of supplies) {
-      if (!supply.inventoryItemId) fieldErrors[`${supply.key}-item`] = "Selecciona un insumo del inventario en cada fila.";
-      const quantity = Number(supply.quantity);
-      if (!Number.isFinite(quantity) || quantity <= 0) fieldErrors[`${supply.key}-quantity`] = "La cantidad de cada insumo debe ser mayor a 0.";
-    }
-  }
+  const fieldErrors = recipeFieldErrors(validationAttempt, name, description, instructions, supplies);
   useEffect(() => {
     if (validationAttempt > 0) validationSummaryRef.current?.focus();
   }, [validationAttempt]);
@@ -441,7 +782,7 @@ export function RecipeFormContent({
           syncAttemptStateFromRecord(restored);
           if (stage.status === "succeeded" && restored.confirmedResult) {
             const confirmed = restored.confirmedResult as RecipeDetail;
-            baseDraft.current = { name: confirmed.name, description: confirmed.description, instructions: confirmed.instructions, supplies: confirmed.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) };
+            baseDraft.current = recipeDetailDraft(confirmed);
             setActiveRecipe(restored.confirmedResult as RecipeDetail);
             setOpeningEtag((restored.confirmedResult as RecipeDetail).etag);
             setReviewRequired(!isStrongEtag((restored.confirmedResult as RecipeDetail).etag));
@@ -471,7 +812,7 @@ export function RecipeFormContent({
           }
           setOpeningEtag(versioned.etag);
           setActiveRecipe(versioned.data);
-          baseDraft.current = { name: versioned.data.name, description: versioned.data.description, instructions: versioned.data.instructions, supplies: versioned.data.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) };
+          baseDraft.current = recipeDetailDraft(versioned.data);
           setName(versioned.data.name);
           setDescription(versioned.data.description);
           setInstructions(versioned.data.instructions);
@@ -500,104 +841,59 @@ export function RecipeFormContent({
     }
   }, [name, description, instructions, supplies, activeRecipe]);
 
-  function handleNameChange(val: string) {
-    if (busy || isSubmittingRef.current) return;
+  function markUserEdit(): boolean {
+    if (busy || isSubmittingRef.current) return false;
     userEditedRef.current = true;
+    return true;
+  }
+
+  function persistEditableDraft(fields: EditableRecipeFields = {}) {
+    if (activeRecipe) return;
+    const draft: RecipeDraft = {
+      name: fields.name ?? name,
+      description: fields.description ?? description,
+      instructions: fields.instructions ?? instructions,
+      supplies: (fields.supplies ?? supplies).map((supply) => ({
+        inventoryItemId: supply.inventoryItemId,
+        quantity: Number(supply.quantity) || 0,
+      })),
+    };
+    void getOrInitController().updateEditableDraft(draft).catch(() => {});
+  }
+
+  function handleNameChange(val: string) {
+    if (!markUserEdit()) return;
     setName(val);
-    if (!activeRecipe) {
-      const draft: RecipeDraft = {
-        name: val,
-        description,
-        instructions,
-        supplies: supplies.map((s) => ({
-          inventoryItemId: s.inventoryItemId,
-          quantity: Number(s.quantity) || 0,
-        })),
-      };
-      const controller = getOrInitController();
-      void controller.updateEditableDraft(draft).catch(() => {});
-    }
+    persistEditableDraft({ name: val });
   }
 
   function handleDescriptionChange(val: string) {
-    if (busy || isSubmittingRef.current) return;
-    userEditedRef.current = true;
+    if (!markUserEdit()) return;
     setDescription(val);
-    if (!activeRecipe) {
-      const draft: RecipeDraft = {
-        name,
-        description: val,
-        instructions,
-        supplies: supplies.map((s) => ({
-          inventoryItemId: s.inventoryItemId,
-          quantity: Number(s.quantity) || 0,
-        })),
-      };
-      const controller = getOrInitController();
-      void controller.updateEditableDraft(draft).catch(() => {});
-    }
+    persistEditableDraft({ description: val });
   }
 
   function handleInstructionsChange(val: string) {
-    if (busy || isSubmittingRef.current) return;
-    userEditedRef.current = true;
+    if (!markUserEdit()) return;
     setInstructions(val);
-    if (!activeRecipe) {
-      const draft: RecipeDraft = {
-        name,
-        description,
-        instructions: val,
-        supplies: supplies.map((s) => ({
-          inventoryItemId: s.inventoryItemId,
-          quantity: Number(s.quantity) || 0,
-        })),
-      };
-      const controller = getOrInitController();
-      void controller.updateEditableDraft(draft).catch(() => {});
-    }
+    persistEditableDraft({ instructions: val });
   }
 
   function handleAddSupply() {
-    if (busy || isSubmittingRef.current) return;
-    userEditedRef.current = true;
+    if (!markUserEdit()) return;
     const nextSupplies = [
       ...supplies,
       { key: createNextRowKey(), inventoryItemId: "", quantity: 1 },
     ];
     setSupplies(nextSupplies);
-    if (!activeRecipe) {
-      const draft: RecipeDraft = {
-        name,
-        description,
-        instructions,
-        supplies: nextSupplies.map((s) => ({
-          inventoryItemId: s.inventoryItemId,
-          quantity: Number(s.quantity) || 0,
-        })),
-      };
-      const controller = getOrInitController();
-      void controller.updateEditableDraft(draft).catch(() => {});
-    }
+    persistEditableDraft({ supplies: nextSupplies });
   }
 
   function handleRemoveSupply(index: number) {
-    if (busy || isSubmittingRef.current) return;
-    userEditedRef.current = true;
+    if (!markUserEdit()) return;
     const nextSupplies = supplies.filter((_, i) => i !== index);
     setSupplies(nextSupplies);
-    if (!activeRecipe) {
-      const draft: RecipeDraft = {
-        name,
-        description,
-        instructions,
-        supplies: nextSupplies.map((s) => ({
-          inventoryItemId: s.inventoryItemId,
-          quantity: Number(s.quantity) || 0,
-        })),
-      };
-      const controller = getOrInitController();
-      void controller.updateEditableDraft(draft).catch(() => {});
-    }
+    persistEditableDraft({ supplies: nextSupplies });
   }
 
   function handleSupplyChange(
@@ -605,8 +901,7 @@ export function RecipeFormContent({
     field: "inventoryItemId" | "quantity",
     value: string,
   ) {
-    if (busy || isSubmittingRef.current) return;
-    userEditedRef.current = true;
+    if (!markUserEdit()) return;
     if (field === "inventoryItemId" && value) {
       const selected = currentInventoryItems.find((i) => i.id === value);
       if (selected) {
@@ -617,19 +912,7 @@ export function RecipeFormContent({
       i === index ? { ...item, [field]: value } : item,
     );
     setSupplies(nextSupplies);
-    if (!activeRecipe) {
-      const draft: RecipeDraft = {
-        name,
-        description,
-        instructions,
-        supplies: nextSupplies.map((s) => ({
-          inventoryItemId: s.inventoryItemId,
-          quantity: Number(s.quantity) || 0,
-        })),
-      };
-      const controller = getOrInitController();
-      void controller.updateEditableDraft(draft).catch(() => {});
-    }
+    persistEditableDraft({ supplies: nextSupplies });
   }
 
   function getUnitForItem(inventoryItemId: string) {
@@ -976,7 +1259,7 @@ export function RecipeFormContent({
     setOpeningEtag(reviewedResource.etag);
     if (!keepDraft) {
       setExitUncertain(false);
-      baseDraft.current = { name: reviewedResource.data.name, description: reviewedResource.data.description ?? "", instructions: reviewedResource.data.instructions ?? "", supplies: reviewedResource.data.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) };
+    baseDraft.current = recipeDetailDraft(reviewedResource.data);
       setName(reviewedResource.data.name);
       setDescription(reviewedResource.data.description ?? "");
       setInstructions(reviewedResource.data.instructions ?? "");
@@ -1070,66 +1353,16 @@ export function RecipeFormContent({
 
       <form noValidate onSubmit={(e) => void save(e)} hidden={confirmBack}>
         <div className="recipe-form-dialog__fields">
-          {Object.keys(fieldErrors).length > 0 && (
-            <div ref={validationSummaryRef} className="recipe-validation-summary" role="alert" aria-labelledby="recipe-validation-title" tabIndex={-1}>
-              <h3 id="recipe-validation-title">Revisa los campos de la receta</h3>
-              <ul>{Object.entries(fieldErrors).map(([id, message]) => {
-                const rowIndex = supplies.findIndex(supply => id.startsWith(`${supply.key}-`));
-                return <li key={id}><a href={`#${id}`} onClick={event => {
-                  event.preventDefault();
-                  document.getElementById(id)?.focus();
-                }}>{rowIndex >= 0 ? `Insumo ${rowIndex + 1}: ${message}` : message}</a></li>;
-              })}</ul>
-            </div>
-          )}
-          <div className="recipe-form-dialog__field">
-            <label htmlFor="recipe-name">Nombre</label>
-            <input
-              ref={nameRef}
-              id="recipe-name"
-              aria-invalid={Boolean(fieldErrors["recipe-name"])}
-              aria-describedby={fieldErrors["recipe-name"] ? "recipe-name-error" : undefined}
-              value={name}
-              disabled={busy}
-              onChange={(e) => handleNameChange(e.target.value)}
-              maxLength={255}
-              placeholder="Ej. Hamburguesa Hawaiana"
-              required
-            />
-            {fieldErrors["recipe-name"] && <p className="recipe-field-error" id="recipe-name-error">{fieldErrors["recipe-name"]}</p>}
-          </div>
-
-          <div className="recipe-form-dialog__field">
-            <label htmlFor="recipe-description">Descripción</label>
-            <textarea
-              id="recipe-description"
-              aria-invalid={Boolean(fieldErrors["recipe-description"])}
-              aria-describedby={fieldErrors["recipe-description"] ? "recipe-description-error" : undefined}
-              value={description}
-              disabled={busy}
-              onChange={(e) => handleDescriptionChange(e.target.value)}
-              rows={2}
-              placeholder="Descripción breve de la receta"
-              required
-            />
-            {fieldErrors["recipe-description"] && <p className="recipe-field-error" id="recipe-description-error">{fieldErrors["recipe-description"]}</p>}
-          </div>
-
-          <div className="recipe-form-dialog__field">
-            <label htmlFor="recipe-instructions">Instrucciones</label>
-            <textarea
-              id="recipe-instructions"
-              aria-invalid={Boolean(fieldErrors["recipe-instructions"])}
-              aria-describedby={fieldErrors["recipe-instructions"] ? "recipe-instructions-error" : undefined}
-              value={instructions}
-              disabled={busy}
-              onChange={(e) => handleInstructionsChange(e.target.value)}
-              rows={3}
-              placeholder="Pasos de preparación"
-              required
-            />
-            {fieldErrors["recipe-instructions"] && <p className="recipe-field-error" id="recipe-instructions-error">{fieldErrors["recipe-instructions"]}</p>}
-          </div>
+          <RecipeValidationSummary fieldErrors={fieldErrors} supplies={supplies} summaryRef={validationSummaryRef} />
+          <RecipeTextField id="recipe-name" label="Nombre" value={name} disabled={busy}
+            placeholder="Ej. Hamburguesa Hawaiana" maxLength={255} inputRef={nameRef}
+            fieldErrors={fieldErrors} onChange={handleNameChange} />
+          <RecipeTextField id="recipe-description" label="Descripción" value={description} disabled={busy}
+            placeholder="Descripción breve de la receta" rows={2}
+            fieldErrors={fieldErrors} onChange={handleDescriptionChange} />
+          <RecipeTextField id="recipe-instructions" label="Instrucciones" value={instructions} disabled={busy}
+            placeholder="Pasos de preparación" rows={3}
+            fieldErrors={fieldErrors} onChange={handleInstructionsChange} />
 
           <fieldset className="recipe-supplies-section" aria-busy={inventoryLoading}>
             <legend>Insumos del inventario</legend>
@@ -1147,261 +1380,31 @@ export function RecipeFormContent({
               </button>
             </div>
             {fieldErrors["recipe-add-supply"] && <p className="recipe-field-error" id="recipe-supplies-error">{fieldErrors["recipe-add-supply"]}</p>}
+            <RecipeInventoryControls inventoryError={inventoryError} inventoryLoading={inventoryLoading}
+              inventoryCount={currentInventoryItems.length} olderInventory={olderInventory}
+              displayedInventory={displayedInventory} inventorySearchDraft={inventorySearchDraft}
+              inventoryPage={inventoryPage} inventoryTotalPages={inventoryTotalPages} busy={busy}
+              onRetry={() => setInventoryRetryCount(count => count + 1)}
+              onSearch={query => { setConfirmedInventoryQuery(query); setInventoryPage(1); }}
+              onSearchDraftChange={setInventorySearchDraft} onPageChange={setInventoryPage} />
 
-            {inventoryError && (
-              <div className="feedback feedback--error" role="alert" style={{ marginBottom: "0.75rem" }}>
-                <span>{inventoryError}</span>{" "}
-                <button
-                  type="button"
-                  className="button button--secondary button--small"
-                  onClick={() => setInventoryRetryCount((c) => c + 1)}
-                >
-                  Reintentar
-                </button>
-              </div>
-            )}
-            {inventoryLoading && currentInventoryItems.length === 0 && <output className="feedback">Cargando insumos…</output>}
-            {inventoryLoading && currentInventoryItems.length > 0 && <output className="feedback">Actualizando insumos…</output>}
-            {olderInventory && <p className="feedback">Opciones anteriores de insumos: {displayedInventory?.query ? `búsqueda “${displayedInventory.query}”` : "sin filtro"}, página {displayedInventory?.page}. Las selecciones y cantidades del borrador se conservan.</p>}
-
-            <div className="recipe-inventory-controls" style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-              <input
-                type="search"
-                aria-label="Buscar insumos de inventario"
-                placeholder="Filtrar insumos de inventario…"
-                value={inventorySearchDraft}
-                onChange={(e) => setInventorySearchDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    setConfirmedInventoryQuery(inventorySearchDraft.trim());
-                    setInventoryPage(1);
-                  }
-                }}
-                disabled={busy}
-              />
-              <button
-                type="button"
-                className="button button--secondary button--small"
-                onClick={() => {
-                  setConfirmedInventoryQuery(inventorySearchDraft.trim());
-                  setInventoryPage(1);
-                }}
-                disabled={busy || inventoryLoading}
-              >
-                Buscar insumos
-              </button>
-              {inventoryTotalPages > 1 && (
-                <nav className="pagination" aria-label="Páginas de inventario" style={{ marginLeft: "auto", display: "flex", gap: "0.25rem", alignItems: "center" }}>
-                  <button
-                    type="button"
-                    className="button button--secondary button--small"
-                    disabled={inventoryPage <= 1 || inventoryLoading || olderInventory || busy}
-                    onClick={() => setInventoryPage((p) => Math.max(1, p - 1))}
-                    aria-label="Página anterior de inventario"
-                  >
-                    Anterior
-                  </button>
-                  <span className="pagination__info">
-                    Página {displayedInventory?.page ?? inventoryPage} de {inventoryTotalPages}
-                  </span>
-                  <button
-                    type="button"
-                    className="button button--secondary button--small"
-                    disabled={inventoryPage >= inventoryTotalPages || inventoryLoading || olderInventory || busy}
-                    onClick={() => setInventoryPage((p) => p + 1)}
-                    aria-label="Siguiente página de inventario"
-                  >
-                    Siguiente
-                  </button>
-                </nav>
-              )}
-            </div>
-
-            <table className="recipe-supplies-table">
-              <thead>
-                <tr>
-                  <th scope="col">Insumo seleccionado</th>
-                  <th scope="col">Cantidad</th>
-                  <th scope="col">U. Medida</th>
-                  <th scope="col">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {supplies.map((supply, index) => {
-                  const unit = getUnitForItem(supply.inventoryItemId);
-                  return (
-                    <tr key={supply.key}>
-                      <td data-label="Insumo seleccionado">
-                        <select
-                          id={`${supply.key}-item`}
-                          aria-invalid={Boolean(fieldErrors[`${supply.key}-item`])}
-                          aria-describedby={fieldErrors[`${supply.key}-item`] ? `${supply.key}-item-error` : undefined}
-                          aria-label={`Insumo ${index + 1}`}
-                          value={supply.inventoryItemId}
-                          onChange={(e) =>
-                            handleSupplyChange(index, "inventoryItemId", e.target.value)
-                          }
-                          disabled={busy || inventoryLoading || olderInventory}
-                          required
-                        >
-                          <option value="">Seleccione insumo…</option>
-                          {supply.inventoryItemId &&
-                            !currentInventoryItems.some((item) => item.id === supply.inventoryItemId) && (
-                              <option key={supply.inventoryItemId} value={supply.inventoryItemId}>
-                                {knownItems.get(supply.inventoryItemId)?.name ||
-                                  activeRecipe?.supplies?.find((s) => s.inventoryItemId === supply.inventoryItemId)
-                                    ?.inventoryItem?.name ||
-                                  supply.inventoryItemId}
-                              </option>
-                            )}
-                          {currentInventoryItems.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name}
-                            </option>
-                          ))}
-                        </select>
-                        {fieldErrors[`${supply.key}-item`] && <p className="recipe-field-error" id={`${supply.key}-item-error`}>{fieldErrors[`${supply.key}-item`]}</p>}
-                      </td>
-                      <td data-label="Cantidad">
-                        <input
-                          id={`${supply.key}-quantity`}
-                          aria-invalid={Boolean(fieldErrors[`${supply.key}-quantity`])}
-                          aria-describedby={fieldErrors[`${supply.key}-quantity`] ? `${supply.key}-quantity-error` : undefined}
-                          type="number"
-                          step="any"
-                          min="0"
-                          aria-label={`Cantidad del insumo ${index + 1}`}
-                          value={supply.quantity}
-                          onChange={(e) =>
-                            handleSupplyChange(index, "quantity", e.target.value)
-                          }
-                          disabled={busy}
-                          required
-                        />
-                        {fieldErrors[`${supply.key}-quantity`] && <p className="recipe-field-error" id={`${supply.key}-quantity-error`}>{fieldErrors[`${supply.key}-quantity`]}</p>}
-                      </td>
-                      <td data-label="U. Medida" className="recipe-supplies-table__unit">{unit}</td>
-                      <td data-label="Acción">
-                        <button
-                          type="button"
-                          className="button button--quiet"
-                          onClick={() => handleRemoveSupply(index)}
-                          disabled={busy || supplies.length <= 1}
-                          aria-label={`Eliminar insumo ${index + 1}`}
-                        >
-                          <Icon name="close" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <RecipeSupplyTable supplies={supplies} fieldErrors={fieldErrors}
+              currentInventoryItems={currentInventoryItems} knownItems={knownItems}
+              activeRecipe={activeRecipe} busy={busy} inventoryLoading={inventoryLoading}
+              olderInventory={olderInventory} onSupplyChange={handleSupplyChange}
+              onRemoveSupply={handleRemoveSupply} getUnitForItem={getUnitForItem} />
           </fieldset>
 
-          {infoNotice && (
-            <output className="feedback feedback--success">{infoNotice}</output>
-          )}
-
-          {(error || showManualRetryButton || requiresNewOperationAction) && (
-            <div className="recipe-form-dialog__error" role="alert">
-              <p>{recipeSubmissionMessage(showManualRetryButton, pendingAttempt, error)}</p>
-              {showManualRetryButton && retryCountdownMs > 0 && (
-                <p>
-                  Espera {Math.ceil(retryCountdownMs / 1000)} s antes de volver a intentar.
-                </p>
-              )}
-              {showManualRetryButton && (
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  disabled={retryDisabled}
-                  onClick={() => {
-                    void executeCreationFlow("retry");
-                  }}
-                >
-                  Reintentar
-                </button>
-              )}
-              {requiresNewOperationAction && (
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    void handleStartNewOperation();
-                  }}
-                >
-                  Iniciar nueva operación
-                </button>
-              )}
-              {editing && reviewRequired && (
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  disabled={reviewLoading}
-                  onClick={() => {
-                    void handleReviewRecipe();
-                  }}
-                >
-                  Revisar receta actual
-                </button>
-              )}
-            </div>
-          )}
-
-          {editing && reviewLoading && (
-            <output className="feedback" aria-live="polite">
-              Consultando la receta actual; tu borrador se conserva…
-            </output>
-          )}
-
-          {editing && reviewError && (
-            <p className="recipe-form-dialog__error" role="alert">
-              {reviewError}
-            </p>
-          )}
-
-          {editing && reviewedResource && (
-            <section
-              className="recipe-form-dialog__review"
-              aria-label="Datos actuales de la receta"
-            >
-              <h3>Datos actuales de la receta</h3>
-              <dl>
-                <dt>Nombre</dt>
-                <dd>{reviewedResource.data.name}</dd>
-                <dt>Descripción</dt>
-                <dd>{reviewedResource.data.description || "Sin descripción"}</dd>
-                <dt>Instrucciones</dt>
-                <dd>{reviewedResource.data.instructions || "Sin instrucciones"}</dd>
-              </dl>
-              <p>
-                Tu borrador permanece en el formulario. Elige usar estos datos o conservar tu
-                borrador con la versión que acabas de revisar.
-              </p>
-              {!reviewedEtagStrong && (
-                <p>No pudimos comprobar la versión actual. Reintenta la consulta antes de continuar.</p>
-              )}
-              <div className="recipe-form-dialog__review-actions">
-                <button
-                  type="button"
-                  disabled={!reviewedEtagStrong || reviewLoading}
-                  onClick={() => handleAdoptReview(false)}
-                >
-                  Usar datos actuales
-                </button>
-                <button
-                  type="button"
-                  disabled={!reviewedEtagStrong || reviewLoading}
-                  onClick={() => handleAdoptReview(true)}
-                >
-                  Continuar con mi borrador y versión revisada
-                </button>
-              </div>
-            </section>
-          )}
+          <RecipeOperationFeedback infoNotice={infoNotice} error={error}
+            showManualRetryButton={showManualRetryButton}
+            requiresNewOperationAction={requiresNewOperationAction}
+            retryCountdownMs={retryCountdownMs} retryDisabled={retryDisabled} busy={busy}
+            editing={editing} reviewRequired={reviewRequired} reviewLoading={reviewLoading}
+            reviewError={reviewError} reviewedResource={reviewedResource}
+            reviewedEtagStrong={reviewedEtagStrong} pendingAttempt={pendingAttempt}
+            onRetry={() => { void executeCreationFlow("retry"); }}
+            onStartNewOperation={() => { void handleStartNewOperation(); }}
+            onReview={() => { void handleReviewRecipe(); }} onAdoptReview={handleAdoptReview} />
         </div>
 
         <div className="recipe-form-dialog__actions">

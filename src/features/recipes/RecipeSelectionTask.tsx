@@ -9,7 +9,7 @@ import "./styles.css";
 export interface RecipeSelectionTaskHandle { back(): void; hasChanges(): boolean; discard(): boolean; isBlocked(): boolean }
 
 /** Stays mounted for the option task, including while its option step is visible. */
-export function RecipeSelectionTask({ repository, storage, nestedContext, active, slotName, onSelect, onBack, onStepChange, taskRef }: {
+export function RecipeSelectionTask({ repository, storage, nestedContext, active, slotName, onSelect, onBack, onStepChange, taskRef }: Readonly<{
   repository: RecipeRepository;
   storage: PendingOperationStorageAdapter;
   nestedContext: Readonly<Record<string, unknown>>;
@@ -19,7 +19,7 @@ export function RecipeSelectionTask({ repository, storage, nestedContext, active
   onBack(): void;
   onStepChange(creating: boolean): void;
   taskRef: Ref<RecipeSelectionTaskHandle>;
-}) {
+}>) {
   const [creating, setCreating] = useState(false);
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [foreignPending, setForeignPending] = useState(false);

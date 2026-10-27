@@ -28,7 +28,84 @@ export type ValidatedOptionDraft = OptionIdentity & { displayName: string; statu
 );
 
 type Validation = { valid: true; value: ValidatedOptionDraft } | { valid: false; message: string };
+type CommonOptionFields = OptionIdentity & { displayName: string; status: OfferStatus };
 const hasText = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
+
+function validateRecipeDraft(
+  draft: OptionDraft,
+  mode: "create" | "update",
+  common: CommonOptionFields,
+): Validation {
+  if (draft.inventoryItemId !== undefined || draft.quantity !== undefined || draft.unit !== undefined) {
+    return { valid: false, message: "La opción de receta no puede incluir campos de inventario." };
+  }
+  const metadata = {
+    recipeName: draft.recipeName,
+    hasRecipeAssignmentIntent: draft.hasRecipeAssignmentIntent,
+    recipeAssignmentToken: draft.recipeAssignmentToken,
+  };
+  if (hasText(draft.recipeId)) {
+    return { valid: true, value: { ...common, ...metadata, sourceType: "RECIPE", recipeId: draft.recipeId } };
+  }
+  const existingOptionId = hasText(draft.optionId) ? draft.optionId : undefined;
+  if (mode === "update" && existingOptionId && !draft.hasRecipeAssignmentIntent &&
+    draft.originalSourceType !== "INVENTORY_ITEM" && draft.recipeId === undefined) {
+    return { valid: true, value: { ...common, ...metadata, optionId: existingOptionId, sourceType: "RECIPE" } };
+  }
+  return { valid: false, message: "Debes elegir una receta de la biblioteca." };
+}
+
+function validateInventoryDraft(
+  draft: OptionDraft,
+  mode: "create" | "update",
+  common: CommonOptionFields,
+): Validation {
+  if (draft.recipeId !== undefined || draft.hasRecipeAssignmentIntent || draft.recipeAssignmentToken !== undefined) {
+    return { valid: false, message: "La opción de inventario no puede incluir campos de receta." };
+  }
+  const existingOptionId = hasText(draft.optionId) ? draft.optionId : undefined;
+  if (mode === "update" && existingOptionId && draft.originalSourceType !== "RECIPE") {
+    const hasInvalidItem = draft.inventoryItemId !== undefined && !hasText(draft.inventoryItemId);
+    const hasInvalidQuantity = draft.quantity !== undefined &&
+      (typeof draft.quantity !== "number" || !Number.isFinite(draft.quantity) || draft.quantity <= 0);
+    if (hasInvalidItem || hasInvalidQuantity) {
+      return { valid: false, message: "El artículo de inventario requiere una cantidad positiva." };
+    }
+    if (draft.unit !== undefined && !hasText(draft.unit)) {
+      return { valid: false, message: "El artículo de inventario requiere una unidad autoritativa." };
+    }
+    return {
+      valid: true,
+      value: {
+        ...common,
+        optionId: existingOptionId,
+        sourceType: "INVENTORY_ITEM",
+        inventoryItemId: draft.inventoryItemId,
+        inventoryItemName: draft.inventoryItemName,
+        quantity: draft.quantity,
+        unit: draft.unit?.trim(),
+      },
+    };
+  }
+  if (!hasText(draft.inventoryItemId) || typeof draft.quantity !== "number" ||
+    !Number.isFinite(draft.quantity) || draft.quantity <= 0) {
+    return { valid: false, message: "El artículo de inventario requiere una cantidad positiva." };
+  }
+  if (!hasText(draft.unit)) {
+    return { valid: false, message: "El artículo de inventario requiere una unidad autoritativa." };
+  }
+  return {
+    valid: true,
+    value: {
+      ...common,
+      sourceType: "INVENTORY_ITEM",
+      inventoryItemId: draft.inventoryItemId,
+      inventoryItemName: draft.inventoryItemName,
+      quantity: draft.quantity,
+      unit: draft.unit.trim(),
+    },
+  };
+}
 
 export function validateOptionDraft(draft: OptionDraft, mode: "create" | "update"): Validation {
   if (draft.sourceType !== "RECIPE" && draft.sourceType !== "INVENTORY_ITEM") {
@@ -44,44 +121,9 @@ export function validateOptionDraft(draft: OptionDraft, mode: "create" | "update
   if (common.status !== "ACTIVE" && common.status !== "INACTIVE") {
     return { valid: false, message: "El estado de la opción no es válido." };
   }
-  if (draft.sourceType === "RECIPE") {
-    if (draft.inventoryItemId !== undefined || draft.quantity !== undefined || draft.unit !== undefined) {
-      return { valid: false, message: "La opción de receta no puede incluir campos de inventario." };
-    }
-    const metadata = { recipeName: draft.recipeName, hasRecipeAssignmentIntent: draft.hasRecipeAssignmentIntent,
-      recipeAssignmentToken: draft.recipeAssignmentToken };
-    if (hasText(draft.recipeId)) {
-      return { valid: true, value: { ...common, ...metadata, sourceType: "RECIPE", recipeId: draft.recipeId } };
-    }
-    if (mode === "update" && hasText(draft.optionId) && !draft.hasRecipeAssignmentIntent &&
-      draft.originalSourceType !== "INVENTORY_ITEM" && draft.recipeId === undefined) {
-      return { valid: true, value: { ...common, ...metadata, optionId: draft.optionId, sourceType: "RECIPE" } };
-    }
-    return { valid: false, message: "Debes elegir una receta de la biblioteca." };
-  }
-  if (draft.recipeId !== undefined || draft.hasRecipeAssignmentIntent || draft.recipeAssignmentToken !== undefined) {
-    return { valid: false, message: "La opción de inventario no puede incluir campos de receta." };
-  }
-  if (mode === "update" && hasText(draft.optionId) && draft.originalSourceType !== "RECIPE") {
-    if ((draft.inventoryItemId !== undefined && !hasText(draft.inventoryItemId)) ||
-      (draft.quantity !== undefined && (typeof draft.quantity !== "number" || !Number.isFinite(draft.quantity) || draft.quantity <= 0))) {
-      return { valid: false, message: "El artículo de inventario requiere una cantidad positiva." };
-    }
-    if (draft.unit !== undefined && !hasText(draft.unit)) {
-      return { valid: false, message: "El artículo de inventario requiere una unidad autoritativa." };
-    }
-    return { valid: true, value: { ...common, optionId: draft.optionId, sourceType: "INVENTORY_ITEM",
-      inventoryItemId: draft.inventoryItemId, inventoryItemName: draft.inventoryItemName, quantity: draft.quantity, unit: draft.unit?.trim() } };
-  }
-  if (!hasText(draft.inventoryItemId) || typeof draft.quantity !== "number" ||
-    !Number.isFinite(draft.quantity) || draft.quantity <= 0) {
-    return { valid: false, message: "El artículo de inventario requiere una cantidad positiva." };
-  }
-  if (!hasText(draft.unit)) {
-    return { valid: false, message: "El artículo de inventario requiere una unidad autoritativa." };
-  }
-  return { valid: true, value: { ...common, sourceType: "INVENTORY_ITEM", inventoryItemId: draft.inventoryItemId,
-    inventoryItemName: draft.inventoryItemName, quantity: draft.quantity, unit: draft.unit.trim() } };
+  return draft.sourceType === "RECIPE"
+    ? validateRecipeDraft(draft, mode, common)
+    : validateInventoryDraft(draft, mode, common);
 }
 
 /** Revalidate at the boundary, including restored drafts, before sealing any request. */

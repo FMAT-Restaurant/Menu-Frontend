@@ -57,6 +57,15 @@ function pageOf<T>(items: T[], page: number, pageSize: number): Page<T> {
     meta: { page, pageSize, total: items.length, totalPages: Math.ceil(items.length / pageSize) } });
 }
 
+function offerUsesRecipe(
+  offer: { composition: { slots: Array<{ options: SlotOptionDetail[] }> } },
+  recipeId: string,
+): boolean {
+  return offer.composition.slots.some(slot =>
+    slot.options.some(option => option.sourceType === "RECIPE" && option.recipeId === recipeId),
+  );
+}
+
 function matches(text: string, query = ""): boolean {
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
   return normalize(text).includes(normalize(query.trim()));
@@ -230,9 +239,11 @@ export function createDemoRepository(): MenuRepository {
         return categoryWithCount(id);
       });
     },
-    async getEntry(id, signal) {
-      signal?.throwIfAborted();
-      return snapshot(required(entries, id, "La entrada"));
+    getEntry(id, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return snapshot(required(entries, id, "La entrada"));
+      });
     },
     uploadImage,
     uploadEntryImage: uploadImage,
@@ -271,13 +282,15 @@ export function createDemoRepository(): MenuRepository {
         for (const offer of offers.values()) if (offer.entryId === id) offers.delete(offer.id);
       });
     },
-    async listOffers(entryId, page, pageSize, signal) {
-      signal?.throwIfAborted();
-      const entry = required(entries, entryId, "La entrada");
-      const result = [...offers.values()].filter(offer => offer.entryId === entryId).map((offer): MenuOffer => ({
-        ...offer, entryName: entry.brandName, slotCount: offer.composition.slots.length,
-      }));
-      return pageOf(result, page, pageSize);
+    listOffers(entryId, page, pageSize, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        const entry = required(entries, entryId, "La entrada");
+        const result = [...offers.values()].filter(offer => offer.entryId === entryId).map((offer): MenuOffer => ({
+          ...offer, entryName: entry.brandName, slotCount: offer.composition.slots.length,
+        }));
+        return pageOf(result, page, pageSize);
+      });
     },
     getOffer(id, signal) {
       return runDemoOperation(() => {
@@ -303,9 +316,11 @@ export function createDemoRepository(): MenuRepository {
     async setOfferStatus(id, draft, etag, key) {
       return once(`offer.update:${id}`, key, { draft, etag }, () => patchOffer(id, draft, etag));
     },
-    async deleteInactiveOffer(id) {
-      if (required(offers, id, "La oferta").status !== "INACTIVE") fail(409, "Solo se puede eliminar una oferta inactiva.");
-      offers.delete(id);
+    deleteInactiveOffer(id) {
+      return runDemoOperation(() => {
+        if (required(offers, id, "La oferta").status !== "INACTIVE") fail(409, "Solo se puede eliminar una oferta inactiva.");
+        offers.delete(id);
+      });
     },
     listRecipes(query, signal) {
       return runDemoOperation(() => {
@@ -341,9 +356,9 @@ export function createDemoRepository(): MenuRepository {
     deleteRecipe(id) {
       return runDemoOperation(() => {
         required(recipes, id, "La receta");
-        if ([...offers.values()].some(offer => offer.composition.slots.some(slot =>
-          slot.options.some(option => option.sourceType === "RECIPE" && option.recipeId === id),
-        ))) fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
+        if ([...offers.values()].some(offer => offerUsesRecipe(offer, id))) {
+          fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
+        }
         recipes.delete(id);
       });
     },

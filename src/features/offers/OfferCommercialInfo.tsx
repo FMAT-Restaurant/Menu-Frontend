@@ -1,6 +1,7 @@
 import { LoadingValue } from "../../shared/LoadingState";
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, useRef } from "react";
+import type { ReactNode } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
 import { formatMoney } from "../../shared/formatMoney";
 
@@ -40,19 +41,18 @@ function OfferStatusField({
   isEditing,
   disabled,
 }: Readonly<OfferStatusFieldProps>) {
-  const isAutoInactive = isEditing && desiredStatus === "ACTIVE" && !hasActiveSlot;
-
-  return <div className="form-field">
-    <span className="field-label" id="offer-status-label">Estado de la oferta</span>
-    {loading ? <LoadingValue /> : !isEditing ? (
-      <div className="status-fixed-box">
+  let statusContent: ReactNode;
+  if (loading) {
+    statusContent = <LoadingValue />;
+  } else if (!isEditing) {
+    statusContent = <div className="status-fixed-box">
         <span className="offer-state offer-state--inactive">Inactiva</span>
         <p className="field-hint">
           La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.
         </p>
-      </div>
-    ) : (
-      <div>
+      </div>;
+  } else {
+    statusContent = <div>
         <div className="radio-group" role="radiogroup" aria-labelledby="offer-status-label">
           <label className="radio-label">
             <input type="radio" name="offer-form-status" value="ACTIVE" checked={desiredStatus === "ACTIVE"}
@@ -65,14 +65,18 @@ function OfferStatusField({
             <span>Inactiva</span>
           </label>
         </div>
-        {isAutoInactive && <p className="feedback feedback--warning" role="alert">
+        {isEditing && desiredStatus === "ACTIVE" && !hasActiveSlot && <p className="feedback feedback--warning" role="alert">
           Sin un grupo con opciones activas, la oferta se guardará inactiva. Añade opciones activas para solicitar su activación. Guardar no garantiza que se acepte la solicitud.
         </p>}
         {desiredStatus === "ACTIVE" && hasActiveSlot && <p className="field-hint">
           El borrador tiene un grupo con opciones activas. Al guardar solicitarás la activación; sólo se aplicará si la composición cumple los requisitos.
         </p>}
-      </div>
-    )}
+      </div>;
+  }
+
+  return <div className="form-field">
+    <span className="field-label" id="offer-status-label">Estado de la oferta</span>
+    {statusContent}
   </div>;
 }
 

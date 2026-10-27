@@ -72,7 +72,7 @@ function Confirmation({ decision }: { decision: Decision }) {
 }
 
 /** Exactly one navigation blocker aggregates every mounted editing step. */
-export function EditGuardProvider({ children }: { children: ReactNode }) {
+export function EditGuardProvider({ children }: Readonly<{ children: ReactNode }>) {
   const participants = useRef(new Set<Participant>());
   const [revision, setRevision] = useState(0);
   const [decision, setDecision] = useState<Decision | null>(null);

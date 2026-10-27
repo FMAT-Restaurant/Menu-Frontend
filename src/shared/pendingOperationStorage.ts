@@ -81,29 +81,7 @@ export interface MinimalIdbFactory {
   open(name: string, version?: number): MinimalIdbOpenRequest;
 }
 
-function createTransactionSettlers(
-  db: MinimalIdbDatabase,
-  resolve: () => void,
-  reject: (error: PendingOperationStorageError) => void,
-) {
-  let settled = false;
-  return {
-    reject(error: PendingOperationStorageError) {
-      if (settled) return;
-      settled = true;
-      db.close();
-      reject(error);
-    },
-    resolve() {
-      if (settled) return;
-      settled = true;
-      db.close();
-      resolve();
-    },
-  };
-}
-
-function createReadSettlers<TResult>(
+function createSettlers<TResult>(
   db: MinimalIdbDatabase,
   resolve: (value: TResult) => void,
   reject: (error: PendingOperationStorageError) => void,
@@ -482,7 +460,7 @@ export function createIndexedDbPendingOperationStorage(
       const db = await openDatabase();
       return new Promise<void>((resolve, reject) => {
         let putSucceeded = false;
-        const { reject: settleReject, resolve: settleResolve } = createTransactionSettlers(db, resolve, reject);
+        const { reject: settleReject, resolve: settleResolve } = createSettlers<void>(db, resolve, reject);
 
         let tx: MinimalIdbTransaction;
         try {
@@ -528,7 +506,7 @@ export function createIndexedDbPendingOperationStorage(
             );
             return;
           }
-          settleResolve();
+          settleResolve(undefined);
         };
 
         try {
@@ -565,7 +543,7 @@ export function createIndexedDbPendingOperationStorage(
       const key = resolveKey(scopeOrKey);
       const db = await openDatabase();
       return new Promise<PendingOperationChainRecord<TDraft> | null>((resolve, reject) => {
-        const { reject: settleReject, resolve: settleResolve } = createReadSettlers(db, resolve, reject);
+        const { reject: settleReject, resolve: settleResolve } = createSettlers(db, resolve, reject);
         let getSucceeded = false;
         let fetchedValue: unknown = undefined;
 
@@ -706,7 +684,7 @@ export function createIndexedDbPendingOperationStorage(
       const db = await openDatabase();
       return new Promise<void>((resolve, reject) => {
         let deleteSucceeded = false;
-        const { reject: settleReject, resolve: settleResolve } = createTransactionSettlers(db, resolve, reject);
+        const { reject: settleReject, resolve: settleResolve } = createSettlers<void>(db, resolve, reject);
 
         let tx: MinimalIdbTransaction;
         try {
@@ -752,7 +730,7 @@ export function createIndexedDbPendingOperationStorage(
             );
             return;
           }
-          settleResolve();
+          settleResolve(undefined);
         };
 
         try {
@@ -789,7 +767,7 @@ export function createIndexedDbPendingOperationStorage(
       }
       const db = await openDatabase();
       return new Promise<PendingOperationChainRecord[]>((resolve, reject) => {
-        const { reject: settleReject, resolve: settleResolve } = createReadSettlers(db, resolve, reject);
+        const { reject: settleReject, resolve: settleResolve } = createSettlers(db, resolve, reject);
         let getAllSucceeded = false;
         let rawList: unknown[] = [];
 

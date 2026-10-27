@@ -182,6 +182,45 @@ function RecipeDeleteDialog({ recipe, actionError, isDeleting, dialogRef, cancel
   </div>;
 }
 
+interface RecipePageHeaderProps {
+  mode: "management" | "selection";
+  onClose?: () => void;
+  returnTo: string;
+  title: string;
+  subtitle: string;
+  onCreate(): void;
+}
+
+function RecipePageHeader({ mode, onClose, returnTo, title, subtitle, onCreate }: Readonly<RecipePageHeaderProps>) {
+  const cancelAction = <><Icon name="close" /> Cancelar</>;
+  const menuAction = <><Icon name="arrow-left" /> Volver al menú</>;
+  let backLabel = menuAction;
+  if (mode === "selection") backLabel = cancelAction;
+  else if (onClose) backLabel = <>Volver al menú</>;
+
+  return <header className="task-header category-screen__header">
+    {onClose ? (
+      <button type="button" className="button button--quiet category-screen__back" onClick={onClose}>
+        {backLabel}
+      </button>
+    ) : (
+      <Link className="back-link category-screen__back" to={returnTo}>
+        {backLabel}
+      </Link>
+    )}
+    <div className="task-header__row">
+      <div className="task-header__content">
+        <p className="eyebrow">Recetas</p>
+        <h1 id="recipe-page-title" data-route-heading={onClose ? undefined : true} tabIndex={-1}>{title}</h1>
+        <p className="task-header__intro">{subtitle}</p>
+      </div>
+      <button className="button button--primary" type="button" aria-label="+ Nueva receta" onClick={onCreate}>
+        <Icon name="add" /> Nueva receta
+      </button>
+    </div>
+  </header>;
+}
+
 export function RecipePage({
   repository,
   mode: propMode,
@@ -485,36 +524,14 @@ export function RecipePage({
   return (
     <div className="category-screen recipe-screen">
       <main className="menu-page category-screen__main">
-      <header className="task-header category-screen__header">
-        {onClose ? (
-          <button
-            type="button"
-            className="button button--quiet category-screen__back"
-            onClick={onClose}
-          >
-            {mode === "selection" ? <><Icon name="close" /> Cancelar</> : "Volver al menú"}
-          </button>
-        ) : (
-          <Link className="back-link category-screen__back" to={returnTo}>
-            {mode === "selection" ? <><Icon name="close" /> Cancelar</> : <><Icon name="arrow-left" /> Volver al menú</>}
-          </Link>
-        )}
-          <div className="task-header__row">
-            <div className="task-header__content">
-              <p className="eyebrow">Recetas</p>
-              <h1 id="recipe-page-title" data-route-heading={onClose ? undefined : true} tabIndex={-1}>{title}</h1>
-              <p className="task-header__intro">{subtitle}</p>
-            </div>
-            <button
-              className="button button--primary"
-              type="button"
-              aria-label="+ Nueva receta"
-              onClick={handleStartCreate}
-            >
-              <Icon name="add" /> Nueva receta
-            </button>
-          </div>
-      </header>
+      <RecipePageHeader
+        mode={mode}
+        onClose={onClose}
+        returnTo={returnTo}
+        title={title}
+        subtitle={subtitle}
+        onCreate={handleStartCreate}
+      />
         <section className="category-panel" aria-labelledby="recipe-page-title" aria-busy={loading}>
           <div className="recipe-toolbar">
             <SearchField

@@ -491,13 +491,13 @@ function OfferSavedFeedback({
   onRetryRecovery,
 }: Readonly<OfferSavedFeedbackProps>) {
   return <>
-    {reviewedOffer && <div className="feedback feedback--info" role="region" aria-label="Versión del servidor">
+    {reviewedOffer && <section className="feedback feedback--info" aria-label="Versión del servidor">
       <p><strong>Versión actual en el servidor:</strong> {reviewedOffer.data.presentationTag || "Sin etiqueta de presentación"}.</p>
       <p className="offer-review-price"><span>Precio base (MXN)</span><strong>{formatMoney(reviewedOffer.data.basePrice)}</strong></p>
       <p>Usar estos datos reemplaza la composición del formulario. Conservaremos los demás campos y no enviaremos cambios hasta que guardes.</p>
       <button type="button" className="button button--small button--primary" onClick={() => { void onAdoptReviewedOffer(); }} disabled={reviewLoading}>Adoptar versión del servidor</button>
       <button type="button" className="button button--small button--secondary" onClick={onKeepDraft}>Mantener borrador actual</button>
-    </div>}
+    </section>}
     {navigationFailed && <div className="feedback"><output>La oferta se guardó. No pudimos abrir el listado.</output>{" "}<button type="button" onClick={onReturnToList}>Volver al listado</button></div>}
     {savedNotice && <output className="feedback">{savedNotice}</output>}
     {formError && <p className="feedback feedback--error" role="alert">

@@ -165,7 +165,7 @@ export function generateIdempotencyKey(): string {
   }
   const bytes = new Uint8Array(16);
   if (typeof crypto === "undefined" || typeof crypto.getRandomValues !== "function") {
-    throw new Error("No hay un generador criptográfico seguro disponible.");
+    throw new TypeError("No hay un generador criptográfico seguro disponible.");
   }
   crypto.getRandomValues(bytes);
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -202,12 +202,12 @@ const TAB_ID_STORAGE_KEY = "menu.operationAttempt.tabId";
 export function getOrCreateTabId(
   storage?: Pick<Storage, "getItem" | "setItem"> | null,
 ): string {
-  const targetStorage =
-    storage !== undefined
-      ? storage
-      : typeof window !== "undefined" && window.sessionStorage
-        ? window.sessionStorage
-        : null;
+  let targetStorage = storage;
+  if (storage === undefined) {
+    targetStorage = typeof window !== "undefined" && window.sessionStorage
+      ? window.sessionStorage
+      : null;
+  }
 
   if (targetStorage) {
     try {
@@ -257,7 +257,7 @@ export function canonicalizeJsonValue(value: unknown): unknown {
     return Object.freeze(clonedArray);
   }
   if (isPlainObject(value)) {
-    const sortedKeys = Object.keys(value).sort();
+    const sortedKeys = Object.keys(value).sort((left, right) => left.localeCompare(right, "en"));
     const clonedRecord: Record<string, unknown> = {};
     for (const key of sortedKeys) {
       const propValue = value[key];
@@ -533,7 +533,6 @@ export function applyAttemptFailure(
     ) {
       retryAfterSeconds = outcome.retryAfterSeconds;
       retryAfterUntil = now + outcome.retryAfterSeconds * 1000;
-      retryAfterInvalid = false;
     } else {
       retryAfterInvalid = true;
     }

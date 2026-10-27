@@ -422,7 +422,7 @@ export function OptionModal({
                     checked={status === "INACTIVE"}
                     onChange={() => handleStatusChange("INACTIVE")}
                   />
-                  {" "}Inactiva
+                  <span>Inactiva</span>
                 </label>
               </div>
             </fieldset>
