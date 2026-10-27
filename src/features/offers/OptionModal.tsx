@@ -41,6 +41,105 @@ function sourceDraftFields(
   return {};
 }
 
+function optionDialogLabelId(
+  confirmClose: boolean,
+  isNestedPickerOpen: boolean,
+  recipeStep: boolean,
+): string {
+  if (confirmClose) return "option-discard-title";
+  if (!isNestedPickerOpen) return "option-modal-title";
+  if (recipeStep) return "recipe-form-title";
+  return "recipe-selector-title";
+}
+
+interface InitialOptionState {
+  displayName: string;
+  status: OfferStatus;
+  sourceType: OptionDraft["sourceType"];
+  recipeId?: string;
+  recipeName?: string;
+  hasRecipeAssignmentIntent?: boolean;
+  inventoryItemId?: string;
+  inventoryItemName?: string;
+  quantity?: number;
+  unit?: string;
+}
+
+function getInitialOptionState(
+  initialData: OptionDraft | null,
+  isCreateMode: boolean,
+): InitialOptionState {
+  if (!initialData) {
+    return { displayName: "", status: "ACTIVE", sourceType: null };
+  }
+  const isRecipe = initialData.sourceType === "RECIPE";
+  const isInventoryItem = initialData.sourceType === "INVENTORY_ITEM";
+  return {
+    displayName: initialData.displayName || "",
+    status: isCreateMode ? "ACTIVE" : initialData.status,
+    sourceType: initialData.sourceType,
+    recipeId: isRecipe ? initialData.recipeId : undefined,
+    recipeName: isRecipe ? initialData.recipeName : undefined,
+    hasRecipeAssignmentIntent: isRecipe ? initialData.hasRecipeAssignmentIntent : undefined,
+    inventoryItemId: isInventoryItem ? initialData.inventoryItemId : undefined,
+    inventoryItemName: isInventoryItem ? initialData.inventoryItemName : undefined,
+    quantity: isInventoryItem ? initialData.quantity : undefined,
+    unit: isInventoryItem ? initialData.unit : undefined,
+  };
+}
+
+function getOptionSourceSummary(
+  sourceType: OptionDraft["sourceType"],
+  recipeId: string | undefined,
+  recipeName: string | undefined,
+  inventoryItemId: string | undefined,
+  inventoryItemName: string | undefined,
+  quantity: number | undefined,
+  unit: string | undefined,
+): string {
+  if (sourceType === "RECIPE" && recipeName) return `Receta asignada: ${recipeName}`;
+  if (sourceType === "RECIPE" && recipeId) return "Receta asignada sin nombre disponible.";
+  if (sourceType === "INVENTORY_ITEM" && inventoryItemName) {
+    return `Insumo de inventario: ${inventoryItemName} (${quantity ?? "—"} ${unit ?? ""})`;
+  }
+  if (sourceType === "INVENTORY_ITEM" && inventoryItemId) {
+    return "Insumo asignado sin nombre disponible.";
+  }
+  return "Elige una receta de la biblioteca para esta opción.";
+}
+
+interface OptionSubmitContext {
+  draft: OptionDraft;
+  mode: "create" | "update";
+  isNestedBlocked?: () => boolean;
+  hasNestedChanges?: () => boolean;
+  onSave: (data: ValidatedOptionDraft) => void;
+  setValidationError: (message: string) => void;
+  setPendingSave: (data: ValidatedOptionDraft | null) => void;
+  setConfirmClose: (confirm: boolean) => void;
+  setConfirmationTrigger: (trigger: HTMLButtonElement | null) => void;
+}
+
+function submitOptionForm(
+  event: SubmitEvent<HTMLFormElement>,
+  context: OptionSubmitContext,
+) {
+  event.preventDefault();
+  const result = validateOptionDraft(context.draft, context.mode);
+  if (!result.valid) {
+    context.setValidationError(result.message);
+    return;
+  }
+  if (context.isNestedBlocked?.()) return;
+  if (context.hasNestedChanges?.()) {
+    context.setConfirmationTrigger(event.currentTarget.querySelector<HTMLButtonElement>('button[type="submit"]'));
+    context.setPendingSave(result.value);
+    context.setConfirmClose(true);
+    return;
+  }
+  context.onSave(result.value);
+}
+
 export function OptionModal({
   isOpen,
   slotName,
@@ -102,47 +201,17 @@ export function OptionModal({
   const wasNestedPickerOpenRef = useRef(false);
 
   useEffect(() => {
-    if (initialData) {
-      setDisplayName(initialData.displayName || "");
-      setStatus(isCreateMode ? "ACTIVE" : initialData.status);
-      setSourceType(initialData.sourceType);
-      if (initialData.sourceType === "RECIPE") {
-        setRecipeId(initialData.recipeId);
-        setRecipeName(initialData.recipeName);
-        setHasRecipeAssignmentIntent(initialData.hasRecipeAssignmentIntent);
-        setInventoryItemId(undefined);
-        setInventoryItemName(undefined);
-        setQuantity(undefined);
-        setUnit(undefined);
-      } else if (initialData.sourceType === "INVENTORY_ITEM") {
-        setRecipeId(undefined);
-        setRecipeName(undefined);
-        setHasRecipeAssignmentIntent(undefined);
-        setInventoryItemId(initialData.inventoryItemId);
-        setInventoryItemName(initialData.inventoryItemName);
-        setQuantity(initialData.quantity);
-        setUnit(initialData.unit);
-      } else {
-        setRecipeId(undefined);
-        setRecipeName(undefined);
-        setHasRecipeAssignmentIntent(undefined);
-        setInventoryItemId(undefined);
-        setInventoryItemName(undefined);
-        setQuantity(undefined);
-        setUnit(undefined);
-      }
-    } else {
-      setDisplayName("");
-      setStatus("ACTIVE");
-      setSourceType(null);
-      setRecipeId(undefined);
-      setRecipeName(undefined);
-      setHasRecipeAssignmentIntent(undefined);
-      setInventoryItemId(undefined);
-      setInventoryItemName(undefined);
-      setQuantity(undefined);
-      setUnit(undefined);
-    }
+    const initialState = getInitialOptionState(initialData, isCreateMode);
+    setDisplayName(initialState.displayName);
+    setStatus(initialState.status);
+    setSourceType(initialState.sourceType);
+    setRecipeId(initialState.recipeId);
+    setRecipeName(initialState.recipeName);
+    setHasRecipeAssignmentIntent(initialState.hasRecipeAssignmentIntent);
+    setInventoryItemId(initialState.inventoryItemId);
+    setInventoryItemName(initialState.inventoryItemName);
+    setQuantity(initialState.quantity);
+    setUnit(initialState.unit);
     setValidationError("");
   }, [initialData, isOpen, isCreateMode]);
 
@@ -194,8 +263,8 @@ export function OptionModal({
   }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const result = validateOptionDraft({
+    submitOptionForm(event, {
+      draft: {
       localId: initialData?.localId,
       optionId: initialData?.optionId,
       originalSourceType: initialData?.originalSourceType,
@@ -205,34 +274,35 @@ export function OptionModal({
       ...sourceDraftFields(sourceType,
         { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
         { inventoryItemId, inventoryItemName, quantity, unit }),
-    }, isCreateMode ? "create" : "update");
-    if (!result.valid) { setValidationError(result.message); return; }
-    if (isNestedBlocked?.()) return;
-    if (hasNestedChanges?.()) {
-      confirmationTriggerRef.current = event.currentTarget.querySelector<HTMLButtonElement>('button[type="submit"]');
-      setPendingSave(result.value);
-      setConfirmClose(true);
-    } else onSave(result.value);
+      },
+      mode: isCreateMode ? "create" : "update",
+      isNestedBlocked,
+      hasNestedChanges,
+      onSave,
+      setValidationError,
+      setPendingSave,
+      setConfirmClose,
+      setConfirmationTrigger: (trigger) => { confirmationTriggerRef.current = trigger; },
+    });
   }
 
   const title = initialData?.optionId ? `Editar opción · ${slotName}` : `Agregar opción · ${slotName}`;
 
-  let sourceSummary = "Elige una receta de la biblioteca para esta opción.";
-  if (sourceType === "RECIPE" && recipeName) {
-    sourceSummary = `Receta asignada: ${recipeName}`;
-  } else if (sourceType === "RECIPE" && recipeId) {
-    sourceSummary = "Receta asignada sin nombre disponible.";
-  } else if (sourceType === "INVENTORY_ITEM" && inventoryItemName) {
-    sourceSummary = `Insumo de inventario: ${inventoryItemName} (${quantity ?? "—"} ${unit ?? ""})`;
-  } else if (sourceType === "INVENTORY_ITEM" && inventoryItemId) {
-    sourceSummary = "Insumo asignado sin nombre disponible.";
-  }
+  const sourceSummary = getOptionSourceSummary(
+    sourceType,
+    recipeId,
+    recipeName,
+    inventoryItemId,
+    inventoryItemName,
+    quantity,
+    unit,
+  );
 
   return (
     <dialog
       ref={dialogRef}
       className="option-modal-dialog menu-task-dialog"
-      aria-labelledby={confirmClose ? "option-discard-title" : isNestedPickerOpen ? (recipeStep ? "recipe-form-title" : "recipe-selector-title") : "option-modal-title"}
+      aria-labelledby={optionDialogLabelId(confirmClose, isNestedPickerOpen, recipeStep)}
       onKeyDown={(event) => {
         if (event.key !== "Escape") return;
         // Repeated native close requests may emit a non-cancelable cancel event.
@@ -352,7 +422,7 @@ export function OptionModal({
                     checked={status === "INACTIVE"}
                     onChange={() => handleStatusChange("INACTIVE")}
                   />
-                  Inactiva
+                  {" "}Inactiva
                 </label>
               </div>
             </fieldset>

@@ -20,6 +20,7 @@ import {
   type OperationExecutionResult,
   type OperationAttemptController,
   type OperationFlowScope,
+  type PendingOperationChainRecord,
   type PendingOperationStorageAdapter,
 } from "../../application/operationAttempt";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
@@ -213,6 +214,90 @@ export function useEntryForm(
     return controllerRef.current;
   }
 
+  function restoreEditableDraft(record: PendingOperationChainRecord<EntryCreationDraft>) {
+    if (userEdited.current) return;
+    setDraft({
+      brandName: record.editableDraft.brandName,
+      description: record.editableDraft.description,
+      categoryIds: [...record.editableDraft.categoryIds],
+      status: "INACTIVE",
+    });
+  }
+
+  function restorePendingImage(record: PendingOperationChainRecord<EntryCreationDraft>) {
+    const editableFile = record.editableDraft.imageFile;
+    const firstPayload = record.stages[0]?.payload;
+    if (editableFile) {
+      setFile(editableFile);
+      fileRef.current = editableFile;
+      if (record.confirmedImageId && editableFile === record.submittedDraft?.imageFile) {
+        uploaded.current = { file: editableFile, id: record.confirmedImageId };
+      }
+      return;
+    }
+    if (firstPayload?.kind !== "multipart-file") return;
+    const restoredFile = new File([firstPayload.fileBlob], firstPayload.fileName, {
+      type: firstPayload.mimeType,
+    });
+    setFile(restoredFile);
+    if (record.confirmedImageId) uploaded.current = { file: restoredFile, id: record.confirmedImageId };
+  }
+
+  function restoreRecoveryStatus(
+    record: PendingOperationChainRecord<EntryCreationDraft>,
+    currentStage: NonNullable<PendingOperationChainRecord<EntryCreationDraft>["stages"][number]>,
+  ) {
+    if (currentStage.status === "uncertain" || currentStage.status === "conflict_in_progress") {
+      setUncertain(record.currentStageIndex === 0 ? "upload" : "persist");
+    }
+    if (currentStage.lastErrorMessage) setFailure(entryFailure(currentStage.lastErrorMessage));
+  }
+
+  function restoreConfirmedCreation(
+    record: PendingOperationChainRecord<EntryCreationDraft>,
+    currentStage: NonNullable<PendingOperationChainRecord<EntryCreationDraft>["stages"][number]>,
+  ) {
+    if (currentStage.status !== "succeeded" || !record.confirmedResult) return;
+    const confirmed = record.confirmedResult as MenuEntryDetail;
+    baseDraft.current = draftFrom(confirmed);
+    baseFile.current = record.submittedDraft?.imageFile ?? null;
+    loaded.current = true;
+    setConfirmedEntryId(confirmed.id);
+    resources.setEntry(confirmed);
+    if (record.currentDraftVersion === record.submittedDraftVersion) {
+      saveSucceeded.current = true;
+      confirmedReceipt.current = {
+        receiptId: currentStage.idempotencyKey,
+        entity: "entry",
+        entityId: confirmed.id,
+        label: confirmed.brandName,
+        action: "created",
+      };
+      setInfoNotice(saveReceiptMessage(confirmedReceipt.current));
+      setNavigationFailed(true);
+      return;
+    }
+    setInfoNotice("La entrada ya fue creada. Conservamos el borrador posterior; revisa la versión actual antes de guardar los cambios.");
+    if (!isStrongEntryVersion(confirmed.etag)) {
+      setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
+    }
+  }
+
+  function handleRestoredCreation(
+    controller: OperationAttemptController<EntryCreationDraft, MenuEntryDetail>,
+    record: PendingOperationChainRecord<EntryCreationDraft> | null,
+  ) {
+    if (!mounted.current || controllerRef.current !== controller) return;
+    setRecoveryReady(true);
+    if (!record) return;
+    const currentStage = record.stages[record.currentStageIndex];
+    if (!currentStage) return;
+    restoreEditableDraft(record);
+    restorePendingImage(record);
+    restoreRecoveryStatus(record, currentStage);
+    restoreConfirmedCreation(record, currentStage);
+  }
+
   useEffect(() => {
     mounted.current = true;
 
@@ -221,69 +306,7 @@ export function useEntryForm(
       const controller = getOrInitController();
       void controller
         .restoreFromStorage()
-        .then((restored) => {
-          if (!mounted.current || controllerRef.current !== controller) return;
-          setRecoveryReady(true);
-          if (!restored) return;
-          const currentStage = restored.stages[restored.currentStageIndex];
-          if (!currentStage) return;
-
-          if (!userEdited.current) {
-            setDraft({
-              brandName: restored.editableDraft.brandName,
-              description: restored.editableDraft.description,
-              categoryIds: [...restored.editableDraft.categoryIds],
-              status: "INACTIVE",
-            });
-          }
-
-          if (restored.editableDraft.imageFile) {
-            const f = restored.editableDraft.imageFile;
-            const restoredFile = f;
-            setFile(restoredFile);
-            fileRef.current = restoredFile;
-            if (restored.confirmedImageId && f === restored.submittedDraft?.imageFile) {
-              uploaded.current = { file: restoredFile, id: restored.confirmedImageId };
-            }
-          } else if (restored.stages[0]?.payload.kind === "multipart-file") {
-            const p = restored.stages[0].payload;
-            const restoredFile = new File([p.fileBlob], p.fileName, {
-              type: p.mimeType,
-            });
-            setFile(restoredFile);
-            if (restored.confirmedImageId) {
-              uploaded.current = { file: restoredFile, id: restored.confirmedImageId };
-            }
-          }
-
-          if (
-            currentStage.status === "uncertain" ||
-            currentStage.status === "conflict_in_progress"
-          ) {
-            setUncertain(restored.currentStageIndex === 0 ? "upload" : "persist");
-          }
-
-          if (currentStage.lastErrorMessage) {
-            setFailure(entryFailure(currentStage.lastErrorMessage));
-          }
-          if (currentStage.status === "succeeded" && restored.confirmedResult) {
-            const confirmed = restored.confirmedResult as MenuEntryDetail;
-            baseDraft.current = draftFrom(confirmed);
-            baseFile.current = restored.submittedDraft?.imageFile ?? null;
-            loaded.current = true;
-            setConfirmedEntryId(confirmed.id);
-            resources.setEntry(confirmed);
-            if (restored.currentDraftVersion === restored.submittedDraftVersion) {
-              saveSucceeded.current = true;
-              confirmedReceipt.current = { receiptId: currentStage.idempotencyKey, entity: "entry", entityId: confirmed.id, label: confirmed.brandName, action: "created" };
-              setInfoNotice(saveReceiptMessage(confirmedReceipt.current));
-              setNavigationFailed(true);
-              return;
-            }
-            setInfoNotice("La entrada ya fue creada. Conservamos el borrador posterior; revisa la versión actual antes de guardar los cambios.");
-            if (!isStrongEntryVersion(confirmed.etag)) setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
-          }
-        })
+        .then((restored) => handleRestoredCreation(controller, restored))
         .catch(() => { if (mounted.current && controllerRef.current === controller) setFailure(entryFailure(new Error("No pudimos comprobar el envío anterior. Reintenta la recuperación antes de guardar."))); });
     }
 

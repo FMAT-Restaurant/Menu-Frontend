@@ -34,7 +34,8 @@
 
 :where(.menu-module[data-menu-module]) .entry-category-selector legend,
 :where(.menu-module[data-menu-module]) .entry-status-selector legend {
-  margin: 0 0 12px;
+  margin: 0;
+  padding: 0 4px;
   color: var(--ink);
   font-size: 18px;
   line-height: 26px;
@@ -110,12 +111,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--canvas);
-}
-
-:where(.menu-module[data-menu-module]) .entry-category-selector legend,
-:where(.menu-module[data-menu-module]) .entry-status-selector legend {
-  padding: 0 4px;
-  margin-bottom: 0;
 }
 
 :where(.menu-module[data-menu-module]) .entry-category-selector__trigger {

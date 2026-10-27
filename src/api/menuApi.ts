@@ -122,31 +122,29 @@ export async function collectCategoryPages(
   if (fromPage > totalPages) {
     return [];
   }
-  const collected: MenuCategory[] = [];
-  for (
-    let batchStart = fromPage;
-    batchStart <= totalPages;
-    batchStart += MAX_CATEGORY_PAGE_BATCH_SIZE
-  ) {
-    if (signal?.aborted) {
-      break;
+  const pageNumbers = Array.from(
+    { length: totalPages - fromPage + 1 },
+    (_, offset) => fromPage + offset,
+  );
+  const pageResults: MenuCategory[][] = Array.from(
+    { length: pageNumbers.length },
+    () => [],
+  );
+  const fetchNextBatch = (offset: number): Promise<void> => {
+    if (signal?.aborted || offset >= pageNumbers.length) {
+      return Promise.resolve();
     }
-    const batchCount = Math.min(
-      MAX_CATEGORY_PAGE_BATCH_SIZE,
-      totalPages - batchStart + 1,
-    );
-    const pageNumbers = Array.from(
-      { length: batchCount },
-      (_, offset) => batchStart + offset,
-    );
-    const batchResults = await Promise.all(
-      pageNumbers.map((pageNumber) => getPage(pageNumber)),
-    );
-    for (const pageResult of batchResults) {
-      collected.push(...pageResult.data);
-    }
-  }
-  return collected;
+    const batchPageNumbers = pageNumbers.slice(offset, offset + MAX_CATEGORY_PAGE_BATCH_SIZE);
+    return Promise.all(batchPageNumbers.map((pageNumber) => getPage(pageNumber))).then((batchResults) => {
+      batchResults.forEach((pageResult, batchIndex) => {
+        pageResults[offset + batchIndex] = pageResult.data;
+      });
+      return fetchNextBatch(offset + batchPageNumbers.length);
+    });
+  };
+
+  await fetchNextBatch(0);
+  return pageResults.flat();
 }
 
 export async function executeSealedAttemptWithClient(

@@ -663,7 +663,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           </div>
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
-        {saveMessage && <p className="feedback feedback--success" role="status">{saveMessage}</p>}
+        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
         <OffersFeedback
           loadError={loadError}
           entryErrorMessage={entryErrorMessage}

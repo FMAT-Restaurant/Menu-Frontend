@@ -602,6 +602,13 @@ export function CategoryFormDialog({
   if (busy) saveLabel = "Guardando…";
 
   const reviewedEtagStrong = isStrongEtag(reviewedResource?.etag);
+  let submissionMessage = error;
+  if (pendingAttempt?.status === "requires_new_key") {
+    submissionMessage = "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío.";
+  }
+  if (showManualRetryButton) {
+    submissionMessage = "No sabemos si se creó la categoría. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente.";
+  }
 
   return (
     <dialog
@@ -612,7 +619,7 @@ export function CategoryFormDialog({
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) {
-          void handleVoluntaryClose();
+          handleVoluntaryClose();
         }
       }}
     >
@@ -677,11 +684,7 @@ export function CategoryFormDialog({
           )}
           {(error || showManualRetryButton) && (
             <div className="category-form-dialog__error" role="alert">
-              <p>{showManualRetryButton
-                ? "No sabemos si se creó la categoría. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente."
-                : pendingAttempt?.status === "requires_new_key"
-                  ? "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío."
-                  : error}</p>
+              <p>{submissionMessage}</p>
               {showManualRetryButton && retryCountdownMs > 0 && (
                 <p>
                   Espera {Math.ceil(retryCountdownMs / 1000)} s antes de volver a intentar.

@@ -127,7 +127,7 @@ function EntryFormEditor({
         requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actions.current); });
       }}>
         <EntryFormFeedback model={model} editing={editing} returnTo={returnTo} summaryRef={summary} />
-        {model.entryLoading && <p className="sr-only" role="status">Cargando la entrada…</p>}
+        {model.entryLoading && <output className="sr-only">Cargando la entrada…</output>}
         {model.entryError && <div className="feedback feedback--error" role="alert">{model.entryError} <button type="button" onClick={model.retryEntry}>Reintentar entrada</button></div>}
         {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
         <div className="entry-form__layout" aria-busy={model.entryLoading}>

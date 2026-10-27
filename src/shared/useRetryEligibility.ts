@@ -3,11 +3,11 @@ import { canManualRetryAttempt, type SealedOperationAttempt } from "../applicati
 
 /** Time only changes eligibility. Sending always requires an explicit user action. */
 export function useRetryEligibility(attempt: SealedOperationAttempt | null) {
-  const [, setNow] = useState(Date.now);
+  const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!attempt?.retryAfterUntil) return;
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, [attempt?.retryAfterUntil]);
-  return attempt ? canManualRetryAttempt(attempt, Date.now()) : null;
+  return attempt ? canManualRetryAttempt(attempt, now) : null;
 }

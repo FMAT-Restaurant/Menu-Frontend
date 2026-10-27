@@ -46,7 +46,7 @@ export function acquireModalScrollLock(document: Document): () => void {
     released = true;
     lock.count -= 1;
     if (lock.count > 0) return;
-    for (const property of lock.properties.reverse()) {
+    for (const property of [...lock.properties].reverse()) {
       if (property.value) property.element.style.setProperty(property.name, property.value, property.priority);
       else property.element.style.removeProperty(property.name);
     }

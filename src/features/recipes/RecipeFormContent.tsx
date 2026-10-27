@@ -18,6 +18,7 @@ import {
   createOperationAttemptController,
   sealJsonPayload,
   type OperationAttemptController,
+  type OperationExecutionResult,
   type OperationFlowScope,
   type PendingOperationChainRecord,
   type PendingOperationStorageAdapter,
@@ -360,8 +361,7 @@ export function RecipeFormContent({
   }
 
   function getOrInitController(): OperationAttemptController<RecipeDraft, RecipeDetail> {
-    if (!controllerRef.current) {
-      controllerRef.current = createOperationAttemptController<RecipeDraft, RecipeDetail>({
+    controllerRef.current ??= createOperationAttemptController<RecipeDraft, RecipeDetail>({
         scope: buildRecipeCreateScope(),
         storage,
         retainConfirmedResult: true,
@@ -393,7 +393,6 @@ export function RecipeFormContent({
         classifyError: (err, attempt) =>
           analyzeIdempotentAttemptError(err, attempt.operationKind),
       });
-    }
     return controllerRef.current;
   }
 
@@ -738,6 +737,88 @@ export function RecipeFormContent({
     setError("");
   }
 
+  async function executeCreationAttempt(
+    action: "submit" | "retry",
+    controller: OperationAttemptController<RecipeDraft, RecipeDetail>,
+  ): Promise<OperationExecutionResult<RecipeDraft, RecipeDetail>> {
+    if (controller.getCurrentAttempt()?.status === "pre_commit_rejected") {
+      await controller.startNewAttemptFromEditableDraft();
+    }
+    if (action === "retry" && controller.getRecord()) return controller.retryPending();
+    return controller.submit();
+  }
+
+  function saveSubmittedRecipeDraft(draft: RecipeDraft | undefined) {
+    if (!draft) return;
+    baseDraft.current = {
+      name: draft.name,
+      description: draft.description,
+      instructions: draft.instructions,
+      supplies: draft.supplies.map((supply) => ({
+        inventoryItemId: supply.inventoryItemId,
+        quantity: String(supply.quantity),
+      })),
+    };
+  }
+
+  async function handleSuccessfulCreation(
+    result: OperationExecutionResult<RecipeDraft, RecipeDetail>,
+    controller: OperationAttemptController<RecipeDraft, RecipeDetail>,
+  ) {
+    if (!result.result) return;
+    const created = result.result;
+    setPendingAttempt(null);
+    saveSubmittedRecipeDraft(result.record.submittedDraft);
+    if (result.hasDraftChangesSinceSubmission) {
+      setActiveRecipe(created);
+      setOpeningEtag(created.etag);
+      setReviewRequired(!isStrongEtag(created.etag));
+      setInfoNotice("La receta se creó. Conservamos tus cambios posteriores; guárdalos para actualizarla.");
+      onCreatedWithPendingEdits?.(created);
+      return;
+    }
+    await controller.abandonFlow().catch(() => {});
+    if (!activeRef.current) return;
+    exitSucceeded.current = true;
+    onCreated?.(created);
+    onClose();
+  }
+
+  function handleFailedCreation(
+    result: OperationExecutionResult<RecipeDraft, RecipeDetail>,
+    controller: OperationAttemptController<RecipeDraft, RecipeDetail>,
+  ) {
+    const stage = controller.getCurrentAttempt() ?? result.record.stages[result.record.currentStageIndex] ?? null;
+    setPendingAttempt(stage);
+    setError(stage?.lastErrorMessage || result.outcome?.message || "No se pudo crear la receta. Vuelve a intentarlo.");
+  }
+
+  async function executeFallbackCreation(draft: RecipeDraft) {
+    try {
+      await onSubmit?.(draft);
+      exitSucceeded.current = true;
+      onClose();
+    } catch {
+      setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
+    } finally {
+      isSubmittingRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  function handleCreationFlowError(error: unknown) {
+    if (!activeRef.current) return;
+    if (error instanceof PreSendStorageError || error instanceof OperationRetryBlockedError) {
+      setError(error.message);
+      return;
+    }
+    const message =
+      error && typeof error === "object" && "message" in error && typeof error.message === "string"
+        ? error.message
+        : "Error inesperado al crear la receta.";
+    setError(message);
+  }
+
   async function executeCreationFlow(action: "submit" | "retry") {
     if (isSubmittingRef.current) return;
     const recovering = action === "retry" && repository && controllerRef.current?.getRecord();
@@ -746,7 +827,6 @@ export function RecipeFormContent({
       setError("");
       return;
     }
-
     const cleanDraft: RecipeDraft = validation ? {
       name: validation.cleanName!,
       description: validation.cleanDescription!,
@@ -759,74 +839,25 @@ export function RecipeFormContent({
     setError("");
     setInfoNotice("");
 
-    // Fallback if repository is not passed and onSubmit is provided
     if (!repository && onSubmit) {
-      try {
-        await onSubmit(cleanDraft);
-        exitSucceeded.current = true;
-        onClose();
-      } catch {
-        setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
-      } finally {
-        isSubmittingRef.current = false;
-        setBusy(false);
-      }
+      await executeFallbackCreation(cleanDraft);
       return;
     }
 
     try {
       const controller = getOrInitController();
-
-      if (controller.getCurrentAttempt()?.status === "pre_commit_rejected") {
-        await controller.startNewAttemptFromEditableDraft();
-      }
-
-      const result =
-        action === "retry" && controller.getRecord()
-          ? await controller.retryPending()
-          : await controller.submit();
-
+      const result = await executeCreationAttempt(action, controller);
       if (!activeRef.current) return;
-
       if (result.status === "succeeded" && result.result) {
-        setPendingAttempt(null);
-        if (result.record.submittedDraft) { const d = result.record.submittedDraft; baseDraft.current = { name: d.name, description: d.description, instructions: d.instructions, supplies: d.supplies.map(s => ({ inventoryItemId: s.inventoryItemId, quantity: String(s.quantity) })) }; }
-        if (result.hasDraftChangesSinceSubmission) {
-          setActiveRecipe(result.result);
-          setOpeningEtag(result.result.etag);
-          setReviewRequired(!isStrongEtag(result.result.etag));
-          setInfoNotice(
-            "La receta se creó. Conservamos tus cambios posteriores; guárdalos para actualizarla.",
-          );
-          onCreatedWithPendingEdits?.(result.result);
-        } else {
-          await controller.abandonFlow().catch(() => {});
-          if (!activeRef.current) return;
-          exitSucceeded.current = true;
-          onCreated?.(result.result);
-          onClose();
-        }
+        await handleSuccessfulCreation(result, controller);
       } else {
-        const stage = controller.getCurrentAttempt() ?? result.record?.stages[result.record.currentStageIndex] ?? null;
-        setPendingAttempt(stage);
-        setError(stage?.lastErrorMessage || result.outcome?.message || "No se pudo crear la receta. Vuelve a intentarlo.");
+        handleFailedCreation(result, controller);
       }
-    } catch (err) {
-      if (!activeRef.current) return;
-      if (err instanceof PreSendStorageError || err instanceof OperationRetryBlockedError) {
-        setError(err.message);
-        return;
-      }
-      const message =
-        err && typeof err === "object" && "message" in err && typeof err.message === "string"
-          ? err.message
-          : "Error inesperado al crear la receta.";
-      setError(message);
+    } catch (error) {
+      handleCreationFlowError(error);
     } finally {
       isSubmittingRef.current = false;
-      if (activeRef.current) {
-        setBusy(false);
-      }
+      if (activeRef.current) setBusy(false);
     }
   }
 

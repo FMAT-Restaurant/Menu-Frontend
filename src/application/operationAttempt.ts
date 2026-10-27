@@ -431,6 +431,41 @@ export function canManualRetryAttempt(
   return { allowed: true, remainingRetryAfterMs: 0 };
 }
 
+function createRetryBlockedError(
+  eligibility: ManualRetryEligibility,
+): OperationRetryBlockedError | null {
+  switch (eligibility.reason) {
+    case "retry_after_invalid":
+      return new OperationRetryBlockedError(
+        "RETRY_AFTER_INVALID",
+        "La cabecera Retry-After no es válida. La operación permanece pausada; revisa su estado antes de continuar.",
+      );
+    case "retry_after_active":
+      return new OperationRetryBlockedError(
+        "RETRY_AFTER_ACTIVE",
+        "La operación sigue en progreso. Espera el tiempo indicado en Retry-After antes de reintentar.",
+        eligibility.remainingRetryAfterMs,
+      );
+    case "requires_new_key":
+      return new OperationRetryBlockedError(
+        "REQUIRES_NEW_KEY",
+        "Este intento requiere generar una nueva clave de idempotencia.",
+      );
+    case "precondition_conflict":
+      return new OperationRetryBlockedError(
+        "PRECONDITION_CONFLICT",
+        "El recurso cambió en el servidor. Recarga la versión actual antes de volver a intentar.",
+      );
+    case "already_succeeded":
+      return new OperationRetryBlockedError(
+        "ALREADY_SUCCEEDED",
+        "La operación ya fue confirmada previamente.",
+      );
+    default:
+      return null;
+  }
+}
+
 export interface AttemptFailureOutcome {
   readonly kind:
     | "in_progress_conflict"
@@ -783,41 +818,6 @@ export function createOperationAttemptController<TDraft, TResult>(
     const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
     if (activeStage.firstSentAt === null) {
       await persistPreSendOrThrow(currentRecord);
-    }
-  }
-
-  function createRetryBlockedError(
-    eligibility: ManualRetryEligibility,
-  ): OperationRetryBlockedError | null {
-    switch (eligibility.reason) {
-      case "retry_after_invalid":
-        return new OperationRetryBlockedError(
-          "RETRY_AFTER_INVALID",
-          "La cabecera Retry-After no es válida. La operación permanece pausada; revisa su estado antes de continuar.",
-        );
-      case "retry_after_active":
-        return new OperationRetryBlockedError(
-          "RETRY_AFTER_ACTIVE",
-          "La operación sigue en progreso. Espera el tiempo indicado en Retry-After antes de reintentar.",
-          eligibility.remainingRetryAfterMs,
-        );
-      case "requires_new_key":
-        return new OperationRetryBlockedError(
-          "REQUIRES_NEW_KEY",
-          "Este intento requiere generar una nueva clave de idempotencia.",
-        );
-      case "precondition_conflict":
-        return new OperationRetryBlockedError(
-          "PRECONDITION_CONFLICT",
-          "El recurso cambió en el servidor. Recarga la versión actual antes de volver a intentar.",
-        );
-      case "already_succeeded":
-        return new OperationRetryBlockedError(
-          "ALREADY_SUCCEEDED",
-          "La operación ya fue confirmada previamente.",
-        );
-      default:
-        return null;
     }
   }
 

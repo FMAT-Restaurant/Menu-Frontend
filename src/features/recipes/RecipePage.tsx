@@ -205,7 +205,7 @@ export function RecipePage({
 
   // URL-driven query and page state when not controlled via propMode
   const urlQ = searchParams.get("q") ?? "";
-  const urlPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const urlPage = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
   // Local query and page state when propMode is supplied (e.g. selection modal)
   const [localQuery, setLocalQuery] = useState("");
@@ -474,6 +474,9 @@ export function RecipePage({
   const olderResults = Boolean(displayedContext && (displayedContext.query !== confirmedQuery || displayedContext.page !== currentPage));
   const resultsBusy = loading || olderResults;
   const title = mode === "selection" ? "Biblioteca de recetas — elegir opción" : "Biblioteca de recetas";
+  const recipeDialogKey = editingRecipe === "new"
+    ? initialPendingRecord?.storageKey ?? "new"
+    : editingRecipe?.id;
   const subtitle =
     mode === "selection"
       ? "Selecciona una receta para asignarla a la opción de la oferta."
@@ -552,11 +555,7 @@ export function RecipePage({
 
       {editingRecipe && (
         <RecipeFormDialog
-          key={
-            editingRecipe === "new"
-              ? (initialPendingRecord ? initialPendingRecord.storageKey : "new")
-              : editingRecipe.id
-          }
+          key={recipeDialogKey}
           recipe={editingRecipe === "new" ? undefined : editingRecipe}
           openingResource={editingRecipe === "new" ? undefined : openingResource}
           repository={repository}

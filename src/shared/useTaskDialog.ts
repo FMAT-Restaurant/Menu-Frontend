@@ -76,7 +76,7 @@ export function useTaskDialog(
       }
       const index = stack.indexOf(dialog);
       if (index !== -1) stack.splice(index, 1);
-      dialog.removeAttribute("data-modal-covered");
+      delete dialog.dataset.modalCovered;
       updateBackdrops(stack);
       if (stack.length === 0) stacks.delete(document);
       if (dialog.open && typeof dialog.close === "function") dialog.close();

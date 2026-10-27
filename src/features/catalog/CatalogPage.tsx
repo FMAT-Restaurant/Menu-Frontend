@@ -366,7 +366,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
           </div>
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={clearFilters} />
-        {saveMessage && <p className="feedback feedback--success" role="status">{saveMessage}</p>}
+        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
         <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} notice={notice} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} dialogOpen={Boolean(entryToDelete)} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
         <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={setEntryToDelete} />
         {entryToDelete && (

@@ -103,6 +103,28 @@ function createTransactionSettlers(
   };
 }
 
+function createReadSettlers<TResult>(
+  db: MinimalIdbDatabase,
+  resolve: (value: TResult) => void,
+  reject: (error: PendingOperationStorageError) => void,
+) {
+  let settled = false;
+  return {
+    reject(error: PendingOperationStorageError) {
+      if (settled) return;
+      settled = true;
+      db.close();
+      reject(error);
+    },
+    resolve(value: TResult) {
+      if (settled) return;
+      settled = true;
+      db.close();
+      resolve(value);
+    },
+  };
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -543,23 +565,9 @@ export function createIndexedDbPendingOperationStorage(
       const key = resolveKey(scopeOrKey);
       const db = await openDatabase();
       return new Promise<PendingOperationChainRecord<TDraft> | null>((resolve, reject) => {
-        let settled = false;
+        const { reject: settleReject, resolve: settleResolve } = createReadSettlers(db, resolve, reject);
         let getSucceeded = false;
         let fetchedValue: unknown = undefined;
-
-        const settleReject = (error: PendingOperationStorageError) => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          reject(error);
-        };
-
-        const settleResolve = (value: PendingOperationChainRecord<TDraft> | null) => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          resolve(value);
-        };
 
         let tx: MinimalIdbTransaction;
         try {
@@ -781,23 +789,9 @@ export function createIndexedDbPendingOperationStorage(
       }
       const db = await openDatabase();
       return new Promise<PendingOperationChainRecord[]>((resolve, reject) => {
-        let settled = false;
+        const { reject: settleReject, resolve: settleResolve } = createReadSettlers(db, resolve, reject);
         let getAllSucceeded = false;
         let rawList: unknown[] = [];
-
-        const settleReject = (error: PendingOperationStorageError) => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          reject(error);
-        };
-
-        const settleResolve = (items: PendingOperationChainRecord[]) => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          resolve(items);
-        };
 
         let tx: MinimalIdbTransaction;
         try {
@@ -1111,16 +1105,15 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
             onerror: null,
             objectStore(): MinimalIdbObjectStore {
               return {
-                put(value: unknown, key?: string): MinimalIdbRequest<unknown> {
-                  const resolvedKey = key ?? "";
+                put(value: unknown, key: string = ""): MinimalIdbRequest<unknown> {
                   const req: ControllableRequest<unknown> = {
-                    result: resolvedKey,
+                    result: key,
                     error: null,
                     onsuccess: null,
                     onerror: null,
                   };
 
-                  scheduleControllablePut(resolvedKey, value, req, tx, backingStore, stagedWrites, failures);
+                  scheduleControllablePut(key, value, req, tx, backingStore, stagedWrites, failures);
 
                   return req;
                 },

@@ -189,20 +189,24 @@ export function createDemoRepository(): MenuRepository {
   };
 
   return {
-    async listEntries(query, signal) {
-      signal?.throwIfAborted();
-      const result = [...entries.values()].filter(entry =>
-        matches(`${entry.brandName} ${entry.description}`, query.q) &&
-        (!query.status || entry.status === query.status) &&
-        (!query.categoryId || entry.categoryIds.includes(query.categoryId)),
-      ).map((entry): MenuEntry => ({ ...entry, image: entry.image?.id ? required(images, entry.image.id, "La imagen") : null,
-        categories: entry.categoryIds.map(id => categoryWithCount(id)),
-        offerCount: [...offers.values()].filter(offer => offer.entryId === entry.id).length }));
-      return pageOf(result, query.page, query.pageSize);
+    listEntries(query, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        const result = [...entries.values()].filter(entry =>
+          matches(`${entry.brandName} ${entry.description}`, query.q) &&
+          (!query.status || entry.status === query.status) &&
+          (!query.categoryId || entry.categoryIds.includes(query.categoryId)),
+        ).map((entry): MenuEntry => ({ ...entry, image: entry.image?.id ? required(images, entry.image.id, "La imagen") : null,
+          categories: entry.categoryIds.map(id => categoryWithCount(id)),
+          offerCount: [...offers.values()].filter(offer => offer.entryId === entry.id).length }));
+        return pageOf(result, query.page, query.pageSize);
+      });
     },
-    async listCategories(signal) {
-      signal?.throwIfAborted();
-      return [...categories.keys()].map(categoryWithCount);
+    listCategories(signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return [...categories.keys()].map(categoryWithCount);
+      });
     },
     getCategory(id, signal) {
       return runDemoOperation(() => {
@@ -217,12 +221,14 @@ export function createDemoRepository(): MenuRepository {
         return categoryWithCount(item.id);
       });
     },
-    async updateCategory(id, draft, etag) {
-      required(categories, id, "La categoría");
-      checkVersion(id, etag);
-      categories.set(id, { ...copy(draft), id });
-      bump(id);
-      return categoryWithCount(id);
+    updateCategory(id, draft, etag) {
+      return runDemoOperation(() => {
+        required(categories, id, "La categoría");
+        checkVersion(id, etag);
+        categories.set(id, { ...copy(draft), id });
+        bump(id);
+        return categoryWithCount(id);
+      });
     },
     async getEntry(id, signal) {
       signal?.throwIfAborted();
@@ -240,14 +246,16 @@ export function createDemoRepository(): MenuRepository {
         return snapshot(entry);
       });
     },
-    async updateEntry(id, draft, etag) {
-      const current = required(entries, id, "La entrada");
-      checkVersion(id, etag);
-      validateCategories(draft.categoryIds);
-      const entry = { ...current, ...copy(draft), image: draft.imageId ? required(images, draft.imageId, "La imagen") : current.image };
-      entries.set(id, entry);
-      bump(id);
-      return snapshot(entry);
+    updateEntry(id, draft, etag) {
+      return runDemoOperation(() => {
+        const current = required(entries, id, "La entrada");
+        checkVersion(id, etag);
+        validateCategories(draft.categoryIds);
+        const entry = { ...current, ...copy(draft), image: draft.imageId ? required(images, draft.imageId, "La imagen") : current.image };
+        entries.set(id, entry);
+        bump(id);
+        return snapshot(entry);
+      });
     },
     setEntryStatus(id, status) {
       return runDemoOperation(() => {
@@ -256,10 +264,12 @@ export function createDemoRepository(): MenuRepository {
         bump(id);
       });
     },
-    async deleteArchivedEntry(id) {
-      if (required(entries, id, "La entrada").status !== "ARCHIVED") fail(409, "Solo se puede eliminar una entrada archivada.");
-      entries.delete(id);
-      for (const offer of offers.values()) if (offer.entryId === id) offers.delete(offer.id);
+    deleteArchivedEntry(id) {
+      return runDemoOperation(() => {
+        if (required(entries, id, "La entrada").status !== "ARCHIVED") fail(409, "Solo se puede eliminar una entrada archivada.");
+        entries.delete(id);
+        for (const offer of offers.values()) if (offer.entryId === id) offers.delete(offer.id);
+      });
     },
     async listOffers(entryId, page, pageSize, signal) {
       signal?.throwIfAborted();
@@ -297,9 +307,11 @@ export function createDemoRepository(): MenuRepository {
       if (required(offers, id, "La oferta").status !== "INACTIVE") fail(409, "Solo se puede eliminar una oferta inactiva.");
       offers.delete(id);
     },
-    async listRecipes(query, signal) {
-      signal?.throwIfAborted();
-      return pageOf([...recipes.values()].filter(recipe => matches(`${recipe.name} ${recipe.description}`, query.q)).map(recipeWithSupplies), query.page, query.pageSize);
+    listRecipes(query, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return pageOf([...recipes.values()].filter(recipe => matches(`${recipe.name} ${recipe.description}`, query.q)).map(recipeWithSupplies), query.page, query.pageSize);
+      });
     },
     getRecipe(id, signal) {
       return runDemoOperation(() => {
@@ -326,17 +338,20 @@ export function createDemoRepository(): MenuRepository {
         return recipeWithSupplies(recipe);
       });
     },
-    async deleteRecipe(id) {
-      required(recipes, id, "La receta");
-      if ([...offers.values()].some(offer => offer.composition.slots.some(slot =>
-        slot.options.some(option => option.sourceType === "RECIPE" && option.recipeId === id),
-      ))) fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
-      recipes.delete(id);
+    deleteRecipe(id) {
+      return runDemoOperation(() => {
+        required(recipes, id, "La receta");
+        if ([...offers.values()].some(offer => offer.composition.slots.some(slot =>
+          slot.options.some(option => option.sourceType === "RECIPE" && option.recipeId === id),
+        ))) fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
+        recipes.delete(id);
+      });
     },
-    listInventoryItems(query = {}, signal) {
+    listInventoryItems(query, signal) {
+      const requestedQuery = query ?? {};
       return runDemoOperation(() => {
         signal?.throwIfAborted();
-        return pageOf([...inventory.values()].filter(item => matches(item.name, query.q)), query.page ?? 1, query.pageSize ?? 100);
+        return pageOf([...inventory.values()].filter(item => matches(item.name, requestedQuery.q)), requestedQuery.page ?? 1, requestedQuery.pageSize ?? 100);
       });
     },
   };

@@ -351,4 +351,4 @@
 :where(.menu-module[data-menu-module]) .recipe-selector__empty, :where(.menu-module[data-menu-module]) .recipe-back-confirm { padding-block: 16px; }
 :where(.menu-module[data-menu-module]) .recipe-back-confirm { padding-inline: 24px; }
 :where(.menu-module[data-menu-module]) .recipe-back-confirm button { margin: 8px 8px 0 0; }
-:where(.menu-module[data-menu-module]) .recipe-selection-task [hidden], :where(.menu-module[data-menu-module]) .recipe-form-content[hidden] { display: none !important; }
+:where(.menu-module[data-menu-module]) .recipe-selector .recipe-selection-task [hidden], :where(.menu-module[data-menu-module]) .recipe-form-content[hidden] { display: none; }

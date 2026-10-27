@@ -291,6 +291,194 @@ function getUncertainOutcomeErrorCode(
   return `HTTP_${status}`;
 }
 
+type ParsedContractError = NonNullable<ReturnType<typeof contractErrorResponse>>;
+
+function analyzeMalformedWriteResponse(
+  ctx: HttpFailureContext,
+  status: number | null,
+): IdempotentErrorAnalysis | null {
+  if (!ctx.isMalformedWrite2xx && !(status !== null && status >= 200 && status < 300)) return null;
+  return {
+    kind: "uncertain_write_response",
+    status: status ?? 200,
+    errorCode: "INVALID_WRITE_2XX_RESPONSE",
+    message: ctx.message ?? "La respuesta del servidor es inválida, pero el cambio pudo haberse aplicado. Reintenta con la misma operación o verifica el estado.",
+    retryAfterSeconds: null,
+    retryAfterInvalid: false,
+    possibleWriteApplied: true,
+    retryWithSameKey: true,
+    allowNewAttemptWithNewKey: false,
+    requiresResourceReload: false,
+    preserveEditableDraft: true,
+    committed: "uncertain",
+    violations: [],
+    offerIds: [],
+  };
+}
+
+function analyzeInProgressConflict(
+  ctx: HttpFailureContext,
+  status: number | null,
+  contractError: ParsedContractError | null,
+  contractCode: string | undefined,
+  violations: readonly ContractValidationViolation[],
+  offerIds: readonly string[],
+): IdempotentErrorAnalysis | null {
+  if (status !== 409 || contractCode !== "IDEMPOTENCY_IN_PROGRESS") return null;
+  const parsedRetryAfter = parseRetryAfterHeader(getHeaderCaseInsensitive(ctx.headers, "retry-after"));
+  if (parsedRetryAfter.valid) {
+    return {
+      kind: "in_progress_conflict",
+      status: 409,
+      errorCode: "IDEMPOTENCY_IN_PROGRESS",
+      message: contractError?.message ?? `La solicitud sigue en proceso. Espera ${parsedRetryAfter.seconds} s antes de reintentar.`,
+      retryAfterSeconds: parsedRetryAfter.seconds,
+      retryAfterInvalid: false,
+      possibleWriteApplied: true,
+      retryWithSameKey: true,
+      allowNewAttemptWithNewKey: false,
+      requiresResourceReload: false,
+      preserveEditableDraft: true,
+      committed: "uncertain",
+      violations,
+      offerIds,
+    };
+  }
+  return {
+    kind: "in_progress_conflict",
+    status: 409,
+    errorCode: "IDEMPOTENCY_IN_PROGRESS_INVALID_RETRY_AFTER",
+    message: "La solicitud sigue en proceso, pero el encabezado Retry-After falta o no es válido. La operación queda pausada; conserva el borrador y revisa su estado antes de continuar.",
+    retryAfterSeconds: null,
+    retryAfterInvalid: true,
+    possibleWriteApplied: true,
+    retryWithSameKey: true,
+    allowNewAttemptWithNewKey: false,
+    requiresResourceReload: false,
+    preserveEditableDraft: true,
+    committed: "uncertain",
+    violations,
+    offerIds,
+  };
+}
+
+function analyzeContractConflict(
+  status: number | null,
+  contractError: ParsedContractError | null,
+  contractCode: string | undefined,
+  violations: readonly ContractValidationViolation[],
+  offerIds: readonly string[],
+): IdempotentErrorAnalysis | null {
+  if (status === 409 && contractCode === "IDEMPOTENCY_KEY_REUSED") {
+    return {
+      kind: "key_reused_conflict", status: 409, errorCode: "IDEMPOTENCY_KEY_REUSED",
+      message: contractError?.message ?? "La clave de idempotencia ya fue utilizada con datos diferentes. Inicia un nuevo intento para generar una clave nueva.",
+      retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: false,
+      retryWithSameKey: false, allowNewAttemptWithNewKey: true, requiresResourceReload: false,
+      preserveEditableDraft: true, committed: false, violations, offerIds,
+    };
+  }
+  if (status === 400 && contractCode === "INVALID_IDEMPOTENCY_KEY") {
+    return {
+      kind: "invalid_key", status: 400, errorCode: "INVALID_IDEMPOTENCY_KEY",
+      message: contractError?.message ?? "La clave de idempotencia enviada no es válida. Se generará un nuevo UUID v4 al reintentar.",
+      retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: false,
+      retryWithSameKey: false, allowNewAttemptWithNewKey: true, requiresResourceReload: false,
+      preserveEditableDraft: true, committed: false, violations, offerIds,
+    };
+  }
+  if (status !== 412 && status !== 428) return null;
+  return {
+    kind: "precondition_conflict", status,
+    errorCode: status === 428 ? "PRECONDITION_REQUIRED" : "PRECONDITION_FAILED",
+    message: contractError?.message ?? "El recurso cambió en el servidor. Recarga la versión actual para conciliar tu borrador antes de guardar.",
+    retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: false,
+    retryWithSameKey: false, allowNewAttemptWithNewKey: true, requiresResourceReload: true,
+    preserveEditableDraft: true, committed: false, violations, offerIds,
+  };
+}
+
+function analyzeValidationFailure(
+  ctx: HttpFailureContext,
+  status: number | null,
+  contractError: ParsedContractError | null,
+  contractCode: string | undefined,
+  violations: readonly ContractValidationViolation[],
+  offerIds: readonly string[],
+): IdempotentErrorAnalysis | null {
+  if (status !== 422) return null;
+  const violationMessages = violations.map((item) => item.message).join(" ");
+  const combinedMessage = violationMessages.length > 0 && contractError?.message
+    ? `${contractError.message} ${violationMessages}`
+    : contractError?.message ?? ctx.message ?? "Revisa los datos enviados en la solicitud.";
+  return {
+    kind: "pre_commit_rejection", status: 422,
+    errorCode: contractCode ?? "VALIDATION_ERROR", message: combinedMessage,
+    retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: false,
+    retryWithSameKey: false, allowNewAttemptWithNewKey: true, requiresResourceReload: false,
+    preserveEditableDraft: true, committed: false, violations, offerIds,
+  };
+}
+
+function analyzeInventoryFailure(
+  ctx: HttpFailureContext,
+  status: number | null,
+  contractError: ParsedContractError | null,
+  contractCode: string | undefined,
+  violations: readonly ContractValidationViolation[],
+  offerIds: readonly string[],
+): IdempotentErrorAnalysis | null {
+  const matchesInventoryFailure = status === 502 && contractError !== null && (
+    isInventoryValidatedOperation(ctx.operationKind) ||
+    contractCode === "INVENTORY_UNAVAILABLE" ||
+    /inventario|no se aplicaron cambios/i.test(contractError.message)
+  );
+  if (!matchesInventoryFailure || !contractError) return null;
+  return {
+    kind: "pre_commit_rejection", status: 502,
+    errorCode: contractCode ?? "INVENTORY_VALIDATION_UNAVAILABLE", message: contractError.message,
+    retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: false,
+    retryWithSameKey: false, allowNewAttemptWithNewKey: true, requiresResourceReload: false,
+    preserveEditableDraft: true, committed: false, violations, offerIds,
+  };
+}
+
+function analyzeUncertainOutcome(
+  ctx: HttpFailureContext,
+  status: number | null,
+  contractError: ParsedContractError | null,
+  violations: readonly ContractValidationViolation[],
+  offerIds: readonly string[],
+): IdempotentErrorAnalysis | null {
+  if (!ctx.isTimeout && !ctx.isNetworkError && status !== null && status !== 408 && status !== 429 && status < 500) return null;
+  return {
+    kind: "uncertain_outcome", status,
+    errorCode: getUncertainOutcomeErrorCode(ctx, status),
+    message: contractError?.message ?? ctx.message ?? "No se pudo confirmar el resultado de la operación. Reintenta con la misma operación pendiente.",
+    retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: true,
+    retryWithSameKey: true, allowNewAttemptWithNewKey: false, requiresResourceReload: false,
+    preserveEditableDraft: true, committed: "uncertain", violations, offerIds,
+  };
+}
+
+function createPreCommitRejection(
+  ctx: HttpFailureContext,
+  status: number | null,
+  contractError: ParsedContractError | null,
+  contractCode: string | undefined,
+  violations: readonly ContractValidationViolation[],
+  offerIds: readonly string[],
+): IdempotentErrorAnalysis {
+  return {
+    kind: "pre_commit_rejection", status,
+    errorCode: contractCode ?? `HTTP_${status}`,
+    message: contractError?.message ?? ctx.message ?? "No se pudo completar la operación.",
+    retryAfterSeconds: null, retryAfterInvalid: false, possibleWriteApplied: false,
+    retryWithSameKey: false, allowNewAttemptWithNewKey: true, requiresResourceReload: false,
+    preserveEditableDraft: true, committed: false, violations, offerIds,
+  };
+}
+
 export function analyzeIdempotentAttemptError(
   errorOrContext: unknown,
   operationKind?: IdempotentOperationKind,
@@ -301,235 +489,16 @@ export function analyzeIdempotentAttemptError(
   const contractCode = contractError?.details?.code;
   const violations = contractError?.details?.violations ?? [];
   const offerIds = contractError?.details?.offerIds ?? [];
-
-  if (
-    ctx.isMalformedWrite2xx ||
-    (status !== null && status >= 200 && status < 300)
-  ) {
-    const baseMessage =
-      ctx.message ??
-      "La respuesta del servidor es inválida, pero el cambio pudo haberse aplicado. Reintenta con la misma operación o verifica el estado.";
-    return {
-      kind: "uncertain_write_response",
-      status: status ?? 200,
-      errorCode: "INVALID_WRITE_2XX_RESPONSE",
-      message: baseMessage,
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: true,
-      retryWithSameKey: true,
-      allowNewAttemptWithNewKey: false,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: "uncertain",
-      violations: [],
-      offerIds: [],
-    };
-  }
-
-  if (status === 409 && contractCode === "IDEMPOTENCY_IN_PROGRESS") {
-    const rawRetryAfter = getHeaderCaseInsensitive(ctx.headers, "retry-after");
-    const parsedRetryAfter = parseRetryAfterHeader(rawRetryAfter);
-    if (parsedRetryAfter.valid) {
-      return {
-        kind: "in_progress_conflict",
-        status: 409,
-        errorCode: "IDEMPOTENCY_IN_PROGRESS",
-        message:
-          contractError?.message ??
-          `La solicitud sigue en proceso. Espera ${parsedRetryAfter.seconds} s antes de reintentar.`,
-        retryAfterSeconds: parsedRetryAfter.seconds,
-        retryAfterInvalid: false,
-        possibleWriteApplied: true,
-        retryWithSameKey: true,
-        allowNewAttemptWithNewKey: false,
-        requiresResourceReload: false,
-        preserveEditableDraft: true,
-        committed: "uncertain",
-        violations,
-        offerIds,
-      };
-    }
-
-    return {
-      kind: "in_progress_conflict",
-      status: 409,
-      errorCode: "IDEMPOTENCY_IN_PROGRESS_INVALID_RETRY_AFTER",
-      message:
-        "La solicitud sigue en proceso, pero el encabezado Retry-After falta o no es válido. La operación queda pausada; conserva el borrador y revisa su estado antes de continuar.",
-      retryAfterSeconds: null,
-      retryAfterInvalid: true,
-      possibleWriteApplied: true,
-      retryWithSameKey: true,
-      allowNewAttemptWithNewKey: false,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: "uncertain",
-      violations,
-      offerIds,
-    };
-  }
-
-  if (status === 409 && contractCode === "IDEMPOTENCY_KEY_REUSED") {
-    return {
-      kind: "key_reused_conflict",
-      status: 409,
-      errorCode: "IDEMPOTENCY_KEY_REUSED",
-      message:
-        contractError?.message ??
-        "La clave de idempotencia ya fue utilizada con datos diferentes. Inicia un nuevo intento para generar una clave nueva.",
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: false,
-      retryWithSameKey: false,
-      allowNewAttemptWithNewKey: true,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: false,
-      violations,
-      offerIds,
-    };
-  }
-
-  if (status === 400 && contractCode === "INVALID_IDEMPOTENCY_KEY") {
-    return {
-      kind: "invalid_key",
-      status: 400,
-      errorCode: "INVALID_IDEMPOTENCY_KEY",
-      message:
-        contractError?.message ??
-        "La clave de idempotencia enviada no es válida. Se generará un nuevo UUID v4 al reintentar.",
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: false,
-      retryWithSameKey: false,
-      allowNewAttemptWithNewKey: true,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: false,
-      violations,
-      offerIds,
-    };
-  }
-
-  if (status === 412 || status === 428) {
-    return {
-      kind: "precondition_conflict",
-      status,
-      errorCode: status === 428 ? "PRECONDITION_REQUIRED" : "PRECONDITION_FAILED",
-      message:
-        contractError?.message ??
-        "El recurso cambió en el servidor. Recarga la versión actual para conciliar tu borrador antes de guardar.",
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: false,
-      retryWithSameKey: false,
-      allowNewAttemptWithNewKey: true,
-      requiresResourceReload: true,
-      preserveEditableDraft: true,
-      committed: false,
-      violations,
-      offerIds,
-    };
-  }
-
-  if (status === 422) {
-    const violationMessages = violations.map((item) => item.message).join(" ");
-    const combinedMessage =
-      violationMessages.length > 0 && contractError?.message
-        ? `${contractError.message} ${violationMessages}`
-        : contractError?.message ?? ctx.message ?? "Revisa los datos enviados en la solicitud.";
-    return {
-      kind: "pre_commit_rejection",
-      status: 422,
-      errorCode: contractCode ?? "VALIDATION_ERROR",
-      message: combinedMessage,
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: false,
-      retryWithSameKey: false,
-      allowNewAttemptWithNewKey: true,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: false,
-      violations,
-      offerIds,
-    };
-  }
-
-  const isContractualInventory502 =
-    status === 502 &&
-    contractError !== null &&
-    (isInventoryValidatedOperation(ctx.operationKind) ||
-      contractCode === "INVENTORY_UNAVAILABLE" ||
-      /inventario|no se aplicaron cambios/i.test(contractError.message));
-
-  if (isContractualInventory502 && contractError) {
-    return {
-      kind: "pre_commit_rejection",
-      status: 502,
-      errorCode: contractCode ?? "INVENTORY_VALIDATION_UNAVAILABLE",
-      message: contractError.message,
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: false,
-      retryWithSameKey: false,
-      allowNewAttemptWithNewKey: true,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: false,
-      violations,
-      offerIds,
-    };
-  }
-
-  if (
-    ctx.isTimeout ||
-    ctx.isNetworkError ||
-    status === null ||
-    status === 408 ||
-    status === 429 ||
-    status >= 500
-  ) {
-    const code = getUncertainOutcomeErrorCode(ctx, status);
-    return {
-      kind: "uncertain_outcome",
-      status,
-      errorCode: code,
-      message:
-        contractError?.message ??
-        ctx.message ??
-        "No se pudo confirmar el resultado de la operación. Reintenta con la misma operación pendiente.",
-      retryAfterSeconds: null,
-      retryAfterInvalid: false,
-      possibleWriteApplied: true,
-      retryWithSameKey: true,
-      allowNewAttemptWithNewKey: false,
-      requiresResourceReload: false,
-      preserveEditableDraft: true,
-      committed: "uncertain",
-      violations,
-      offerIds,
-    };
-  }
-
-  return {
-    kind: "pre_commit_rejection",
-    status,
-    errorCode: contractCode ?? `HTTP_${status}`,
-    message:
-      contractError?.message ?? ctx.message ?? "No se pudo completar la operación.",
-    retryAfterSeconds: null,
-    retryAfterInvalid: false,
-    possibleWriteApplied: false,
-    retryWithSameKey: false,
-    allowNewAttemptWithNewKey: true,
-    requiresResourceReload: false,
-    preserveEditableDraft: true,
-    committed: false,
-    violations,
-    offerIds,
-  };
+  const analyses = [
+    analyzeMalformedWriteResponse(ctx, status),
+    analyzeInProgressConflict(ctx, status, contractError, contractCode, violations, offerIds),
+    analyzeContractConflict(status, contractError, contractCode, violations, offerIds),
+    analyzeValidationFailure(ctx, status, contractError, contractCode, violations, offerIds),
+    analyzeInventoryFailure(ctx, status, contractError, contractCode, violations, offerIds),
+    analyzeUncertainOutcome(ctx, status, contractError, violations, offerIds),
+  ];
+  return analyses.find((analysis) => analysis !== null) ??
+    createPreCommitRejection(ctx, status, contractError, contractCode, violations, offerIds);
 }
 
 export interface NonIdempotentWriteErrorAnalysis {

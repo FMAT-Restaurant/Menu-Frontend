@@ -68,7 +68,7 @@ export function RouteContext({ transitions }: Readonly<{ transitions?: RouteTran
     const initialFocus = document.activeElement;
     const destination = currentUrl(latestLocation.current);
     const originKey = origins.current.get(destination);
-    const ownedDocument = document.documentElement.hasAttribute("data-menu-standalone");
+    const ownedDocument = document.documentElement.dataset.menuStandalone !== undefined;
     const demoPrefix = document.title.startsWith("[DEMO]") ? "[DEMO] " : "";
     let previousTitle = "";
 

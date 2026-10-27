@@ -66,31 +66,178 @@ export type ReconciliationResult =
       readonly responseSlots: CompositionSlotDetail[];
     };
 
-function matchOptionContract(
-  sentOpt: OptionDraft,
-  respOpt: SlotOptionDetail,
-): boolean {
-  if (sentOpt.sourceType === "RECIPE") {
-    if (respOpt.sourceType !== "RECIPE") return false;
-    if (respOpt.recipeId !== sentOpt.recipeId) return false;
-    const expectedName = sentOpt.displayName || sentOpt.recipeName || "Receta";
-    if (respOpt.displayName !== expectedName && respOpt.displayName !== sentOpt.displayName) {
-      return false;
-    }
-    return true;
-  }
-  if (sentOpt.sourceType === "INVENTORY_ITEM") {
-    if (respOpt.sourceType !== "INVENTORY_ITEM") return false;
-    if (respOpt.inventoryItemId !== sentOpt.inventoryItemId) return false;
-    if ((respOpt.quantity ?? 1) !== (sentOpt.quantity ?? 1)) return false;
-    if ((respOpt.unit || "u") !== (sentOpt.unit || "u")) return false;
-    const expectedName = sentOpt.displayName || sentOpt.inventoryItemName || "Insumo";
-    if (respOpt.displayName !== expectedName && respOpt.displayName !== sentOpt.displayName) {
-      return false;
-    }
-    return true;
-  }
+function matchesRecipeContract(sentOpt: OptionDraft, respOpt: SlotOptionDetail): boolean {
+  if (respOpt.sourceType !== "RECIPE" || respOpt.recipeId !== sentOpt.recipeId) return false;
+  const expectedName = sentOpt.displayName || sentOpt.recipeName || "Receta";
+  return respOpt.displayName === expectedName || respOpt.displayName === sentOpt.displayName;
+}
+
+function matchesInventoryContract(sentOpt: OptionDraft, respOpt: SlotOptionDetail): boolean {
+  if (respOpt.sourceType !== "INVENTORY_ITEM" || respOpt.inventoryItemId !== sentOpt.inventoryItemId) return false;
+  if ((respOpt.quantity ?? 1) !== (sentOpt.quantity ?? 1)) return false;
+  if ((respOpt.unit || "u") !== (sentOpt.unit || "u")) return false;
+  const expectedName = sentOpt.displayName || sentOpt.inventoryItemName || "Insumo";
+  return respOpt.displayName === expectedName || respOpt.displayName === sentOpt.displayName;
+}
+
+function matchOptionContract(sentOpt: OptionDraft, respOpt: SlotOptionDetail): boolean {
+  if (sentOpt.sourceType === "RECIPE") return matchesRecipeContract(sentOpt, respOpt);
+  if (sentOpt.sourceType === "INVENTORY_ITEM") return matchesInventoryContract(sentOpt, respOpt);
   return false;
+}
+
+function ambiguous(reason: string, responseSlots: CompositionSlotDetail[]): ReconciliationResult {
+  return { status: "ambiguous", reason, responseSlots };
+}
+
+function matchExistingSlots(
+  sentSlots: SlotDraft[],
+  responseSlots: CompositionSlotDetail[],
+  matchedSlots: Map<string, CompositionSlotDetail>,
+  usedResponseSlotIds: Set<string>,
+): ReconciliationResult | null {
+  for (const sentSlot of sentSlots) {
+    if (!sentSlot.slotId) continue;
+    const responseSlot = responseSlots.find((item) => item.slotId === sentSlot.slotId);
+    if (!responseSlot) {
+      return ambiguous(
+        `El grupo "${sentSlot.name}" (ID: ${sentSlot.slotId}) no fue encontrado en la respuesta del servidor.`,
+        responseSlots,
+      );
+    }
+    matchedSlots.set(sentSlot.localId || sentSlot.slotId, responseSlot);
+    usedResponseSlotIds.add(responseSlot.slotId);
+  }
+  return null;
+}
+
+function matchesNewSlotContract(sentSlot: SlotDraft, responseSlot: CompositionSlotDetail): boolean {
+  const responseCourse: OfferCourse | null = responseSlot.course ?? null;
+  const sentCourse: OfferCourse | null = sentSlot.course ?? null;
+  return responseSlot.name === sentSlot.name &&
+    responseSlot.quantity === sentSlot.quantity &&
+    responseCourse === sentCourse &&
+    (responseSlot.options || []).length === sentSlot.options.length;
+}
+
+function newSlotAmbiguityReason(sentSlot: SlotDraft, candidateCount: number): string {
+  if (candidateCount === 0) return `No se encontró correspondencia para el nuevo grupo "${sentSlot.name}".`;
+  return `Se encontraron múltiples grupos coincidentes para "${sentSlot.name}".`;
+}
+
+function matchNewSlots(
+  sentSlots: SlotDraft[],
+  responseSlots: CompositionSlotDetail[],
+  matchedSlots: Map<string, CompositionSlotDetail>,
+  usedResponseSlotIds: Set<string>,
+): ReconciliationResult | null {
+  const availableResponseSlots = responseSlots.filter((item) => !usedResponseSlotIds.has(item.slotId));
+  for (const sentSlot of sentSlots) {
+    if (sentSlot.slotId) continue;
+    const candidates = availableResponseSlots.filter((item) =>
+      !usedResponseSlotIds.has(item.slotId) && matchesNewSlotContract(sentSlot, item),
+    );
+    if (candidates.length !== 1) {
+      return ambiguous(newSlotAmbiguityReason(sentSlot, candidates.length), responseSlots);
+    }
+    const candidate = candidates[0];
+    matchedSlots.set(sentSlot.localId || "", candidate);
+    usedResponseSlotIds.add(candidate.slotId);
+  }
+  return null;
+}
+
+function matchExistingOptions(
+  sentSlot: SlotDraft,
+  responseSlot: CompositionSlotDetail,
+  matchedOptions: Map<string, SlotOptionDetail>,
+  usedOptionIds: Set<string>,
+  responseSlots: CompositionSlotDetail[],
+): ReconciliationResult | null {
+  for (const sentOption of sentSlot.options) {
+    if (!sentOption.optionId) continue;
+    const responseOption = responseSlot.options.find((item) => item.optionId === sentOption.optionId);
+    if (!responseOption) {
+      return ambiguous(
+        `La opción "${sentOption.displayName}" (ID: ${sentOption.optionId}) en el grupo "${sentSlot.name}" no fue encontrada en la respuesta.`,
+        responseSlots,
+      );
+    }
+    matchedOptions.set(sentOption.localId || sentOption.optionId, responseOption);
+    usedOptionIds.add(responseOption.optionId);
+  }
+  return null;
+}
+
+function newOptionAmbiguityReason(sentSlot: SlotDraft, sentOption: OptionDraft, candidateCount: number): string {
+  const name = sentOption.displayName || sentOption.recipeName || "sin nombre";
+  if (candidateCount === 0) return `No se encontró correspondencia para la nueva opción "${name}" en el grupo "${sentSlot.name}".`;
+  return `Se encontraron múltiples opciones coincidentes para "${name}" en el grupo "${sentSlot.name}".`;
+}
+
+function matchNewOptions(
+  sentSlot: SlotDraft,
+  responseSlot: CompositionSlotDetail,
+  matchedOptions: Map<string, SlotOptionDetail>,
+  usedOptionIds: Set<string>,
+  responseSlots: CompositionSlotDetail[],
+): ReconciliationResult | null {
+  const availableOptions = responseSlot.options.filter((item) => !usedOptionIds.has(item.optionId));
+  for (const sentOption of sentSlot.options) {
+    if (sentOption.optionId) continue;
+    const candidates = availableOptions.filter((item) =>
+      !usedOptionIds.has(item.optionId) && matchOptionContract(sentOption, item),
+    );
+    if (candidates.length !== 1) {
+      return ambiguous(newOptionAmbiguityReason(sentSlot, sentOption, candidates.length), responseSlots);
+    }
+    const candidate = candidates[0];
+    matchedOptions.set(sentOption.localId || "", candidate);
+    usedOptionIds.add(candidate.optionId);
+  }
+  return null;
+}
+
+function matchOptions(
+  sentSlots: SlotDraft[],
+  matchedSlots: Map<string, CompositionSlotDetail>,
+  matchedOptions: Map<string, SlotOptionDetail>,
+  responseSlots: CompositionSlotDetail[],
+): ReconciliationResult | null {
+  for (const sentSlot of sentSlots) {
+    const responseSlot = matchedSlots.get(sentSlot.localId || sentSlot.slotId || "");
+    if (!responseSlot) continue;
+    const usedOptionIds = new Set<string>();
+    const existingResult = matchExistingOptions(sentSlot, responseSlot, matchedOptions, usedOptionIds, responseSlots);
+    if (existingResult) return existingResult;
+    const newResult = matchNewOptions(sentSlot, responseSlot, matchedOptions, usedOptionIds, responseSlots);
+    if (newResult) return newResult;
+  }
+  return null;
+}
+
+function applyMatchedOption(currentOption: OptionDraft, matchedOptions: Map<string, SlotOptionDetail>): OptionDraft {
+  const matchedOption = matchedOptions.get(currentOption.localId || currentOption.optionId || "");
+  return {
+    ...currentOption,
+    optionId: matchedOption ? matchedOption.optionId : currentOption.optionId,
+    originalSourceType: matchedOption?.sourceType ?? currentOption.originalSourceType,
+  };
+}
+
+function applyMatchedIds(
+  currentSlots: SlotDraft[],
+  matchedSlots: Map<string, CompositionSlotDetail>,
+  matchedOptions: Map<string, SlotOptionDetail>,
+): SlotDraft[] {
+  return currentSlots.map((currentSlot) => {
+    const matchedSlot = matchedSlots.get(currentSlot.localId || currentSlot.slotId || "");
+    return {
+      ...currentSlot,
+      slotId: matchedSlot ? matchedSlot.slotId : currentSlot.slotId,
+      options: currentSlot.options.map((option) => applyMatchedOption(option, matchedOptions)),
+    };
+  });
 }
 
 export function reconcileComposition({
@@ -99,138 +246,13 @@ export function reconcileComposition({
   responseSlots,
 }: ReconcileCompositionParams): ReconciliationResult {
   const matchedSlots = new Map<string, CompositionSlotDetail>();
-  const usedResponseSlotIds = new Set<string>();
-
-  // 1. Match existing slots (with slotId)
-  for (const sentSlot of sentSlots) {
-    if (sentSlot.slotId) {
-      const respSlot = responseSlots.find((r) => r.slotId === sentSlot.slotId);
-      if (!respSlot) {
-        return {
-          status: "ambiguous",
-          reason: `El grupo "${sentSlot.name}" (ID: ${sentSlot.slotId}) no fue encontrado en la respuesta del servidor.`,
-          responseSlots,
-        };
-      }
-      matchedSlots.set(sentSlot.localId || sentSlot.slotId || "", respSlot);
-      usedResponseSlotIds.add(respSlot.slotId);
-    }
-  }
-
-  // 2. Match newly created slots (without slotId)
-  const availableResponseSlots = responseSlots.filter(
-    (r) => !usedResponseSlotIds.has(r.slotId),
-  );
-
-  for (const sentSlot of sentSlots) {
-    if (!sentSlot.slotId) {
-      const candidates = availableResponseSlots.filter((r) => {
-        if (usedResponseSlotIds.has(r.slotId)) return false;
-        if (r.name !== sentSlot.name) return false;
-        if (r.quantity !== sentSlot.quantity) return false;
-        const respCourse: OfferCourse | null = r.course ?? null;
-        const sentCourse: OfferCourse | null = sentSlot.course ?? null;
-        if (respCourse !== sentCourse) return false;
-        if ((r.options || []).length !== sentSlot.options.length) return false;
-        return true;
-      });
-
-      if (candidates.length === 1) {
-        const candidate = candidates[0];
-        matchedSlots.set(sentSlot.localId || "", candidate);
-        usedResponseSlotIds.add(candidate.slotId);
-      } else {
-        return {
-          status: "ambiguous",
-          reason:
-            candidates.length === 0
-              ? `No se encontró correspondencia para el nuevo grupo "${sentSlot.name}".`
-              : `Se encontraron múltiples grupos coincidentes para "${sentSlot.name}".`,
-          responseSlots,
-        };
-      }
-    }
-  }
-
-  // 3. Match options within each matched slot
   const matchedOptions = new Map<string, SlotOptionDetail>();
-
-  for (const sentSlot of sentSlots) {
-    const respSlot = matchedSlots.get(sentSlot.localId || sentSlot.slotId || "");
-    if (!respSlot) continue;
-
-    const usedOptionIds = new Set<string>();
-
-    // 3a. Match existing options (with optionId)
-    for (const sentOpt of sentSlot.options) {
-      if (sentOpt.optionId) {
-        const respOpt = respSlot.options.find((o) => o.optionId === sentOpt.optionId);
-        if (!respOpt) {
-          return {
-            status: "ambiguous",
-            reason: `La opción "${sentOpt.displayName}" (ID: ${sentOpt.optionId}) en el grupo "${sentSlot.name}" no fue encontrada en la respuesta.`,
-            responseSlots,
-          };
-        }
-        matchedOptions.set(sentOpt.localId || sentOpt.optionId, respOpt);
-        usedOptionIds.add(respOpt.optionId);
-      }
-    }
-
-    // 3b. Match newly created options (without optionId)
-    const availableRespOptions = respSlot.options.filter(
-      (o) => !usedOptionIds.has(o.optionId),
-    );
-
-    for (const sentOpt of sentSlot.options) {
-      if (!sentOpt.optionId) {
-        const candidates = availableRespOptions.filter((o) => {
-          if (usedOptionIds.has(o.optionId)) return false;
-          return matchOptionContract(sentOpt, o);
-        });
-
-        if (candidates.length === 1) {
-          const candidate = candidates[0];
-          matchedOptions.set(sentOpt.localId || "", candidate);
-          usedOptionIds.add(candidate.optionId);
-        } else {
-          return {
-            status: "ambiguous",
-            reason:
-              candidates.length === 0
-                ? `No se encontró correspondencia para la nueva opción "${sentOpt.displayName || sentOpt.recipeName || "sin nombre"}" en el grupo "${sentSlot.name}".`
-                : `Se encontraron múltiples opciones coincidentes para "${sentOpt.displayName || sentOpt.recipeName || "sin nombre"}" en el grupo "${sentSlot.name}".`,
-            responseSlots,
-          };
-        }
-      }
-    }
-  }
-
-  // 4. Incorporate matched IDs into current draft, preserving current edits and not restoring deleted members
-  const updatedSlots = currentSlots.map((currentSlot) => {
-    const matchedSlot = matchedSlots.get(currentSlot.localId || currentSlot.slotId || "");
-    const newSlotId = matchedSlot ? matchedSlot.slotId : currentSlot.slotId;
-
-    const updatedOptions = currentSlot.options.map((currentOpt) => {
-      const matchedOpt = matchedOptions.get(currentOpt.localId || currentOpt.optionId || "");
-      const newOptionId = matchedOpt ? matchedOpt.optionId : currentOpt.optionId;
-      return {
-        ...currentOpt,
-        optionId: newOptionId,
-        originalSourceType: matchedOpt?.sourceType ?? currentOpt.originalSourceType,
-      };
-    });
-
-    return {
-      ...currentSlot,
-      slotId: newSlotId,
-      options: updatedOptions,
-    };
-  });
-
-  return {
-    status: "success",
-    slots: updatedSlots,
-  };
+  const usedResponseSlotIds = new Set<string>();
+  const existingSlotResult = matchExistingSlots(sentSlots, responseSlots, matchedSlots, usedResponseSlotIds);
+  if (existingSlotResult) return existingSlotResult;
+  const newSlotResult = matchNewSlots(sentSlots, responseSlots, matchedSlots, usedResponseSlotIds);
+  if (newSlotResult) return newSlotResult;
+  const optionResult = matchOptions(sentSlots, matchedSlots, matchedOptions, responseSlots);
+  if (optionResult) return optionResult;
+  return { status: "success", slots: applyMatchedIds(currentSlots, matchedSlots, matchedOptions) };
 }
