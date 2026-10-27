@@ -1,0 +1,29 @@
+{
+  "target": {
+    "symbol": "createOffer",
+    "file": "src/services/offers.ts",
+    "line": 5
+  },
+  "calls": [
+    {
+      "kind": "call",
+      "expression": "validateOffer",
+      "line": 6,
+      "declaredAt": { "file": "src/services/offers.ts", "line": 1, "scope": "project" },
+      "nestedCallbackOrFunction": false,
+      "resolution": "resolved-statically"
+    },
+    {
+      "kind": "call",
+      "expression": "priceFor",
+      "line": 7,
+      "declaredAt": { "file": "src/pricing.ts", "line": 3, "scope": "project" },
+      "nestedCallbackOrFunction": false,
+      "resolution": "resolved-statically"
+    }
+  ],
+  "externalValues": [],
+  "limitations": [
+    "Static potential dependencies, not confirmed runtime execution or complete business impact."
+  ]
+}
