@@ -90,23 +90,42 @@ export function optionRequest(draft: OptionDraft, mode: "update"): SlotOptionUpd
 export function optionRequest(draft: OptionDraft, mode: "create" | "update"): SlotOptionInput | SlotOptionUpdate {
   const result = validateOptionDraft(draft, mode);
   if (!result.valid) throw new Error(result.message);
-  const option = result.value;
-  const displayName = option.displayName || (option.sourceType === "RECIPE" ? option.recipeName : option.inventoryItemName) ||
-    (option.sourceType === "RECIPE" ? "Receta" : "Insumo");
-  if (option.sourceType === "RECIPE") {
-    const source = { sourceType: "RECIPE" as const, displayName };
-    if (mode === "create") {
-      if (!option.recipeId) throw new Error("Debes elegir una receta de la biblioteca.");
-      return { ...source, recipeId: option.recipeId };
-    }
-    if (!option.optionId) {
-      if (!option.recipeId) throw new Error("Debes elegir una receta de la biblioteca.");
-      return { ...source, status: option.status, recipeId: option.recipeId };
-    }
-    return { ...source, optionId: option.optionId, status: option.status,
-      ...(option.hasRecipeAssignmentIntent || option.originalSourceType === "INVENTORY_ITEM" ? { recipeId: option.recipeId } : {}) };
+  const option = withResolvedDisplayName(result.value);
+  return option.sourceType === "RECIPE"
+    ? recipeOptionRequest(option, mode)
+    : inventoryOptionRequest(option, mode);
+}
+
+type ResolvedOption = ValidatedOptionDraft & { displayName: string };
+
+function withResolvedDisplayName(option: ValidatedOptionDraft): ResolvedOption {
+  const sourceName = option.sourceType === "RECIPE" ? option.recipeName : option.inventoryItemName;
+  const fallbackName = option.sourceType === "RECIPE" ? "Receta" : "Insumo";
+  return { ...option, displayName: option.displayName || sourceName || fallbackName };
+}
+
+function recipeOptionRequest(
+  option: Extract<ResolvedOption, { sourceType: "RECIPE" }>,
+  mode: "create" | "update",
+): SlotOptionInput | SlotOptionUpdate {
+  const source = { sourceType: "RECIPE" as const, displayName: option.displayName };
+  if (mode === "create") {
+    if (!option.recipeId) throw new Error("Debes elegir una receta de la biblioteca.");
+    return { ...source, recipeId: option.recipeId };
   }
-  const source = { sourceType: "INVENTORY_ITEM" as const, displayName };
+  if (!option.optionId) {
+    if (!option.recipeId) throw new Error("Debes elegir una receta de la biblioteca.");
+    return { ...source, status: option.status, recipeId: option.recipeId };
+  }
+  return { ...source, optionId: option.optionId, status: option.status,
+    ...(option.hasRecipeAssignmentIntent || option.originalSourceType === "INVENTORY_ITEM" ? { recipeId: option.recipeId } : {}) };
+}
+
+function inventoryOptionRequest(
+  option: Extract<ResolvedOption, { sourceType: "INVENTORY_ITEM" }>,
+  mode: "create" | "update",
+): SlotOptionInput | SlotOptionUpdate {
+  const source = { sourceType: "INVENTORY_ITEM" as const, displayName: option.displayName };
   if (mode === "update" && option.optionId) {
     return { ...source, optionId: option.optionId, status: option.status,
       ...(option.inventoryItemId !== undefined ? { inventoryItemId: option.inventoryItemId } : {}),

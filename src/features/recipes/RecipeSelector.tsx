@@ -7,7 +7,7 @@ import { RecipeCard } from "./RecipeCard";
 export interface RecipeSelectionState { draftSearch: string; query: string; page: number }
 export const emptyRecipeSelection: RecipeSelectionState = { draftSearch: "", query: "", page: 1 };
 
-export function RecipeSelector({ repository, state, onChange, onSelect, onCreate, onBack, active, slotName, createDisabled = false, focusCreate = false }: {
+interface RecipeSelectorProps {
   repository: Pick<MenuRepository, "listRecipes">;
   state: RecipeSelectionState;
   onChange(state: RecipeSelectionState): void;
@@ -18,7 +18,9 @@ export function RecipeSelector({ repository, state, onChange, onSelect, onCreate
   slotName: string;
   createDisabled?: boolean;
   focusCreate?: boolean;
-}) {
+}
+
+export function RecipeSelector({ repository, state, onChange, onSelect, onCreate, onBack, active, slotName, createDisabled = false, focusCreate = false }: Readonly<RecipeSelectorProps>) {
   const createRef = useRef<HTMLButtonElement>(null);
   const [result, setResult] = useState<Page<RecipeSummary> | null>(null);
   const [displayedContext, setDisplayedContext] = useState<{ query: string; page: number } | null>(null);

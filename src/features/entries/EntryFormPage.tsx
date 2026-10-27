@@ -111,7 +111,7 @@ function EntryFormEditor({
   return <div className="app-shell entry-form-shell">{guard.confirmation}
     <main className="menu-page menu-page--form entry-form-page">
       <header className="task-header entry-form-page__heading">
-        <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) { event.preventDefault(); return; } }}><Icon name="arrow-left" /> {missing ? "Volver al catálogo" : "Volver a entradas"}</Link>
+        <Link className="back-link" to={missing ? catalogReturnTo : returnTo} aria-disabled={busy} onClick={(event) => { if (busy) event.preventDefault(); }}><Icon name="arrow-left" /> {missing ? "Volver al catálogo" : "Volver a entradas"}</Link>
         <div className="task-header__content">
           <p className="eyebrow">Entradas</p>
           <h1 data-route-heading tabIndex={-1}>{missing ? "Entrada no encontrada" : editing ? "Editar entrada" : "Nueva entrada"}</h1>

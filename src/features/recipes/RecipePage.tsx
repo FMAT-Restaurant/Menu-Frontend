@@ -1,6 +1,6 @@
 import { LoadingState } from "../../shared/LoadingState";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type {
   MenuRepository,
@@ -34,6 +34,152 @@ export interface RecipePageProps {
   onClose?: () => void;
   storage?: PendingOperationStorageAdapter;
   nestedContext?: Readonly<Record<string, unknown>>;
+}
+
+interface RecipeResultsContentProps {
+  notice: string;
+  actionError: string;
+  showActionError: boolean;
+  error: string;
+  onRetry(): void;
+  loading: boolean;
+  hasResults: boolean;
+  mode: "management" | "selection";
+  olderResults: boolean;
+  displayedContext: { query: string; page: number } | null;
+  recipes: RecipeSummary[];
+  confirmedQuery: string;
+  onClearSearch(): void;
+  onCreate(): void;
+  resultsBusy: boolean;
+  onSelect(recipe: RecipeSummary): void;
+  onEdit(recipe: RecipeSummary): void;
+  onDelete(recipe: RecipeSummary): void;
+  recipesResult: Page<RecipeSummary> | null;
+  currentPage: number;
+  onPageChange(page: number): void;
+}
+
+function RecipeResultsContent({
+  notice, actionError, showActionError, error, onRetry, loading, hasResults, mode,
+  olderResults, displayedContext, recipes, confirmedQuery, onClearSearch, onCreate,
+  resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
+}: Readonly<RecipeResultsContentProps>) {
+  return <>
+    {notice && <output className="feedback feedback--success">{notice}</output>}
+    {showActionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
+    {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={onRetry}>Reintentar</button></div>}
+    {loading && !hasResults && <LoadingState variant={mode === "selection" ? "recipe-selection" : "recipe-rows"} label="Cargando recetas…" />}
+    {loading && hasResults && <output className="feedback">Actualizando recetas…</output>}
+    {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
+    {!loading && !error && !olderResults && recipes.length === 0 && <RecipeEmptyState query={confirmedQuery} onClearSearch={onClearSearch} onCreate={onCreate} />}
+    {recipes.length > 0 && <RecipeResultList
+      recipes={recipes}
+      mode={mode}
+      resultsBusy={resultsBusy}
+      onSelect={onSelect}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      recipesResult={recipesResult}
+      currentPage={currentPage}
+      onPageChange={onPageChange}
+    />}
+  </>;
+}
+
+function RecipeEmptyState({ query, onClearSearch, onCreate }: Readonly<{
+  query: string;
+  onClearSearch(): void;
+  onCreate(): void;
+}>) {
+  return <div className="empty-state category-empty">
+    <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
+    <h3>{query ? "No hay recetas que coincidan con tu búsqueda." : "Aún no hay recetas registradas."}</h3>
+    <p>{query
+      ? `No encontramos resultados para “${query}”. Cambia el término o limpia la búsqueda.`
+      : "Crea una receta para asociar insumos y pasos de preparación."}</p>
+    {query
+      ? <button type="button" className="button button--secondary" onClick={onClearSearch}>Limpiar búsqueda</button>
+      : <button className="button button--primary" type="button" onClick={onCreate}>Crear receta</button>}
+  </div>;
+}
+
+function RecipeResultList({
+  recipes, mode, resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
+}: Readonly<{
+  recipes: RecipeSummary[];
+  mode: "management" | "selection";
+  resultsBusy: boolean;
+  onSelect(recipe: RecipeSummary): void;
+  onEdit(recipe: RecipeSummary): void;
+  onDelete(recipe: RecipeSummary): void;
+  recipesResult: Page<RecipeSummary> | null;
+  currentPage: number;
+  onPageChange(page: number): void;
+}>) {
+  return <>
+    <ul className="recipe-list">
+      {recipes.map((recipe) => <li key={recipe.id} className="recipe-list__item">
+        {mode === "selection"
+          ? <RecipeCard recipe={recipe} mode="selection" onSelect={onSelect} isBusy={resultsBusy} />
+          : <RecipeCard recipe={recipe} mode="management" onEdit={onEdit} onDelete={onDelete} isBusy={resultsBusy} />}
+      </li>)}
+    </ul>
+    {recipesResult && recipesResult.meta.totalPages > 1 && <nav className="pagination" aria-label="Páginas de recetas">
+      <button type="button" className="button button--secondary" disabled={(recipesResult.meta.page ?? 1) <= 1 || resultsBusy} onClick={() => onPageChange(currentPage - 1)} aria-label="Página anterior">Anterior</button>
+      <span className="pagination__info">Página {recipesResult.meta.page} de {recipesResult.meta.totalPages}</span>
+      <button type="button" className="button button--secondary" disabled={recipesResult.meta.page >= recipesResult.meta.totalPages || resultsBusy} onClick={() => onPageChange(currentPage + 1)} aria-label="Siguiente página">Siguiente</button>
+    </nav>}
+  </>;
+}
+
+function recipeDeleteFailure(error: unknown): { message: string; uncertain: boolean } {
+  const analysis = analyzeNonIdempotentWriteError(error);
+  if (analysis.kind === "resource_in_use") {
+    return { message: analysis.message || "No se puede eliminar la receta porque está referenciada por una oferta vigente.", uncertain: false };
+  }
+  if (analysis.kind === "precondition_conflict") {
+    return { message: analysis.message || "No se pudo eliminar la receta debido a un conflicto de versión. Actualiza la lista e inténtalo de nuevo.", uncertain: false };
+  }
+  if (analysis.status === 403) {
+    return { message: analysis.message || "No tienes permisos para eliminar esta receta.", uncertain: false };
+  }
+  if (analysis.kind === "uncertain_outcome" || analysis.kind === "uncertain_write_response") {
+    return { message: "No se pudo confirmar la eliminación. Se consultó la lista para verificar el estado actual.", uncertain: true };
+  }
+  return { message: analysis.message || "No se pudo eliminar la receta. Inténtalo de nuevo.", uncertain: false };
+}
+
+interface RecipeDeleteDialogProps {
+  recipe: RecipeSummary;
+  actionError: string;
+  isDeleting: boolean;
+  dialogRef: RefObject<HTMLDialogElement | null>;
+  cancelRef: RefObject<HTMLButtonElement | null>;
+  onCancel(): void;
+  onConfirm(): void;
+}
+
+function RecipeDeleteDialog({ recipe, actionError, isDeleting, dialogRef, cancelRef, onCancel, onConfirm }: Readonly<RecipeDeleteDialogProps>) {
+  return <div className="dialog-backdrop">
+    <dialog ref={dialogRef} className="confirm-dialog menu-task-dialog" aria-labelledby="confirm-delete-title" onCancel={(event) => {
+      if (isDeleting) {
+        event.preventDefault();
+        return;
+      }
+      onCancel();
+    }}>
+      <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
+      <p>¿Estás seguro de que deseas eliminar la receta &quot;{recipe.name}&quot;? Esta acción no se puede deshacer.</p>
+      {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
+      <div className="confirm-dialog__actions">
+        <button ref={cancelRef} type="button" className="button button--secondary" disabled={isDeleting} onClick={onCancel}>Cancelar</button>
+        <button type="button" className="button button--danger" disabled={isDeleting} onClick={onConfirm}>
+          {isDeleting ? "Eliminando…" : "Eliminar receta"}
+        </button>
+      </div>
+    </dialog>
+  </div>;
 }
 
 export function RecipePage({
@@ -280,35 +426,14 @@ export function RecipePage({
       setRetry((r) => r + 1);
       deleteTriggerRef.current?.focus();
     } catch (err) {
-      const analysis = analyzeNonIdempotentWriteError(err);
-      if (analysis.kind === "resource_in_use") {
-        setActionError(
-          analysis.message ||
-            "No se puede eliminar la receta porque está referenciada por una oferta vigente.",
-        );
-      } else if (analysis.kind === "precondition_conflict") {
-        setActionError(
-          analysis.message ||
-            "No se pudo eliminar la receta debido a un conflicto de versión. Actualiza la lista e inténtalo de nuevo.",
-        );
-      } else if (analysis.status === 403) {
-        setActionError(
-          analysis.message || "No tienes permisos para eliminar esta receta.",
-        );
-      } else if (
-        analysis.kind === "uncertain_outcome" ||
-        analysis.kind === "uncertain_write_response"
-      ) {
+      const failure = recipeDeleteFailure(err);
+      if (failure.uncertain) {
         setRecipeToDelete(null);
         setRetry((r) => r + 1);
-        setActionError(
-          "No se pudo confirmar la eliminación. Se consultó la lista para verificar el estado actual.",
-        );
+        setActionError(failure.message);
         deleteTriggerRef.current?.focus();
       } else {
-        setActionError(
-          analysis.message || "No se pudo eliminar la receta. Inténtalo de nuevo.",
-        );
+        setActionError(failure.message);
       }
     } finally {
       setIsDeleting(false);
@@ -321,6 +446,28 @@ export function RecipePage({
     } else {
       void navigate(returnTo, { state: { selectedRecipe: recipe } });
     }
+  }
+
+  function handleStartCreate() {
+    openingRecipeIdRef.current = null;
+    setEditingRecipe("new");
+  }
+
+  function handleDeleteRequest(recipe: RecipeSummary) {
+    deleteTriggerRef.current =
+      (document.activeElement as HTMLElement | null) ??
+      document.querySelector<HTMLElement>(`button[aria-label="Eliminar ${recipe.name}"]`);
+    setActionError("");
+    setRecipeToDelete(recipe);
+  }
+
+  function handleDeleteCancel() {
+    setRecipeToDelete(null);
+    deleteTriggerRef.current?.focus();
+  }
+
+  function handleDeleteConfirm() {
+    void handleConfirmDelete();
   }
 
   const recipes = recipesResult?.data ?? [];
@@ -359,10 +506,7 @@ export function RecipePage({
               className="button button--primary"
               type="button"
               aria-label="+ Nueva receta"
-              onClick={() => {
-                openingRecipeIdRef.current = null;
-                setEditingRecipe("new");
-              }}
+              onClick={handleStartCreate}
             >
               <Icon name="add" /> Nueva receta
             </button>
@@ -380,100 +524,29 @@ export function RecipePage({
             />
           </div>
 
-          {notice && <output className="feedback feedback--success">{notice}</output>}
-          {!recipeToDelete && actionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
-          {error && (
-            <div className="feedback feedback--error" role="alert">
-              {error} <button type="button" onClick={() => setRetry((r) => r + 1)}>Reintentar</button>
-            </div>
-          )}
-
-          {loading && !recipesResult && <LoadingState variant={mode === "selection" ? "recipe-selection" : "recipe-rows"} label="Cargando recetas…" />}
-          {loading && recipesResult && <output className="feedback">Actualizando recetas…</output>}
-          {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
-
-          {!loading && !error && !olderResults && recipes.length === 0 && (
-            <div className="empty-state category-empty">
-              <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
-              <h3>{confirmedQuery ? "No hay recetas que coincidan con tu búsqueda." : "Aún no hay recetas registradas."}</h3>
-              <p>
-                {confirmedQuery
-                  ? `No encontramos resultados para “${confirmedQuery}”. Cambia el término o limpia la búsqueda.`
-                  : "Crea una receta para asociar insumos y pasos de preparación."}
-              </p>
-              {confirmedQuery ? <button type="button" className="button button--secondary" onClick={clearSearch}>Limpiar búsqueda</button> : <button
-                className="button button--primary"
-                type="button"
-                onClick={() => {
-                  openingRecipeIdRef.current = null;
-                  setEditingRecipe("new");
-                }}
-              >
-                Crear receta
-              </button>}
-            </div>
-          )}
-
-          {recipes.length > 0 && (
-            <>
-              <ul className="recipe-list">
-                {recipes.map((recipe) => (
-                  <li key={recipe.id} className="recipe-list__item">
-                    {mode === "selection" ? (
-                      <RecipeCard
-                        recipe={recipe}
-                        mode="selection"
-                        onSelect={handleSelect}
-                        isBusy={resultsBusy}
-                      />
-                    ) : (
-                      <RecipeCard
-                        recipe={recipe}
-                        mode="management"
-                        onEdit={(rec) => { void handleOpenEdit(rec); }}
-                        onDelete={(rec) => {
-                          deleteTriggerRef.current =
-                            (document.activeElement as HTMLElement | null) ??
-                            document.querySelector<HTMLElement>(
-                              `button[aria-label="Eliminar ${rec.name}"]`,
-                            );
-                          setActionError("");
-                          setRecipeToDelete(rec);
-                        }}
-                        isBusy={resultsBusy}
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-
-              {recipesResult && recipesResult.meta.totalPages > 1 && (
-                <nav className="pagination" aria-label="Páginas de recetas">
-                  <button
-                    type="button"
-                    className="button button--secondary"
-                    disabled={(recipesResult?.meta.page ?? 1) <= 1 || resultsBusy}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    aria-label="Página anterior"
-                  >
-                    Anterior
-                  </button>
-                  <span className="pagination__info">
-                    Página {recipesResult.meta.page} de {recipesResult.meta.totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    className="button button--secondary"
-                    disabled={recipesResult.meta.page >= recipesResult.meta.totalPages || resultsBusy}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    aria-label="Siguiente página"
-                  >
-                    Siguiente
-                  </button>
-                </nav>
-              )}
-            </>
-          )}
+          <RecipeResultsContent
+            notice={notice}
+            actionError={actionError}
+            showActionError={!recipeToDelete && Boolean(actionError)}
+            error={error}
+            onRetry={() => setRetry((r) => r + 1)}
+            loading={loading}
+            hasResults={Boolean(recipesResult)}
+            mode={mode}
+            olderResults={olderResults}
+            displayedContext={displayedContext}
+            recipes={recipes}
+            confirmedQuery={confirmedQuery}
+            onClearSearch={clearSearch}
+            onCreate={handleStartCreate}
+            resultsBusy={resultsBusy}
+            onSelect={handleSelect}
+            onEdit={(recipe) => { void handleOpenEdit(recipe); }}
+            onDelete={handleDeleteRequest}
+            recipesResult={recipesResult}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+          />
         </section>
       </main>
 
@@ -501,54 +574,15 @@ export function RecipePage({
         />
       )}
 
-      {recipeToDelete && (
-        <div className="dialog-backdrop">
-          <dialog
-            ref={deleteDialogRef}
-            className="confirm-dialog menu-task-dialog"
-            aria-labelledby="confirm-delete-title"
-            onCancel={(event) => {
-              if (isDeleting) {
-                event.preventDefault();
-                return;
-              }
-              setRecipeToDelete(null);
-              deleteTriggerRef.current?.focus();
-            }}
-          >
-            <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
-            <p>
-              ¿Estás seguro de que deseas eliminar la receta &quot;{recipeToDelete.name}&quot;? Esta acción no se puede deshacer.
-            </p>
-            {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
-            <div className="confirm-dialog__actions">
-              <button
-                ref={cancelDeleteRef}
-                type="button"
-                className="button button--secondary"
-                disabled={isDeleting}
-                onClick={() => {
-                  if (isDeleting) return;
-                  setRecipeToDelete(null);
-                  deleteTriggerRef.current?.focus();
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="button button--danger"
-                disabled={isDeleting}
-                onClick={() => {
-                  void handleConfirmDelete();
-                }}
-              >
-                {isDeleting ? "Eliminando…" : "Eliminar receta"}
-              </button>
-            </div>
-          </dialog>
-        </div>
-      )}
+      {recipeToDelete && <RecipeDeleteDialog
+        recipe={recipeToDelete}
+        actionError={actionError}
+        isDeleting={isDeleting}
+        dialogRef={deleteDialogRef}
+        cancelRef={cancelDeleteRef}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />}
     </div>
   );
 }

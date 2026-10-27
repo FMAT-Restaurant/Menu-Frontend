@@ -261,8 +261,14 @@
 }
 
 :where(.menu-module[data-menu-module]) .recipe-inventory-controls input {
+  flex: 1 1 200px;
   min-width: 0;
   max-width: 100%;
+  min-height: var(--control-height);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
 }
 
 @container recipe-form (width < 768px) {
@@ -306,14 +312,6 @@
   }
 }
 
-:where(.menu-module[data-menu-module]) .recipe-inventory-controls input {
-  flex: 1 1 200px;
-  min-height: var(--control-height);
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
-}
 :where(.menu-module[data-menu-module]) .recipe-card__delete { color: var(--text); }
 :where(.menu-module[data-menu-module]) .recipe-card__delete:hover { color: #991b1b; }
 :where(.menu-module[data-menu-module]) .recipe-field-error { margin: 4px 0 0; color: #991b1b; font-size: 14px; line-height: 20px; }

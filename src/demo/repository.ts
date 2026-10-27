@@ -14,7 +14,30 @@ import { createDemoData } from "./data";
 // Repository records contain JSON data only. Copies prevent callers from mutating
 // the store or an idempotent response through a previously returned reference.
 function copy<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+  if (typeof globalThis.structuredClone === "function") {
+    return globalThis.structuredClone(value);
+  }
+  return copyPlainData(value);
+}
+
+function copyPlainData<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(copyPlainData) as T;
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, copyPlainData(item)]),
+    ) as T;
+  }
+  return value;
+}
+
+function runDemoOperation<T>(operation: () => T): Promise<T> {
+  try {
+    return Promise.resolve(operation());
+  } catch (error) {
+    return Promise.reject(error);
+  }
 }
 
 function fail(status: number, message: string): never {
@@ -181,9 +204,11 @@ export function createDemoRepository(): MenuRepository {
       signal?.throwIfAborted();
       return [...categories.keys()].map(categoryWithCount);
     },
-    async getCategory(id, signal) {
-      signal?.throwIfAborted();
-      return { data: categoryWithCount(id), etag: version(id) };
+    getCategory(id, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return { data: categoryWithCount(id), etag: version(id) };
+      });
     },
     async createCategory(draft, key) {
       return once("category.create", key, draft, () => {
@@ -224,10 +249,12 @@ export function createDemoRepository(): MenuRepository {
       bump(id);
       return snapshot(entry);
     },
-    async setEntryStatus(id, status) {
-      const current = required(entries, id, "La entrada");
-      entries.set(id, { ...current, status });
-      bump(id);
+    setEntryStatus(id, status) {
+      return runDemoOperation(() => {
+        const current = required(entries, id, "La entrada");
+        entries.set(id, { ...current, status });
+        bump(id);
+      });
     },
     async deleteArchivedEntry(id) {
       if (required(entries, id, "La entrada").status !== "ARCHIVED") fail(409, "Solo se puede eliminar una entrada archivada.");
@@ -242,9 +269,11 @@ export function createDemoRepository(): MenuRepository {
       }));
       return pageOf(result, page, pageSize);
     },
-    async getOffer(id, signal) {
-      signal?.throwIfAborted();
-      return { data: snapshot(required(offers, id, "La oferta")), etag: version(id) };
+    getOffer(id, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return { data: snapshot(required(offers, id, "La oferta")), etag: version(id) };
+      });
     },
     async createOffer(entryId, draft, imageId, key) {
       return once(`offer.create:${entryId}`, key, { draft, imageId }, () => {
@@ -272,9 +301,11 @@ export function createDemoRepository(): MenuRepository {
       signal?.throwIfAborted();
       return pageOf([...recipes.values()].filter(recipe => matches(`${recipe.name} ${recipe.description}`, query.q)).map(recipeWithSupplies), query.page, query.pageSize);
     },
-    async getRecipe(id, signal) {
-      signal?.throwIfAborted();
-      return { data: recipeWithSupplies(required(recipes, id, "La receta")), etag: version(id) };
+    getRecipe(id, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return { data: recipeWithSupplies(required(recipes, id, "La receta")), etag: version(id) };
+      });
     },
     async createRecipe(draft, key) {
       return once("recipe.create", key, draft, () => {
@@ -284,14 +315,16 @@ export function createDemoRepository(): MenuRepository {
         return result;
       });
     },
-    async updateRecipe(id, draft, etag) {
-      required(recipes, id, "La receta");
-      checkVersion(id, etag);
-      const recipe = { ...copy(draft), id };
-      recipeWithSupplies(recipe);
-      recipes.set(id, recipe);
-      bump(id);
-      return recipeWithSupplies(recipe);
+    updateRecipe(id, draft, etag) {
+      return runDemoOperation(() => {
+        required(recipes, id, "La receta");
+        checkVersion(id, etag);
+        const recipe = { ...copy(draft), id };
+        recipeWithSupplies(recipe);
+        recipes.set(id, recipe);
+        bump(id);
+        return recipeWithSupplies(recipe);
+      });
     },
     async deleteRecipe(id) {
       required(recipes, id, "La receta");
@@ -300,9 +333,11 @@ export function createDemoRepository(): MenuRepository {
       ))) fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
       recipes.delete(id);
     },
-    async listInventoryItems(query = {}, signal) {
-      signal?.throwIfAborted();
-      return pageOf([...inventory.values()].filter(item => matches(item.name, query.q)), query.page ?? 1, query.pageSize ?? 100);
+    listInventoryItems(query = {}, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        return pageOf([...inventory.values()].filter(item => matches(item.name, query.q)), query.page ?? 1, query.pageSize ?? 100);
+      });
     },
   };
 }

@@ -624,7 +624,7 @@ export function CategoryFormDialog({
           type="button"
           disabled={busy}
           onClick={() => {
-            void handleVoluntaryClose();
+            handleVoluntaryClose();
           }}
           aria-label="Cerrar formulario"
         >
@@ -779,7 +779,7 @@ export function CategoryFormDialog({
             type="button"
             disabled={busy}
             onClick={() => {
-              void handleVoluntaryClose();
+              handleVoluntaryClose();
             }}
           >
             Cancelar

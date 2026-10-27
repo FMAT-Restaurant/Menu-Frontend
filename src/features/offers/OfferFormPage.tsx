@@ -30,7 +30,9 @@ import {
   sealJsonPayload,
   type OperationAttemptController,
   type OperationFlowScope,
+  type PendingOperationChainRecord,
   type PendingOperationStorageAdapter,
+  type SealedOperationAttempt,
 } from "../../application/operationAttempt";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
@@ -167,6 +169,33 @@ function validateOfferForm(
   return null;
 }
 
+function offerSaveBlockerMessage(
+  action: "submit" | "retry",
+  pending: SealedOperationAttempt | null,
+  newOperationAuthorized: boolean,
+  draft: Pick<OfferFormDraftState, "basePrice" | "slots">,
+  isEditing: boolean,
+  selectedFile: File | null,
+  imageError: string,
+  confirmedImageId: string | null,
+  imageValidating: boolean,
+): string | null {
+  if (pending && pending.status !== "succeeded" && isAttemptWindowExpired(pending)) {
+    return "La ventana de recuperación de 24 horas expiró. Revisa la oferta actual antes de iniciar otra operación.";
+  }
+  if (pending?.status === "requires_new_key" && !newOperationAuthorized) {
+    return "El envío fue rechazado. Pulsa «Iniciar nueva operación» antes de guardar tus cambios.";
+  }
+  const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
+  if (recovering) return null;
+  return validateOfferForm(draft.basePrice, isEditing, selectedFile, imageError, draft.slots, confirmedImageId, imageValidating);
+}
+
+function needsNewOfferAttempt(pending: SealedOperationAttempt | null, newOperationAuthorized: boolean) {
+  return pending?.status === "pre_commit_rejected" || pending?.status === "succeeded" || pending?.status === "precondition_conflict" ||
+    (pending?.status === "requires_new_key" && newOperationAuthorized);
+}
+
 function buildCreateDraft(presentationTag: string, basePrice: number, slots: SlotDraft[]): OfferCreateDraft {
   return {
     presentationTag: presentationTag.trim(),
@@ -245,6 +274,182 @@ export type OfferFormRepository = Pick<
 export interface OfferFormPageProps {
   repository: OfferFormRepository;
   storage?: PendingOperationStorageAdapter;
+}
+
+interface OfferNestedContext {
+  entryId?: string;
+  offerId?: string;
+  presentationTag?: string;
+  basePrice?: string;
+  desiredStatus?: OfferStatus;
+  slots?: SlotDraft[];
+  targetSlotIndex?: number | null;
+  editingOptionIndex?: number | null;
+  currentOptionDraft?: OptionDraft | null;
+  optionModalOpen?: boolean;
+  recipePickerOpen?: boolean;
+  offerFile?: { blob: Blob; name: string; type: string } | null;
+}
+
+function hasRestorableOfferContext(record: PendingOperationChainRecord<RecipeDraft>): boolean {
+  const currentStage = record.stages[record.currentStageIndex];
+  return Boolean(currentStage && (currentStage.status !== "succeeded" || record.confirmedResult) && record.nestedContext);
+}
+
+interface OfferContextSetters {
+  markRestored(): void;
+  setPresentationTag(value: string): void;
+  setBasePrice(value: string): void;
+  setDesiredStatus(value: OfferStatus): void;
+  setSlots(value: SlotDraft[]): void;
+  setTargetSlotIndex(value: number | null): void;
+  setEditingOptionIndex(value: number | null): void;
+  setCurrentOptionDraft(value: OptionDraft | null): void;
+  setOptionModalOpen(value: boolean): void;
+  setRecipePickerOpen(value: boolean): void;
+  setSelectedFile(value: File): void;
+}
+
+function restoreOfferContext(
+  context: OfferNestedContext,
+  entryId: string,
+  offerId: string | undefined,
+  setters: OfferContextSetters,
+) {
+  if (context.entryId !== entryId || context.offerId !== offerId) return;
+  setters.markRestored();
+  if (context.presentationTag !== undefined) setters.setPresentationTag(context.presentationTag);
+  if (context.basePrice !== undefined) setters.setBasePrice(context.basePrice);
+  if (context.desiredStatus !== undefined) setters.setDesiredStatus(context.desiredStatus);
+  if (context.slots) setters.setSlots(ensureSlotLocalIds(context.slots));
+  if (context.targetSlotIndex !== undefined) setters.setTargetSlotIndex(context.targetSlotIndex);
+  if (context.editingOptionIndex !== undefined) setters.setEditingOptionIndex(context.editingOptionIndex);
+  if (context.currentOptionDraft !== undefined) setters.setCurrentOptionDraft(context.currentOptionDraft);
+  if (context.optionModalOpen) setters.setOptionModalOpen(true);
+  if (context.recipePickerOpen) setters.setRecipePickerOpen(true);
+  if (context.offerFile) {
+    setters.setSelectedFile(new File([context.offerFile.blob], context.offerFile.name, { type: context.offerFile.type }));
+  }
+}
+
+function OfferLoadFeedback({
+  loading,
+  loadError,
+  onRetry,
+}: Readonly<{ loading: boolean; loadError: string; onRetry(): void }>) {
+  return <>
+    {loading && <output className="sr-only" aria-live="polite">Cargando datos de la oferta…</output>}
+    {loadError && <div className="feedback feedback--error" role="alert">
+      {loadError}{" "}
+      {loadError !== "La oferta no pertenece a la entrada seleccionada." && <button type="button" onClick={onRetry}>Reintentar</button>}
+    </div>}
+  </>;
+}
+
+interface OfferRecoveryFeedbackProps {
+  requiresNewOperation: boolean;
+  recoveryExpired: boolean;
+  hasOfferToReview: boolean;
+  uncertainStage: "upload" | "persist" | null;
+  retryAllowed?: boolean;
+  saving: boolean;
+  reviewLoading: boolean;
+  conflictNotice: string;
+  ambiguousNotice: string;
+  onStartNewOperation(): void;
+  onReview(): void | Promise<void>;
+  onRetry(): void | Promise<void>;
+  onAdopt(): void | Promise<void>;
+}
+
+function OfferRecoveryFeedback({
+  requiresNewOperation,
+  recoveryExpired,
+  hasOfferToReview,
+  uncertainStage,
+  retryAllowed,
+  saving,
+  reviewLoading,
+  conflictNotice,
+  ambiguousNotice,
+  onStartNewOperation,
+  onReview,
+  onRetry,
+  onAdopt,
+}: Readonly<OfferRecoveryFeedbackProps>) {
+  return <>
+    {requiresNewOperation && !recoveryExpired && <div className="feedback feedback--warning" role="status">
+      Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
+      <button type="button" className="button button--small button--secondary" disabled={saving || reviewLoading} onClick={onStartNewOperation}>Iniciar nueva operación</button>
+    </div>}
+    {recoveryExpired && <div className="feedback feedback--warning" role="alert">
+      La ventana de recuperación de 24 horas expiró. El envío anterior no se repetirá.
+      {hasOfferToReview && <button type="button" className="button button--small button--secondary" disabled={reviewLoading} onClick={() => { void onReview(); }}>
+        {reviewLoading ? "Consultando…" : "Revisar oferta actual"}
+      </button>}
+    </div>}
+    {uncertainStage && <div className="feedback feedback--warning" role="alert">
+      La operación anterior no pudo confirmarse. Reintentar recupera el envío original; los cambios posteriores permanecen en el formulario.{" "}
+      <button type="button" className="button button--small button--primary" disabled={saving || retryAllowed === false} onClick={() => { void onRetry(); }}>Reintentar</button>
+    </div>}
+    {conflictNotice && <div className="feedback feedback--error" role="alert">
+      {conflictNotice}{" "}
+      <button type="button" className="button button--small button--secondary" disabled={reviewLoading} onClick={() => { void onReview(); }}>
+        {reviewLoading ? "Consultando…" : "Revisar oferta actual"}
+      </button>
+    </div>}
+    {ambiguousNotice && <div className="feedback feedback--warning" role="alert">
+      {ambiguousNotice}{" "}
+      <button type="button" className="button button--small button--secondary" disabled={reviewLoading} onClick={() => { void onReview(); }}>Revisar oferta actual</button>
+      <button type="button" className="button button--small button--primary" disabled={reviewLoading} onClick={() => { void onAdopt(); }}>Adoptar composición del servidor</button>
+    </div>}
+  </>;
+}
+
+interface OfferSavedFeedbackProps {
+  reviewedOffer: VersionedResource<MenuOfferDetail> | null;
+  navigationFailed: boolean;
+  savedNotice: string;
+  formError: string;
+  requiresNewOperation: boolean;
+  recoveryExpired: boolean;
+  recoveryReady: boolean;
+  reviewLoading: boolean;
+  onReturnToList(): void;
+  onAdoptReviewedOffer(): void | Promise<void>;
+  onKeepDraft(): void;
+  onRetryRecovery(): void;
+}
+
+function OfferSavedFeedback({
+  reviewedOffer,
+  navigationFailed,
+  savedNotice,
+  formError,
+  requiresNewOperation,
+  recoveryExpired,
+  recoveryReady,
+  reviewLoading,
+  onReturnToList,
+  onAdoptReviewedOffer,
+  onKeepDraft,
+  onRetryRecovery,
+}: Readonly<OfferSavedFeedbackProps>) {
+  return <>
+    {reviewedOffer && <div className="feedback feedback--info" role="region" aria-label="Versión del servidor">
+      <p><strong>Versión actual en el servidor:</strong> {reviewedOffer.data.presentationTag || "Sin etiqueta de presentación"}.</p>
+      <p className="offer-review-price"><span>Precio base (MXN)</span><strong>{formatMoney(reviewedOffer.data.basePrice)}</strong></p>
+      <p>Usar estos datos reemplaza la composición del formulario. Conservaremos los demás campos y no enviaremos cambios hasta que guardes.</p>
+      <button type="button" className="button button--small button--primary" onClick={() => { void onAdoptReviewedOffer(); }} disabled={reviewLoading}>Adoptar versión del servidor</button>
+      <button type="button" className="button button--small button--secondary" onClick={onKeepDraft}>Mantener borrador actual</button>
+    </div>}
+    {navigationFailed && <p className="feedback" role="status">La oferta se guardó. No pudimos abrir el listado. <button type="button" onClick={onReturnToList}>Volver al listado</button></p>}
+    {savedNotice && <p className="feedback" role="status">{savedNotice}</p>}
+    {formError && <p className="feedback feedback--error" role="alert">
+      {requiresNewOperation && !recoveryExpired ? "El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar." : formError}
+      {!recoveryReady && <button type="button" onClick={onRetryRecovery}>Reintentar recuperación</button>}
+    </p>}
+  </>;
 }
 
 export function OfferFormPage({
@@ -437,8 +642,7 @@ export function OfferFormPage({
       ? buildOfferUpdateScope(offerId!)
       : buildOfferCreateScope(entryId);
 
-    if (!controllerRef.current) {
-      controllerRef.current = createOperationAttemptController<
+    controllerRef.current ??= createOperationAttemptController<
         OfferFormDraftState,
         MenuOfferDetail
       >({
@@ -543,7 +747,6 @@ export function OfferFormPage({
         classifyError: (err, attempt) =>
           analyzeIdempotentAttemptError(err, attempt.operationKind),
       });
-    }
     return controllerRef.current;
   }
 
@@ -553,47 +756,20 @@ export function OfferFormPage({
     storage
       .getRecord<RecipeDraft>(buildRecipeCreateScope())
       .then((record) => {
-        if (cancelled || !record) return;
-        const currentStage = record.stages[record.currentStageIndex];
-        if (currentStage && (currentStage.status !== "succeeded" || record.confirmedResult) && record.nestedContext) {
-          const ctx = record.nestedContext as {
-            entryId?: string;
-            offerId?: string;
-            presentationTag?: string;
-            basePrice?: string;
-            desiredStatus?: OfferStatus;
-            slots?: SlotDraft[];
-            targetSlotIndex?: number | null;
-            editingOptionIndex?: number | null;
-            currentOptionDraft?: OptionDraft | null;
-            optionModalOpen?: boolean;
-            recipePickerOpen?: boolean;
-            offerFile?: {
-              blob: Blob;
-              name: string;
-              type: string;
-            } | null;
-          };
-
-          if (ctx.entryId === entryId && ctx.offerId === offerId) {
-            restoredFromStorageRef.current = true;
-            if (ctx.presentationTag !== undefined) setPresentationTag(ctx.presentationTag);
-            if (ctx.basePrice !== undefined) setBasePrice(ctx.basePrice);
-            if (ctx.desiredStatus !== undefined) setDesiredStatus(ctx.desiredStatus);
-            if (ctx.slots) setSlots(ensureSlotLocalIds(ctx.slots));
-            if (ctx.targetSlotIndex !== undefined) setTargetSlotIndex(ctx.targetSlotIndex);
-            if (ctx.editingOptionIndex !== undefined) setEditingOptionIndex(ctx.editingOptionIndex);
-            if (ctx.currentOptionDraft !== undefined) setCurrentOptionDraft(ctx.currentOptionDraft);
-            if (ctx.optionModalOpen) setOptionModalOpen(true);
-            if (ctx.recipePickerOpen) setRecipePickerOpen(true);
-            if (ctx.offerFile) {
-              const file = new File([ctx.offerFile.blob], ctx.offerFile.name, {
-                type: ctx.offerFile.type,
-              });
-              setSelectedFile(file);
-            }
-          }
-        }
+        if (cancelled || !record || !hasRestorableOfferContext(record)) return;
+        restoreOfferContext(record.nestedContext as OfferNestedContext, entryId, offerId, {
+          markRestored: () => { restoredFromStorageRef.current = true; },
+          setPresentationTag,
+          setBasePrice,
+          setDesiredStatus,
+          setSlots,
+          setTargetSlotIndex,
+          setEditingOptionIndex,
+          setCurrentOptionDraft,
+          setOptionModalOpen,
+          setRecipePickerOpen,
+          setSelectedFile,
+        });
       })
       .catch(() => {});
     return () => {
@@ -999,26 +1175,16 @@ export function OfferFormPage({
     if (ambiguousResponse || conflictNotice) return;
     const controller = getOrInitController();
     const pending = controller.getCurrentAttempt();
-    if (pending && pending.status !== "succeeded" && isAttemptWindowExpired(pending)) {
-      setFormError("La ventana de recuperación de 24 horas expiró. Revisa la oferta actual antes de iniciar otra operación.");
-      return;
-    }
-    if (pending?.status === "requires_new_key" && !newOperationAuthorized) {
-      setFormError("El envío fue rechazado. Pulsa «Iniciar nueva operación» antes de guardar tus cambios.");
-      return;
-    }
+    const blockerMessage = offerSaveBlockerMessage(action, pending, newOperationAuthorized,
+      { basePrice, slots }, isEditing, selectedFile, imageError, confirmedImageIdRef.current, imageValidating);
+    if (blockerMessage) { setFormError(blockerMessage); return; }
     const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
-    if (!recovering) {
-      const error = validateOfferForm(basePrice, isEditing, selectedFile, imageError, slots, confirmedImageIdRef.current, imageValidating);
-      if (error) { setFormError(error); return; }
-    }
     isSubmittingRef.current = true;
     setSaving(true);
     setFormError("");
     try {
       await controller.updateEditableDraft(draftRef.current);
-      if (pending?.status === "pre_commit_rejected" || pending?.status === "succeeded" || pending?.status === "precondition_conflict" ||
-        (pending?.status === "requires_new_key" && newOperationAuthorized)) {
+      if (needsNewOfferAttempt(pending, newOperationAuthorized)) {
         await controller.startNewAttemptFromEditableDraft({ ifMatch: openingEtagRef.current,
           preserveConfirmedImage: selectedFile === controller.getRecord()?.submittedDraft?.imageFile });
         setNewOperationAuthorized(false);
@@ -1166,124 +1332,39 @@ export function OfferFormPage({
           </div>
         </header>
 
-        {loading && (
-          <p className="sr-only" role="status">Cargando datos de la oferta…</p>
-        )}
-
-        {loadError && (
-          <div className="feedback feedback--error" role="alert">
-            {loadError}{" "}
-            {loadError !== "La oferta no pertenece a la entrada seleccionada." && (
-              <button type="button" onClick={() => setRetryCount((c) => c + 1)}>
-                Reintentar
-              </button>
-            )}
-          </div>
-        )}
+        <OfferLoadFeedback loading={loading} loadError={loadError} onRetry={() => setRetryCount((count) => count + 1)} />
 
         {!loadError && (
           <form ref={formRef} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="offer-form" onFocusCapture={(event) => { const control = event.target; requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actionsRef.current); }); }} onSubmit={handleSaveOffer} aria-busy={loading || saving} noValidate>
-            {requiresNewOperation && !recoveryExpired && (
-              <div className="feedback feedback--warning" role="status">
-                Conservamos el borrador del envío rechazado. Puedes preparar otra operación y guardar tus cambios.
-                <button type="button" className="button button--small button--secondary" disabled={saving || reviewLoading}
-                  onClick={handleStartNewOperation}>Iniciar nueva operación</button>
-              </div>
-            )}
-            {recoveryExpired && (
-              <div className="feedback feedback--warning" role="alert">
-                La ventana de recuperación de 24 horas expiró. El envío anterior no se repetirá.
-                {(offerId || confirmedOfferIdRef.current) && <button type="button" className="button button--small button--secondary"
-                  disabled={reviewLoading} onClick={() => void handleReviewCurrentOffer()}>
-                  {reviewLoading ? "Consultando…" : "Revisar oferta actual"}
-                </button>}
-              </div>
-            )}
-            {uncertainStage && (
-              <div className="feedback feedback--warning" role="alert">
-                La operación anterior no pudo confirmarse. Reintentar recupera el envío original; los cambios posteriores permanecen en el formulario.{" "}
-                <button
-                  type="button"
-                  className="button button--small button--primary"
-                  onClick={() => void handleManualRetry()}
-                  disabled={saving || retryEligibility?.allowed === false}
-                >
-                  Reintentar
-                </button>
-              </div>
-            )}
-
-            {conflictNotice && (
-              <div className="feedback feedback--error" role="alert">
-                {conflictNotice}{" "}
-                <button
-                  type="button"
-                  className="button button--small button--secondary"
-                  onClick={() => void handleReviewCurrentOffer()}
-                  disabled={reviewLoading}
-                >
-                  {reviewLoading ? "Consultando…" : "Revisar oferta actual"}
-                </button>
-              </div>
-            )}
-
-            {ambiguousNotice && (
-              <div className="feedback feedback--warning" role="alert">
-                {ambiguousNotice}{" "}
-                <button
-                  type="button"
-                  className="button button--small button--secondary"
-                  onClick={() => void handleReviewCurrentOffer()}
-                  disabled={reviewLoading}
-                >
-                  Revisar oferta actual
-                </button>
-                <button
-                  type="button"
-                  className="button button--small button--primary"
-                  onClick={() => void handleAdoptReviewedOffer()}
-                  disabled={reviewLoading}
-                >
-                  Adoptar composición del servidor
-                </button>
-              </div>
-            )}
-
-            {reviewedOffer && (
-              <div className="feedback feedback--info" role="region" aria-label="Versión del servidor">
-                <p>
-                  <strong>Versión actual en el servidor:</strong> {reviewedOffer.data.presentationTag || "Sin etiqueta de presentación"}.
-                </p>
-                <p className="offer-review-price"><span>Precio base (MXN)</span><strong>{formatMoney(reviewedOffer.data.basePrice)}</strong></p>
-                <p>
-                  Usar estos datos reemplaza la composición del formulario. Conservaremos los demás campos y no enviaremos cambios hasta que guardes.
-                </p>
-                <button
-                  type="button"
-                  className="button button--small button--primary"
-                  onClick={() => void handleAdoptReviewedOffer()}
-                  disabled={reviewLoading}
-                >
-                  Adoptar versión del servidor
-                </button>
-                <button
-                  type="button"
-                  className="button button--small button--secondary"
-                  onClick={() => setReviewedOffer(null)}
-                >
-                  Mantener borrador actual
-                </button>
-              </div>
-            )}
-
-            {navigationFailed && <p className="feedback" role="status">La oferta se guardó. No pudimos abrir el listado. <button type="button" onClick={() => { if (confirmedReceipt.current) void finishNavigation(confirmedReceipt.current); }}>Volver al listado</button></p>}
-            {savedNotice && <p className="feedback" role="status">{savedNotice}</p>}
-            {formError && (
-              <p className="feedback feedback--error" role="alert">
-                {requiresNewOperation && !recoveryExpired ? "El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar." : formError}
-                {!recoveryReady && <button type="button" onClick={() => setRetryCount(count => count + 1)}>Reintentar recuperación</button>}
-              </p>
-            )}
+            <OfferRecoveryFeedback
+              requiresNewOperation={requiresNewOperation}
+              recoveryExpired={recoveryExpired}
+              hasOfferToReview={Boolean(offerId || confirmedOfferIdRef.current)}
+              uncertainStage={uncertainStage}
+              retryAllowed={retryEligibility?.allowed}
+              saving={saving}
+              reviewLoading={reviewLoading}
+              conflictNotice={conflictNotice}
+              ambiguousNotice={ambiguousNotice}
+              onStartNewOperation={handleStartNewOperation}
+              onReview={handleReviewCurrentOffer}
+              onRetry={handleManualRetry}
+              onAdopt={handleAdoptReviewedOffer}
+            />
+            <OfferSavedFeedback
+              reviewedOffer={reviewedOffer}
+              navigationFailed={navigationFailed}
+              savedNotice={savedNotice}
+              formError={formError}
+              requiresNewOperation={requiresNewOperation}
+              recoveryExpired={recoveryExpired}
+              recoveryReady={recoveryReady}
+              reviewLoading={reviewLoading}
+              onReturnToList={() => { if (confirmedReceipt.current) void finishNavigation(confirmedReceipt.current); }}
+              onAdoptReviewedOffer={handleAdoptReviewedOffer}
+              onKeepDraft={() => setReviewedOffer(null)}
+              onRetryRecovery={() => setRetryCount((count) => count + 1)}
+            />
 
             <OfferCommercialInfo
               loading={loading && isEditing}

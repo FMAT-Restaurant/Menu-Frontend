@@ -46,9 +46,18 @@ function RowReservation({ variant }: Readonly<{ variant: "category-rows" | "reci
 /** The surrounding page owns the real heading, filters and actions. */
 export function LoadingState({ label, variant }: Readonly<{ label?: string; variant: LoadingVariant }>) {
   return <div className={`menu-loading menu-loading--${variant}`} data-loading-state={variant} aria-hidden={label ? undefined : true}>
-    {label && <p className="sr-only" role="status">{label}</p>}
+    {label && <output className="sr-only" aria-live="polite">{label}</output>}
     <div className="menu-loading__shapes" aria-hidden="true">
-      {Array.from({ length: variant === "options" ? 2 : 3 }, (_, index) => variant === "entries" ? <EntryReservation key={index} /> : variant === "offers" ? <OfferReservation key={index} /> : variant === "category-rows" || variant === "recipe-rows" || variant === "recipe-selection" ? <RowReservation key={index} variant={variant} /> : <div className="menu-loading__option" key={index}><span /><span /></div>)}
+      {Array.from({ length: variant === "options" ? 2 : 3 }, (_, index) => renderReservation(variant, index))}
     </div>
   </div>;
+}
+
+function renderReservation(variant: LoadingVariant, key: number) {
+  if (variant === "entries") return <EntryReservation key={key} />;
+  if (variant === "offers") return <OfferReservation key={key} />;
+  if (variant === "category-rows" || variant === "recipe-rows" || variant === "recipe-selection") {
+    return <RowReservation key={key} variant={variant} />;
+  }
+  return <div className="menu-loading__option" key={key}><span /><span /></div>;
 }

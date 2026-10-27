@@ -81,6 +81,28 @@ export interface MinimalIdbFactory {
   open(name: string, version?: number): MinimalIdbOpenRequest;
 }
 
+function createTransactionSettlers(
+  db: MinimalIdbDatabase,
+  resolve: () => void,
+  reject: (error: PendingOperationStorageError) => void,
+) {
+  let settled = false;
+  return {
+    reject(error: PendingOperationStorageError) {
+      if (settled) return;
+      settled = true;
+      db.close();
+      reject(error);
+    },
+    resolve() {
+      if (settled) return;
+      settled = true;
+      db.close();
+      resolve();
+    },
+  };
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -437,22 +459,8 @@ export function createIndexedDbPendingOperationStorage(
     ): Promise<void> {
       const db = await openDatabase();
       return new Promise<void>((resolve, reject) => {
-        let settled = false;
         let putSucceeded = false;
-
-        const settleReject = (error: PendingOperationStorageError) => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          reject(error);
-        };
-
-        const settleResolve = () => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          resolve();
-        };
+        const { reject: settleReject, resolve: settleResolve } = createTransactionSettlers(db, resolve, reject);
 
         let tx: MinimalIdbTransaction;
         try {
@@ -689,22 +697,8 @@ export function createIndexedDbPendingOperationStorage(
       const key = resolveKey(scopeOrKey);
       const db = await openDatabase();
       return new Promise<void>((resolve, reject) => {
-        let settled = false;
         let deleteSucceeded = false;
-
-        const settleReject = (error: PendingOperationStorageError) => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          reject(error);
-        };
-
-        const settleResolve = () => {
-          if (settled) return;
-          settled = true;
-          db.close();
-          resolve();
-        };
+        const { reject: settleReject, resolve: settleResolve } = createTransactionSettlers(db, resolve, reject);
 
         let tx: MinimalIdbTransaction;
         try {
@@ -930,9 +924,142 @@ interface ControllableTransaction extends MinimalIdbTransaction {
   onerror: (() => void) | null;
 }
 
+interface ControllableFailureState {
+  current: ControllableIdbFailureConfig;
+}
+
+type ControllableWrite = { type: "put" | "delete"; value?: unknown };
+
+function scheduleControllablePut(
+  key: string,
+  value: unknown,
+  request: ControllableRequest<unknown>,
+  transaction: ControllableTransaction,
+  store: Map<string, unknown>,
+  writes: Map<string, ControllableWrite>,
+  failures: ControllableFailureState,
+) {
+  queueMicrotask(() => {
+    if (failures.current.failNextPutRequest) {
+      failures.current.failNextPutRequest = false;
+      request.error = { name: "ConstraintError", message: "Fallo simulado en putRequest.onerror" };
+      transaction.error = request.error;
+      invokeHandler(request.onerror);
+      invokeHandler(transaction.onerror);
+      return;
+    }
+
+    if (failures.current.failNextTransactionError) {
+      failures.current.failNextTransactionError = false;
+      transaction.error = { name: "QuotaExceededError", message: "Cuota excedida en transacción IndexedDB" };
+      invokeHandler(transaction.onerror);
+      return;
+    }
+
+    writes.set(key, { type: "put", value });
+    invokeHandler(request.onsuccess);
+    queueMicrotask(() => commitControllablePut(transaction, store, writes, failures));
+  });
+}
+
+function commitControllablePut(
+  transaction: ControllableTransaction,
+  store: Map<string, unknown>,
+  writes: Map<string, ControllableWrite>,
+  failures: ControllableFailureState,
+) {
+  if (failures.current.abortNextPutAfterRequestSuccess) {
+    failures.current.abortNextPutAfterRequestSuccess = false;
+    writes.clear();
+    transaction.error = { name: "AbortError", message: "Transacción abortada tras put.onsuccess" };
+    invokeHandler(transaction.onabort);
+    return;
+  }
+
+  for (const [key, operation] of writes.entries()) {
+    if (operation.type === "put") store.set(key, operation.value);
+  }
+  writes.clear();
+  invokeHandler(transaction.oncomplete);
+}
+
+function scheduleControllableGet(
+  key: string,
+  request: ControllableRequest<unknown>,
+  transaction: ControllableTransaction,
+  store: Map<string, unknown>,
+  writes: Map<string, ControllableWrite>,
+  failures: ControllableFailureState,
+) {
+  queueMicrotask(() => {
+    if (failures.current.failNextGetRequest) {
+      failures.current.failNextGetRequest = false;
+      request.error = { name: "UnknownError", message: "Fallo simulado en getRequest.onerror" };
+      transaction.error = request.error;
+      invokeHandler(request.onerror);
+      invokeHandler(transaction.onerror);
+      return;
+    }
+
+    request.result = store.get(key);
+    invokeHandler(request.onsuccess);
+    queueMicrotask(() => {
+      if (writes.size === 0) invokeHandler(transaction.oncomplete);
+    });
+  });
+}
+
+function scheduleControllableDelete(
+  key: string,
+  request: ControllableRequest<unknown>,
+  transaction: ControllableTransaction,
+  store: Map<string, unknown>,
+  writes: Map<string, ControllableWrite>,
+  failures: ControllableFailureState,
+) {
+  queueMicrotask(() => {
+    writes.set(key, { type: "delete" });
+    invokeHandler(request.onsuccess);
+    queueMicrotask(() => commitControllableDelete(transaction, store, writes, failures));
+  });
+}
+
+function commitControllableDelete(
+  transaction: ControllableTransaction,
+  store: Map<string, unknown>,
+  writes: Map<string, ControllableWrite>,
+  failures: ControllableFailureState,
+) {
+  if (failures.current.abortNextDeleteAfterRequestSuccess) {
+    failures.current.abortNextDeleteAfterRequestSuccess = false;
+    writes.clear();
+    transaction.error = { name: "AbortError", message: "Transacción de borrado abortada tras delete.onsuccess" };
+    invokeHandler(transaction.onabort);
+    return;
+  }
+
+  for (const [key, operation] of writes.entries()) {
+    if (operation.type === "delete") store.delete(key);
+  }
+  writes.clear();
+  invokeHandler(transaction.oncomplete);
+}
+
+function scheduleControllableGetAll(
+  request: ControllableRequest<unknown[]>,
+  transaction: ControllableTransaction,
+  store: Map<string, unknown>,
+) {
+  queueMicrotask(() => {
+    request.result = Array.from(store.values());
+    invokeHandler(request.onsuccess);
+    queueMicrotask(() => invokeHandler(transaction.oncomplete));
+  });
+}
+
 export function createControllableIndexedDbHarness(): ControllableIdbHarness {
   const storesByDb = new Map<string, Map<string, Map<string, unknown>>>();
-  let failureConfig: ControllableIdbFailureConfig = {};
+  const failures: ControllableFailureState = { current: {} };
 
   function getOrCreateDbStores(dbName: string): Map<string, Map<string, unknown>> {
     let dbStores = storesByDb.get(dbName);
@@ -993,53 +1120,7 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
                     onerror: null,
                   };
 
-                  queueMicrotask(() => {
-                    if (failureConfig.failNextPutRequest) {
-                      failureConfig.failNextPutRequest = false;
-                      req.error = {
-                        name: "ConstraintError",
-                        message: "Fallo simulado en putRequest.onerror",
-                      };
-                      tx.error = req.error;
-                      invokeHandler(req.onerror);
-                      invokeHandler(tx.onerror);
-                      return;
-                    }
-
-                    if (failureConfig.failNextTransactionError) {
-                      failureConfig.failNextTransactionError = false;
-                      tx.error = {
-                        name: "QuotaExceededError",
-                        message: "Cuota excedida en transacción IndexedDB",
-                      };
-                      invokeHandler(tx.onerror);
-                      return;
-                    }
-
-                    stagedWrites.set(resolvedKey, { type: "put", value });
-                    invokeHandler(req.onsuccess);
-
-                    queueMicrotask(() => {
-                      if (failureConfig.abortNextPutAfterRequestSuccess) {
-                        failureConfig.abortNextPutAfterRequestSuccess = false;
-                        stagedWrites.clear();
-                        tx.error = {
-                          name: "AbortError",
-                          message: "Transacción abortada tras put.onsuccess",
-                        };
-                        invokeHandler(tx.onabort);
-                        return;
-                      }
-
-                      for (const [k, op] of stagedWrites.entries()) {
-                        if (op.type === "put") {
-                          backingStore.set(k, op.value);
-                        }
-                      }
-                      stagedWrites.clear();
-                      invokeHandler(tx.oncomplete);
-                    });
-                  });
+                  scheduleControllablePut(resolvedKey, value, req, tx, backingStore, stagedWrites, failures);
 
                   return req;
                 },
@@ -1052,25 +1133,7 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
                     onerror: null,
                   };
 
-                  queueMicrotask(() => {
-                    if (failureConfig.failNextGetRequest) {
-                      failureConfig.failNextGetRequest = false;
-                      req.error = {
-                        name: "UnknownError",
-                        message: "Fallo simulado en getRequest.onerror",
-                      };
-                      tx.error = req.error;
-                      invokeHandler(req.onerror);
-                      invokeHandler(tx.onerror);
-                      return;
-                    }
-
-                    req.result = backingStore.get(key);
-                    invokeHandler(req.onsuccess);
-                    queueMicrotask(() => {
-                      if (stagedWrites.size === 0) invokeHandler(tx.oncomplete);
-                    });
-                  });
+                  scheduleControllableGet(key, req, tx, backingStore, stagedWrites, failures);
 
                   return req;
                 },
@@ -1083,31 +1146,7 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
                     onerror: null,
                   };
 
-                  queueMicrotask(() => {
-                    stagedWrites.set(key, { type: "delete" });
-                    invokeHandler(req.onsuccess);
-
-                    queueMicrotask(() => {
-                      if (failureConfig.abortNextDeleteAfterRequestSuccess) {
-                        failureConfig.abortNextDeleteAfterRequestSuccess = false;
-                        stagedWrites.clear();
-                        tx.error = {
-                          name: "AbortError",
-                          message: "Transacción de borrado abortada tras delete.onsuccess",
-                        };
-                        invokeHandler(tx.onabort);
-                        return;
-                      }
-
-                      for (const [k, op] of stagedWrites.entries()) {
-                        if (op.type === "delete") {
-                          backingStore.delete(k);
-                        }
-                      }
-                      stagedWrites.clear();
-                      invokeHandler(tx.oncomplete);
-                    });
-                  });
+                  scheduleControllableDelete(key, req, tx, backingStore, stagedWrites, failures);
 
                   return req;
                 },
@@ -1120,13 +1159,7 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
                     onerror: null,
                   };
 
-                  queueMicrotask(() => {
-                    req.result = Array.from(backingStore.values());
-                    invokeHandler(req.onsuccess);
-                    queueMicrotask(() => {
-                      invokeHandler(tx.oncomplete);
-                    });
-                  });
+                  scheduleControllableGetAll(req, tx, backingStore);
 
                   return req;
                 },
@@ -1150,8 +1183,8 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
       };
 
       queueMicrotask(() => {
-        if (failureConfig.failNextOpen) {
-          failureConfig.failNextOpen = false;
+        if (failures.current.failNextOpen) {
+          failures.current.failNextOpen = false;
           openReq.error = {
             name: "InvalidStateError",
             message: "No se pudo abrir IndexedDB (simulado)",
@@ -1172,7 +1205,7 @@ export function createControllableIndexedDbHarness(): ControllableIdbHarness {
   return {
     factory,
     setFailureConfig(nextConfig: ControllableIdbFailureConfig) {
-      failureConfig = { ...nextConfig };
+      failures.current = { ...nextConfig };
     },
     setRawRecord(key: string, value: unknown) {
       const store = getOrCreateStore(DEFAULT_DB_NAME, DEFAULT_STORE_NAME);

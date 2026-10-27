@@ -34,7 +34,7 @@ type RouteTransitionTracker = ReturnType<typeof createRouteTransitionTracker>;
 
 /** One route announcement, through the focused heading or returning control.
  * Save confirmations keep their existing local status region. */
-export function RouteContext({ transitions }: { transitions?: RouteTransitionTracker }) {
+export function RouteContext({ transitions }: Readonly<{ transitions?: RouteTransitionTracker }>) {
   const location = useLocation();
   const marker = useRef<HTMLSpanElement>(null);
   const latestLocation = useRef(location);

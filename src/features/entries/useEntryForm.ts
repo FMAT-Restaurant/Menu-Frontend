@@ -17,6 +17,7 @@ import {
   createOperationAttemptController,
   getOrCreateTabId,
   sealJsonPayload,
+  type OperationExecutionResult,
   type OperationAttemptController,
   type OperationFlowScope,
   type PendingOperationStorageAdapter,
@@ -50,6 +51,13 @@ const emptyDraft: EntryUpdateDraft = {
   categoryIds: [],
   status: "INACTIVE",
 };
+
+function compareCategoryIds(left: string, right: string): number {
+  const localizedOrder = left.localeCompare(right);
+  if (localizedOrder !== 0) return localizedOrder;
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
 
 function draftFrom(entry: MenuEntryDetail): EntryUpdateDraft {
   return {
@@ -146,8 +154,7 @@ export function useEntryForm(
     overrideFile?: File | null,
   ): OperationAttemptController<EntryCreationDraft, MenuEntryDetail> {
     if (overrideFile !== undefined) fileRef.current = overrideFile;
-    if (!controllerRef.current) {
-      controllerRef.current = createOperationAttemptController<
+    controllerRef.current ??= createOperationAttemptController<
         EntryCreationDraft,
         MenuEntryDetail
       >({
@@ -203,7 +210,6 @@ export function useEntryForm(
         classifyError: (err, attempt) =>
           analyzeIdempotentAttemptError(err, attempt.operationKind),
       });
-    }
     return controllerRef.current;
   }
 
@@ -468,6 +474,106 @@ export function useEntryForm(
     }
   }
 
+  async function saveExistingEntry(id: string) {
+    let attempted: Stage = "upload";
+    try {
+      const imageId = await imageIdForSave();
+      if (!mounted.current) return;
+      attempted = "persist";
+      setStage("persist");
+      await persist(imageId);
+    } catch (error: unknown) {
+      if (mounted.current) saveFailure(error, attempted);
+      return;
+    } finally {
+      saving.current = false;
+      if (mounted.current) setStage("idle");
+    }
+    if (!mounted.current) return;
+    saveSucceeded.current = true;
+    invalidateCatalogEntries(repository);
+    await finishNavigation({ receiptId: crypto.randomUUID(), entity: "entry", entityId: id, label: draft.brandName.trim(), action: "updated" });
+  }
+
+  function applySuccessfulEntryCreation(result: OperationExecutionResult<EntryCreationDraft, MenuEntryDetail>): LocalSaveReceipt | null {
+    if (result.hasDraftChangesSinceSubmission && result.result) {
+      loaded.current = true;
+      setConfirmedEntryId(result.result.id);
+      resources.setEntry(result.result);
+      setUncertain("idle");
+      setFailure(null);
+      setInfoNotice("El envío anterior se guardó. Los cambios posteriores se conservan; revisa la versión actual y guárdalos explícitamente.");
+      if (!isStrongEntryVersion(result.result.etag)) setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
+      if (file === result.record.submittedDraft?.imageFile) { setFile(null); uploaded.current = null; }
+      invalidateCatalogEntries(repository);
+      return null;
+    }
+    if (!result.result) return null;
+    return {
+      receiptId: result.record.stages[result.record.currentStageIndex].idempotencyKey,
+      entity: "entry",
+      entityId: result.result.id,
+      label: result.result.brandName,
+      action: "created",
+    };
+  }
+
+  function applyFailedEntryCreation(
+    result: OperationExecutionResult<EntryCreationDraft, MenuEntryDetail>,
+    controller: OperationAttemptController<EntryCreationDraft, MenuEntryDetail>,
+  ) {
+    const activeStage = controller.getCurrentAttempt();
+    const attempted: Stage = activeStage?.operationKind === "image.upload" ? "upload" : "persist";
+    const uncertainResult = result.outcome?.kind === "uncertain_outcome" ||
+      result.outcome?.kind === "uncertain_write_response" || activeStage?.status === "uncertain";
+    if (uncertainResult) setUncertain(attempted);
+    const errorToReport = lastRawErrorRef.current ?? result.outcome?.message ??
+      activeStage?.lastErrorMessage ?? "Error al guardar la entrada.";
+    saveFailure(errorToReport, attempted);
+  }
+
+  async function submitNewEntry(): Promise<LocalSaveReceipt | null> {
+    lastRawErrorRef.current = null;
+    const controller = getOrInitController();
+    const currentAttempt = controller.getCurrentAttempt();
+    if (currentAttempt?.status === "pre_commit_rejected") {
+      await controller.startNewAttemptFromEditableDraft({
+        preserveConfirmedImage: fileRef.current === controller.getRecord()?.submittedDraft?.imageFile,
+      });
+    }
+    setStage(controller.getCurrentAttempt()?.operationKind === "entry.create" ? "persist" : "upload");
+    const current = controller.getCurrentAttempt();
+    const isRetry = controller.getRecord() !== null &&
+      (current?.status === "uncertain" || current?.status === "conflict_in_progress");
+    const result = isRetry ? await controller.retryPending() : await controller.submit();
+    if (!mounted.current) return null;
+    if (result.status === "succeeded") return applySuccessfulEntryCreation(result);
+    applyFailedEntryCreation(result, controller);
+    return null;
+  }
+
+  async function saveNewEntry() {
+    let createdReceipt: LocalSaveReceipt | null = null;
+    try {
+      createdReceipt = await submitNewEntry();
+    } catch (error: unknown) {
+      if (!mounted.current) return;
+      if (error instanceof PreSendStorageError || error instanceof OperationRetryBlockedError) {
+        setFailure(entryFailure(error.message));
+        setFailureEpoch((value) => value + 1);
+        return;
+      }
+      saveFailure(error, "upload");
+    } finally {
+      saving.current = false;
+      if (mounted.current) setStage("idle");
+    }
+    if (createdReceipt && mounted.current) {
+      invalidateCatalogEntries(repository);
+      await finishNavigation(createdReceipt);
+    }
+  }
+
   async function save(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
@@ -488,112 +594,11 @@ export function useEntryForm(
     if (!recoveryReady) return;
     saving.current = true;
     setFailure(null);
-
-    // Editing flow (existing entry update)
     if (entryId) {
-      let attempted: Stage = "upload";
-      try {
-        const imageId = await imageIdForSave();
-        if (!mounted.current) return;
-        attempted = "persist";
-        setStage("persist");
-        await persist(imageId);
-      } catch (error: unknown) {
-        if (mounted.current) saveFailure(error, attempted);
-        return;
-      } finally {
-        saving.current = false;
-        if (mounted.current) setStage("idle");
-      }
-      if (!mounted.current) return;
-      saveSucceeded.current = true;
-      invalidateCatalogEntries(repository);
-      await finishNavigation({ receiptId: crypto.randomUUID(), entity: "entry", entityId: entryId, label: draft.brandName.trim(), action: "updated" });
+      await saveExistingEntry(entryId);
       return;
     }
-
-    // Creation flow (idempotent, multi-stage controller)
-    let createdReceipt: LocalSaveReceipt | null = null;
-    try {
-      lastRawErrorRef.current = null;
-      const controller = getOrInitController();
-      const currentAttempt = controller.getCurrentAttempt();
-
-      if (currentAttempt?.status === "pre_commit_rejected") {
-        await controller.startNewAttemptFromEditableDraft({
-          preserveConfirmedImage: fileRef.current === controller.getRecord()?.submittedDraft?.imageFile,
-        });
-      }
-
-      setStage(
-        controller.getCurrentAttempt()?.operationKind === "entry.create"
-          ? "persist"
-          : "upload",
-      );
-
-      const isRetry =
-        controller.getRecord() !== null &&
-        (controller.getCurrentAttempt()?.status === "uncertain" ||
-          controller.getCurrentAttempt()?.status === "conflict_in_progress");
-
-      const result = isRetry
-        ? await controller.retryPending()
-        : await controller.submit();
-
-      if (!mounted.current) return;
-
-      if (result.status === "succeeded") {
-        if (result.hasDraftChangesSinceSubmission && result.result) {
-          loaded.current = true;
-          setConfirmedEntryId(result.result.id);
-          resources.setEntry(result.result);
-          setUncertain("idle");
-          setFailure(null);
-          setInfoNotice("El envío anterior se guardó. Los cambios posteriores se conservan; revisa la versión actual y guárdalos explícitamente.");
-          if (!isStrongEntryVersion(result.result.etag)) setFailure(entryFailure(new Error("Revisa la versión de la entrada confirmada antes de guardar.")));
-          if (file === result.record.submittedDraft?.imageFile) { setFile(null); uploaded.current = null; }
-          invalidateCatalogEntries(repository);
-          return;
-        }
-        if (result.result) createdReceipt = { receiptId: result.record.stages[result.record.currentStageIndex].idempotencyKey, entity: "entry", entityId: result.result.id, label: result.result.brandName, action: "created" };
-      } else {
-        const activeStage = controller.getCurrentAttempt();
-        const attempted =
-          activeStage?.operationKind === "image.upload" ? "upload" : "persist";
-        if (
-          result.outcome?.kind === "uncertain_outcome" ||
-          result.outcome?.kind === "uncertain_write_response" ||
-          activeStage?.status === "uncertain"
-        ) {
-          setUncertain(attempted);
-        }
-        const errorToReport =
-          lastRawErrorRef.current ??
-          result.outcome?.message ??
-          activeStage?.lastErrorMessage ??
-          "Error al guardar la entrada.";
-        saveFailure(errorToReport, attempted);
-      }
-    } catch (error: unknown) {
-      if (!mounted.current) return;
-      if (
-        error instanceof PreSendStorageError ||
-        error instanceof OperationRetryBlockedError
-      ) {
-        setFailure(entryFailure(error.message));
-        setFailureEpoch((v) => v + 1);
-        return;
-      }
-      saveFailure(error, "upload");
-    } finally {
-      saving.current = false;
-      if (mounted.current) setStage("idle");
-    }
-
-    if (createdReceipt && mounted.current) {
-      invalidateCatalogEntries(repository);
-      await finishNavigation(createdReceipt);
-    }
+    await saveNewEntry();
   }
 
   async function reviewCurrent() {
@@ -634,7 +639,7 @@ export function useEntryForm(
 
   return {
     ...resources,
-    get dirty() { return !saveSucceeded.current && (!sameDraft({ ...draft, categoryIds: [...draft.categoryIds].sort() }, { ...baseDraft.current, categoryIds: [...baseDraft.current.categoryIds].sort() }) || file !== baseFile.current); },
+    get dirty() { return !saveSucceeded.current && (!sameDraft({ ...draft, categoryIds: [...draft.categoryIds].sort(compareCategoryIds) }, { ...baseDraft.current, categoryIds: [...baseDraft.current.categoryIds].sort(compareCategoryIds) }) || file !== baseFile.current); },
     get exitBlocked() { return !saveSucceeded.current && (saving.current || stage !== "idle" || uncertain !== "idle" || Boolean(controllerRef.current?.getCurrentAttempt()?.possibleWriteApplied && controllerRef.current.getCurrentAttempt()?.status !== "succeeded")); },
     editing: Boolean(entryId),
     infoNotice,

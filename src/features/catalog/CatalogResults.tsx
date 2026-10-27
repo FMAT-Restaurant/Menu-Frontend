@@ -100,7 +100,7 @@ function ResultsToolbar(props: Readonly<Pick<ResultsProps, "displayed" | "pageSi
   const last = count ? first + count - 1 : 0;
   return <div className="catalog-toolbar">
       <div>
-        {shown ? <p className="catalog-toolbar__count" aria-live="polite">Mostrando {first}–{last} de {total} entradas</p> : props.fetching && <p className="catalog-toolbar__count" role="status">Cargando entradas…</p>}
+        {shown ? <p className="catalog-toolbar__count" aria-live="polite">Mostrando {first}–{last} de {total} entradas</p> : props.fetching && <output className="catalog-toolbar__count" aria-live="polite">Cargando entradas…</output>}
         {props.olderResults && <p className="catalog-toolbar__note">Mostrando resultados anteriores mientras se actualiza la consulta.</p>}
       </div>
       <div className="select-field select-field--inline"><label htmlFor="page-size">Entradas por página</label><select id="page-size" value={props.pageSize} onChange={(event) => props.onPageSize(event.target.value)}>{[6, 12, 24].map((size) => <option key={size} value={size}>{size}</option>)}</select></div>

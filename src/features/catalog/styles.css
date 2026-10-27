@@ -112,6 +112,7 @@
 }
 
 :where(.menu-module[data-menu-module]) .catalog-toolbar__count {
+  display: block;
   margin: 0;
   font-size: 14px;
   font-weight: 600;

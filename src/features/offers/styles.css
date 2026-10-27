@@ -445,10 +445,13 @@
 
 :where(.menu-module[data-menu-module]) .image-preview__overlay {
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 12px;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
   font-size: 14px;
@@ -518,7 +521,7 @@
   background: #fafafa;
   cursor: pointer;
   color: #6b7280;
-  transition: all .15s ease;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
 }
 
 :where(.menu-module[data-menu-module]) .add-slot-card:hover:not(:disabled) {
@@ -672,7 +675,7 @@
   border-radius: 4px;
   background: #e5e7eb;
   color: #374151;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 :where(.menu-module[data-menu-module]) .slot-option-item__source-ref,
@@ -831,7 +834,7 @@
 
 :where(.menu-module[data-menu-module]) .source-picker-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -928,9 +931,6 @@
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  :where(.menu-module[data-menu-module]) .source-picker-buttons {
-    grid-template-columns: 1fr;
-  }
 }
 
 :where(.menu-module[data-menu-module]) .offers-page { container: offers / inline-size; }
@@ -990,13 +990,9 @@
 :where(.menu-module[data-menu-module]) .slot-card__title { font-size: 18px; line-height: 26px; overflow-wrap: anywhere; }
 :where(.menu-module[data-menu-module]) .slot-option-item__header, :where(.menu-module[data-menu-module]) .slot-option-item__actions, :where(.menu-module[data-menu-module]) .slot-card__header-actions { flex-wrap: wrap; gap: 8px; }
 :where(.menu-module[data-menu-module]) .slot-option-item__main, :where(.menu-module[data-menu-module]) .slot-option-item { min-width: 0; overflow-wrap: anywhere; }
-:where(.menu-module[data-menu-module]) .slot-option-item__name { font-size: 14px; line-height: 20px; }
-:where(.menu-module[data-menu-module]) .slot-option-item__source-badge { text-transform: none; }
 :where(.menu-module[data-menu-module]) .composition-editor__subtitle, :where(.menu-module[data-menu-module]) .image-dropzone__text { line-height: 20px; }
-:where(.menu-module[data-menu-module]) .source-picker-buttons { grid-template-columns: minmax(0, 1fr); }
 :where(.menu-module[data-menu-module]) .image-dropzone:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 :where(.menu-module[data-menu-module]) .image-dropzone__icon { width: 32px; height: 32px; }
-:where(.menu-module[data-menu-module]) .image-preview__overlay { inset: auto 0 0; padding: 12px; min-height: 48px; box-sizing: border-box; }
 @container offer-form (width < 768px) {
   :where(.menu-module[data-menu-module]) .offer-form > * { --control-height: 48px; }
   :where(.menu-module[data-menu-module]) .offer-commercial-info, :where(.menu-module[data-menu-module]) .composition-editor { padding: 16px; }

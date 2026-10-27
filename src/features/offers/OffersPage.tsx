@@ -98,6 +98,28 @@ function retryLabelForLoad(error: LoadError) {
   return "ofertas";
 }
 
+function statusMutationFailure(
+  error: unknown,
+  analysis: ReturnType<typeof analyzeIdempotentAttemptError>,
+  statusCode: number | undefined,
+): { clearPending: boolean; message: string } {
+  if (analysis.kind === "key_reused_conflict" || analysis.errorCode === "INVALID_IDEMPOTENCY_KEY") {
+    return { clearPending: true, message: "El cambio de estado fue rechazado. Vuelve a solicitarlo para preparar un nuevo envío." };
+  }
+  if (analysis.kind === "in_progress_conflict") return { clearPending: false, message: analysis.message };
+  if (analysis.kind === "precondition_conflict" || statusCode === 409 || statusCode === 412) {
+    return { clearPending: true, message: "Los datos cambiaron desde que se cargaron. Actualiza la lista antes de volver a intentarlo." };
+  }
+  if (analysis.kind === "pre_commit_rejection" || statusCode === 422) {
+    return { clearPending: true, message: analysis.message || "El servidor rechazó los datos de la oferta. Revisa su estado y composición." };
+  }
+  if (statusCode === 401 || statusCode === 403) {
+    return { clearPending: true, message: "No tienes acceso a esta operación. Verifica tu sesión y permisos." };
+  }
+  if (statusCode === 404) return { clearPending: true, message: "La entrada u oferta solicitada ya no existe." };
+  return { clearPending: false, message: failureMessage(error, "status") };
+}
+
 interface OffersFeedbackProps {
   loadError: LoadError;
   entryErrorMessage: string;
@@ -473,7 +495,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     let sentAttempt: SealedOperationAttempt | null = null;
     try {
       let mutation = pendingStatusMutation.current;
-      if (!mutation || mutation.offerId !== offer.id || mutation.draft.status !== status) {
+      if (mutation?.offerId !== offer.id || mutation?.draft.status !== status) {
         const versioned = await repository.getOffer(offer.id);
         if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
         if (!versioned.etag) {
@@ -524,27 +546,9 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         setStatusAttempt(failedAttempt);
       }
 
-      if (errAnalysis.kind === "key_reused_conflict" || errAnalysis.errorCode === "INVALID_IDEMPOTENCY_KEY") {
-        pendingStatusMutation.current = null;
-        setActionError("El cambio de estado fue rechazado. Vuelve a solicitarlo para preparar un nuevo envío.");
-      } else if (errAnalysis.kind === "in_progress_conflict") {
-        setActionError(errAnalysis.message);
-      } else if (errAnalysis.kind === "precondition_conflict" || statusHttp === 409 || statusHttp === 412) {
-        pendingStatusMutation.current = null;
-        setActionError("Los datos cambiaron desde que se cargaron. Actualiza la lista antes de volver a intentarlo.");
-      } else if (errAnalysis.kind === "pre_commit_rejection" || statusHttp === 422) {
-        pendingStatusMutation.current = null;
-        setActionError(errAnalysis.message || "El servidor rechazó los datos de la oferta. Revisa su estado y composición.");
-      } else if (statusHttp === 401 || statusHttp === 403) {
-        pendingStatusMutation.current = null;
-        setActionError("No tienes acceso a esta operación. Verifica tu sesión y permisos.");
-      } else if (statusHttp === 404) {
-        pendingStatusMutation.current = null;
-        setActionError("La entrada u oferta solicitada ya no existe.");
-      } else {
-        // Uncertain outcome (timeout, network error, 5xx): preserve pendingStatusMutation.current
-        setActionError(failureMessage(error, "status"));
-      }
+      const failure = statusMutationFailure(error, errAnalysis, statusHttp);
+      if (failure.clearPending) pendingStatusMutation.current = null;
+      setActionError(failure.message);
     } finally {
       if (currentContextRef.current === expectedContext && activeOperationId.current === opId) {
         setBusyId(null);

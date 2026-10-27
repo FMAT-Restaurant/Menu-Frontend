@@ -75,6 +75,20 @@ export interface RecipeFormContentProps extends RecipeFormDialogProps {
   sessionRef?: Ref<RecipeFormContentHandle>;
 }
 
+function recipeSubmissionMessage(
+  showManualRetryButton: boolean,
+  pendingAttempt: SealedOperationAttempt | null,
+  error: string,
+): string {
+  if (showManualRetryButton) {
+    return "No sabemos si se creó la receta. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente.";
+  }
+  if (pendingAttempt?.status === "requires_new_key") {
+    return "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío.";
+  }
+  return error || "Hay un envío sin confirmar. Reintentar recupera ese envío; tus cambios posteriores se conservan.";
+}
+
 /** Owns one recipe editing/recovery session independently of its modal host. */
 export function RecipeFormContent({
   openingResource,
@@ -816,6 +830,44 @@ export function RecipeFormContent({
     }
   }
 
+  async function getEditSaveEtag(): Promise<string | null> {
+    let etag = openingEtag;
+    if (!isStrongEtag(etag) && openingLoadPromiseRef.current) {
+      const loaded = await openingLoadPromiseRef.current;
+      if (loaded?.etag && isStrongEtag(loaded.etag)) {
+        etag = loaded.etag;
+        setOpeningEtag(loaded.etag);
+      }
+    }
+    if (isStrongEtag(etag)) return etag;
+    setReviewRequired(true);
+    setError("No pudimos comprobar la versión de la receta. Consulta sus datos actuales antes de guardar.");
+    return null;
+  }
+
+  async function saveEditThroughCallback(cleanDraft: RecipeDraft): Promise<boolean> {
+    if (!onSubmit) return false;
+    try {
+      await onSubmit(cleanDraft);
+      exitSucceeded.current = true;
+      onClose();
+    } catch {
+      setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
+    } finally {
+      isSubmittingRef.current = false;
+      setBusy(false);
+    }
+    return true;
+  }
+
+  function reportRecipeEditFailure(err: unknown) {
+    if (!activeRef.current) return;
+    const analysis = analyzeNonIdempotentWriteError(err);
+    setExitUncertain(analysis.possibleWriteApplied);
+    if (analysis.requiresResourceReload) setReviewRequired(true);
+    setError(`No se pudo guardar la receta. ${analysis.message}`);
+  }
+
   async function executeEditSave() {
     if (!activeRecipe || isSubmittingRef.current) return;
 
@@ -837,20 +889,7 @@ export function RecipeFormContent({
     setError("");
     setInfoNotice("");
 
-    // Fallback if repository is not passed and onSubmit is provided
-    if (!repository && onSubmit) {
-      try {
-        await onSubmit(cleanDraft);
-        exitSucceeded.current = true;
-        onClose();
-      } catch {
-        setError("No se pudo guardar la receta. Verifica los datos y vuelve a intentarlo.");
-      } finally {
-        isSubmittingRef.current = false;
-        setBusy(false);
-      }
-      return;
-    }
+    if (!repository && await saveEditThroughCallback(cleanDraft)) return;
 
     if (!repository) {
       setError("No se puede editar la receta sin un repositorio configurado.");
@@ -860,24 +899,8 @@ export function RecipeFormContent({
     }
 
     try {
-      let etagToUse = openingEtag;
-      if (!isStrongEtag(etagToUse)) {
-        if (openingLoadPromiseRef.current) {
-          const loaded = await openingLoadPromiseRef.current;
-          if (loaded?.etag && isStrongEtag(loaded.etag)) {
-            etagToUse = loaded.etag;
-            setOpeningEtag(loaded.etag);
-          }
-        }
-      }
-
-      if (!isStrongEtag(etagToUse)) {
-        setReviewRequired(true);
-        setError(
-          "No pudimos comprobar la versión de la receta. Consulta sus datos actuales antes de guardar.",
-        );
-        return;
-      }
+      const etagToUse = await getEditSaveEtag();
+      if (!etagToUse) return;
 
       const updated = await repository.updateRecipe(activeRecipe.id, cleanDraft, etagToUse);
       if (!activeRef.current) return;
@@ -887,13 +910,7 @@ export function RecipeFormContent({
       onUpdated?.(updated);
       onClose();
     } catch (err) {
-      if (!activeRef.current) return;
-      const analysis = analyzeNonIdempotentWriteError(err);
-      setExitUncertain(analysis.possibleWriteApplied);
-      if (analysis.requiresResourceReload) {
-        setReviewRequired(true);
-      }
-      setError(`No se pudo guardar la receta. ${analysis.message}`);
+      reportRecipeEditFailure(err);
     } finally {
       isSubmittingRef.current = false;
       if (activeRef.current) {
@@ -1258,11 +1275,7 @@ export function RecipeFormContent({
 
           {(error || showManualRetryButton || requiresNewOperationAction) && (
             <div className="recipe-form-dialog__error" role="alert">
-              <p>{showManualRetryButton
-                ? "No sabemos si se creó la receta. Reintentar recupera el mismo envío; tus cambios posteriores se conservan. No reintentaremos automáticamente."
-                : pendingAttempt?.status === "requires_new_key"
-                  ? "Este envío fue rechazado y no puede repetirse como está. Pulsa Iniciar nueva operación para preparar otro envío."
-                  : error || "Hay un envío sin confirmar. Reintentar recupera ese envío; tus cambios posteriores se conservan."}</p>
+              <p>{recipeSubmissionMessage(showManualRetryButton, pendingAttempt, error)}</p>
               {showManualRetryButton && retryCountdownMs > 0 && (
                 <p>
                   Espera {Math.ceil(retryCountdownMs / 1000)} s antes de volver a intentar.

@@ -74,12 +74,12 @@ function Confirmation({ decision }: { decision: Decision }) {
 /** Exactly one navigation blocker aggregates every mounted editing step. */
 export function EditGuardProvider({ children }: { children: ReactNode }) {
   const participants = useRef(new Set<Participant>());
-  const [revision, changed] = useState(0);
+  const [revision, setRevision] = useState(0);
   const [decision, setDecision] = useState<Decision | null>(null);
   const bypass = useRef(false);
   const blocker = useBlocker(() => !bypass.current && [...participants.current].some(p => { const s = p.state(); return s.dirty || s.blocked; }));
-  const register = useCallback((p: Participant) => { participants.current.add(p); changed(n => n + 1); return () => { participants.current.delete(p); changed(n => n + 1); }; }, []);
-  const refresh = useCallback(() => changed(n => n + 1), []);
+  const register = useCallback((p: Participant) => { participants.current.add(p); setRevision(n => n + 1); return () => { participants.current.delete(p); setRevision(n => n + 1); }; }, []);
+  const refresh = useCallback(() => setRevision(n => n + 1), []);
   const confirm = useCallback((d: Decision) => setDecision({ accept: () => { setDecision(null); d.accept(); }, cancel: () => { setDecision(null); d.cancel(); } }), []);
   const contextValue = useMemo(() => ({ register, confirm, refresh }), [register, confirm, refresh]);
   const states = [...participants.current].map(p => p.state());

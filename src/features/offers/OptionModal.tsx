@@ -31,6 +31,16 @@ export interface OptionModalProps {
   isNestedBlocked?: () => boolean;
 }
 
+function sourceDraftFields(
+  sourceType: OptionDraft["sourceType"],
+  recipe: Pick<OptionDraft, "recipeId" | "recipeName" | "hasRecipeAssignmentIntent" | "recipeAssignmentToken">,
+  inventory: Pick<OptionDraft, "inventoryItemId" | "inventoryItemName" | "quantity" | "unit">,
+): Partial<OptionDraft> {
+  if (sourceType === "RECIPE") return recipe;
+  if (sourceType === "INVENTORY_ITEM") return inventory;
+  return {};
+}
+
 export function OptionModal({
   isOpen,
   slotName,
@@ -158,21 +168,9 @@ export function OptionModal({
         displayName: val,
         status: isCreateMode ? "ACTIVE" : status,
         sourceType,
-        ...(sourceType === "RECIPE"
-          ? {
-              recipeId,
-              recipeName,
-              hasRecipeAssignmentIntent,
-              recipeAssignmentToken: initialData?.recipeAssignmentToken,
-            }
-          : sourceType === "INVENTORY_ITEM"
-            ? {
-                inventoryItemId,
-                inventoryItemName,
-                quantity,
-                unit,
-              }
-            : {}),
+        ...sourceDraftFields(sourceType,
+          { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+          { inventoryItemId, inventoryItemName, quantity, unit }),
       });
     }
   }
@@ -188,21 +186,9 @@ export function OptionModal({
         displayName,
         status: nextStatus,
         sourceType,
-        ...(sourceType === "RECIPE"
-          ? {
-              recipeId,
-              recipeName,
-              hasRecipeAssignmentIntent,
-              recipeAssignmentToken: initialData?.recipeAssignmentToken,
-            }
-          : sourceType === "INVENTORY_ITEM"
-            ? {
-                inventoryItemId,
-                inventoryItemName,
-                quantity,
-                unit,
-              }
-            : {}),
+        ...sourceDraftFields(sourceType,
+          { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+          { inventoryItemId, inventoryItemName, quantity, unit }),
       });
     }
   }
@@ -216,12 +202,9 @@ export function OptionModal({
       displayName,
       status,
       sourceType,
-      ...(sourceType === "RECIPE" ? {
-        recipeId, recipeName, hasRecipeAssignmentIntent,
-        recipeAssignmentToken: initialData?.recipeAssignmentToken,
-      } : sourceType === "INVENTORY_ITEM" ? {
-        inventoryItemId, inventoryItemName, quantity, unit,
-      } : {}),
+      ...sourceDraftFields(sourceType,
+        { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+        { inventoryItemId, inventoryItemName, quantity, unit }),
     }, isCreateMode ? "create" : "update");
     if (!result.valid) { setValidationError(result.message); return; }
     if (isNestedBlocked?.()) return;
@@ -269,7 +252,18 @@ export function OptionModal({
         <h2 id="option-discard-title">{pendingSave ? "¿Descartar el borrador de receta y guardar la opción?" : "¿Descartar los cambios de esta opción?"}</h2>
         <p>{pendingSave ? "Hay una receta sin guardar que conservaste al volver. Puedes seguir editándola o descartarla antes de guardar la opción." : "La opción y los borradores de receta sin guardar se conservan si continúas editando."}</p>
         <button ref={confirmRef} type="button" className="button button--secondary" onClick={() => { setConfirmClose(false); setPendingSave(null); }}>Continuar editando</button>
-        <button type="button" className="button button--primary" onClick={() => { if (isNestedBlocked?.() || onDiscardNested?.() === false) return; setConfirmClose(false); if (pendingSave) { onSave(pendingSave); setPendingSave(null); } else onClose(); }}>{pendingSave ? "Descartar receta y guardar opción" : "Descartar cambios"}</button>
+        <button type="button" className="button button--primary" onClick={() => {
+          if (isNestedBlocked?.() || onDiscardNested?.() === false) {
+            return;
+          }
+          setConfirmClose(false);
+          if (pendingSave) {
+            onSave(pendingSave);
+            setPendingSave(null);
+          } else {
+            onClose();
+          }
+        }}>{pendingSave ? "Descartar receta y guardar opción" : "Descartar cambios"}</button>
       </section>}
       <header className="modal-header" hidden={isNestedPickerOpen || confirmClose}>
         <h2 id="option-modal-title">{title}</h2>

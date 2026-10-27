@@ -23,6 +23,59 @@ export interface OfferCommercialInfoProps {
   disabled?: boolean;
 }
 
+interface OfferStatusFieldProps {
+  loading: boolean;
+  desiredStatus: OfferStatus;
+  onStatusChange: (value: OfferStatus) => void;
+  hasActiveSlot: boolean;
+  isEditing: boolean;
+  disabled: boolean;
+}
+
+function OfferStatusField({
+  loading,
+  desiredStatus,
+  onStatusChange,
+  hasActiveSlot,
+  isEditing,
+  disabled,
+}: Readonly<OfferStatusFieldProps>) {
+  const isAutoInactive = isEditing && desiredStatus === "ACTIVE" && !hasActiveSlot;
+
+  return <div className="form-field">
+    <span className="field-label" id="offer-status-label">Estado de la oferta</span>
+    {loading ? <LoadingValue /> : !isEditing ? (
+      <div className="status-fixed-box">
+        <span className="offer-state offer-state--inactive">Inactiva</span>
+        <p className="field-hint">
+          La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.
+        </p>
+      </div>
+    ) : (
+      <div>
+        <div className="radio-group" role="radiogroup" aria-labelledby="offer-status-label">
+          <label className="radio-label">
+            <input type="radio" name="offer-form-status" value="ACTIVE" checked={desiredStatus === "ACTIVE"}
+              onChange={() => onStatusChange("ACTIVE")} disabled={disabled} />
+            <span>Activa</span>
+          </label>
+          <label className="radio-label">
+            <input type="radio" name="offer-form-status" value="INACTIVE" checked={desiredStatus === "INACTIVE"}
+              onChange={() => onStatusChange("INACTIVE")} disabled={disabled} />
+            <span>Inactiva</span>
+          </label>
+        </div>
+        {isAutoInactive && <p className="feedback feedback--warning" role="alert">
+          Sin un grupo con opciones activas, la oferta se guardará inactiva. Añade opciones activas para solicitar su activación. Guardar no garantiza que se acepte la solicitud.
+        </p>}
+        {desiredStatus === "ACTIVE" && hasActiveSlot && <p className="field-hint">
+          El borrador tiene un grupo con opciones activas. Al guardar solicitarás la activación; sólo se aplicará si la composición cumple los requisitos.
+        </p>}
+      </div>
+    )}
+  </div>;
+}
+
 function handleDragOver(e: DragEvent) {
   e.preventDefault();
 }
@@ -79,8 +132,6 @@ export function OfferCommercialInfo({
   }
 
   const effectivePreview = previewUrl || existingImage?.url || existingImage?.thumbnailUrl;
-  const isAutoInactive = isEditing && desiredStatus === "ACTIVE" && !hasActiveSlot;
-
   return (
     <section className="offer-commercial-info" aria-labelledby="commercial-info-title">
       <h2 id="commercial-info-title" className="offer-commercial-info__title">
@@ -131,59 +182,8 @@ export function OfferCommercialInfo({
             </p>
           </div>
 
-          <div className="form-field">
-            <span className="field-label" id="offer-status-label">Estado de la oferta</span>
-            {loading ? <LoadingValue /> : !isEditing ? (
-              <div className="status-fixed-box">
-                <span className="offer-state offer-state--inactive">Inactiva</span>
-                <p className="field-hint">
-                  La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.
-                </p>
-              </div>
-            ) : (
-              <div>
-                <div
-                  className="radio-group"
-                  role="radiogroup"
-                  aria-labelledby="offer-status-label"
-                >
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="offer-form-status"
-                      value="ACTIVE"
-                      checked={desiredStatus === "ACTIVE"}
-                      onChange={() => onStatusChange("ACTIVE")}
-                      disabled={disabled}
-                    />
-                    <span>Activa</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="offer-form-status"
-                      value="INACTIVE"
-                      checked={desiredStatus === "INACTIVE"}
-                      onChange={() => onStatusChange("INACTIVE")}
-                      disabled={disabled}
-                    />
-                    <span>Inactiva</span>
-                  </label>
-                </div>
-
-                {isAutoInactive && (
-                  <p className="feedback feedback--warning" role="alert">
-                    Sin un grupo con opciones activas, la oferta se guardará inactiva. Añade opciones activas para solicitar su activación. Guardar no garantiza que se acepte la solicitud.
-                  </p>
-                )}
-                {desiredStatus === "ACTIVE" && hasActiveSlot && (
-                  <p className="field-hint">
-                    El borrador tiene un grupo con opciones activas. Al guardar solicitarás la activación; sólo se aplicará si la composición cumple los requisitos.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+          <OfferStatusField loading={loading} desiredStatus={desiredStatus} onStatusChange={onStatusChange}
+            hasActiveSlot={hasActiveSlot} isEditing={isEditing} disabled={disabled} />
         </div>
 
         <div className="offer-commercial-info__image-column">

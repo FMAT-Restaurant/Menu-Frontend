@@ -7,7 +7,7 @@ const Content = createContext<ReactNode>(null);
 function TestRoute() { return <EditGuardProvider>{useContext(Content)}</EditGuardProvider>; }
 
 /** Data-router counterpart of MemoryRouter, preserving rerendered test children. */
-export function GuardedMemoryRouter({ children, initialEntries, initialIndex }: ComponentProps<typeof MemoryRouter>) {
+export function GuardedMemoryRouter({ children, initialEntries, initialIndex }: Readonly<ComponentProps<typeof MemoryRouter>>) {
   const initial = useRef({ initialEntries, initialIndex });
   const [router, setRouter] = useState<ReturnType<typeof createMemoryRouter> | null>(null);
   useEffect(() => {
