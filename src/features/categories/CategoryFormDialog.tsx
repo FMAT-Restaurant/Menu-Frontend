@@ -427,15 +427,14 @@ export function CategoryFormDialog({
     // A retry sends the original sealed payload, independently of later draft edits.
     if (mode === "submit" && !validateName()) return;
 
-    const controller = getOrInitController();
-    if (!(await prepareCreationAttempt(mode, controller))) {
-      return;
-    }
-
     setBusy(true);
     setError("");
     setInfoNotice("");
     try {
+      const controller = getOrInitController();
+      if (!(await prepareCreationAttempt(mode, controller))) {
+        return;
+      }
       await runCreationAttempt(mode, controller);
     } catch (err) {
       handleCreationFailure(err);

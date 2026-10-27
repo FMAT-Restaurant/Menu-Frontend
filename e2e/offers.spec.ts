@@ -32,7 +32,7 @@ test("opens an entry's offers and returns to the catalog without losing the quer
   await expect(statusControl).toHaveText("Activar oferta");
   await expect(statusControl).toHaveAttribute("aria-pressed", "false");
   await expect(page.locator(".offer-state--inactive")).toHaveText("Inactiva");
-  await expect(page.locator(".offer-card__composition")).toHaveCSS("justify-content", "center");
+  await expect(page.locator(".offer-card__composition")).toHaveCSS("align-items", "center");
   await page.getByRole("link", { name: "Abrir oferta Combo para editar" }).click();
   await expect(page.getByRole("heading", { name: "Editar oferta" })).toBeVisible();
   await page.getByRole("link", { name: /Volver a ofertas/ }).click();

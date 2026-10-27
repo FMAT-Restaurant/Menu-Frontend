@@ -399,7 +399,7 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     await waitFor(() => expect(callCount).toBe(2));
     await waitFor(() =>
       expect(
-        within(dialog).getByText(/La categoría se creó. Conservamos tus cambios posteriores/),
+        within(dialog).getByText(/La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario/),
       ).toBeVisible(),
     );
     expect(within(dialog).getByRole("heading", { name: "Editar categoría" })).toBeVisible();

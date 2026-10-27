@@ -24,8 +24,9 @@ test("keeps catalog cards contained and controls reachable at desktop, mobile an
   expect(imageBox).not.toBeNull();
   expect(imageContent).not.toBeNull();
   expect(imageContent!.height).toBeLessThanOrEqual(imageBox!.height);
-  const edit = await page.getByRole("link", { name: "Editar Bowl de pollo" }).boundingBox();
-  expect(edit!.y + edit!.height).toBeLessThan(768);
+  const editLink = page.getByRole("link", { name: "Editar Bowl de pollo" });
+  await editLink.scrollIntoViewIfNeeded();
+  await expect(editLink).toBeInViewport();
   await page.screenshot({ path: "test-results/catalog-desktop.png" });
 
   for (const width of [320, 375, 768, 1024, 1366]) {

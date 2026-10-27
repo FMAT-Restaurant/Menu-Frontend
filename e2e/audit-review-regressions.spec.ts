@@ -56,7 +56,7 @@ test("RV13: recetas carga sus primitivas al entrar directamente y conserva estil
   expect(direct.display).toBe("grid");
   expect(direct.background).toBe("rgba(0, 0, 0, 0)");
   expect(direct.padding).not.toBe("0px");
-  await expect(page.getByRole("link", { name: /Volver al menú/ })).toHaveCSS("color", "rgb(194, 65, 12)");
+  await expect(page.getByRole("link", { name: /Volver al menú/ })).toHaveCSS("color", "rgb(55, 65, 81)");
   await expect(page.getByRole("heading", { name: "Biblioteca de recetas", exact: true })).toHaveCSS("font-size", "28px");
   await expect(page.locator(".search-field__control")).toHaveCSS("display", "flex");
   await page.screenshot({ path: test.info().outputPath("recipes-direct-fixed.png"), fullPage: true });

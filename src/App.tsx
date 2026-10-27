@@ -1,18 +1,17 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
 import { EditGuardProvider } from "./shared/editGuard";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
 import type { MenuRepository } from "./application/catalog";
 
-// Route structures are available immediately; only their remote data needs placeholders.
-import { CatalogPage } from "./features/catalog/CatalogPage";
-import { CategoryPage } from "./features/categories/CategoryPage";
-import { EntryFormPage } from "./features/entries/EntryFormPage";
-import { OffersPage } from "./features/offers/OffersPage";
-import { OfferFormPage } from "./features/offers/OfferFormPage";
-import { RecipePage } from "./features/recipes/RecipePage";
+const CatalogPage = lazy(() => import("./features/catalog/CatalogPage").then(({ CatalogPage }) => ({ default: CatalogPage })));
+const CategoryPage = lazy(() => import("./features/categories/CategoryPage").then(({ CategoryPage }) => ({ default: CategoryPage })));
+const EntryFormPage = lazy(() => import("./features/entries/EntryFormPage").then(({ EntryFormPage }) => ({ default: EntryFormPage })));
+const OffersPage = lazy(() => import("./features/offers/OffersPage").then(({ OffersPage }) => ({ default: OffersPage })));
+const OfferFormPage = lazy(() => import("./features/offers/OfferFormPage").then(({ OfferFormPage }) => ({ default: OfferFormPage })));
+const RecipePage = lazy(() => import("./features/recipes/RecipePage").then(({ RecipePage }) => ({ default: RecipePage })));
 
 export function NotFoundPage() {
   return (
@@ -52,7 +51,7 @@ const defaultRepository = createMenuApi(
 
 export function createMenuRoutes(repository: MenuRepository = defaultRepository, transitions?: ReturnType<typeof createRouteTransitionTracker>) {
   return createRoutesFromElements(
-    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Outlet /></EditGuardProvider></div>}>
+    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
       <Route path="/" element={<CatalogPage repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
       <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />

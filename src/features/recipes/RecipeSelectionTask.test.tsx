@@ -117,7 +117,9 @@ test("clearing no-match search restores results and focus without opening anothe
   await screen.findByRole("heading", { name: "Pan" });
   fireEvent.change(screen.getByLabelText("Buscar recetas"), { target: { value: "sin coincidencias" } });
   fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Limpiar búsqueda" }));
+  const emptyState = (await screen.findByText("No hay recetas que coincidan con tu búsqueda.")).parentElement;
+  expect(emptyState).not.toBeNull();
+  fireEvent.click(within(emptyState!).getByRole("button", { name: "Limpiar búsqueda" }));
   expect(screen.getByLabelText("Buscar recetas")).toHaveFocus();
   expect(await screen.findByRole("heading", { name: "Pan" })).toBeVisible();
   expect(within(screen.getByRole("dialog")).queryByRole("heading", { level: 1 })).not.toBeInTheDocument();

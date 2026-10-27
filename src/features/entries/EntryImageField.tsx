@@ -48,7 +48,10 @@ export function EntryImageField({ loading = false, file, entry, validating, erro
 
   return <section className="entry-image-field" aria-labelledby="entry-image-title">
     <h2 id="entry-image-title">Imagen de referencia</h2>
-    {loading ? <LoadingValue kind="image" /> : <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} data-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
+    {loading ? <div className="entry-image-field__zone" aria-hidden="true">
+      <span className="entry-image-field__preview"><LoadingValue kind="image" /></span>
+      <span className="entry-image-field__action">{labels.action}</span>
+    </div> : <button id="entry-image" className="entry-image-field__zone" type="button" disabled={disabled} onClick={() => input.current?.click()} aria-label={labels.action} data-invalid={Boolean(error)} aria-describedby="entry-image-help entry-image-error">
       <span className="entry-image-field__preview">
         {source && !broken && <img src={source} alt="Vista previa de la imagen de la entrada" onError={() => setBroken(true)} />}
         {(!source || broken) && <span className="entry-image-field__placeholder"><Icon name="image" /><ImageContent source={source} broken={broken} reference={entry?.imageRef} /></span>}

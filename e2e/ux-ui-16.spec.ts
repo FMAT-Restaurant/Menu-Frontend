@@ -13,7 +13,7 @@ async function geometry(page: Page, info: TestInfo, name: string) {
     const collect = (selector: string) => [...module.querySelectorAll(selector)].filter(element => { const box = element.getBoundingClientRect(); return box.width > 0 && box.height > 0 && !element.closest("[hidden]"); }).map(rect);
     return { width: module.getBoundingClientRect().width, viewport: { width: innerWidth, height: innerHeight }, overflow: document.documentElement.scrollWidth > innerWidth,
       heading: collect("[data-route-heading]"), filters: collect('[aria-label="Filtros de entradas"], .recipe-toolbar, .recipe-inventory-controls'),
-      reservation: collect("[data-loading-state]"), images: collect(" .menu-loading__image, .entry-card__image, .offer-card__image, .entry-image-field__preview, .image-dropzone"),
+      reservation: collect("[data-loading-state], [aria-busy='true'], .loading-value"), images: collect(".menu-loading__image, .entry-card__image, .offer-card__image, .entry-image-field__preview, .loading-value--image, .image-dropzone"),
       content: collect(".menu-loading__item, .entry-form__layout, .entry-card, .offer-card, .category-row, .recipe-card, .offer-commercial-info"),
       imageZones: collect(".menu-loading__image-zone, .entry-image-field__zone"),
       actions: collect(".entry-form__actions, .offer-form__actions"),
@@ -61,14 +61,21 @@ for (const width of [390, 1024, 1440]) for (const [path, delayed, variant, visib
     });
     try {
       await page.goto(path);
-      await expect(page.locator(`[data-loading-state="${variant}"]`)).toBeVisible();
+      const pendingReservation = variant === "entry-form"
+        ? page.locator('.entry-form__layout[aria-busy="true"]')
+        : variant === "offer-form"
+          ? page.locator('.offer-form[aria-busy="true"]')
+          : page.locator(`[data-loading-state="${variant}"]`);
+      await expect(pendingReservation).toBeVisible();
       await expect(page.locator("[data-route-heading]")).toBeVisible();
       const pending = await geometry(page, info, "pending");
       expect(pending.reservation.some(box => box.height >= 100)).toBe(true);
       release();
       if (variant.endsWith("form")) await expect(page.getByLabel(visible, { exact: true })).toBeEnabled();
       else await expect(page.getByRole("heading", { name: visible, exact: true })).toBeVisible();
-      await expect(page.locator(`[data-loading-state="${variant}"]`)).toHaveCount(0);
+      if (variant === "entry-form") await expect(page.locator('.entry-form__layout[aria-busy="true"]')).toHaveCount(0);
+      else if (variant === "offer-form") await expect(page.locator('.offer-form[aria-busy="true"]')).toHaveCount(0);
+      else await expect(page.locator(`[data-loading-state="${variant}"]`)).toHaveCount(0);
       const resolved = await geometry(page, info, "resolved");
       expect(Math.abs(resolved.heading[0].y - pending.heading[0].y)).toBeLessThanOrEqual(1);
       expect(Math.abs(resolved.content[0].y - pending.content[0].y)).toBeLessThanOrEqual(4);

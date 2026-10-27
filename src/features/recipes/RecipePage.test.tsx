@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { InventoryItem, Page, RecipeDetail, RecipeSummary } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
@@ -127,7 +127,9 @@ describe("UX08 recipe recovery and field validation", () => {
     await screen.findByRole("heading", { name: "No hay recetas que coincidan con tu búsqueda." });
     expect(screen.getByLabelText("Buscar recetas")).toHaveValue("sin coincidencias");
     expect(screen.queryByText("Aún no hay recetas registradas.")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
+    const emptyState = screen.getByRole("heading", { name: "No hay recetas que coincidan con tu búsqueda." }).closest<HTMLElement>(".category-empty");
+    expect(emptyState).not.toBeNull();
+    fireEvent.click(within(emptyState!).getByRole("button", { name: "Limpiar búsqueda" }));
     expect(await screen.findByRole("heading", { name: "Ensalada" })).toBeVisible();
     expect(screen.getByLabelText("Buscar recetas")).toHaveValue("");
     expect(screen.getByLabelText("Buscar recetas")).toHaveFocus();
