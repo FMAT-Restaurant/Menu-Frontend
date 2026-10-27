@@ -14,7 +14,7 @@ function StateViewer() {
 test("a destination consumes a confirmed receipt once while failed collection retries preserve success and unrelated history", async () => {
   const repository = { listEntries: jest.fn().mockRejectedValue(new Error("offline")), listCategories: jest.fn().mockResolvedValue([]), deleteArchivedEntry: jest.fn() };
   const view = render(<StrictMode><MemoryRouter initialEntries={[{ pathname: "/", search: "?q=Bowl&page=3", hash: "#list", state: receiptState({ returnTo: "/?status=ACTIVE", custom: 42 }, receipt) }]}><CatalogPage repository={repository} /><StateViewer /></MemoryRouter></StrictMode>);
-  expect(await screen.findByText('Entrada "Bowl" creada.')).toHaveAttribute("role", "status");
+  expect(await screen.findByRole("status")).toHaveTextContent('Entrada "Bowl" creada.');
   await waitFor(() => expect(screen.getByTestId("state")).not.toHaveTextContent("saveResult"));
   expect(screen.getByTestId("state")).toHaveTextContent('"path":"/?q=Bowl&page=3#list"');
   expect(screen.getByTestId("state")).toHaveTextContent('"custom":42');
