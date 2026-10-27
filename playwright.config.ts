@@ -17,11 +17,15 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: "npm run preview",
-    port: 4173,
-    reuseExistingServer: !process.env.CI,
-  },
+  ...(process.env.PLAYWRIGHT_USE_EXTERNAL_SERVER === "true"
+    ? {}
+    : {
+        webServer: {
+          command: "npm run preview",
+          port: 4173,
+          reuseExistingServer: !process.env.CI,
+        },
+      }),
   projects: [
     {
       name: "chromium",

@@ -412,7 +412,7 @@ export function OptionModal({
                     checked={status === "ACTIVE"}
                     onChange={() => handleStatusChange("ACTIVE")}
                   />
-                  Activa
+                  <span>Activa</span>
                 </label>
                 <label className="radio-option">
                   <input

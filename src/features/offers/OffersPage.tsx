@@ -225,7 +225,7 @@ interface OffersResultsProps extends OffersCollectionProps, OffersPaginationProp
 }
 
 function OffersResults({ initialLoading, result, offersLoading, first, last, ...collectionProps }: Readonly<OffersResultsProps>) {
-  if (initialLoading) return <><p className="offers-page__count" role="status">Cargando ofertas…</p><LoadingState variant="offers" /></>;
+  if (initialLoading) return <><output className="offers-page__count">Cargando ofertas…</output><LoadingState variant="offers" /></>;
   if (!result) return null;
 
   return <>

@@ -1,7 +1,6 @@
 import { LoadingValue } from "../../shared/LoadingState";
 import { Icon } from "../../shared/Icon";
-import { type ChangeEvent, type DragEvent, type KeyboardEvent, useRef } from "react";
-import type { ReactNode } from "react";
+import { type ChangeEvent, type DragEvent, type KeyboardEvent, type ReactNode, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
 import { formatMoney } from "../../shared/formatMoney";
 
