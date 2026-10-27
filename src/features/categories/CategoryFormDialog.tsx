@@ -106,36 +106,34 @@ export function CategoryFormDialog({
   );
 
   function getOrInitController(): OperationAttemptController<CategoryDraft, MenuCategory> {
-    if (!controllerRef.current) {
-      controllerRef.current = createOperationAttemptController<CategoryDraft, MenuCategory>({
-        scope: buildCategoryCreateScope(),
-        storage,
-        initialDraft: {
-          name: initialPendingRecord?.editableDraft.name ?? name,
-          description: initialPendingRecord?.editableDraft.description ?? description,
-        },
-        buildFinalStageInput: ({ draft, submittedDraftVersion, now }) => ({
-          operationKind: "category.create",
-          method: "POST",
-          endpointPath: "/menu/categories",
-          payload: sealJsonPayload({
-            name: draft.name.trim(),
-            description: draft.description.trim(),
-          }),
-          submittedDraftVersion,
-          now,
+    controllerRef.current ??= createOperationAttemptController<CategoryDraft, MenuCategory>({
+      scope: buildCategoryCreateScope(),
+      storage,
+      initialDraft: {
+        name: initialPendingRecord?.editableDraft.name ?? name,
+        description: initialPendingRecord?.editableDraft.description ?? description,
+      },
+      buildFinalStageInput: ({ draft, submittedDraftVersion, now }) => ({
+        operationKind: "category.create",
+        method: "POST",
+        endpointPath: "/menu/categories",
+        payload: sealJsonPayload({
+          name: draft.name.trim(),
+          description: draft.description.trim(),
         }),
-        executeFinalStage: async ({ attempt }) => {
-          if (attempt.payload.kind !== "json") {
-            throw new Error("El intento de categoría requiere un payload JSON sellado.");
-          }
-          const sealedDraft = attempt.payload.payloadSnapshot as CategoryDraft;
-          return repository.createCategory(sealedDraft, attempt.idempotencyKey);
-        },
-        classifyError: (err, attempt) =>
-          analyzeIdempotentAttemptError(err, attempt.operationKind),
-      });
-    }
+        submittedDraftVersion,
+        now,
+      }),
+      executeFinalStage: async ({ attempt }) => {
+        if (attempt.payload.kind !== "json") {
+          throw new Error("El intento de categoría requiere un payload JSON sellado.");
+        }
+        const sealedDraft = attempt.payload.payloadSnapshot as CategoryDraft;
+        return repository.createCategory(sealedDraft, attempt.idempotencyKey);
+      },
+      classifyError: (err, attempt) =>
+        analyzeIdempotentAttemptError(err, attempt.operationKind),
+    });
     return controllerRef.current;
   }
 
@@ -193,14 +191,13 @@ export function CategoryFormDialog({
         return versioned;
       })
       .catch(() => {
-        if (!activeRef.current || options?.signal?.aborted) {
-          return null;
+        if (activeRef.current && !options?.signal?.aborted) {
+          setOpeningEtag(undefined);
+          setReviewRequired(true);
+          setError(
+            "No se pudo cargar la versión actual de la categoría. Revisa los datos actuales antes de guardar.",
+          );
         }
-        setOpeningEtag(undefined);
-        setReviewRequired(true);
-        setError(
-          "No se pudo cargar la versión actual de la categoría. Revisa los datos actuales antes de guardar.",
-        );
         return null;
       })
       .finally(() => {
@@ -317,89 +314,126 @@ export function CategoryFormDialog({
     onClose();
   }
 
+  function validateCreationName(mode: "submit" | "retry"): boolean {
+    if (mode !== "submit" || name.trim()) {
+      return true;
+    }
+    setError("Indica el nombre de la categoría.");
+    nameRef.current?.focus();
+    return false;
+  }
+
+  async function prepareCreationAttempt(
+    mode: "submit" | "retry",
+    controller: OperationAttemptController<CategoryDraft, MenuCategory>,
+  ): Promise<boolean> {
+    if (mode !== "submit") {
+      return true;
+    }
+
+    const currentStage = controller.getCurrentAttempt();
+    if (!currentStage) {
+      return true;
+    }
+    if (currentStage.status === "requires_new_key") {
+      setError(
+        "La clave de idempotencia ya fue utilizada o es inválida. Pulsa «Iniciar nueva operación» para generar una nueva clave.",
+      );
+      return false;
+    }
+    if (currentStage.status !== "pre_commit_rejected") {
+      return true;
+    }
+
+    try {
+      await controller.startNewAttemptFromEditableDraft();
+      return true;
+    } catch (err) {
+      if (!(err instanceof PreSendStorageError)) {
+        throw err;
+      }
+      setError(err.message);
+      return false;
+    }
+  }
+
+  async function runCreationAttempt(
+    mode: "submit" | "retry",
+    controller: OperationAttemptController<CategoryDraft, MenuCategory>,
+  ) {
+    const result =
+      mode === "retry" && controller.getRecord()
+        ? await controller.retryPending()
+        : await controller.submit();
+
+    if (!activeRef.current) {
+      return;
+    }
+
+    if (result.status === "succeeded" && result.result) {
+      const created = result.result;
+      syncAttemptStateFromRecord(null);
+
+      if (result.hasDraftChangesSinceSubmission) {
+        setActiveCategory(created);
+        setInfoNotice(
+          "La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario; guarda los cambios para actualizarla.",
+        );
+        onCreatedWithPendingEdits(created);
+        void loadOpeningCategoryVersion(created.id, { preserveDraft: true });
+        return;
+      }
+
+      onCreated(created);
+      return;
+    }
+
+    syncAttemptStateFromRecord(result.record);
+    const outcomeMessage =
+      result.outcome?.message ??
+      "No se pudo guardar la categoría. Recarga la lista y vuelve a intentarlo.";
+    setError(
+      outcomeMessage.includes("No se pudo guardar la categoría")
+        ? outcomeMessage
+        : `No se pudo guardar la categoría. ${outcomeMessage}`,
+    );
+  }
+
+  function handleCreationFailure(err: unknown) {
+    if (!activeRef.current) {
+      return;
+    }
+    if (err instanceof PreSendStorageError) {
+      setError(err.message);
+      return;
+    }
+    if (err instanceof OperationRetryBlockedError) {
+      setError(err.message);
+      if (err.remainingRetryAfterMs > 0) {
+        setRetryCountdownMs(err.remainingRetryAfterMs);
+      }
+      return;
+    }
+    setError("No se pudo guardar la categoría. Recarga la lista y vuelve a intentarlo.");
+  }
+
   async function executeCreationFlow(mode: "submit" | "retry") {
-    const trimmedName = name.trim();
-    if (mode === "submit" && !trimmedName) {
-      setError("Indica el nombre de la categoría.");
-      nameRef.current?.focus();
+    if (!validateCreationName(mode)) {
       return;
     }
 
     const controller = getOrInitController();
-    const currentStage = controller.getCurrentAttempt();
-
-    if (mode === "submit" && currentStage) {
-      if (currentStage.status === "requires_new_key") {
-        setError(
-          "La clave de idempotencia ya fue utilizada o es inválida. Pulsa «Iniciar nueva operación» para generar una nueva clave.",
-        );
-        return;
-      }
-      if (currentStage.status === "pre_commit_rejected") {
-        try {
-          await controller.startNewAttemptFromEditableDraft();
-        } catch (err) {
-          if (err instanceof PreSendStorageError) {
-            setError(err.message);
-            return;
-          }
-          throw err;
-        }
-      }
+    if (!(await prepareCreationAttempt(mode, controller))) {
+      return;
     }
 
     setBusy(true);
     setError("");
     setInfoNotice("");
     try {
-      const result =
-        mode === "retry" && controller.getRecord()
-          ? await controller.retryPending()
-          : await controller.submit();
-
-      if (!activeRef.current) return;
-
-      if (result.status === "succeeded" && result.result) {
-        const created = result.result;
-        syncAttemptStateFromRecord(null);
-
-        if (result.hasDraftChangesSinceSubmission) {
-          setActiveCategory(created);
-          setInfoNotice(
-            "La categoría se creó en el servidor. Tus cambios posteriores siguen en el formulario; guarda los cambios para actualizarla.",
-          );
-          onCreatedWithPendingEdits(created);
-          void loadOpeningCategoryVersion(created.id, { preserveDraft: true });
-          return;
-        }
-
-        onCreated(created);
-        return;
-      }
-
-      syncAttemptStateFromRecord(result.record);
-      const outcomeMessage =
-        result.outcome?.message ??
-        "No se pudo guardar la categoría. Recarga la lista y vuelve a intentarlo.";
-      setError(
-        outcomeMessage.includes("No se pudo guardar la categoría")
-          ? outcomeMessage
-          : `No se pudo guardar la categoría. ${outcomeMessage}`,
-      );
+      await runCreationAttempt(mode, controller);
     } catch (err) {
-      if (!activeRef.current) return;
-      if (err instanceof PreSendStorageError) {
-        setError(err.message);
-        return;
-      }
-      if (err instanceof OperationRetryBlockedError) {
-        setError(err.message);
-        if (err.remainingRetryAfterMs > 0) {
-          setRetryCountdownMs(err.remainingRetryAfterMs);
-        }
-        return;
-      }
-      setError("No se pudo guardar la categoría. Recarga la lista y vuelve a intentarlo.");
+      handleCreationFailure(err);
     } finally {
       if (activeRef.current) {
         setBusy(false);

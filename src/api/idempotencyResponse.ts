@@ -124,10 +124,124 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function extractHttpFailureContext(
-  error: unknown,
+function getPlainObjectOrNull(value: unknown): Record<string, unknown> | null {
+  return isPlainObject(value) ? value : null;
+}
+
+function getResponseStatus(
+  error: Record<string, unknown>,
+  response: Record<string, unknown> | null,
+): number | undefined {
+  if (typeof error.status === "number") return error.status;
+  if (response && typeof response.status === "number") return response.status;
+  return undefined;
+}
+
+function getRawResponseBody(
+  error: Record<string, unknown>,
+  response: Record<string, unknown> | null,
+): unknown {
+  if ("rawBody" in error) return error.rawBody;
+  if (response && "data" in response) return response.data;
+  return undefined;
+}
+
+function getRawHeadersSource(
+  error: Record<string, unknown>,
+  response: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  if (isPlainObject(error.headers)) return error.headers;
+  if (response && isPlainObject(response.headers)) return response.headers;
+  return null;
+}
+
+function normalizeHeaders(
+  rawHeaders: Record<string, unknown> | null,
+): Record<string, string | undefined> | undefined {
+  if (!rawHeaders) return undefined;
+
+  const headers: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(rawHeaders)) {
+    if (typeof value === "string" || value === undefined) {
+      headers[key] = value;
+    }
+  }
+  return headers;
+}
+
+const IDEMPOTENT_OPERATION_KINDS = new Set<IdempotentOperationKind>([
+  "category.create",
+  "recipe.create",
+  "image.upload",
+  "entry.create",
+  "offer.create",
+  "offer.patch",
+]);
+
+function isIdempotentOperationKind(
+  value: unknown,
+): value is IdempotentOperationKind {
+  return IDEMPOTENT_OPERATION_KINDS.has(value as IdempotentOperationKind);
+}
+
+function resolveOperationKind(
+  operationKind: IdempotentOperationKind | undefined,
+  errorOperationKind: unknown,
+): IdempotentOperationKind | undefined {
+  return (
+    operationKind ??
+    (isIdempotentOperationKind(errorOperationKind) ? errorOperationKind : undefined)
+  );
+}
+
+function isTimeoutFailure(error: Record<string, unknown>): boolean {
+  const errorCode = typeof error.code === "string" ? error.code : "";
+  return (
+    Boolean(error.isTimeout) ||
+    errorCode === "ECONNABORTED" ||
+    errorCode === "ETIMEDOUT"
+  );
+}
+
+function isNetworkFailure(
+  error: Record<string, unknown>,
+  status: number | undefined,
+  isTimeout: boolean,
+): boolean {
+  return (
+    Boolean(error.isNetworkError) ||
+    (!isTimeout && status === undefined && !error.isMalformedWrite2xx)
+  );
+}
+
+function extractRecordFailureContext(
+  error: Record<string, unknown>,
   operationKind?: IdempotentOperationKind,
 ): HttpFailureContext {
+  const response = getPlainObjectOrNull(error.response);
+  const status = getResponseStatus(error, response);
+  const rawBody = getRawResponseBody(error, response);
+  const headers = normalizeHeaders(getRawHeadersSource(error, response));
+  const isTimeout = isTimeoutFailure(error);
+  const isNetworkError = isNetworkFailure(error, status, isTimeout);
+  const message = typeof error.message === "string" ? error.message : undefined;
+
+  return {
+    status,
+    rawBody,
+    headers,
+    isTimeout,
+    isNetworkError,
+    isMalformedWrite2xx: Boolean(error.isMalformedWrite2xx),
+    message,
+    operationKind: resolveOperationKind(operationKind, error.operationKind),
+  };
+}
+
+function extractKnownFailureContext(
+  error: unknown,
+  operationKind?: IdempotentOperationKind,
+): HttpFailureContext | null {
   if (error instanceof MalformedWriteResponseError) {
     return {
       status: error.status,
@@ -144,76 +258,37 @@ export function extractHttpFailureContext(
       operationKind,
     };
   }
-  if (isPlainObject(error)) {
-    const responseObj = isPlainObject(error.response) ? error.response : null;
-    const status =
-      typeof error.status === "number"
-        ? error.status
-        : responseObj && typeof responseObj.status === "number"
-          ? responseObj.status
-          : undefined;
-    const rawBody =
-      "rawBody" in error
-        ? error.rawBody
-        : responseObj && "data" in responseObj
-          ? responseObj.data
-          : undefined;
-    const rawHeadersSource = isPlainObject(error.headers)
-      ? error.headers
-      : responseObj && isPlainObject(responseObj.headers)
-        ? responseObj.headers
-        : null;
-    let headers: Record<string, string | undefined> | undefined;
-    if (rawHeadersSource) {
-      const normalized: Record<string, string | undefined> = {};
-      for (const [k, v] of Object.entries(rawHeadersSource)) {
-        if (typeof v === "string" || v === undefined) {
-          normalized[k] = v;
-        }
-      }
-      headers = normalized;
-    }
-    const errorCodeStr = typeof error.code === "string" ? error.code : "";
-    const isTimeout =
-      Boolean(error.isTimeout) ||
-      errorCodeStr === "ECONNABORTED" ||
-      errorCodeStr === "ETIMEDOUT";
-    const isNetworkError =
-      Boolean(error.isNetworkError) ||
-      (!isTimeout && status === undefined && !error.isMalformedWrite2xx);
-    const isMalformedWrite2xx = Boolean(error.isMalformedWrite2xx);
-    const message = typeof error.message === "string" ? error.message : undefined;
-    const resolvedKind =
-      operationKind ??
-      (error.operationKind === "category.create" ||
-      error.operationKind === "recipe.create" ||
-      error.operationKind === "image.upload" ||
-      error.operationKind === "entry.create" ||
-      error.operationKind === "offer.create" ||
-      error.operationKind === "offer.patch"
-        ? error.operationKind
-        : undefined);
-    return {
-      status,
-      rawBody,
-      headers,
-      isTimeout,
-      isNetworkError,
-      isMalformedWrite2xx,
-      message,
-      operationKind: resolvedKind,
-    };
-  }
+  return null;
+}
+
+function getUnknownFailureMessage(error: unknown): string {
+  if (typeof error === "string" && error.trim().length > 0) return error;
+  if (error instanceof Error) return error.message;
+  return "Error de comunicación.";
+}
+
+export function extractHttpFailureContext(
+  error: unknown,
+  operationKind?: IdempotentOperationKind,
+): HttpFailureContext {
+  const knownContext = extractKnownFailureContext(error, operationKind);
+  if (knownContext) return knownContext;
+  if (isPlainObject(error)) return extractRecordFailureContext(error, operationKind);
+
   return {
     isNetworkError: true,
-    message:
-      typeof error === "string" && error.trim().length > 0
-        ? error
-        : error instanceof Error
-          ? error.message
-          : "Error de comunicación.",
+    message: getUnknownFailureMessage(error),
     operationKind,
   };
+}
+
+function getUncertainOutcomeErrorCode(
+  ctx: HttpFailureContext,
+  status: number | null,
+): string {
+  if (ctx.isTimeout) return "REQUEST_TIMEOUT";
+  if (ctx.isNetworkError || status === null) return "NETWORK_ERROR";
+  return `HTTP_${status}`;
 }
 
 export function analyzeIdempotentAttemptError(
@@ -416,11 +491,7 @@ export function analyzeIdempotentAttemptError(
     status === 429 ||
     status >= 500
   ) {
-    const code = ctx.isTimeout
-      ? "REQUEST_TIMEOUT"
-      : ctx.isNetworkError || status === null
-        ? "NETWORK_ERROR"
-        : `HTTP_${status}`;
+    const code = getUncertainOutcomeErrorCode(ctx, status);
     return {
       kind: "uncertain_outcome",
       status,

@@ -69,10 +69,8 @@ export function rememberEntries(repository: object, query: EntryQuery, result: P
   entries.delete(key);
   entries.set(key, { value: result, savedAt: now });
   if (entries.size > maxEntryQueries) {
-    for (const oldestKey of entries.keys()) {
-      entries.delete(oldestKey);
-      break;
-    }
+    const oldestEntry = entries.keys().next();
+    if (!oldestEntry.done) entries.delete(oldestEntry.value);
   }
 }
 

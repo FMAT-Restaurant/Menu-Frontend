@@ -162,13 +162,10 @@ export function generateIdempotencyKey(): string {
     }
   }
   const bytes = new Uint8Array(16);
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-    crypto.getRandomValues(bytes);
-  } else {
-    for (let index = 0; index < bytes.length; index += 1) {
-      bytes[index] = Math.floor(Math.random() * 256);
-    }
+  if (typeof crypto === "undefined" || typeof crypto.getRandomValues !== "function") {
+    throw new Error("No hay un generador criptográfico seguro disponible.");
   }
+  crypto.getRandomValues(bytes);
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = Array.from(bytes, byteToHex);
@@ -501,8 +498,6 @@ export function applyAttemptFailure(
       retryAfterUntil = now + outcome.retryAfterSeconds * 1000;
       retryAfterInvalid = false;
     } else {
-      retryAfterSeconds = null;
-      retryAfterUntil = null;
       retryAfterInvalid = true;
     }
   } else if (outcome.kind === "key_reused_conflict" || outcome.kind === "invalid_key") {
@@ -750,208 +745,334 @@ export function createOperationAttemptController<TDraft, TResult>(
     }
   }
 
-  async function runActiveRecord(): Promise<OperationExecutionResult<TDraft, TResult>> {
+  function getCurrentRecordOrThrow(): PendingOperationChainRecord<TDraft> {
+    if (!currentRecord) throw new Error("No hay intento activo para ejecutar.");
+    return currentRecord;
+  }
+
+  function createFailedResult(
+    record: PendingOperationChainRecord<TDraft>,
+    outcome: AttemptFailureOutcome,
+  ): OperationExecutionResult<TDraft, TResult> {
+    return {
+      status: "failed",
+      outcome,
+      record,
+      hasDraftChangesSinceSubmission:
+        record.currentDraftVersion > record.submittedDraftVersion,
+    };
+  }
+
+  function createPausedResult(
+    record: PendingOperationChainRecord<TDraft>,
+    message: string,
+  ): OperationExecutionResult<TDraft, TResult> {
+    return createFailedResult(record, { kind: "uncertain_outcome", message });
+  }
+
+  async function ensureInitialRecordReady(): Promise<void> {
     if (!currentRecord) {
-      const now = getNow();
-      const freshRecord = buildInitialRecord(now);
+      const freshRecord = buildInitialRecord(getNow());
       await persistPreSendOrThrow(freshRecord);
       currentRecord = freshRecord;
-    } else {
-      const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
-      if (activeStage.firstSentAt === null) {
-        await persistPreSendOrThrow(currentRecord);
-      }
+      return;
     }
 
-    while (currentRecord) {
+    const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
+    if (activeStage.firstSentAt === null) {
+      await persistPreSendOrThrow(currentRecord);
+    }
+  }
+
+  function createRetryBlockedError(
+    eligibility: ManualRetryEligibility,
+  ): OperationRetryBlockedError | null {
+    switch (eligibility.reason) {
+      case "retry_after_invalid":
+        return new OperationRetryBlockedError(
+          "RETRY_AFTER_INVALID",
+          "La cabecera Retry-After no es válida. La operación permanece pausada; revisa su estado antes de continuar.",
+        );
+      case "retry_after_active":
+        return new OperationRetryBlockedError(
+          "RETRY_AFTER_ACTIVE",
+          "La operación sigue en progreso. Espera el tiempo indicado en Retry-After antes de reintentar.",
+          eligibility.remainingRetryAfterMs,
+        );
+      case "requires_new_key":
+        return new OperationRetryBlockedError(
+          "REQUIRES_NEW_KEY",
+          "Este intento requiere generar una nueva clave de idempotencia.",
+        );
+      case "precondition_conflict":
+        return new OperationRetryBlockedError(
+          "PRECONDITION_CONFLICT",
+          "El recurso cambió en el servidor. Recarga la versión actual antes de volver a intentar.",
+        );
+      case "already_succeeded":
+        return new OperationRetryBlockedError(
+          "ALREADY_SUCCEEDED",
+          "La operación ya fue confirmada previamente.",
+        );
+      default:
+        return null;
+    }
+  }
+
+  async function ensureStageCanBeSent(
+    stage: SealedOperationAttempt,
+    now: number,
+  ): Promise<void> {
+    if (stage.status !== "succeeded" && isAttemptWindowExpired(stage, now)) {
+      const expiredStage = markAttemptExpired(stage);
+      currentRecord = await persistBestEffortAfterProgress(
+        replaceCurrentStage(getCurrentRecordOrThrow(), expiredStage, now),
+      );
+      throw new OperationRetryBlockedError(
+        "ATTEMPT_WINDOW_EXPIRED",
+        expiredStage.lastErrorMessage ??
+          "La ventana de recuperación de 24 horas expiró.",
+      );
+    }
+
+    const eligibility = canManualRetryAttempt(stage, now);
+    if (!eligibility.allowed && stage.attemptCount > 0) {
+      const blockedError = createRetryBlockedError(eligibility);
+      if (blockedError) throw blockedError;
+    }
+  }
+
+  async function persistStageSendStart(
+    stage: SealedOperationAttempt,
+    now: number,
+  ): Promise<SealedOperationAttempt> {
+    const inFlightStage = applyAttemptSendStart(stage, now);
+    currentRecord = replaceCurrentStage(
+      getCurrentRecordOrThrow(),
+      inFlightStage,
+      now,
+    );
+    // Every send, including stage two and retries, must have durable bytes/key first.
+    try {
+      await persistPreSendOrThrow(getCurrentRecordOrThrow());
+    } catch (error) {
+      currentRecord = replaceCurrentStage(getCurrentRecordOrThrow(), stage, now);
+      throw error;
+    }
+    return inFlightStage;
+  }
+
+  async function persistStageFailure(
+    inFlightStage: SealedOperationAttempt,
+    error: unknown,
+  ): Promise<OperationExecutionResult<TDraft, TResult>> {
+    const failNow = getNow();
+    const outcome = config.classifyError(error, inFlightStage);
+    const failedStage = applyAttemptFailure(inFlightStage, outcome, failNow);
+    currentRecord = await persistBestEffortAfterProgress(
+      replaceCurrentStage(getCurrentRecordOrThrow(), failedStage, failNow),
+    );
+    return createFailedResult(getCurrentRecordOrThrow(), outcome);
+  }
+
+  async function executeImageUploadStage(
+    inFlightStage: SealedOperationAttempt,
+  ): Promise<OperationExecutionResult<TDraft, TResult> | null> {
+    try {
+      const upload = config.executeImageUpload ?? config.stage1ImageUpload?.executeUpload;
+      if (!upload) throw new Error("No se configuró el ejecutor de carga de imagen.");
+      const uploaded = await upload(inFlightStage);
+      if (abandoned) throw new Error("La operación fue abandonada.");
       if (detached) {
-        return {
-          status: "failed",
-          outcome: {
-            kind: "uncertain_outcome",
-            message: "La operación quedó pausada porque saliste de la página.",
-          },
-          record: currentRecord,
-          hasDraftChangesSinceSubmission:
-            currentRecord.currentDraftVersion > currentRecord.submittedDraftVersion,
-        };
+        return createPausedResult(
+          getCurrentRecordOrThrow(),
+          "La carga quedó pausada al salir de la página.",
+        );
       }
+
+      const stage1SuccessNow = getNow();
+      const completedStage1 = applyAttemptSuccess(inFlightStage, stage1SuccessNow);
+      const activeRecord = getCurrentRecordOrThrow();
+      const stage2Attempt = createSealedAttempt(
+        config.buildFinalStageInput({
+          draft: activeRecord.submittedDraft ?? activeRecord.editableDraft,
+          confirmedImageId: uploaded.id,
+          ifMatch: activeRecord.ifMatch,
+          submittedDraftVersion: activeRecord.submittedDraftVersion,
+          now: stage1SuccessNow,
+        }),
+      );
+      const nextRecordWithStage2: PendingOperationChainRecord<TDraft> = {
+        ...activeRecord,
+        updatedAt: stage1SuccessNow,
+        currentStageIndex: 1,
+        stages: [completedStage1, stage2Attempt],
+        confirmedImageId: uploaded.id,
+        ifMatch:
+          stage2Attempt.payload.kind === "json"
+            ? stage2Attempt.payload.ifMatch ?? activeRecord.ifMatch
+            : activeRecord.ifMatch,
+      };
+      currentRecord = await persistBestEffortAfterProgress(nextRecordWithStage2, true);
+      if (detached) {
+        return createPausedResult(
+          getCurrentRecordOrThrow(),
+          "La operación quedó pausada porque saliste de la página.",
+        );
+      }
+      return null;
+    } catch (error) {
+      return persistStageFailure(inFlightStage, error);
+    }
+  }
+
+  async function executeFinalStage(
+    inFlightStage: SealedOperationAttempt,
+  ): Promise<OperationExecutionResult<TDraft, TResult>> {
+    try {
+      const activeRecord = getCurrentRecordOrThrow();
+      const finalResult = await config.executeFinalStage({
+        attempt: inFlightStage,
+        confirmedImageId: activeRecord.confirmedImageId,
+        ifMatch: activeRecord.ifMatch,
+      });
+      const successNow = getNow();
+      const succeededStage = applyAttemptSuccess(inFlightStage, successNow);
+      let finalRecord = replaceCurrentStage(
+        getCurrentRecordOrThrow(),
+        succeededStage,
+        successNow,
+      );
+      if (config.retainConfirmedResult) {
+        finalRecord = { ...finalRecord, confirmedResult: finalResult };
+        finalRecord = await persistBestEffortAfterProgress(finalRecord);
+      } else {
+        try {
+          await storageQueue;
+          await config.storage.deleteRecord(storageKey);
+        } catch {
+          finalRecord = { ...finalRecord, postSuccessStorageCleanupFailed: true };
+        }
+      }
+      currentRecord = finalRecord;
+      return {
+        status: "succeeded",
+        result: finalResult,
+        record: finalRecord,
+        hasDraftChangesSinceSubmission:
+          finalRecord.currentDraftVersion > finalRecord.submittedDraftVersion,
+      };
+    } catch (error) {
+      return persistStageFailure(inFlightStage, error);
+    }
+  }
+
+  async function runActiveRecord(): Promise<OperationExecutionResult<TDraft, TResult>> {
+    await ensureInitialRecordReady();
+
+    while (currentRecord) {
+      const record = getCurrentRecordOrThrow();
+      if (detached) {
+        return createPausedResult(
+          record,
+          "La operación quedó pausada porque saliste de la página.",
+        );
+      }
+
       const now = getNow();
-      const stageIndex = currentRecord.currentStageIndex;
-      const stage = currentRecord.stages[stageIndex];
-
-      if (stage.status !== "succeeded" && isAttemptWindowExpired(stage, now)) {
-        const expiredStage = markAttemptExpired(stage);
-        currentRecord = await persistBestEffortAfterProgress(
-          replaceCurrentStage(currentRecord, expiredStage, now),
-        );
-        throw new OperationRetryBlockedError(
-          "ATTEMPT_WINDOW_EXPIRED",
-          expiredStage.lastErrorMessage ??
-            "La ventana de recuperación de 24 horas expiró.",
-        );
-      }
-
-      const eligibility = canManualRetryAttempt(stage, now);
-      if (!eligibility.allowed && stage.attemptCount > 0) {
-        if (eligibility.reason === "retry_after_invalid") {
-          throw new OperationRetryBlockedError(
-            "RETRY_AFTER_INVALID",
-            "La cabecera Retry-After no es válida. La operación permanece pausada; revisa su estado antes de continuar.",
-          );
-        }
-        if (eligibility.reason === "retry_after_active") {
-          throw new OperationRetryBlockedError(
-            "RETRY_AFTER_ACTIVE",
-            "La operación sigue en progreso. Espera el tiempo indicado en Retry-After antes de reintentar.",
-            eligibility.remainingRetryAfterMs,
-          );
-        }
-        if (eligibility.reason === "requires_new_key") {
-          throw new OperationRetryBlockedError(
-            "REQUIRES_NEW_KEY",
-            "Este intento requiere generar una nueva clave de idempotencia.",
-          );
-        }
-        if (eligibility.reason === "precondition_conflict") {
-          throw new OperationRetryBlockedError(
-            "PRECONDITION_CONFLICT",
-            "El recurso cambió en el servidor. Recarga la versión actual antes de volver a intentar.",
-          );
-        }
-        if (eligibility.reason === "already_succeeded") {
-          throw new OperationRetryBlockedError(
-            "ALREADY_SUCCEEDED",
-            "La operación ya fue confirmada previamente.",
-          );
-        }
-      }
-
-      const inFlightStage = applyAttemptSendStart(stage, now);
-      currentRecord = replaceCurrentStage(currentRecord, inFlightStage, now);
-      // Every send, including stage two and retries, must have durable bytes/key first.
-      try {
-        await persistPreSendOrThrow(currentRecord);
-      } catch (error) {
-        currentRecord = replaceCurrentStage(currentRecord, stage, now);
-        throw error;
-      }
+      const stageIndex = record.currentStageIndex;
+      const stage = record.stages[stageIndex];
+      await ensureStageCanBeSent(stage, now);
+      const inFlightStage = await persistStageSendStart(stage, now);
       if (detached) continue;
 
       const isStage1Upload =
-        stageIndex === 0 &&
-        inFlightStage.operationKind === "image.upload";
-
+        stageIndex === 0 && inFlightStage.operationKind === "image.upload";
       if (isStage1Upload) {
-        try {
-          const upload = config.executeImageUpload ?? config.stage1ImageUpload?.executeUpload;
-          if (!upload) throw new Error("No se configuró el ejecutor de carga de imagen.");
-          const uploaded = await upload(inFlightStage);
-          if (abandoned) throw new Error("La operación fue abandonada.");
-          if (detached) {
-            return {
-              status: "failed",
-              outcome: { kind: "uncertain_outcome", message: "La carga quedó pausada al salir de la página." },
-              record: currentRecord,
-              hasDraftChangesSinceSubmission: currentDraftVersion > currentRecord.submittedDraftVersion,
-            };
-          }
-          const stage1SuccessNow = getNow();
-          const completedStage1 = applyAttemptSuccess(inFlightStage, stage1SuccessNow);
-          const stage2Attempt = createSealedAttempt(
-            config.buildFinalStageInput({
-              draft: currentRecord.submittedDraft ?? currentRecord.editableDraft,
-              confirmedImageId: uploaded.id,
-              ifMatch: currentRecord.ifMatch,
-              submittedDraftVersion: currentRecord.submittedDraftVersion,
-              now: stage1SuccessNow,
-            }),
-          );
-          const nextRecordWithStage2: PendingOperationChainRecord<TDraft> = {
-            ...currentRecord,
-            updatedAt: stage1SuccessNow,
-            currentStageIndex: 1,
-            stages: [completedStage1, stage2Attempt],
-            confirmedImageId: uploaded.id,
-            ifMatch: stage2Attempt.payload.kind === "json" ? stage2Attempt.payload.ifMatch ?? currentRecord.ifMatch : currentRecord.ifMatch,
-          };
-          currentRecord = await persistBestEffortAfterProgress(nextRecordWithStage2, true);
-          if (detached) {
-            return {
-              status: "failed",
-              outcome: {
-                kind: "uncertain_outcome",
-                message: "La operación quedó pausada porque saliste de la página.",
-              },
-              record: currentRecord,
-              hasDraftChangesSinceSubmission:
-                currentRecord.currentDraftVersion > currentRecord.submittedDraftVersion,
-            };
-          }
-          continue;
-        } catch (error) {
-          const failNow = getNow();
-          const outcome = config.classifyError(error, inFlightStage);
-          const failedStage1 = applyAttemptFailure(inFlightStage, outcome, failNow);
-          currentRecord = await persistBestEffortAfterProgress(
-            replaceCurrentStage(currentRecord, failedStage1, failNow),
-          );
-          return {
-            status: "failed",
-            outcome,
-            record: currentRecord,
-            hasDraftChangesSinceSubmission:
-              currentRecord.currentDraftVersion > currentRecord.submittedDraftVersion,
-          };
-        }
+        const result = await executeImageUploadStage(inFlightStage);
+        if (result) return result;
+        continue;
       }
-
-      try {
-        const finalResult = await config.executeFinalStage({
-          attempt: inFlightStage,
-          confirmedImageId: currentRecord.confirmedImageId,
-          ifMatch: currentRecord.ifMatch,
-        });
-        const successNow = getNow();
-        const succeededStage = applyAttemptSuccess(inFlightStage, successNow);
-        let finalRecord = replaceCurrentStage(currentRecord, succeededStage, successNow);
-        if (config.retainConfirmedResult) {
-          finalRecord = { ...finalRecord, confirmedResult: finalResult };
-          finalRecord = await persistBestEffortAfterProgress(finalRecord);
-        } else {
-          try {
-            await storageQueue;
-            await config.storage.deleteRecord(storageKey);
-          } catch {
-            finalRecord = { ...finalRecord, postSuccessStorageCleanupFailed: true };
-          }
-        }
-        currentRecord = finalRecord;
-        return {
-          status: "succeeded",
-          result: finalResult,
-          record: finalRecord,
-          hasDraftChangesSinceSubmission:
-            finalRecord.currentDraftVersion > finalRecord.submittedDraftVersion,
-        };
-      } catch (error) {
-        const failNow = getNow();
-        const outcome = config.classifyError(error, inFlightStage);
-        const failedStage = applyAttemptFailure(inFlightStage, outcome, failNow);
-        currentRecord = await persistBestEffortAfterProgress(
-          replaceCurrentStage(currentRecord, failedStage, failNow),
-        );
-        return {
-          status: "failed",
-          outcome,
-          record: currentRecord,
-          hasDraftChangesSinceSubmission:
-            currentRecord.currentDraftVersion > currentRecord.submittedDraftVersion,
-        };
-      }
+      return executeFinalStage(inFlightStage);
     }
 
     throw new Error("No hay intento activo para ejecutar.");
+  }
+
+  function ensureCurrentAttemptCanBeReplaced(
+    options: {
+      confirmExpiredWindow?: boolean;
+      forceDiscardUncertain?: boolean;
+    } | undefined,
+    now: number,
+  ): void {
+    if (!currentRecord) return;
+
+    const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
+    const expired = activeStage.status !== "succeeded" &&
+      (activeStage.status === "expired" || isAttemptWindowExpired(activeStage, now));
+    if (expired && !options?.confirmExpiredWindow) {
+      throw new OperationRetryBlockedError(
+        "ATTEMPT_WINDOW_EXPIRED",
+        "Debes confirmar explícitamente antes de crear un nuevo intento tras expirar la ventana de 24 horas.",
+      );
+    }
+
+    const isUncertainOrConflict =
+      activeStage.status === "uncertain" ||
+      activeStage.status === "conflict_in_progress";
+    if (isUncertainOrConflict && !options?.forceDiscardUncertain) {
+      throw new OperationRetryBlockedError(
+        "RETRY_AFTER_ACTIVE",
+        "Existe una operación con estado incierto o en progreso. Resuélvela o descártala explícitamente antes de generar una nueva clave.",
+      );
+    }
+  }
+
+  async function persistNewAttemptRecord(
+    now: number,
+    submittedVersion: number,
+    confirmedImageIdToPreserve: string | null,
+  ): Promise<PendingOperationChainRecord<TDraft>> {
+    if (confirmedImageIdToPreserve !== null) {
+      const previousStage1 = currentRecord?.stages[0];
+      const finalAttempt = createSealedAttempt(
+        config.buildFinalStageInput({
+          draft: editableDraft,
+          confirmedImageId: confirmedImageIdToPreserve,
+          ifMatch: currentIfMatch,
+          submittedDraftVersion: submittedVersion,
+          now,
+        }),
+      );
+      const stages = previousStage1 ? [previousStage1, finalAttempt] : [finalAttempt];
+      const nextRecord: PendingOperationChainRecord<TDraft> = {
+        storageKey,
+        scope: config.scope,
+        createdAt: now,
+        updatedAt: now,
+        currentStageIndex: stages.length - 1,
+        stages,
+        confirmedImageId: confirmedImageIdToPreserve,
+        ifMatch: currentIfMatch,
+        editableDraft,
+        submittedDraft: snapshotDraft(editableDraft),
+        submittedDraftVersion: submittedVersion,
+        currentDraftVersion,
+        ...(currentCompositionMap !== undefined
+          ? { compositionIdentityMap: currentCompositionMap }
+          : {}),
+        ...(currentNestedContext !== undefined ? { nestedContext: currentNestedContext } : {}),
+      };
+      await persistPreSendOrThrow(nextRecord);
+      currentRecord = nextRecord;
+      return nextRecord;
+    }
+
+    const nextRecord = buildInitialRecord(now);
+    await persistPreSendOrThrow(nextRecord);
+    currentRecord = nextRecord;
+    return nextRecord;
   }
 
   function executeSingleFlight(): Promise<OperationExecutionResult<TDraft, TResult>> {
@@ -1069,26 +1190,7 @@ export function createOperationAttemptController<TDraft, TResult>(
         );
       }
       const now = getNow();
-      if (currentRecord) {
-        const activeStage = currentRecord.stages[currentRecord.currentStageIndex];
-        const expired = activeStage.status !== "succeeded" &&
-          (activeStage.status === "expired" || isAttemptWindowExpired(activeStage, now));
-        if (expired && !options?.confirmExpiredWindow) {
-          throw new OperationRetryBlockedError(
-            "ATTEMPT_WINDOW_EXPIRED",
-            "Debes confirmar explícitamente antes de crear un nuevo intento tras expirar la ventana de 24 horas.",
-          );
-        }
-        const isUncertainOrConflict =
-          activeStage.status === "uncertain" ||
-          activeStage.status === "conflict_in_progress";
-        if (isUncertainOrConflict && !options?.forceDiscardUncertain) {
-          throw new OperationRetryBlockedError(
-            "RETRY_AFTER_ACTIVE",
-            "Existe una operación con estado incierto o en progreso. Resuélvela o descártala explícitamente antes de generar una nueva clave.",
-          );
-        }
-      }
+      ensureCurrentAttemptCanBeReplaced(options, now);
 
       if (options?.ifMatch !== undefined) {
         currentIfMatch = options.ifMatch;
@@ -1097,46 +1199,7 @@ export function createOperationAttemptController<TDraft, TResult>(
       const confirmedImageIdToPreserve = options?.preserveConfirmedImage === false
         ? null : currentRecord?.confirmedImageId ?? null;
       const submittedVersion = currentDraftVersion;
-
-      if (confirmedImageIdToPreserve !== null) {
-        const previousStage1 = currentRecord?.stages[0];
-        const finalAttempt = createSealedAttempt(
-          config.buildFinalStageInput({
-            draft: editableDraft,
-            confirmedImageId: confirmedImageIdToPreserve,
-            ifMatch: currentIfMatch,
-            submittedDraftVersion: submittedVersion,
-            now,
-          }),
-        );
-        const stages = previousStage1 ? [previousStage1, finalAttempt] : [finalAttempt];
-        const nextRecord: PendingOperationChainRecord<TDraft> = {
-          storageKey,
-          scope: config.scope,
-          createdAt: now,
-          updatedAt: now,
-          currentStageIndex: stages.length - 1,
-          stages,
-          confirmedImageId: confirmedImageIdToPreserve,
-          ifMatch: currentIfMatch,
-          editableDraft,
-          submittedDraft: snapshotDraft(editableDraft),
-          submittedDraftVersion: submittedVersion,
-          currentDraftVersion,
-          ...(currentCompositionMap !== undefined
-            ? { compositionIdentityMap: currentCompositionMap }
-            : {}),
-          ...(currentNestedContext !== undefined ? { nestedContext: currentNestedContext } : {}),
-        };
-        await persistPreSendOrThrow(nextRecord);
-        currentRecord = nextRecord;
-        return nextRecord;
-      }
-
-      const nextRecord = buildInitialRecord(now);
-      await persistPreSendOrThrow(nextRecord);
-      currentRecord = nextRecord;
-      return nextRecord;
+      return persistNewAttemptRecord(now, submittedVersion, confirmedImageIdToPreserve);
     },
 
     async abandonFlow() {
