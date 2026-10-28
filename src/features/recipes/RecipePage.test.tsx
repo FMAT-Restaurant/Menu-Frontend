@@ -1198,4 +1198,61 @@ describe("RecipePage Component (V6 Integration)", () => {
       );
     });
   });
+
+  test("opens V7 inventory picker from ingredient row, selects an item, shows authoritative unit and saves recipe", async () => {
+    const repository = createMockRepository();
+    const storage = createMemoryStorage();
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={storage} />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+
+    expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Hamburguesa con Queso" } });
+    fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Con queso cheddar" } });
+    fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Derretir queso sobre la carne" } });
+
+    // Open V7 inventory picker for Insumo 1, cancel it first, then open and select
+    fireEvent.click(screen.getByRole("button", { name: "Buscar insumo 1 en inventario" }));
+    expect(
+      await screen.findByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    expect(
+      screen.queryByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Buscar insumo 1 en inventario" }));
+    expect(
+      await screen.findByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).toBeVisible();
+
+    const quesoRow = await screen.findByRole("row", { name: /Queso Cheddar/i });
+    expect(within(quesoRow).getByText("rebanada")).toBeVisible();
+    fireEvent.click(within(quesoRow).getByRole("button", { name: "Asignar" }));
+
+    // V7 closes and row in V6 retains selected item and authoritative unit
+    expect(screen.getByLabelText("Insumo 1")).toHaveValue("inv-3");
+    expect(screen.getByText("rebanada")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+
+    await waitFor(() => {
+      expect(repository.createRecipe).toHaveBeenCalledWith(
+        {
+          name: "Hamburguesa con Queso",
+          description: "Con queso cheddar",
+          instructions: "Derretir queso sobre la carne",
+          supplies: [{ inventoryItemId: "inv-3", quantity: 2 }],
+        },
+        expect.any(String),
+      );
+    });
+  });
 });

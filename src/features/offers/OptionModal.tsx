@@ -22,9 +22,11 @@ export interface OptionModalProps {
   onSave: (data: ValidatedOptionDraft) => void;
   onClose: () => void;
   onOpenRecipePicker: () => void;
+  onOpenInventoryPicker?: () => void;
   onChangeDraft?: (data: OptionDraft) => void;
   children?: ReactNode;
   recipeStep?: boolean;
+  inventoryStep?: boolean;
   onNestedBack?: () => void;
   hasNestedChanges?: () => boolean;
   onDiscardNested?: () => boolean | void;
@@ -45,9 +47,11 @@ function optionDialogLabelId(
   confirmClose: boolean,
   isNestedPickerOpen: boolean,
   recipeStep: boolean,
+  inventoryStep = false,
 ): string {
   if (confirmClose) return "option-discard-title";
   if (!isNestedPickerOpen) return "option-modal-title";
+  if (inventoryStep) return "inventory-selector-title";
   if (recipeStep) return "recipe-form-title";
   return "recipe-selector-title";
 }
@@ -149,9 +153,11 @@ export function OptionModal({
   onSave,
   onClose,
   onOpenRecipePicker,
+  onOpenInventoryPicker,
   onChangeDraft,
   children,
   recipeStep = false,
+  inventoryStep = false,
   onNestedBack,
   hasNestedChanges,
   onDiscardNested,
@@ -262,6 +268,24 @@ export function OptionModal({
     }
   }
 
+  function handleQuantityChange(val: string) {
+    const parsed = val.trim() === "" ? undefined : Number(val);
+    setQuantity(parsed);
+    if (onChangeDraft) {
+      onChangeDraft({
+        localId: initialData?.localId,
+        optionId: initialData?.optionId,
+        originalSourceType: initialData?.originalSourceType,
+        displayName,
+        status: isCreateMode ? "ACTIVE" : status,
+        sourceType,
+        ...sourceDraftFields(sourceType,
+          { recipeId, recipeName, hasRecipeAssignmentIntent, recipeAssignmentToken: initialData?.recipeAssignmentToken },
+          { inventoryItemId, inventoryItemName, quantity: parsed, unit }),
+      });
+    }
+  }
+
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     submitOptionForm(event, {
       draft: {
@@ -302,7 +326,7 @@ export function OptionModal({
     <dialog
       ref={dialogRef}
       className="option-modal-dialog menu-task-dialog"
-      aria-labelledby={optionDialogLabelId(confirmClose, isNestedPickerOpen, recipeStep)}
+      aria-labelledby={optionDialogLabelId(confirmClose, isNestedPickerOpen, recipeStep, inventoryStep)}
       onKeyDown={(event) => {
         if (event.key !== "Escape") return;
         // Repeated native close requests may emit a non-cancelable cancel event.
@@ -390,10 +414,46 @@ export function OptionModal({
                   Seleccionar una preparación de la biblioteca.
                 </span>
               </button>
-
+              {onOpenInventoryPicker && (
+                <button
+                  type="button"
+                  className="source-btn"
+                  onClick={onOpenInventoryPicker}
+                >
+                  <span className="source-btn__title">Elegir artículo de inventario</span>
+                  <span className="source-btn__desc">
+                    Vincular un producto directo de almacén.
+                  </span>
+                </button>
+              )}
             </div>
-
           </div>
+
+          {sourceType === "INVENTORY_ITEM" && (
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="option-item-quantity">Cantidad del artículo</label>
+                <input
+                  id="option-item-quantity"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={quantity ?? ""}
+                  onChange={(e) => handleQuantityChange(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="option-item-unit">Unidad de medida</label>
+                <input
+                  id="option-item-unit"
+                  type="text"
+                  value={unit ?? ""}
+                  readOnly
+                />
+              </div>
+            </div>
+          )}
 
           {isCreateMode ? (
             <div className="form-field">
