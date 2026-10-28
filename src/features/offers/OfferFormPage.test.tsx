@@ -408,8 +408,8 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Principal" }));
     expect(screen.getByRole("heading", { name: /Agregar opción · Principal/ })).toBeVisible();
 
-    // Unavailable inventory selection is omitted; recipe assignment remains available.
-    expect(screen.queryByRole("button", { name: /Elegir artículo de inventario/ })).not.toBeInTheDocument();
+    // Both recipe and inventory source pickers are available; nothing has been requested yet.
+    expect(screen.getByRole("button", { name: /Elegir artículo de inventario/ })).toBeEnabled();
     expect(document.getElementById("inventory-source-pending-hint")).not.toBeInTheDocument();
     expect(repository.createOffer).not.toHaveBeenCalled();
     expect(repository.updateOffer).not.toHaveBeenCalled();
@@ -1901,5 +1901,85 @@ describe("OfferFormPage (V4)", () => {
       "img-offer-uploaded",
       expect.any(String)
     );
+  });
+
+  test("adds an option via OptionModal (C32) and selects an inventory item via V7 with direct quantity and authoritative unit", async () => {
+    const repository = createMockRepository();
+    repository.listInventoryItems.mockResolvedValue({
+      data: [
+        { id: "inv-23", name: "Refresco de Cola 355ml", unit: "pza" },
+        { id: "inv-26", name: "Bolsa de chips", unit: "bolsa" },
+      ],
+      meta: { page: 1, pageSize: 50, total: 2, totalPages: 1 },
+    });
+
+    renderComponent(repository);
+
+    const addGroupBtn = await screen.findByRole("button", { name: "Agregar grupo" });
+
+    // Add slot with 2 rounds
+    fireEvent.click(addGroupBtn);
+    fireEvent.change(screen.getByLabelText("Nombre del grupo"), { target: { value: "Bebidas" } });
+    fireEvent.change(screen.getByLabelText(/Rondas de selección/), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
+
+    // Open OptionModal (C32)
+    fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Bebidas" }));
+
+    // Open V7 InventoryPage, cancel it first, then open and select
+    fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "✕ Cancelar" }));
+    expect(
+      screen.queryByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).not.toBeInTheDocument();
+
+    // Open V7 again and test Escape/cancel step back
+    fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
+    const dialog = await screen.findByRole("dialog", { name: /Artículos de inventario/ });
+    fireEvent(dialog, new Event("cancel", { cancelable: true }));
+    expect(
+      screen.queryByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).not.toBeInTheDocument();
+
+    // Open V7 and assign item
+    fireEvent.click(screen.getByRole("button", { name: /Elegir artículo de inventario/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Artículos de inventario — elegir opción" })
+    ).toBeVisible();
+
+    const searchbox = screen.getByRole("searchbox", { name: "Buscar insumo" });
+    fireEvent.change(searchbox, { target: { value: "Refresco" } });
+    expect(screen.getByText("Refresco de Cola 355ml")).toBeVisible();
+    expect(screen.queryByText("Bolsa de chips")).not.toBeInTheDocument();
+
+    const itemRow = screen.getByRole("row", { name: /Refresco de Cola 355ml/i });
+    expect(within(itemRow).getByText("pza")).toBeVisible();
+    fireEvent.click(within(itemRow).getByRole("button", { name: "Asignar" }));
+
+    // Back in OptionModal with inventory reference and authoritative unit
+    expect(
+      screen.getByText("Insumo de inventario: Refresco de Cola 355ml (1 pza)")
+    ).toBeVisible();
+    expect(screen.getByLabelText("Unidad de medida")).toHaveValue("pza");
+
+    // Capture direct content quantity (separate from the 2 rounds of the slot)
+    fireEvent.change(screen.getByLabelText("Cantidad del artículo"), {
+      target: { value: "3" },
+    });
+    expect(
+      screen.getByText("Insumo de inventario: Refresco de Cola 355ml (3 pza)")
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+
+    // Verify slot card shows 2 rondas de selección for the slot and 3 pza for the option content
+    const slotCard = screen.getByTestId("slot-card-0");
+    expect(within(slotCard).getByText("2 rondas de selección")).toBeVisible();
+    expect(within(slotCard).getByText("Refresco de Cola 355ml")).toBeVisible();
+    expect(within(slotCard).getByText("Insumo")).toBeVisible();
+    expect(within(slotCard).getByText("3 pza")).toBeVisible();
   });
 });

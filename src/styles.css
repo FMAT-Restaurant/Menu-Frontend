@@ -374,3 +374,53 @@ html[data-menu-standalone] body {
   font-size: 12px;
   line-height: 16px;
 }
+
+:where(.menu-module) .inventory-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: #fff;
+}
+
+:where(.menu-module) .inventory-selection-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+:where(.menu-module) .inventory-selection-table th,
+:where(.menu-module) .inventory-selection-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module) .inventory-selection-table th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+:where(.menu-module) .inventory-selection-table__action-col,
+:where(.menu-module) .inventory-selection-row__action {
+  text-align: right;
+  width: 140px;
+}
+
+:where(.menu-module) .inventory-selection-row__name {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+:where(.menu-module) .inventory-selection-row__unit {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+:where(.menu-module) .recipe-supplies-table__item-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

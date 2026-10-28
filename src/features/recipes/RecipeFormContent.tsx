@@ -30,6 +30,7 @@ import {
 } from "../../api/idempotencyResponse";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
+import { InventoryPage } from "../inventory/InventoryPage";
 
 export interface RecipeFormContentHandle {
   back(): void;
@@ -231,6 +232,7 @@ interface RecipeSupplyTableProps {
   olderInventory: boolean;
   onSupplyChange(index: number, field: "inventoryItemId" | "quantity", value: string): void;
   onRemoveSupply(index: number): void;
+  onOpenInventoryPicker?(index: number): void;
   getUnitForItem(inventoryItemId: string): string;
 }
 
@@ -245,6 +247,7 @@ function RecipeSupplyTable({
   olderInventory,
   onSupplyChange,
   onRemoveSupply,
+  onOpenInventoryPicker,
   getUnitForItem,
 }: Readonly<RecipeSupplyTableProps>) {
   return <table className="recipe-supplies-table">
@@ -268,15 +271,28 @@ function RecipeSupplyTable({
           supply.inventoryItemId;
         return <tr key={supply.key}>
           <td data-label="Insumo seleccionado">
-            <select id={`${supply.key}-item`} aria-invalid={Boolean(itemError)}
-              aria-describedby={itemError ? `${supply.key}-item-error` : undefined}
-              aria-label={`Insumo ${index + 1}`} value={supply.inventoryItemId}
-              onChange={event => onSupplyChange(index, "inventoryItemId", event.target.value)}
-              disabled={busy || inventoryLoading || olderInventory} required>
-              <option value="">Seleccione insumo…</option>
-              {itemIsUnavailable && <option value={supply.inventoryItemId}>{itemName}</option>}
-              {currentInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
+            <div className="recipe-supplies-table__item-control">
+              <select id={`${supply.key}-item`} aria-invalid={Boolean(itemError)}
+                aria-describedby={itemError ? `${supply.key}-item-error` : undefined}
+                aria-label={`Insumo ${index + 1}`} value={supply.inventoryItemId}
+                onChange={event => onSupplyChange(index, "inventoryItemId", event.target.value)}
+                disabled={busy || inventoryLoading || olderInventory} required>
+                <option value="">Seleccione insumo…</option>
+                {itemIsUnavailable && <option value={supply.inventoryItemId}>{itemName}</option>}
+                {currentInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+              {onOpenInventoryPicker && (
+                <button
+                  type="button"
+                  className="button button--secondary button--small"
+                  onClick={() => onOpenInventoryPicker(index)}
+                  disabled={busy}
+                  aria-label={`Buscar insumo ${index + 1} en inventario`}
+                >
+                  Buscar en inventario
+                </button>
+              )}
+            </div>
             {itemError && <p className="recipe-field-error" id={`${supply.key}-item-error`}>{itemError}</p>}
           </td>
           <td data-label="Cantidad">
@@ -501,6 +517,7 @@ export function RecipeFormContent({
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [inventoryError, setInventoryError] = useState("");
   const [inventoryRetryCount, setInventoryRetryCount] = useState(0);
+  const [pickingSupplyIndex, setPickingSupplyIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (inventoryItems && inventoryItems.length > 0) {
@@ -915,6 +932,18 @@ export function RecipeFormContent({
     persistEditableDraft({ supplies: nextSupplies });
   }
 
+  function handleSelectInventoryForSupply(item: InventoryItem) {
+    if (pickingSupplyIndex === null) return;
+    if (!markUserEdit()) return;
+    setKnownItems((prev) => new Map(prev).set(item.id, item));
+    const nextSupplies = supplies.map((supply, i) =>
+      i === pickingSupplyIndex ? { ...supply, inventoryItemId: item.id } : supply,
+    );
+    setSupplies(nextSupplies);
+    persistEditableDraft({ supplies: nextSupplies });
+    setPickingSupplyIndex(null);
+  }
+
   function getUnitForItem(inventoryItemId: string) {
     if (!inventoryItemId) return "--";
     const found = currentInventoryItems.find((item) => item.id === inventoryItemId);
@@ -984,6 +1013,10 @@ export function RecipeFormContent({
   }
 
   function handleBack() {
+    if (pickingSupplyIndex !== null) {
+      setPickingSupplyIndex(null);
+      return;
+    }
     if (exitBlocked()) return;
     if (onBack && dirty) setConfirmBack(value => !value);
     else if (onBack) onBack();
@@ -1336,7 +1369,7 @@ export function RecipeFormContent({
         <button ref={backConfirmRef} type="button" className="button button--secondary" onClick={() => { setConfirmBack(false); nameRef.current?.focus(); }}>Seguir editando receta</button>
         <button type="button" className="button button--primary" onClick={() => { setConfirmBack(false); onBack?.(); }}>Conservar borrador y volver</button>
       </section>}
-      <div className="recipe-form-dialog__header" hidden={confirmBack}>
+      <div className="recipe-form-dialog__header" hidden={confirmBack || pickingSupplyIndex !== null}>
         <h2 id="recipe-form-title">{editing ? "Editar receta" : "Nueva receta"}</h2>
         <button
           className="recipe-form-dialog__close"
@@ -1351,7 +1384,7 @@ export function RecipeFormContent({
         </button>
       </div>
 
-      <form noValidate onSubmit={(e) => void save(e)} hidden={confirmBack}>
+      <form noValidate onSubmit={(e) => void save(e)} hidden={confirmBack || pickingSupplyIndex !== null}>
         <div className="recipe-form-dialog__fields">
           <RecipeValidationSummary fieldErrors={fieldErrors} supplies={supplies} summaryRef={validationSummaryRef} />
           <RecipeTextField id="recipe-name" label="Nombre" value={name} disabled={busy}
@@ -1392,7 +1425,9 @@ export function RecipeFormContent({
               currentInventoryItems={currentInventoryItems} knownItems={knownItems}
               activeRecipe={activeRecipe} busy={busy} inventoryLoading={inventoryLoading}
               olderInventory={olderInventory} onSupplyChange={handleSupplyChange}
-              onRemoveSupply={handleRemoveSupply} getUnitForItem={getUnitForItem} />
+              onRemoveSupply={handleRemoveSupply}
+              onOpenInventoryPicker={repository?.listInventoryItems ? (index) => setPickingSupplyIndex(index) : undefined}
+              getUnitForItem={getUnitForItem} />
           </fieldset>
 
           <RecipeOperationFeedback infoNotice={infoNotice} error={error}
@@ -1427,6 +1462,14 @@ export function RecipeFormContent({
           </button>
         </div>
       </form>
+      {pickingSupplyIndex !== null && repository?.listInventoryItems && (
+        <InventoryPage
+          repository={{ listInventoryItems: repository.listInventoryItems }}
+          context="ingredient"
+          onSelectItem={handleSelectInventoryForSupply}
+          onClose={() => setPickingSupplyIndex(null)}
+        />
+      )}
     </section>
   );
 }

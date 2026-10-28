@@ -10,6 +10,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { contractErrorResponse } from "../../api/catalogResponse";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import type {
+  InventoryItem,
   MenuEntryDetail,
   MenuImage,
   MenuOfferDetail,
@@ -21,6 +22,7 @@ import type {
   RecipeSummary,
   VersionedResource,
 } from "../../application/catalog";
+import { InventoryPage } from "../inventory/InventoryPage";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import {
   createOperationAttemptController,
@@ -578,6 +580,7 @@ export function OfferFormPage({
   const [currentOptionDraft, setCurrentOptionDraft] = useState<OptionDraft | null>(null);
 
   const [recipePickerOpen, setRecipePickerOpen] = useState(false);
+  const [inventoryPickerOpen, setInventoryPickerOpen] = useState(false);
   const recipeTaskRef = useRef<RecipeSelectionTaskHandle>(null);
   const [recipeCreating, setRecipeCreating] = useState(false);
   const slotModalTriggerRef = useRef<HTMLElement | null>(null);
@@ -676,6 +679,7 @@ export function OfferFormPage({
     setEditingOptionIndex(null);
     setCurrentOptionDraft(null);
     setRecipePickerOpen(false);
+    setInventoryPickerOpen(false);
     setSaving(false);
     return () => {
       mountedRef.current = false;
@@ -1128,6 +1132,43 @@ export function OfferFormPage({
     setRecipePickerOpen(false);
   }
 
+  // Inventory item selection (V7)
+  function handleOpenInventoryPicker() {
+    setInventoryPickerOpen(true);
+  }
+
+  function handleSelectInventoryItem(item: InventoryItem) {
+    setCurrentOptionDraft((prev) => {
+      const prevAutoName = prev?.inventoryItemName || prev?.recipeName || "";
+      const displayName =
+        prev?.displayName.trim() && prev.displayName !== prevAutoName
+          ? prev.displayName
+          : item.name;
+      return {
+        localId: prev?.localId || generateLocalId(),
+        optionId: prev?.optionId,
+        originalSourceType: prev?.originalSourceType,
+        displayName,
+        status: prev?.status ?? "ACTIVE",
+        sourceType: "INVENTORY_ITEM",
+        recipeId: undefined,
+        recipeName: undefined,
+        hasRecipeAssignmentIntent: undefined,
+        recipeAssignmentToken: undefined,
+        inventoryItemId: item.id,
+        inventoryItemName: item.name,
+        quantity:
+          prev?.sourceType === "INVENTORY_ITEM" &&
+          typeof prev.quantity === "number" &&
+          prev.quantity > 0
+            ? prev.quantity
+            : 1,
+        unit: item.unit,
+      };
+    });
+    setInventoryPickerOpen(false);
+  }
+
   // Derived slot & offer status
   const hasActiveSlot = slots.some((slot) =>
     slot.options.some((opt) => opt.status === "ACTIVE"),
@@ -1508,9 +1549,13 @@ export function OfferFormPage({
           slotName={currentSlotName}
           initialData={currentOptionDraft}
           isCreateMode={!isEditing}
-          isNestedPickerOpen={recipePickerOpen}
+          isNestedPickerOpen={recipePickerOpen || inventoryPickerOpen}
           recipeStep={recipeCreating}
-          onNestedBack={() => recipeTaskRef.current?.back()}
+          inventoryStep={inventoryPickerOpen}
+          onNestedBack={() => {
+            if (inventoryPickerOpen) setInventoryPickerOpen(false);
+            else recipeTaskRef.current?.back();
+          }}
           isNestedBlocked={() => recipeTaskRef.current?.isBlocked() ?? false}
           hasNestedChanges={() => recipeTaskRef.current?.hasChanges() ?? false}
           onDiscardNested={() => recipeTaskRef.current?.discard()}
@@ -1519,16 +1564,26 @@ export function OfferFormPage({
           onClose={() => {
             setOptionModalOpen(false);
             setRecipePickerOpen(false);
+            setInventoryPickerOpen(false);
             setTargetSlotIndex(null);
             setEditingOptionIndex(null);
             setCurrentOptionDraft(null);
           }}
           onOpenRecipePicker={handleOpenRecipePicker}
+          onOpenInventoryPicker={handleOpenInventoryPicker}
         >
           {optionModalOpen && <RecipeSelectionTask repository={repository} storage={storage}
             nestedContext={nestedRecipeContext} active={recipePickerOpen} slotName={currentSlotName}
             onStepChange={setRecipeCreating} taskRef={recipeTaskRef}
             onSelect={handleSelectRecipe} onBack={() => setRecipePickerOpen(false)} />}
+          {optionModalOpen && inventoryPickerOpen && (
+            <InventoryPage
+              repository={repository}
+              context="option"
+              onSelectItem={handleSelectInventoryItem}
+              onClose={() => setInventoryPickerOpen(false)}
+            />
+          )}
         </OptionModal>
       </main>
     </div>
