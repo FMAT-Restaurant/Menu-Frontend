@@ -496,6 +496,16 @@ describe("OfferFormPage (V4)", () => {
 
     // Try submitting empty
     fireEvent.click(saveButton);
+    expect(screen.getByText("Indica la etiqueta de presentación de la oferta.")).toBeVisible();
+
+    // Whitespace-only tag is still missing
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "   " } });
+    fireEvent.click(saveButton);
+    expect(screen.getByText("Indica la etiqueta de presentación de la oferta.")).toBeVisible();
+
+    // Set tag
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
+    fireEvent.click(saveButton);
     expect(screen.getByText("El precio base debe ser un número positivo.")).toBeVisible();
 
     // Set price
@@ -807,6 +817,7 @@ describe("OfferFormPage (V4)", () => {
     const basePriceInput = await screen.findByLabelText(/Precio base/);
 
     // Fill minimum required fields
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     fireEvent.change(basePriceInput, { target: { value: "100" } });
 
     // Select image which starts slow validation
@@ -878,6 +889,7 @@ describe("OfferFormPage (V4)", () => {
     const basePriceInput = await screen.findByLabelText(/Precio base/);
 
     // Fill form
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     fireEvent.change(basePriceInput, { target: { value: "120" } });
     const file = new File(["dummy"], "photo.jpg", { type: "image/jpeg" });
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -939,6 +951,7 @@ describe("OfferFormPage (V4)", () => {
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
     // Fill form
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     fireEvent.change(screen.getByLabelText(/Precio base/), { target: { value: "100" } });
     const file = new File(["dummy"], "photo.jpg", { type: "image/jpeg" });
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -1204,7 +1217,8 @@ describe("OfferFormPage (V4)", () => {
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
-    // Fill valid base price
+    // Fill valid tag and base price
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     fireEvent.change(screen.getByLabelText(/Precio base/), {
       target: { value: "150" },
     });
@@ -1240,7 +1254,8 @@ describe("OfferFormPage (V4)", () => {
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
-    // Fill valid base price
+    // Fill valid tag and base price
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     fireEvent.change(screen.getByLabelText(/Precio base/), {
       target: { value: "150" },
     });
@@ -1259,6 +1274,22 @@ describe("OfferFormPage (V4)", () => {
       await screen.findByText("Corrige el error de la imagen antes de guardar.")
     ).toBeVisible();
     expect(repository.createOffer).not.toHaveBeenCalled();
+  });
+
+  test("blocks updating an offer when its presentation tag is cleared", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
+
+    const tagInput = await screen.findByLabelText(/Etiqueta de presentación/);
+    expect(tagInput).toBeRequired();
+    fireEvent.change(tagInput, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+
+    expect(
+      await screen.findByText("Indica la etiqueta de presentación de la oferta.")
+    ).toBeVisible();
+    expect(repository.updateOffer).not.toHaveBeenCalled();
   });
 
   test("handles non-Error objects gracefully when save fails", async () => {
