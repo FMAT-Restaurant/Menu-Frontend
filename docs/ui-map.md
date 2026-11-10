@@ -79,6 +79,7 @@
 - [C07](#c07) Estado vacío (R).
 - [C22](#c22) Formulario de categoría (E), modal crear / editar.
   - [C12](#c12) Acciones de formulario (R).
+- Confirmación de eliminación de categoría (E), modal abierto desde [C21](#c21).
 
 <details>
 <summary>Ejemplo visual — V5. Catálogo de categorías</summary>
@@ -331,7 +332,7 @@ Colección de categorías del menú actual y, si se muestra, conteo informativo 
 <a id="c21"></a>
 ### C21 — Fila de categoría
 
-Nombre, descripción y conteo informativo de entradas asociadas a la categoría.
+Nombre, descripción y conteo informativo de entradas asociadas a la categoría. Acciones Editar y Eliminar; Eliminar abre un modal de confirmación que consulta la versión vigente, muestra el conteo actual y aclara que las entradas no se eliminan, solo dejan de pertenecer a la categoría.
 
 **Vistas:** V5; una instancia por categoría.
 

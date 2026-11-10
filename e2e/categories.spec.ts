@@ -33,7 +33,6 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await expect(page).toHaveURL(/\/categories$/);
   await expect(page.getByRole("heading", { name: "Bebidas" })).toBeVisible();
   await expect(page.getByText("2 entradas asociadas")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Eliminar/ })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Editar Bebidas" }).click();
   const dialog = page.getByRole("dialog", { name: "Editar categoría" });

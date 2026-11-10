@@ -78,6 +78,9 @@ function categoryPath(categoryId?: string): string {
   return categoryId ? `${base}/${encodeURIComponent(categoryId)}` : base;
 }
 
+const CATEGORY_VERSION_REQUIRED_MESSAGE =
+  "No se recibió la versión de la categoría (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.";
+
 function sanitizeCategoryPayload(value: unknown): MenuCategory {
   const raw = categoryResponse(value);
   return {
@@ -341,10 +344,7 @@ export function createMenuApi(
       draft: CategoryDraft,
       etag: string,
     ): Promise<MenuCategory> {
-      const strongEtag = assertStrongEtag(
-        etag,
-        "No se recibió la versión de la categoría (se requiere una versión fuerte). Revisa los datos actuales antes de guardar.",
-      );
+      const strongEtag = assertStrongEtag(etag, CATEGORY_VERSION_REQUIRED_MESSAGE);
       const response = await client.patch<unknown>(categoryPath(id), draft, {
         headers: { "If-Match": strongEtag },
         timeout: WRITE_REQUEST_TIMEOUT_MS,
@@ -354,6 +354,14 @@ export function createMenuApi(
         sanitizeCategoryPayload,
         response.status,
       );
+    },
+
+    async deleteCategory(id: string, etag: string): Promise<void> {
+      const strongEtag = assertStrongEtag(etag, CATEGORY_VERSION_REQUIRED_MESSAGE);
+      await client.delete(categoryPath(id), {
+        headers: { "If-Match": strongEtag },
+        timeout: WRITE_REQUEST_TIMEOUT_MS,
+      });
     },
 
     async setEntryStatus(id: string, status: EntryStatus): Promise<void> {

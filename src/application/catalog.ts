@@ -299,6 +299,7 @@ export interface MenuRepository {
   getCategory(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuCategory>>;
   createCategory(draft: CategoryDraft, idempotencyKey: string): Promise<MenuCategory>;
   updateCategory(id: string, draft: CategoryDraft, etag: string): Promise<MenuCategory>;
+  deleteCategory(id: string, etag: string): Promise<void>;
   setEntryStatus(id: string, status: EntryStatus): Promise<void>;
   deleteArchivedEntry(id: string): Promise<void>;
   getEntry(id: string, signal?: AbortSignal): Promise<MenuEntryDetail>;

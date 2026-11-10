@@ -239,6 +239,19 @@ export function createDemoRepository(): MenuRepository {
         return categoryWithCount(id);
       });
     },
+    deleteCategory(id, etag) {
+      return runDemoOperation(() => {
+        required(categories, id, "La categoría");
+        checkVersion(id, etag);
+        categories.delete(id);
+        // Entries survive the deletion: they only stop belonging to the category.
+        for (const entry of entries.values()) {
+          if (entry.categoryIds.includes(id)) {
+            entries.set(entry.id, { ...entry, categoryIds: entry.categoryIds.filter(categoryId => categoryId !== id) });
+          }
+        }
+      });
+    },
     getEntry(id, signal) {
       return runDemoOperation(() => {
         signal?.throwIfAborted();

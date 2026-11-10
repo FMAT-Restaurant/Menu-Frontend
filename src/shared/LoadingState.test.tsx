@@ -28,7 +28,7 @@ test.each(["entries", "offers", "category-rows", "recipe-rows", "recipe-selectio
 
 test("categories remain available through an update and its failure, then reflect a confirmed empty response", async () => {
   const update = deferred<Awaited<ReturnType<CategoryRepository["listCategories"]>>>();
-  const original: CategoryRepository = { listCategories: jest.fn().mockResolvedValue([{ id: "one", name: "Bebidas", description: "", entryCount: 1 }]), getCategory: jest.fn(), createCategory: jest.fn(), updateCategory: jest.fn() };
+  const original: CategoryRepository = { listCategories: jest.fn().mockResolvedValue([{ id: "one", name: "Bebidas", description: "", entryCount: 1 }]), getCategory: jest.fn(), createCategory: jest.fn(), updateCategory: jest.fn(), deleteCategory: jest.fn() };
   const refreshed = { ...original, listCategories: jest.fn().mockReturnValueOnce(update.promise).mockResolvedValueOnce([]) };
   const view = render(<MemoryRouter><CategoryPage repository={original} /></MemoryRouter>);
   await screen.findByRole("heading", { name: "Bebidas" });
