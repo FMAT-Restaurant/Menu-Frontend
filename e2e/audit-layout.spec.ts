@@ -101,7 +101,7 @@ test.describe("T16 Layout, Dimensions, and Accessibility Audit", () => {
     expect(overflow, `Horizontal overflow must not exceed 1px, got ${overflow}px`).toBeLessThanOrEqual(1);
 
     // Verify commercial fields are fully visible and within viewport bounds
-    const tagInput = page.getByLabel("Etiqueta de presentación (opcional)");
+    const tagInput = page.getByLabel("Etiqueta de presentación");
     await expect(tagInput).toBeVisible();
     const tagBox = await tagInput.boundingBox();
     expect(tagBox).not.toBeNull();

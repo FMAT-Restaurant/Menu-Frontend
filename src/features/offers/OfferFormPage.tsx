@@ -147,7 +147,6 @@ function validateOfferSlot(slot: SlotDraft, isEditing: boolean): string | null {
 export const PRESENTATION_TAG_REQUIRED_MESSAGE = "Indica la etiqueta de presentación de la oferta.";
 
 function validateOfferForm(
-  presentationTag: string,
   basePrice: string,
   isEditing: boolean,
   selectedFile: File | null,
@@ -158,9 +157,6 @@ function validateOfferForm(
 ): string | null {
   if (imageValidating) {
     return "La imagen se está validando. Espera a que termine la validación.";
-  }
-  if (presentationTag.trim() === "") {
-    return PRESENTATION_TAG_REQUIRED_MESSAGE;
   }
   const priceNumber = Number(basePrice);
   if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
@@ -213,7 +209,8 @@ function offerSaveBlockerMessage({
   }
   const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
   if (recovering) return null;
-  return validateOfferForm(draft.presentationTag, draft.basePrice, isEditing, selectedFile, imageError, draft.slots, confirmedImageId, imageValidating);
+  if (!imageValidating && draft.presentationTag.trim() === "") return PRESENTATION_TAG_REQUIRED_MESSAGE;
+  return validateOfferForm(draft.basePrice, isEditing, selectedFile, imageError, draft.slots, confirmedImageId, imageValidating);
 }
 
 function needsNewOfferAttempt(pending: SealedOperationAttempt | null, newOperationAuthorized: boolean) {

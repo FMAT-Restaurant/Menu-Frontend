@@ -160,7 +160,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await expect(page.getByRole("heading", { name: "Nueva oferta", level: 1 })).toBeVisible();
 
     // 2. Fill commercial fields
-    await page.getByLabel("Etiqueta de presentación (opcional)").fill("Combo Especial");
+    await page.getByLabel("Etiqueta de presentación").fill("Combo Especial");
     await page.getByLabel("Precio base").fill("195");
 
     // 3. Create a slot
@@ -208,7 +208,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await page.reload();
 
     // 9. After reload, parent offer form retains commercial info, and nested recipe dialog reopens
-    await expect(page.getByLabel("Etiqueta de presentación (opcional)")).toHaveValue("Combo Especial");
+    await expect(page.getByLabel("Etiqueta de presentación")).toHaveValue("Combo Especial");
     await expect(page.getByLabel("Precio base")).toHaveValue("195");
 
     const restoredRecipeDialog = page.getByRole("dialog", { name: "Nueva receta" });
