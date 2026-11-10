@@ -385,7 +385,13 @@ function RecipeSupplySearch({
           aria-selected={active?.id === item.id} aria-disabled={added || undefined}
           className="recipe-supply-search__option"
           onMouseDown={event => event.preventDefault()}
-          onClick={() => choose(item)}>
+          onClick={() => choose(item)}
+          onKeyDown={event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              choose(item);
+            }
+          }}>
           <span>{item.name}</span>
           <span className="recipe-supply-search__meta"> · {item.unit}{added ? " · Agregado" : ""}</span>
         </li>;
