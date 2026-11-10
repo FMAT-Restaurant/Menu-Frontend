@@ -1,6 +1,6 @@
 import { type LocalSaveReceipt, saveReceiptMessage } from "../../shared/localSaveReceipt";
 import { sameDraft } from "../../shared/editGuard";
-import { useCallback, useEffect, useRef, useState, type SubmitEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import type {
   EntryCreateDraft,
   EntryCreateRequest,
@@ -597,7 +597,7 @@ export function useEntryForm(
     }
   }
 
-  async function save(event: SubmitEvent<HTMLFormElement>) {
+  async function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
       saving.current ||

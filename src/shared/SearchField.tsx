@@ -1,4 +1,4 @@
-import type { SubmitEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { Icon } from "./Icon";
 
 interface SearchFieldProps {
@@ -18,7 +18,7 @@ export function SearchField({
   label = "Buscar entradas",
   placeholder = "Nombre, descripción o categoría",
 }: Readonly<SearchFieldProps>) {
-  function submit(event: SubmitEvent<HTMLFormElement>) {
+  function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     onSearch();
   }

@@ -1,7 +1,7 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import type { OfferCourse } from "../../application/catalog";
 
 export interface SlotModalData {
@@ -59,7 +59,7 @@ export function SlotModal({
 
   if (!isOpen) return null;
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleanName = name.trim();
     if (!cleanName) {

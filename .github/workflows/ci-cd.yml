@@ -172,7 +172,7 @@ jobs:
           docker pull "$IMAGE@$DIGEST"
           revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGE@$DIGEST")"
           test "$revision" = "$GITHUB_SHA"
-          docker run --detach --name verify-front --env API_BASE_URL=https://example.org/api/v1 "$IMAGE@$DIGEST"
+          docker run --detach --name verify-front --env API_BASE_URL=https://example.org/api/v1/menu --env INVENTORY_API_BASE_URL=https://example.org/api/v1 "$IMAGE@$DIGEST"
           for attempt in {1..30}; do
             health="$(docker inspect --format '{{.State.Health.Status}}' verify-front)"
             if [ "$health" = healthy ]; then break; fi
@@ -181,7 +181,9 @@ jobs:
           done
           test "$(docker inspect --format '{{.State.Health.Status}}' verify-front)" = healthy
           test "$(docker exec verify-front wget -qO- http://127.0.0.1:8080/healthz)" = ok
-          docker exec verify-front wget -qO- http://127.0.0.1:8080/runtime-config.js | grep -F 'https://example.org/api/v1'
+          runtime_config="$(docker exec verify-front wget -qO- http://127.0.0.1:8080/runtime-config.js)"
+          printf '%s' "$runtime_config" | grep -F 'apiBaseUrl: "https://example.org/api/v1/menu"'
+          printf '%s' "$runtime_config" | grep -F 'inventoryApiBaseUrl: "https://example.org/api/v1"'
           printf 'Verified %s@%s (revision %s)\n' "$IMAGE" "$DIGEST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop verification container

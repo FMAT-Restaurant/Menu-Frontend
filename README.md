@@ -101,7 +101,29 @@ npm run test:e2e
 docker compose down
 ```
 
-La aplicación queda en `http://localhost:4173`; `FRONTEND_PORT` cambia el puerto local. Playwright usa esa dirección por defecto; también puede configurarse con `PLAYWRIGHT_BASE_URL`.
+La aplicación en Docker queda en `http://localhost:4173`; `FRONTEND_PORT` cambia el puerto local. Para probar Docker con Playwright, deja vacías `API_BASE_URL` e `INVENTORY_API_BASE_URL` y configura `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173` y `PLAYWRIGHT_USE_EXTERNAL_SERVER=true`. Sin servidor externo, Playwright compila y usa la vista previa en el puerto 5175.
+
+### Integración con el Shell
+
+`npm run dev:federation` compila y sirve el remoto `menu_app` en el puerto 5175. El Shell puede cargar `http://localhost:5175/assets/remoteEntry.js` y montar `./App` con `token`, `currentUser` y `theme`. Si no se proporcionan sesión o usuario, se leen de `fmat_restaurant_auth_session`. El remoto conserva la navegación interna del módulo y, cuando se monta en `/menu`, usa esa ruta como base.
+
+`react` y `react-dom` se comparten con el Shell mediante Module Federation, por lo que deben tener la misma versión mayor que el Shell (actualmente React 18). El código compila en React 18 y 19: los handlers de `onSubmit` usan `SyntheticEvent<HTMLFormElement>` y las props que solo se pasan a `ref` usan `Ref<T>`.
+
+### Configuración
+
+Las URLs de la API se configuran solo en runtime, así que la misma imagen sirve para cualquier entorno. `window.MENU_CONFIG` define `apiBaseUrl` (Menú) e `inventoryApiBaseUrl` (Inventario). En Docker lo genera `/runtime-config.js`; dentro del Shell, el Shell puede definirlo antes de montar el remoto. Si no hay configuración, se usan `/api/v1/menu` y `/api/v1`, rutas relativas al origen que sirve la página. Ambos clientes envían el token de la sesión. Copia [`.env.example`](.env.example) como `.env` para uso local.
+
+| Variable | Dónde aplica | Uso |
+|---|---|---|
+| `API_BASE_URL` | Contenedor | Base de Menú. Debe terminar en `/api/v1/menu`, porque la subida de imágenes usa `/api/v1/menu/media/images`. |
+| `INVENTORY_API_BASE_URL` | Contenedor | Base de Inventario (ruta `/items`), por ejemplo `https://api.example.com/api/v1`. |
+| `FRONTEND_PORT` | `docker compose` | Puerto local del contenedor (por defecto `4173`). |
+| `MENU_API_PROXY_TARGET` | `npm run dev` | Destino del proxy `/api/v1` (por defecto `http://127.0.0.1:8080`). |
+| `PLAYWRIGHT_BASE_URL`, `PLAYWRIGHT_USE_EXTERNAL_SERVER` | E2E | Probar contra un servidor ya levantado. |
+
+Las variables del contenedor se validan al arrancar: vacías o URL HTTP(S) sin query ni fragmento. No coloques secretos en ellas, porque el navegador puede leerlas. La imagen sirve `/assets/` con CORS para que el Shell cargue el remoto desde otro origen; `remoteEntry.js` se sirve con `Cache-Control: no-cache` y los archivos con hash como inmutables.
+
+Si la API se sirve desde otro origen, el backend debe responder con `Access-Control-Expose-Headers: ETag` y permitir los headers `Authorization`, `If-Match` e `Idempotency-Key`; sin eso el navegador oculta el `ETag` y no se pueden guardar ediciones.
 
 ## CI/CD
 
@@ -109,6 +131,6 @@ El workflow [ci-cd.yml](.github/workflows/ci-cd.yml) valida todos los pull reque
 
 Para producción, crea los entornos de GitHub `staging` y `production`, restringe `production` a `main` y configura los revisores requeridos según la política del equipo. `GITHUB_TOKEN` con `packages: write` publica y promociona en GHCR; no hacen falta credenciales de registry adicionales. El repositorio debe permitir que Actions escriba en el paquete GHCR. El ruleset activo de `main` exige `SonarCloud Code Analysis`, que bloquea la fusión cuando Sonar no aprueba el Quality Gate. Consulta el [diseño del pipeline](ci-cd/pipeline-design.md) para el procedimiento y las verificaciones.
 
-`API_BASE_URL` se entrega al contenedor al arrancar, por ejemplo `https://api.example.com/api/v1`. El endpoint `/runtime-config.js` expone ese valor al navegador con `Cache-Control: no-store`. La misma imagen y digest sirven para ambos entornos. No coloques secretos en `API_BASE_URL`: el navegador puede leerlo. En desarrollo, Vite envía `/api/v1` al Back en `http://127.0.0.1:8080`; `MENU_API_PROXY_TARGET` cambia ese destino. La vista administrativa V1 usa esa API para entradas, categorías y cambios de estado. El menú lo provisiona el servicio, sin `MENU_ID` en las rutas del [contrato publicado](https://fmat-restaurant.github.io/Menu-Documentation/api/).
+El pipeline verifica la imagen publicada arrancándola con `API_BASE_URL` e `INVENTORY_API_BASE_URL` de ejemplo y comprobando `/runtime-config.js`; la misma imagen y digest sirven para ambos entornos (ver [Configuración](#configuración)). La vista administrativa V1 usa esa API para entradas, categorías y cambios de estado. El menú lo provisiona el servicio, sin `MENU_ID` en las rutas del [contrato publicado](https://fmat-restaurant.github.io/Menu-Documentation/api/).
 
 La [documentación del producto](https://fmat-restaurant.github.io/Menu-Documentation/) contiene requisitos y contratos. [T22](docs/T22-catalogo-administrable.md) describe las rutas de V1, las operaciones utilizadas y las brechas actuales del Back. [T24](docs/T24-crear-editar-entrada.md) describe el formulario de creación y edición y su integración con el OpenAPI vigente. V2, V3 y V6 tienen rutas de navegación preparadas y se implementarán en sus tareas correspondientes.

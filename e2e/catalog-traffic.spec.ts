@@ -72,7 +72,7 @@ test("full journey: catalog -> create category -> new entry with category -> cat
 
   let postEntryPayload: unknown = null;
 
-  await page.route("**/api/v1/media/images*", (route) => {
+  await page.route("**/api/v1/menu/media/images*", (route) => {
     return route.fulfill({
       status: 201,
       json: {

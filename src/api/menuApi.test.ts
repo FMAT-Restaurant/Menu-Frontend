@@ -1074,46 +1074,35 @@ test("deletes a recipe using If-Match from current recipe ETag", async () => {
   ]);
 });
 
-test("lists inventory items with search and pagination", async () => {
+test("lists inventory items with search", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(axios.getUri(config));
     return {
       config,
-      data: {
-        data: [{ id: "item-1", name: "Carne Molida", unit: "g" }],
-        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-      },
+      data: [{ id: "item-1", name: "Carne Molida", unit: "g" }],
       headers: {},
       status: 200,
       statusText: "OK",
     };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
-  const result = await api.listInventoryItems({
-    q: "carne",
-    page: 1,
-    pageSize: 50,
-  });
+  const result = await api.listInventoryItems({ q: "carne" });
 
   expect(result.data).toHaveLength(1);
   expect(result.data[0].unit).toBe("g");
-  expect(requests).toEqual([
-    "/api/v1/inventory/items?q=carne&page=1&pageSize=50",
-  ]);
+  expect(result.meta.total).toBe(1);
+  expect(requests).toEqual(["/api/v1/items?q=carne"]);
 });
 
 test("rejects invalid recipe identifiers, stops category batches when aborted, and fetches offer with strong ETag", async () => {
   const methods: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     methods.push(config.method ?? "");
-    if (config.url?.includes("/inventory/items")) {
+    if (config.url?.includes("/items")) {
       return {
         config,
-        data: {
-          data: [{ id: "item-1", name: "Carne", unit: "g" }],
-          meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-        },
+        data: [{ id: "item-1", name: "Carne", unit: "g" }],
         headers: {},
         status: 200,
         statusText: "OK",
@@ -1174,10 +1163,7 @@ test("routes inventory queries to inventoryClient when parameterized independent
     inventoryRequests.push(`${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return {
       config,
-      data: {
-        data: [{ id: "inv-item-1", name: "Jitomate", unit: "kg" }],
-        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-      },
+      data: [{ id: "inv-item-1", name: "Jitomate", unit: "kg" }],
       headers: {},
       status: 200,
       statusText: "OK",
@@ -1194,10 +1180,10 @@ test("routes inventory queries to inventoryClient when parameterized independent
   expect(menuRequests).toEqual(["GET http://menu.service.local/api/v1/menu/entries/entry-1"]);
   expect(inventoryRequests).toEqual([]);
 
-  const items = await repository.listInventoryItems({ page: 1, pageSize: 50 });
+  const items = await repository.listInventoryItems();
   expect(items.data).toHaveLength(1);
   expect(items.data[0].name).toBe("Jitomate");
-  expect(inventoryRequests).toEqual(["GET http://inventory.service.local/api/v1/inventory/items"]);
+  expect(inventoryRequests).toEqual(["GET http://inventory.service.local/api/v1/items"]);
   expect(menuRequests).toHaveLength(1);
 });
 

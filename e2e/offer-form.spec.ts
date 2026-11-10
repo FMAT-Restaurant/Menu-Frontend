@@ -116,7 +116,7 @@ test("creates and deletes an offer updating catalog offerCount within cache TTL 
     }),
   );
 
-  await page.route("**/api/v1/media/images", (route) =>
+  await page.route("**/api/v1/menu/media/images", (route) =>
     route.fulfill({
       status: 201,
       json: {

@@ -13,7 +13,7 @@ export default defineConfig({
   ],
   outputDir: "test-results",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5175",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -21,8 +21,8 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: "npm run preview",
-          port: 4173,
+          command: "npm run build && npm run preview",
+          port: 5175,
           reuseExistingServer: !process.env.CI,
         },
       }),

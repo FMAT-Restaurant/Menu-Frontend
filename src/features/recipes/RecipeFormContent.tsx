@@ -1,6 +1,6 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
-import { useEffect, useRef, useState, useImperativeHandle, type ChangeEvent, type Ref, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, useImperativeHandle, type ChangeEvent, type Ref, type SyntheticEvent } from "react";
 import type {
   InventoryItem,
   MenuRepository,
@@ -30,6 +30,8 @@ import {
 } from "../../api/idempotencyResponse";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
+
+const SUPPLY_SEARCH_DELAY_MS = 300;
 
 export interface RecipeFormContentHandle {
   back(): void;
@@ -109,7 +111,7 @@ function initialRecipeBaseDraft(
 ): RecipeDraftSnapshot {
   if (confirmed) return recipeDetailDraft(confirmed);
   if (recipe) return snapshot;
-  return { name: "", description: "", instructions: "", supplies: [{ inventoryItemId: "", quantity: "1" }] };
+  return { name: "", description: "", instructions: "", supplies: [] };
 }
 
 function recipeFieldErrors(
@@ -124,9 +126,8 @@ function recipeFieldErrors(
   if (!name.trim()) errors["recipe-name"] = "Indica el nombre de la receta.";
   if (!description.trim()) errors["recipe-description"] = "Indica la descripción de la receta.";
   if (!instructions.trim()) errors["recipe-instructions"] = "Indica las instrucciones de la receta.";
-  if (supplies.length === 0) errors["recipe-add-supply"] = "Agrega al menos un insumo del inventario.";
+  if (supplies.length === 0) errors[SUPPLY_SEARCH_ID] = "Agrega al menos un insumo del inventario.";
   for (const supply of supplies) {
-    if (!supply.inventoryItemId) errors[`${supply.key}-item`] = "Selecciona un insumo del inventario en cada fila.";
     const quantity = Number(supply.quantity);
     if (!Number.isFinite(quantity) || quantity <= 0) errors[`${supply.key}-quantity`] = "La cantidad de cada insumo debe ser mayor a 0.";
   }
@@ -200,18 +201,20 @@ function RecipeTextField({
 function RecipeValidationSummary({
   fieldErrors,
   supplies,
+  nameForItem,
   summaryRef,
 }: Readonly<{
   fieldErrors: Record<string, string>;
   supplies: SupplyRow[];
+  nameForItem(inventoryItemId: string): string;
   summaryRef: Ref<HTMLDivElement>;
 }>) {
   if (Object.keys(fieldErrors).length === 0) return null;
   return <div ref={summaryRef} className="recipe-validation-summary" role="alert" aria-labelledby="recipe-validation-title" tabIndex={-1}>
     <h3 id="recipe-validation-title">Revisa los campos de la receta</h3>
     <ul>{Object.entries(fieldErrors).map(([id, message]) => {
-      const rowIndex = supplies.findIndex(supply => id.startsWith(`${supply.key}-`));
-      const description = rowIndex >= 0 ? `Insumo ${rowIndex + 1}: ${message}` : message;
+      const supply = supplies.find(row => id.startsWith(`${row.key}-`));
+      const description = supply ? `${nameForItem(supply.inventoryItemId)}: ${message}` : message;
       return <li key={id}><a href={`#${id}`} onClick={event => {
         event.preventDefault();
         document.getElementById(id)?.focus();
@@ -223,34 +226,29 @@ function RecipeValidationSummary({
 interface RecipeSupplyTableProps {
   supplies: SupplyRow[];
   fieldErrors: Record<string, string>;
-  currentInventoryItems: InventoryItem[];
-  knownItems: Map<string, { id: string; name: string; unit: string }>;
-  activeRecipe: RecipeDetail | RecipeSummary | undefined;
   busy: boolean;
-  inventoryLoading: boolean;
-  olderInventory: boolean;
-  onSupplyChange(index: number, field: "inventoryItemId" | "quantity", value: string): void;
+  nameForItem(inventoryItemId: string): string;
+  unitForItem(inventoryItemId: string): string;
+  onQuantityChange(index: number, value: string): void;
   onRemoveSupply(index: number): void;
-  getUnitForItem(inventoryItemId: string): string;
 }
 
 function RecipeSupplyTable({
   supplies,
   fieldErrors,
-  currentInventoryItems,
-  knownItems,
-  activeRecipe,
   busy,
-  inventoryLoading,
-  olderInventory,
-  onSupplyChange,
+  nameForItem,
+  unitForItem,
+  onQuantityChange,
   onRemoveSupply,
-  getUnitForItem,
 }: Readonly<RecipeSupplyTableProps>) {
+  if (supplies.length === 0) {
+    return <p className="recipe-supplies-empty">Aún no agregas insumos. Búscalos arriba para añadirlos a la receta.</p>;
+  }
   return <table className="recipe-supplies-table">
     <thead>
       <tr>
-        <th scope="col">Insumo seleccionado</th>
+        <th scope="col">Insumo</th>
         <th scope="col">Cantidad</th>
         <th scope="col">U. Medida</th>
         <th scope="col">Acción</th>
@@ -258,40 +256,23 @@ function RecipeSupplyTable({
     </thead>
     <tbody>
       {supplies.map((supply, index) => {
-        const unit = getUnitForItem(supply.inventoryItemId);
-        const itemError = fieldErrors[`${supply.key}-item`];
+        const itemName = nameForItem(supply.inventoryItemId);
         const quantityError = fieldErrors[`${supply.key}-quantity`];
-        const itemIsUnavailable = supply.inventoryItemId &&
-          !currentInventoryItems.some(item => item.id === supply.inventoryItemId);
-        const itemName = knownItems.get(supply.inventoryItemId)?.name ||
-          activeRecipe?.supplies?.find(item => item.inventoryItemId === supply.inventoryItemId)?.inventoryItem?.name ||
-          supply.inventoryItemId;
         return <tr key={supply.key}>
-          <td data-label="Insumo seleccionado">
-            <select id={`${supply.key}-item`} aria-invalid={Boolean(itemError)}
-              aria-describedby={itemError ? `${supply.key}-item-error` : undefined}
-              aria-label={`Insumo ${index + 1}`} value={supply.inventoryItemId}
-              onChange={event => onSupplyChange(index, "inventoryItemId", event.target.value)}
-              disabled={busy || inventoryLoading || olderInventory} required>
-              <option value="">Seleccione insumo…</option>
-              {itemIsUnavailable && <option value={supply.inventoryItemId}>{itemName}</option>}
-              {currentInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-            {itemError && <p className="recipe-field-error" id={`${supply.key}-item-error`}>{itemError}</p>}
-          </td>
+          <td data-label="Insumo" className="recipe-supplies-table__name">{itemName}</td>
           <td data-label="Cantidad">
             <input id={`${supply.key}-quantity`} aria-invalid={Boolean(quantityError)}
               aria-describedby={quantityError ? `${supply.key}-quantity-error` : undefined}
-              type="number" step="any" min="0" aria-label={`Cantidad del insumo ${index + 1}`}
+              type="number" step="any" min="0" aria-label={`Cantidad de ${itemName}`}
               value={supply.quantity}
-              onChange={event => onSupplyChange(index, "quantity", event.target.value)}
+              onChange={event => onQuantityChange(index, event.target.value)}
               disabled={busy} required />
             {quantityError && <p className="recipe-field-error" id={`${supply.key}-quantity-error`}>{quantityError}</p>}
           </td>
-          <td data-label="U. Medida" className="recipe-supplies-table__unit">{unit}</td>
+          <td data-label="U. Medida" className="recipe-supplies-table__unit">{unitForItem(supply.inventoryItemId)}</td>
           <td data-label="Acción">
             <button type="button" className="button button--quiet" onClick={() => onRemoveSupply(index)}
-              disabled={busy || supplies.length <= 1} aria-label={`Eliminar insumo ${index + 1}`}>
+              disabled={busy} aria-label={`Quitar ${itemName}`}>
               <Icon name="close" />
             </button>
           </td>
@@ -301,76 +282,123 @@ function RecipeSupplyTable({
   </table>;
 }
 
-interface RecipeInventoryControlsProps {
-  inventoryError: string;
-  inventoryLoading: boolean;
-  inventoryCount: number;
-  olderInventory: boolean;
-  displayedInventory: { query: string; page: number } | null;
-  inventorySearchDraft: string;
-  inventoryPage: number;
-  inventoryTotalPages: number;
-  busy: boolean;
-  onRetry(): void;
-  onSearch(query: string): void;
-  onSearchDraftChange(query: string): void;
-  onPageChange(page: number | ((currentPage: number) => number)): void;
+const SUPPLY_SEARCH_ID = "recipe-supply-search";
+const SUPPLY_RESULTS_ID = "recipe-supply-results";
+
+function supplyOptionId(inventoryItemId: string): string {
+  return `recipe-supply-option-${inventoryItemId.replaceAll(/\s/g, "_")}`;
 }
 
-function RecipeInventoryControls({
-  inventoryError,
-  inventoryLoading,
-  inventoryCount,
-  olderInventory,
-  displayedInventory,
-  inventorySearchDraft,
-  inventoryPage,
-  inventoryTotalPages,
-  busy,
+interface RecipeSupplySearchProps {
+  query: string;
+  results: InventoryItem[];
+  addedIds: ReadonlySet<string>;
+  loading: boolean;
+  error: string;
+  fieldError?: string;
+  disabled: boolean;
+  onQueryChange(query: string): void;
+  onSelect(item: InventoryItem): void;
+  onRetry(): void;
+}
+
+/**
+ * Combobox editable con lista (patrón ARIA APG): la búsqueda consulta el inventario y elegir un
+ * resultado lo agrega como insumo. Los ya agregados se muestran marcados y no se pueden repetir.
+ */
+function RecipeSupplySearch({
+  query,
+  results,
+  addedIds,
+  loading,
+  error,
+  fieldError,
+  disabled,
+  onQueryChange,
+  onSelect,
   onRetry,
-  onSearch,
-  onSearchDraftChange,
-  onPageChange,
-}: Readonly<RecipeInventoryControlsProps>) {
-  function submitSearch() {
-    onSearch(inventorySearchDraft.trim());
+}: Readonly<RecipeSupplySearchProps>) {
+  const [open, setOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const selectable = results.filter(item => !addedIds.has(item.id));
+  const active = selectable.find(item => item.id === activeId) ?? null;
+  const showResults = open && !loading && !error;
+  const expanded = showResults && results.length > 0;
+  const describedBy = [fieldError ? `${SUPPLY_SEARCH_ID}-error` : "", `${SUPPLY_SEARCH_ID}-hint`].filter(Boolean).join(" ");
+
+  function move(delta: 1 | -1) {
+    if (selectable.length === 0) return;
+    const current = selectable.findIndex(item => item.id === active?.id);
+    let next: number;
+    if (current === -1) next = delta > 0 ? 0 : selectable.length - 1;
+    else next = (current + delta + selectable.length) % selectable.length;
+    setActiveId(selectable[next].id);
+    document.getElementById(supplyOptionId(selectable[next].id))?.scrollIntoView?.({ block: "nearest" });
   }
 
-  return <>
-    {inventoryError && <div className="feedback feedback--error" role="alert" style={{ marginBottom: "0.75rem" }}>
-      <span>{inventoryError}</span>{" "}
+  function choose(item: InventoryItem) {
+    if (addedIds.has(item.id)) return;
+    onSelect(item);
+    setActiveId(null);
+    setOpen(false);
+  }
+
+  return <div className="recipe-supply-search">
+    <label htmlFor={SUPPLY_SEARCH_ID}>Buscar insumo para agregar</label>
+    <input id={SUPPLY_SEARCH_ID} type="text" role="combobox" autoComplete="off"
+      aria-autocomplete="list" aria-expanded={expanded} aria-controls={SUPPLY_RESULTS_ID}
+      aria-activedescendant={expanded && active ? supplyOptionId(active.id) : undefined}
+      aria-invalid={Boolean(fieldError)} aria-describedby={describedBy}
+      placeholder="Escribe el nombre de un insumo…" value={query} disabled={disabled}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      onChange={event => { onQueryChange(event.target.value); setActiveId(null); setOpen(true); }}
+      onKeyDown={event => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          setOpen(true);
+          move(event.key === "ArrowDown" ? 1 : -1);
+        } else if (event.key === "Enter") {
+          // Enter en el buscador nunca envía el formulario.
+          event.preventDefault();
+          if (expanded && active) choose(active);
+        } else if (event.key === "Escape" && (expanded || query)) {
+          // Cierra la lista (o limpia la búsqueda) sin cerrar el diálogo que la contiene.
+          event.preventDefault();
+          event.stopPropagation();
+          if (expanded) setOpen(false);
+          else onQueryChange("");
+          setActiveId(null);
+        }
+      }} />
+    <p id={`${SUPPLY_SEARCH_ID}-hint`} className="recipe-supply-search__hint">Elige un resultado para agregarlo a la receta.</p>
+    {fieldError && <p className="recipe-field-error" id={`${SUPPLY_SEARCH_ID}-error`}>{fieldError}</p>}
+    {loading && <output className="feedback">Cargando insumos…</output>}
+    {error && <div className="feedback feedback--error" role="alert">
+      <span>{error}</span>{" "}
       <button type="button" className="button button--secondary button--small" onClick={onRetry}>Reintentar</button>
     </div>}
-    {inventoryLoading && inventoryCount === 0 && <output className="feedback">Cargando insumos…</output>}
-    {inventoryLoading && inventoryCount > 0 && <output className="feedback">Actualizando insumos…</output>}
-    {olderInventory && <p className="feedback">
-      Opciones anteriores de insumos: {displayedInventory?.query ? `búsqueda “${displayedInventory.query}”` : "sin filtro"}, página {displayedInventory?.page}. Las selecciones y cantidades del borrador se conservan.
-    </p>}
-    <div className="recipe-inventory-controls" style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-      <input type="search" aria-label="Buscar insumos de inventario" placeholder="Filtrar insumos de inventario…"
-        value={inventorySearchDraft} onChange={event => onSearchDraftChange(event.target.value)}
-        onKeyDown={event => {
-          if (event.key !== "Enter") return;
-          event.preventDefault();
-          submitSearch();
-        }} disabled={busy} />
-      <button type="button" className="button button--secondary button--small" onClick={submitSearch}
-        disabled={busy || inventoryLoading}>Buscar insumos</button>
-      {inventoryTotalPages > 1 && <nav className="pagination" aria-label="Páginas de inventario" style={{ marginLeft: "auto", display: "flex", gap: "0.25rem", alignItems: "center" }}>
-        <button type="button" className="button button--secondary button--small"
-          disabled={inventoryPage <= 1 || inventoryLoading || olderInventory || busy}
-          onClick={() => onPageChange(currentPage => Math.max(1, currentPage - 1))} aria-label="Página anterior de inventario">
-          Anterior
-        </button>
-        <span className="pagination__info">Página {displayedInventory?.page ?? inventoryPage} de {inventoryTotalPages}</span>
-        <button type="button" className="button button--secondary button--small"
-          disabled={inventoryPage >= inventoryTotalPages || inventoryLoading || olderInventory || busy}
-          onClick={() => onPageChange(currentPage => currentPage + 1)} aria-label="Siguiente página de inventario">
-          Siguiente
-        </button>
-      </nav>}
-    </div>
-  </>;
+    <ul id={SUPPLY_RESULTS_ID} role="listbox" aria-label="Insumos encontrados" className="recipe-supply-search__results" hidden={!expanded}>
+      {expanded && results.map(item => {
+        const added = addedIds.has(item.id);
+        return <li key={item.id} id={supplyOptionId(item.id)} role="option"
+          aria-selected={active?.id === item.id} aria-disabled={added || undefined}
+          className="recipe-supply-search__option"
+          onMouseDown={event => event.preventDefault()}
+          onClick={() => choose(item)}
+          onKeyDown={event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              choose(item);
+            }
+          }}>
+          <span>{item.name}</span>
+          <span className="recipe-supply-search__meta"> · {item.unit}{added ? " · Agregado" : ""}</span>
+        </li>;
+      })}
+    </ul>
+    {showResults && results.length === 0 && <p className="recipe-supply-search__empty">Sin resultados para esta búsqueda.</p>}
+  </div>;
 }
 
 interface RecipeOperationFeedbackProps {
@@ -492,12 +520,9 @@ export function RecipeFormContent({
     return map;
   });
 
-  const [itemsFromApi, setItemsFromApi] = useState<InventoryItem[] | null>(null);
-  const [inventoryPage, setInventoryPage] = useState(1);
-  const [inventoryTotalPages, setInventoryTotalPages] = useState(1);
-  const [displayedInventory, setDisplayedInventory] = useState<{ query: string; page: number } | null>(null);
-  const [inventorySearchDraft, setInventorySearchDraft] = useState("");
-  const [confirmedInventoryQuery, setConfirmedInventoryQuery] = useState("");
+  const [itemsFromApi, setItemsFromApi] = useState<{ query: string; items: InventoryItem[] } | null>(null);
+  const [supplyQuery, setSupplyQuery] = useState("");
+  const [searchedSupplyQuery, setSearchedSupplyQuery] = useState("");
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [inventoryError, setInventoryError] = useState("");
   const [inventoryRetryCount, setInventoryRetryCount] = useState(0);
@@ -532,6 +557,14 @@ export function RecipeFormContent({
     }
   }, [activeRecipe]);
 
+  // Espera a que el usuario deje de escribir antes de consultar el inventario.
+  useEffect(() => {
+    const next = supplyQuery.trim();
+    if (next === searchedSupplyQuery) return;
+    const timer = setTimeout(() => setSearchedSupplyQuery(next), SUPPLY_SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [supplyQuery, searchedSupplyQuery]);
+
   useEffect(() => {
     if (!repository?.listInventoryItems) return;
     const controller = new AbortController();
@@ -539,19 +572,10 @@ export function RecipeFormContent({
     setInventoryError("");
 
     repository
-      .listInventoryItems(
-        {
-          q: confirmedInventoryQuery || undefined,
-          page: inventoryPage,
-          pageSize: 50,
-        },
-        controller.signal,
-      )
+      .listInventoryItems({ q: searchedSupplyQuery || undefined }, controller.signal)
       .then((res) => {
         if (!controller.signal.aborted) {
-          setItemsFromApi(res.data);
-          setDisplayedInventory({ query: confirmedInventoryQuery, page: inventoryPage });
-          setInventoryTotalPages(res.meta.totalPages || 1);
+          setItemsFromApi({ query: searchedSupplyQuery, items: res.data });
           setKnownItems((prev) => {
             const next = new Map(prev);
             for (const item of res.data) {
@@ -574,10 +598,12 @@ export function RecipeFormContent({
       });
 
     return () => controller.abort();
-  }, [repository, inventoryPage, confirmedInventoryQuery, inventoryRetryCount]);
+  }, [repository, searchedSupplyQuery, inventoryRetryCount]);
 
-  const currentInventoryItems = itemsFromApi ?? inventoryItems ?? [];
-  const olderInventory = Boolean(displayedInventory && (displayedInventory.query !== confirmedInventoryQuery || displayedInventory.page !== inventoryPage));
+  const currentInventoryItems = itemsFromApi?.items ?? inventoryItems ?? [];
+  // Solo se muestran resultados que correspondan al texto actual del buscador.
+  const searchPending = supplyQuery.trim() !== searchedSupplyQuery ||
+    (itemsFromApi !== null && itemsFromApi.query !== searchedSupplyQuery);
 
   const initialDraft = initialPendingRecord?.editableDraft;
 
@@ -611,14 +637,14 @@ export function RecipeFormContent({
         quantity: s.quantity,
       }));
     }
-    if (initialDraft?.supplies && initialDraft.supplies.length > 0) {
-      return initialDraft.supplies.map((s, idx) => ({
+    // Los borradores de la UI anterior pueden traer filas sin insumo elegido.
+    return (initialDraft?.supplies ?? [])
+      .filter((s) => s.inventoryItemId)
+      .map((s, idx) => ({
         key: `supply-row-${idx + 1}`,
         inventoryItemId: s.inventoryItemId,
         quantity: s.quantity,
       }));
-    }
-    return [{ key: "supply-row-1", inventoryItemId: "", quantity: 1 }];
   });
 
   const snapshot = { name, description, instructions, supplies: supplies.map(({ inventoryItemId, quantity }) => ({ inventoryItemId, quantity: String(quantity) })) };
@@ -765,13 +791,14 @@ export function RecipeFormContent({
             setName(restored.editableDraft.name);
             setDescription(restored.editableDraft.description);
             setInstructions(restored.editableDraft.instructions);
-            if (restored.editableDraft.supplies && restored.editableDraft.supplies.length > 0) {
+            const restoredSupplies = (restored.editableDraft.supplies ?? []).filter((s) => s.inventoryItemId);
+            if (restoredSupplies.length > 0) {
               rowCounterRef.current = Math.max(
                 rowCounterRef.current,
-                restored.editableDraft.supplies.length,
+                restoredSupplies.length,
               );
               setSupplies(
-                restored.editableDraft.supplies.map((s, idx) => ({
+                restoredSupplies.map((s, idx) => ({
                   key: `supply-row-restored-${idx + 1}`,
                   inventoryItemId: s.inventoryItemId,
                   quantity: s.quantity,
@@ -879,14 +906,26 @@ export function RecipeFormContent({
     persistEditableDraft({ instructions: val });
   }
 
-  function handleAddSupply() {
+  const pendingFocusKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = pendingFocusKeyRef.current;
+    if (!key) return;
+    pendingFocusKeyRef.current = null;
+    document.getElementById(`${key}-quantity`)?.focus();
+  }, [supplies]);
+
+  function handleSelectSupply(item: InventoryItem) {
+    if (supplies.some((supply) => supply.inventoryItemId === item.id)) return;
     if (!markUserEdit()) return;
-    const nextSupplies = [
-      ...supplies,
-      { key: createNextRowKey(), inventoryItemId: "", quantity: 1 },
-    ];
+    setKnownItems((prev) => new Map(prev).set(item.id, item));
+    const key = createNextRowKey();
+    const nextSupplies = [...supplies, { key, inventoryItemId: item.id, quantity: 1 }];
+    pendingFocusKeyRef.current = key;
     setSupplies(nextSupplies);
     persistEditableDraft({ supplies: nextSupplies });
+    // Vuelve a la lista completa sin esperar el retraso de escritura.
+    setSupplyQuery("");
+    setSearchedSupplyQuery("");
   }
 
   function handleRemoveSupply(index: number) {
@@ -896,35 +935,25 @@ export function RecipeFormContent({
     persistEditableDraft({ supplies: nextSupplies });
   }
 
-  function handleSupplyChange(
-    index: number,
-    field: "inventoryItemId" | "quantity",
-    value: string,
-  ) {
+  function handleQuantityChange(index: number, value: string) {
     if (!markUserEdit()) return;
-    if (field === "inventoryItemId" && value) {
-      const selected = currentInventoryItems.find((i) => i.id === value);
-      if (selected) {
-        setKnownItems((prev) => new Map(prev).set(selected.id, selected));
-      }
-    }
     const nextSupplies = supplies.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item,
+      i === index ? { ...item, quantity: value } : item,
     );
     setSupplies(nextSupplies);
     persistEditableDraft({ supplies: nextSupplies });
   }
 
-  function getUnitForItem(inventoryItemId: string) {
-    if (!inventoryItemId) return "--";
-    const found = currentInventoryItems.find((item) => item.id === inventoryItemId);
-    if (found) return found.unit;
-    const known = knownItems.get(inventoryItemId);
-    if (known?.unit) return known.unit;
-    const fromRecipe = activeRecipe?.supplies?.find(
-      (s) => s.inventoryItemId === inventoryItemId,
-    )?.inventoryItem;
-    return fromRecipe?.unit ?? "--";
+  function recipeSupplyItem(inventoryItemId: string) {
+    return activeRecipe?.supplies?.find((s) => s.inventoryItemId === inventoryItemId)?.inventoryItem;
+  }
+
+  function nameForItem(inventoryItemId: string) {
+    return knownItems.get(inventoryItemId)?.name || recipeSupplyItem(inventoryItemId)?.name || inventoryItemId;
+  }
+
+  function unitForItem(inventoryItemId: string) {
+    return knownItems.get(inventoryItemId)?.unit || recipeSupplyItem(inventoryItemId)?.unit || "--";
   }
 
   function validateDraft(): {
@@ -955,12 +984,6 @@ export function RecipeFormContent({
 
     const parsedSupplies: RecipeSupplyInput[] = [];
     for (const supply of supplies) {
-      if (!supply.inventoryItemId) {
-        return {
-          ok: false,
-          error: "Selecciona un insumo del inventario en cada fila.",
-        };
-      }
       const qty = Number(supply.quantity);
       if (!Number.isFinite(qty) || qty <= 0) {
         return {
@@ -1283,7 +1306,7 @@ export function RecipeFormContent({
     setError("");
   }
 
-  async function save(event: SubmitEvent<HTMLFormElement>) {
+  async function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || isSubmittingRef.current) return;
     if (activeRecipe) {
@@ -1353,7 +1376,7 @@ export function RecipeFormContent({
 
       <form noValidate onSubmit={(e) => void save(e)} hidden={confirmBack}>
         <div className="recipe-form-dialog__fields">
-          <RecipeValidationSummary fieldErrors={fieldErrors} supplies={supplies} summaryRef={validationSummaryRef} />
+          <RecipeValidationSummary fieldErrors={fieldErrors} supplies={supplies} nameForItem={nameForItem} summaryRef={validationSummaryRef} />
           <RecipeTextField id="recipe-name" label="Nombre" value={name} disabled={busy}
             placeholder="Ej. Hamburguesa Hawaiana" maxLength={255} inputRef={nameRef}
             fieldErrors={fieldErrors} onChange={handleNameChange} />
@@ -1366,33 +1389,15 @@ export function RecipeFormContent({
 
           <fieldset className="recipe-supplies-section" aria-busy={inventoryLoading}>
             <legend>Insumos del inventario</legend>
-            <div className="recipe-supplies-section__header">
-              <button
-                type="button"
-                className="button button--secondary button--small"
-                aria-label="+ Agregar insumo"
-                id="recipe-add-supply"
-                aria-describedby={fieldErrors["recipe-add-supply"] ? "recipe-supplies-error" : undefined}
-                onClick={handleAddSupply}
-                disabled={busy}
-              >
-                <Icon name="add" /> Agregar insumo
-              </button>
-            </div>
-            {fieldErrors["recipe-add-supply"] && <p className="recipe-field-error" id="recipe-supplies-error">{fieldErrors["recipe-add-supply"]}</p>}
-            <RecipeInventoryControls inventoryError={inventoryError} inventoryLoading={inventoryLoading}
-              inventoryCount={currentInventoryItems.length} olderInventory={olderInventory}
-              displayedInventory={displayedInventory} inventorySearchDraft={inventorySearchDraft}
-              inventoryPage={inventoryPage} inventoryTotalPages={inventoryTotalPages} busy={busy}
-              onRetry={() => setInventoryRetryCount(count => count + 1)}
-              onSearch={query => { setConfirmedInventoryQuery(query); setInventoryPage(1); }}
-              onSearchDraftChange={setInventorySearchDraft} onPageChange={setInventoryPage} />
-
-            <RecipeSupplyTable supplies={supplies} fieldErrors={fieldErrors}
-              currentInventoryItems={currentInventoryItems} knownItems={knownItems}
-              activeRecipe={activeRecipe} busy={busy} inventoryLoading={inventoryLoading}
-              olderInventory={olderInventory} onSupplyChange={handleSupplyChange}
-              onRemoveSupply={handleRemoveSupply} getUnitForItem={getUnitForItem} />
+            <RecipeSupplySearch query={supplyQuery} results={currentInventoryItems}
+              addedIds={new Set(supplies.map((supply) => supply.inventoryItemId))}
+              loading={!inventoryError && (inventoryLoading || searchPending)} error={inventoryError}
+              fieldError={fieldErrors[SUPPLY_SEARCH_ID]} disabled={busy}
+              onQueryChange={setSupplyQuery} onSelect={handleSelectSupply}
+              onRetry={() => setInventoryRetryCount(count => count + 1)} />
+            <RecipeSupplyTable supplies={supplies} fieldErrors={fieldErrors} busy={busy}
+              nameForItem={nameForItem} unitForItem={unitForItem}
+              onQuantityChange={handleQuantityChange} onRemoveSupply={handleRemoveSupply} />
           </fieldset>
 
           <RecipeOperationFeedback infoNotice={infoNotice} error={error}

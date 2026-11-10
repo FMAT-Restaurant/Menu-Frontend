@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 import { writeFile } from "node:fs/promises";
 
 test.beforeEach(async ({ page }) => {
@@ -50,10 +51,10 @@ test("UX08 validates locally with summary links and adapts supplies to actual mo
   await page.getByRole("button", { name: "Guardar receta", exact: true }).click();
   const summary = page.getByRole("alert", { name: "Revisa los campos de la receta" });
   await expect(summary).toBeFocused();
-  for (const label of ["Nombre", "Descripción", "Instrucciones", "Insumo 1"]) {
+  for (const label of ["Nombre", "Descripción", "Instrucciones", "Buscar insumo para agregar"]) {
     const field = page.getByLabel(label, { exact: true });
     await expect(field).toHaveAttribute("aria-invalid", "true");
-    const description = await field.getAttribute("aria-describedby");
+    const description = (await field.getAttribute("aria-describedby"))?.split(" ")[0];
     await expect(page.locator(`[id="${description}"]`)).toBeVisible();
   }
   await summary.getByRole("link", { name: "Indica las instrucciones de la receta." }).click();
@@ -61,25 +62,23 @@ test("UX08 validates locally with summary links and adapts supplies to actual mo
   await page.getByLabel("Nombre", { exact: true }).fill("Receta con nombre largo para comprobar el espacio disponible");
   await page.getByLabel("Descripción", { exact: true }).fill("Una descripción de preparación con texto largo que se conserva durante la corrección.");
   await page.getByLabel("Instrucciones", { exact: true }).fill("Preparar los ingredientes y mezclar. Repetir el proceso con cuidado hasta que la preparación esté lista.");
-  await page.getByLabel("Insumo 1", { exact: true }).selectOption({ index: 1 });
-  await page.getByLabel("Cantidad del insumo 1", { exact: true }).fill("0");
+  await addSupply(page, "Carne de res");
+  await page.getByLabel("Cantidad de Carne de res", { exact: true }).fill("0");
   await page.getByRole("button", { name: "Guardar receta", exact: true }).click();
-  await expect(page.getByLabel("Cantidad del insumo 1", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Cantidad de Carne de res", { exact: true })).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByRole("dialog")).toBeVisible();
-  await summary.getByRole("link", { name: "Insumo 1: La cantidad de cada insumo debe ser mayor a 0." }).click();
-  await expect(page.getByLabel("Cantidad del insumo 1", { exact: true })).toBeFocused();
-  await page.getByLabel("Cantidad del insumo 1", { exact: true }).fill("125.5");
-  await page.getByRole("button", { name: "+ Agregar insumo", exact: true }).click();
-  await page.getByLabel("Insumo 2", { exact: true }).selectOption({ index: 2 });
-  await page.getByRole("button", { name: "+ Agregar insumo", exact: true }).click();
-  await page.getByLabel("Insumo 3", { exact: true }).selectOption({ index: 3 });
+  await summary.getByRole("link", { name: "Carne de res: La cantidad de cada insumo debe ser mayor a 0." }).click();
+  await expect(page.getByLabel("Cantidad de Carne de res", { exact: true })).toBeFocused();
+  await page.getByLabel("Cantidad de Carne de res", { exact: true }).fill("125.5");
+  await addSupply(page, "Pan brioche");
+  await addSupply(page, "Queso cheddar");
   const measures = [];
   for (const width of [320, 390, 600, 740, 767, 768, 1024, 1199, 1200, 1440]) {
     await page.locator("[data-menu-module]").evaluate((el, width) => { (el as HTMLElement).style.width = `${width}px`; }, width);
     const measure = await page.getByRole("dialog").evaluate(el => {
       const fields = el.querySelector<HTMLElement>(".recipe-form-dialog__fields")!;
       const row = el.querySelector(".recipe-supplies-table tbody tr")!;
-      const controls = [...el.querySelectorAll<HTMLElement>("#recipe-name, .recipe-supplies-table select, .recipe-supplies-table input, .recipe-form-dialog__close, .recipe-form-dialog__actions button")];
+      const controls = [...el.querySelectorAll<HTMLElement>("#recipe-name, #recipe-supply-search, .recipe-supplies-table input, .recipe-form-dialog__close, .recipe-form-dialog__actions button")];
       return { viewport: innerWidth, dialogWidth: el.getBoundingClientRect().width, scrollWidth: fields.scrollWidth, clientWidth: fields.clientWidth, rowDisplay: getComputedStyle(row).display, controls: controls.map(control => ({ name: control.id || control.getAttribute("aria-label") || control.textContent?.trim(), width: control.getBoundingClientRect().width, height: control.getBoundingClientRect().height, radius: getComputedStyle(control).borderRadius })), radius: getComputedStyle(el).borderRadius };
     });
     expect(measure.scrollWidth).toBeLessThanOrEqual(measure.clientWidth + 1);

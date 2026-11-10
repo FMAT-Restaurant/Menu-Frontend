@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { InventoryItem, Page, RecipeDetail, RecipeSummary } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
 import { RecipePage, type RecipeRepository } from "./RecipePage";
 import { RecipeFormDialog } from "./RecipeFormDialog";
+import { addSupply, supplySearch, waitForInventory } from "../../shared/recipeSupplies.test-helper";
 
 const inventoryItems: InventoryItem[] = [
   { id: "inv-1", name: "Carne Molida Res 80/20", unit: "g" },
@@ -101,19 +102,21 @@ describe("UX08 recipe recovery and field validation", () => {
     const repository = createMockRepository();
     repository.getRecipe.mockResolvedValue({ data: { ...recipeDetail, supplies: [] }, etag: '"empty-supplies"' });
     render(<RecipeFormDialog recipe={recipeDetail} repository={repository} storage={createMemoryStorage()} onClose={() => {}} />);
-    await waitFor(() => expect(screen.queryByLabelText("Insumo 1")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByLabelText("Cantidad de Carne Molida Res 80/20")).not.toBeInTheDocument());
+    await waitForInventory();
     fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
     const summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
     expect(summary).toHaveFocus();
-    const add = screen.getByRole("button", { name: "+ Agregar insumo" });
-    expect(add).toHaveAccessibleDescription("Agrega al menos un insumo del inventario.");
+    const search = supplySearch();
+    expect(search).toHaveAccessibleDescription(/Agrega al menos un insumo del inventario\./);
     fireEvent.click(screen.getByRole("link", { name: "Agrega al menos un insumo del inventario." }));
-    expect(add).toHaveFocus();
+    expect(search).toHaveFocus();
     expect(repository.createRecipe).not.toHaveBeenCalled();
     expect(repository.updateRecipe).not.toHaveBeenCalled();
-    fireEvent.click(add);
-    expect(screen.getByLabelText("Insumo 1")).toBeVisible();
-    expect(add).not.toHaveAttribute("aria-describedby");
+    await addSupply("Pan Brioche");
+    expect(screen.getByLabelText("Cantidad de Pan Brioche")).toBeVisible();
+    expect(search).toHaveAttribute("aria-invalid", "false");
+    expect(search).toHaveAccessibleDescription("Elige un resultado para agregarlo a la receta.");
     expect(screen.queryByRole("link", { name: "Agrega al menos un insumo del inventario." })).not.toBeInTheDocument();
   });
   test.each(["management", "selection"] as const)("keeps an unmatched query in %s and restores three recipes by clearing it", async mode => {
@@ -140,26 +143,113 @@ describe("UX08 recipe recovery and field validation", () => {
     const repository = createMockRepository();
     render(<MemoryRouter><RecipePage repository={repository} mode="management" storage={createMemoryStorage()} /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
-    await screen.findByRole("option", { name: "Carne Molida Res 80/20" });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "0" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
-    const summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
-    expect(summary).toHaveFocus();
-    for (const label of ["Nombre", "Descripción", "Instrucciones", "Insumo 1", "Cantidad del insumo 1"]) {
+    await waitForInventory();
+    function expectLinkedInvalid(summary: HTMLElement, label: string) {
       const control = screen.getByLabelText(label);
       expect(control).toHaveAttribute("aria-invalid", "true");
-      const errorId = control.getAttribute("aria-describedby")!;
+      const errorId = control.getAttribute("aria-describedby")!.split(" ")[0];
       const message = document.getElementById(errorId)!;
       expect(message).toBeVisible();
       expect(message.parentElement).toContainElement(control);
       fireEvent.click(summary.querySelector(`a[href="#${control.id}"]`)!);
       expect(control).toHaveFocus();
     }
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+    let summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
+    expect(summary).toHaveFocus();
+    for (const label of ["Nombre", "Descripción", "Instrucciones", "Buscar insumo para agregar"]) {
+      expectLinkedInvalid(summary, label);
+    }
     expect(repository.createRecipe).not.toHaveBeenCalled();
     expect(repository.updateRecipe).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
-    expect(screen.getByLabelText("Insumo 1")).toHaveAttribute("aria-invalid", "false");
-    expect(screen.getByLabelText("Insumo 1")).not.toHaveAttribute("aria-describedby");
+
+    await addSupply("Carne Molida Res 80/20");
+    expect(supplySearch()).toHaveAttribute("aria-invalid", "false");
+    expect(supplySearch()).toHaveAccessibleDescription("Elige un resultado para agregarlo a la receta.");
+    fireEvent.change(screen.getByLabelText("Cantidad de Carne Molida Res 80/20"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
+    summary = screen.getByRole("alert", { name: "Revisa los campos de la receta" });
+    expect(summary).toHaveFocus();
+    expect(within(summary).getByRole("link", { name: "Carne Molida Res 80/20: La cantidad de cada insumo debe ser mayor a 0." })).toBeVisible();
+    expectLinkedInvalid(summary, "Cantidad de Carne Molida Res 80/20");
+    expect(repository.createRecipe).not.toHaveBeenCalled();
+  });
+});
+
+describe("Recipe supply search", () => {
+  function renderForm(repository = createMockRepository(), onClose = jest.fn()) {
+    render(<RecipeFormDialog repository={repository} storage={createMemoryStorage()} onClose={onClose} />);
+    return { repository, onClose };
+  }
+
+  test("adds the active result with the keyboard and moves focus to its quantity", async () => {
+    renderForm();
+    await waitForInventory();
+    const search = supplySearch();
+    act(() => search.focus());
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(search).toHaveAttribute("aria-expanded", "true");
+    expect(search).toHaveAttribute("aria-activedescendant", "recipe-supply-option-inv-2");
+    fireEvent.keyDown(search, { key: "Enter" });
+    const quantity = await screen.findByLabelText("Cantidad de Pan Brioche");
+    expect(quantity).toHaveValue(1);
+    expect(quantity).toHaveFocus();
+    expect(search).toHaveValue("");
+  });
+
+  test("Escape closes the results and clears the search before it closes the form", async () => {
+    const { onClose } = renderForm();
+    await waitForInventory();
+    const search = supplySearch();
+    act(() => search.focus());
+    fireEvent.change(search, { target: { value: "Pan" } });
+    await screen.findByRole("option", { name: /^Pan Brioche ·/ });
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+    expect(search).toHaveValue("Pan");
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveValue("");
+    expect(onClose).not.toHaveBeenCalled();
+    await waitForInventory();
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows an added supply as already added and never duplicates its row", async () => {
+    renderForm();
+    await addSupply("Queso Cheddar");
+    fireEvent.change(supplySearch(), { target: { value: "Queso" } });
+    const added = await screen.findByRole("option", { name: /^Queso Cheddar · rebanada · Agregado$/ });
+    expect(added).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(added);
+    // The keyboard skips the added supply: it only cycles through the other results.
+    for (const expected of ["inv-1", "inv-2", "inv-1"]) {
+      fireEvent.keyDown(supplySearch(), { key: "ArrowDown" });
+      expect(supplySearch()).toHaveAttribute("aria-activedescendant", `recipe-supply-option-${expected}`);
+    }
+    expect(screen.getAllByLabelText("Cantidad de Queso Cheddar")).toHaveLength(1);
+  });
+
+  test("ignores a slower response from a previous search", async () => {
+    const repository = createMockRepository();
+    let resolveSlow: (page: Page<InventoryItem>) => void = () => {};
+    repository.listInventoryItems.mockImplementation((query) => {
+      if (query?.q === "Carne") return new Promise<Page<InventoryItem>>((resolve) => { resolveSlow = resolve; });
+      const data = query?.q === "Pan" ? [inventoryItems[1]] : inventoryItems;
+      return Promise.resolve({ data, meta: { page: 1, pageSize: 3, total: data.length, totalPages: 1 } });
+    });
+    renderForm(repository);
+    await waitForInventory();
+    fireEvent.change(supplySearch(), { target: { value: "Carne" } });
+    await waitFor(() => expect(repository.listInventoryItems).toHaveBeenLastCalledWith({ q: "Carne" }, expect.any(AbortSignal)));
+    const slowSignal = repository.listInventoryItems.mock.calls.at(-1)![1]!;
+    fireEvent.change(supplySearch(), { target: { value: "Pan" } });
+    expect(await screen.findByRole("option", { name: /^Pan Brioche ·/ })).toBeVisible();
+    expect(slowSignal.aborted).toBe(true);
+    resolveSlow({ data: [inventoryItems[0]], meta: { page: 1, pageSize: 1, total: 1, totalPages: 1 } });
+    await waitFor(() => expect(screen.getAllByRole("option")).toHaveLength(1));
+    expect(screen.queryByRole("option", { name: /^Carne Molida Res 80\/20 ·/ })).not.toBeInTheDocument();
   });
 });
 
@@ -198,11 +288,10 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Doble carne y queso" } });
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Asar dos carnes y armar" } });
 
-    const select = screen.getByLabelText("Insumo 1");
-    fireEvent.change(select, { target: { value: "inv-1" } });
+    await addSupply("Carne Molida Res 80/20");
     expect(screen.getByText("g")).toBeVisible();
 
-    const qtyInput = screen.getByLabelText("Cantidad del insumo 1");
+    const qtyInput = screen.getByLabelText("Cantidad de Carne Molida Res 80/20");
     fireEvent.change(qtyInput, { target: { value: "250" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
@@ -364,13 +453,12 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
 
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-    await screen.findByRole("option", { name: "Pan Brioche" });
 
     fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Receta Rápida" } });
     fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción rápida" } });
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Paso único" } });
-    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-2" } });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "2" } });
+    await addSupply("Pan Brioche");
+    fireEvent.change(screen.getByLabelText("Cantidad de Pan Brioche"), { target: { value: "2" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
 
@@ -401,6 +489,7 @@ describe("RecipePage Component (V6 Integration)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Crear receta" }));
     expect(screen.getByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
+    await waitFor(() => expect(screen.queryByText("Cargando insumos…")).not.toBeInTheDocument());
   });
 
   test("filters recipes by submitting search text and replaces results (P13, P14)", async () => {
@@ -460,7 +549,7 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
 
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-    await screen.findByRole("option", { name: "Carne Molida Res 80/20" });
+    await waitForInventory();
 
     // P05: fieldset accessible name via legend direct child
     expect(screen.getByRole("group", { name: "Insumos del inventario" })).toBeInTheDocument();
@@ -482,21 +571,21 @@ describe("RecipePage Component (V6 Integration)", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Indica las instrucciones de la receta.");
     expect(repository.createRecipe).not.toHaveBeenCalled();
 
-    // 4. Missing supply item selection
+    // 4. No supplies added
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Inst Test" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Selecciona un insumo del inventario en cada fila.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Agrega al menos un insumo del inventario.");
     expect(repository.createRecipe).not.toHaveBeenCalled();
 
     // 5. Quantity = 0
-    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "0" } });
+    await addSupply("Carne Molida Res 80/20");
+    fireEvent.change(screen.getByLabelText("Cantidad de Carne Molida Res 80/20"), { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
     expect(screen.getByRole("alert")).toHaveTextContent("La cantidad de cada insumo debe ser mayor a 0.");
     expect(repository.createRecipe).not.toHaveBeenCalled();
 
     // 6. Correction to valid quantity -> persists exact payload
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "250" } });
+    fireEvent.change(screen.getByLabelText("Cantidad de Carne Molida Res 80/20"), { target: { value: "250" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
 
     await waitFor(() => {
@@ -513,7 +602,7 @@ describe("RecipePage Component (V6 Integration)", () => {
     });
   });
 
-  test("adds and removes supply rows in C27", async () => {
+  test("adds supplies from the search and removes them in C27", async () => {
     const repository = createMockRepository();
     const storage = createMemoryStorage();
     render(
@@ -524,14 +613,20 @@ describe("RecipePage Component (V6 Integration)", () => {
 
     await screen.findByRole("heading", { name: "Biblioteca de recetas", level: 1 });
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
+    await waitForInventory();
 
-    expect(screen.getAllByRole("row")).toHaveLength(2); // 1 header + 1 row
-    fireEvent.click(screen.getByRole("button", { name: "+ Agregar insumo" }));
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByText(/Aún no agregas insumos/)).toBeVisible();
+    await addSupply("Carne Molida Res 80/20");
+    await addSupply("Pan Brioche");
     expect(screen.getAllByRole("row")).toHaveLength(3); // 1 header + 2 rows
 
-    fireEvent.click(screen.getByLabelText("Eliminar insumo 2"));
+    fireEvent.click(screen.getByRole("button", { name: "Quitar Pan Brioche" }));
     expect(screen.getAllByRole("row")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Quitar Carne Molida Res 80/20" }));
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
+    // Without supplies the draft equals the initial one, so it closes without confirmation.
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -647,30 +742,18 @@ describe("RecipePage Component (V6 Integration)", () => {
     expect(screen.getByText("Página 2 de 2")).toBeVisible();
   });
 
-  test("accesses article 101 via inventory pagination and preserves selected items across pages (P07, P03)", async () => {
+  test("searches inventory on the server and keeps added supplies across searches (P07, P03)", async () => {
     const repository = createMockRepository();
     const storage = createMemoryStorage();
 
-    const page1Items: InventoryItem[] = Array.from({ length: 50 }, (_, i) => ({
-      id: `inv-item-${i + 1}`,
-      name: `Insumo ${i + 1}`,
-      unit: "g",
-    }));
-    const page3Items: InventoryItem[] = [
+    const catalog: InventoryItem[] = [
+      ...Array.from({ length: 50 }, (_, i) => ({ id: `inv-item-${i + 1}`, name: `Insumo ${i + 1}`, unit: "g" })),
       { id: "inv-item-101", name: "Insumo 101 Especial", unit: "kg" },
     ];
-
     repository.listInventoryItems.mockImplementation((query) => {
-      if (query?.page === 3) {
-        return Promise.resolve({
-          data: page3Items,
-          meta: { page: 3, pageSize: 50, total: 101, totalPages: 3 },
-        });
-      }
-      return Promise.resolve({
-        data: page1Items,
-        meta: { page: 1, pageSize: 50, total: 101, totalPages: 3 },
-      });
+      const q = query?.q?.toLowerCase();
+      const data = q ? catalog.filter((item) => item.name.toLowerCase().includes(q)) : catalog;
+      return Promise.resolve({ data, meta: { page: 1, pageSize: Math.max(data.length, 1), total: data.length, totalPages: 1 } });
     });
 
     render(
@@ -681,45 +764,35 @@ describe("RecipePage Component (V6 Integration)", () => {
 
     await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 });
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
-
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-    expect(await screen.findByText("Página 1 de 3")).toBeVisible();
+    await waitForInventory();
+    expect(repository.listInventoryItems).toHaveBeenLastCalledWith({ q: undefined }, expect.any(AbortSignal));
 
-    // Go to page 3 of inventory
-    const nextInvBtn = screen.getByRole("button", { name: "Siguiente página de inventario" });
-    fireEvent.click(nextInvBtn); // page 2
-    expect(await screen.findByText("Página 2 de 3")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente página de inventario" })); // page 3
-
-    expect(await screen.findByText("Página 3 de 3")).toBeVisible();
-
-    // Select article 101
-    const select = screen.getByLabelText("Insumo 1");
-    fireEvent.change(select, { target: { value: "inv-item-101" } });
+    // Typing quickly sends a single request with the final text.
+    const callsBefore = repository.listInventoryItems.mock.calls.length;
+    fireEvent.change(supplySearch(), { target: { value: "Esp" } });
+    fireEvent.change(supplySearch(), { target: { value: "Especial" } });
+    const special = await screen.findByRole("option", { name: /^Insumo 101 Especial ·/ });
+    expect(repository.listInventoryItems.mock.calls.slice(callsBefore).map(([query]) => query)).toEqual([{ q: "Especial" }]);
+    expect(screen.queryByRole("option", { name: /^Insumo 1 ·/ })).not.toBeInTheDocument();
+    fireEvent.click(special);
     expect(screen.getByText("kg")).toBeVisible();
 
-    // Now navigate back to page 1 of inventory
-    const prevInvBtn = screen.getByRole("button", { name: "Página anterior de inventario" });
-    fireEvent.click(prevInvBtn); // page 2
-    expect(await screen.findByText("Página 2 de 3")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Página anterior de inventario" })); // page 1
-
-    expect(await screen.findByText("Página 1 de 3")).toBeVisible();
-    // Article 101 remains selected and visible in the select even though current page is 1!
-    expect(screen.getByLabelText("Insumo 1")).toHaveValue("inv-item-101");
-    expect(screen.getByText("kg")).toBeVisible();
+    // A later search keeps the supply that was already added.
+    await addSupply("Insumo 2", { query: "Insumo 2" });
+    expect(screen.getByLabelText("Cantidad de Insumo 101 Especial")).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Receta con 101" } });
     fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Desc" } });
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Inst" } });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "5" } });
+    fireEvent.change(screen.getByLabelText("Cantidad de Insumo 101 Especial"), { target: { value: "5" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
 
     await waitFor(() => {
       expect(repository.createRecipe).toHaveBeenCalledWith(
         expect.objectContaining({
-          supplies: [{ inventoryItemId: "inv-item-101", quantity: 5 }],
+          supplies: [{ inventoryItemId: "inv-item-101", quantity: 5 }, { inventoryItemId: "inv-item-2", quantity: 1 }],
         }),
         expect.any(String)
       );
@@ -770,8 +843,8 @@ describe("RecipePage Component (V6 Integration)", () => {
     expect(screen.getByLabelText("Descripción")).toHaveValue("Descripción no se borra");
     expect(screen.getByLabelText("Instrucciones")).toHaveValue("Pasos intactos");
 
-    // Can now select retrieved item
-    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
+    // Can now add a retrieved item
+    await addSupply("Carne Molida Res 80/20");
     expect(screen.getByText("g")).toBeVisible();
   });
 
@@ -905,12 +978,10 @@ describe("RecipePage Component (V6 Integration)", () => {
 
     expect(await screen.findByRole("heading", { name: "Editar receta", level: 2 })).toBeVisible();
 
-    // The select displays "Trufa Silvestre" and unit "g" even though inv-rare-999 was not in inventory results!
-    const select = screen.getByLabelText("Insumo 1");
-    expect(select).toHaveValue("inv-rare-999");
-    expect(screen.getByText("Trufa Silvestre")).toBeVisible();
-    expect(screen.getByText("g")).toBeVisible();
-    expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(15);
+    // The row shows "Trufa Silvestre" and unit "g" even though inv-rare-999 was not in inventory results.
+    expect(screen.getByRole("cell", { name: "Trufa Silvestre" })).toBeVisible();
+    expect(screen.getByRole("cell", { name: "g" })).toBeVisible();
+    expect(screen.getByLabelText("Cantidad de Trufa Silvestre")).toHaveValue(15);
 
     // Modifying instructions and saving preserves inv-rare-999 and quantity 15
     fireEvent.change(screen.getByLabelText("Instrucciones"), { target: { value: "Cocinar a fuego lento" } });
@@ -1014,14 +1085,14 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
 
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-    await screen.findByRole("option", { name: "Pan Brioche" });
+    await addSupply("Pan Brioche");
 
     const nameInput = screen.getByLabelText("Nombre");
     const descInput = screen.getByLabelText("Descripción");
     const instInput = screen.getByLabelText("Instrucciones");
-    const supplySelect = screen.getByLabelText("Insumo 1");
-    const supplyQty = screen.getByLabelText("Cantidad del insumo 1");
-    const addSupplyBtn = screen.getByRole("button", { name: "+ Agregar insumo" });
+    const search = supplySearch();
+    const supplyQty = screen.getByLabelText("Cantidad de Pan Brioche");
+    const removeSupplyBtn = screen.getByRole("button", { name: "Quitar Pan Brioche" });
     const closeBtn = screen.getByLabelText("Cerrar formulario");
     const cancelBtn = screen.getByRole("button", { name: "Cancelar" });
     const saveBtn = screen.getByRole("button", { name: "Guardar receta" });
@@ -1029,7 +1100,6 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.change(nameInput, { target: { value: "Receta Bloqueo" } });
     fireEvent.change(descInput, { target: { value: "Desc Bloqueo" } });
     fireEvent.change(instInput, { target: { value: "Inst Bloqueo" } });
-    fireEvent.change(supplySelect, { target: { value: "inv-2" } });
     fireEvent.change(supplyQty, { target: { value: "3" } });
 
     // Submit once
@@ -1044,9 +1114,9 @@ describe("RecipePage Component (V6 Integration)", () => {
     expect(nameInput).toBeDisabled();
     expect(descInput).toBeDisabled();
     expect(instInput).toBeDisabled();
-    expect(supplySelect).toBeDisabled();
+    expect(search).toBeDisabled();
     expect(supplyQty).toBeDisabled();
-    expect(addSupplyBtn).toBeDisabled();
+    expect(removeSupplyBtn).toBeDisabled();
     expect(closeBtn).toBeDisabled();
     expect(cancelBtn).toBeDisabled();
     expect(saveBtn).toBeDisabled();
@@ -1089,43 +1159,35 @@ describe("RecipePage Component (V6 Integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
 
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-    await screen.findByRole("option", { name: "Pan Brioche" });
 
-    // Add 2 more supply rows -> 3 total rows
-    fireEvent.click(screen.getByRole("button", { name: "+ Agregar insumo" }));
-    fireEvent.click(screen.getByRole("button", { name: "+ Agregar insumo" }));
+    // Add 3 supplies and configure their quantities
+    await addSupply("Carne Molida Res 80/20");
+    await addSupply("Pan Brioche");
+    await addSupply("Queso Cheddar");
+    fireEvent.change(screen.getByLabelText("Cantidad de Carne Molida Res 80/20"), { target: { value: "100" } });
+    fireEvent.change(screen.getByLabelText("Cantidad de Pan Brioche"), { target: { value: "200" } });
+    fireEvent.change(screen.getByLabelText("Cantidad de Queso Cheddar"), { target: { value: "300" } });
 
-    // Configure rows
-    fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "inv-1" } });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "100" } });
+    // Remove the middle one
+    fireEvent.click(screen.getByRole("button", { name: "Quitar Pan Brioche" }));
 
-    fireEvent.change(screen.getByLabelText("Insumo 2"), { target: { value: "inv-2" } });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 2"), { target: { value: "200" } });
-
-    fireEvent.change(screen.getByLabelText("Insumo 3"), { target: { value: "inv-3" } });
-    fireEvent.change(screen.getByLabelText("Cantidad del insumo 3"), { target: { value: "300" } });
-
-    // Remove row 2
-    fireEvent.click(screen.getByLabelText("Eliminar insumo 2"));
-
-    // Verify remaining rows maintain their values and order
-    expect(screen.getByLabelText("Insumo 1")).toHaveValue("inv-1");
-    expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(100);
-
-    expect(screen.getByLabelText("Insumo 2")).toHaveValue("inv-3");
-    expect(screen.getByLabelText("Cantidad del insumo 2")).toHaveValue(300);
+    // Remaining rows keep their values and order
+    const supplyNames = () => screen.getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[0].textContent);
+    expect(supplyNames()).toEqual(["Carne Molida Res 80/20", "Queso Cheddar"]);
+    expect(screen.getByLabelText("Cantidad de Carne Molida Res 80/20")).toHaveValue(100);
+    expect(screen.getByLabelText("Cantidad de Queso Cheddar")).toHaveValue(300);
 
     // Cancel dialog
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Descartar cambios" }));
 
-    // Reopen dialog -> pure instance initialization produces clean rows
+    // Reopen dialog -> pure instance initialization starts without supplies
     fireEvent.click(screen.getByRole("button", { name: "+ Nueva receta" }));
     expect(await screen.findByRole("heading", { name: "Nueva receta", level: 2 })).toBeVisible();
-    expect(screen.getAllByRole("row")).toHaveLength(2); // 1 header + 1 row
-    expect(screen.getByLabelText("Insumo 1")).toHaveValue("");
-    expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(1);
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(supplySearch()).toHaveValue("");
+    await waitForInventory();
   });
 
   test("differentiates 412 conflict requiring review on edit without automatic resubmission or auto-renewed ETag (P04)", async () => {

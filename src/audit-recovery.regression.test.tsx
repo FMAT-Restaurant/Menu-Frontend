@@ -2,6 +2,7 @@ import { consumeConfirmedRecipeAssignments } from "./features/offers/composition
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GuardedMemoryRouter } from './shared/GuardedMemoryRouter.test-helper';
+import { addSupply } from './shared/recipeSupplies.test-helper';
 import { OfferFormPage, buildOfferCreateScope, buildOfferUpdateScope, type OfferFormDraftState } from './features/offers/OfferFormPage';
 import { RecipePage } from './features/recipes/RecipePage';
 import { RecipeFormDialog } from './features/recipes/RecipeFormDialog';
@@ -140,8 +141,7 @@ test('receta: corregir datos después de un 422 envía la corrección con otra c
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Nombre rechazado' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción' } });
   fireEvent.change(screen.getByLabelText('Instrucciones'), { target: { value: 'Preparar' } });
-  await screen.findByRole('option', { name: /Harina/ });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'i1' } });
+  await addSupply('Harina');
   fireEvent.click(screen.getByRole('button', { name: 'Guardar receta' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Nombre rechazado'));
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Nombre corregido' } });
@@ -194,8 +194,7 @@ test('receta: recuperar una creación desde la biblioteca conserva el nombre edi
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Receta' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción' } });
   fireEvent.change(screen.getByLabelText('Instrucciones'), { target: { value: 'Instrucciones v1' } });
-  await screen.findByRole('option', { name: /Harina/ });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'i1' } });
+  await addSupply('Harina');
   fireEvent.click(screen.getByRole('button', { name: 'Guardar receta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Cambio posterior' } });
