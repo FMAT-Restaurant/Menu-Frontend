@@ -34,6 +34,7 @@ function createMockRepository(items = [category]): jest.Mocked<CategoryRepositor
       ...draft,
       entryCount: 1,
     })),
+    deleteCategory: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -52,7 +53,7 @@ function renderPage(
 }
 
 describe("CategoryPage & CategoryFormDialog (T02A)", () => {
-  test("lists category identity and informative counts without deletion", async () => {
+  test("lists category identity and informative counts", async () => {
     const api = createMockRepository();
     renderPage(api);
 
@@ -60,7 +61,6 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     expect(screen.getByText("Frías y preparadas")).toBeVisible();
     expect(screen.getByText("2 entradas asociadas")).toBeVisible();
     expect(screen.getByRole("link", { name: /Volver al menú/ })).toHaveAttribute("href", "/");
-    expect(screen.queryByRole("button", { name: /Eliminar/ })).not.toBeInTheDocument();
     expect(api.listCategories).toHaveBeenCalledWith(expect.any(AbortSignal));
   });
 

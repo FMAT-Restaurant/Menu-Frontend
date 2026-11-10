@@ -40,6 +40,27 @@
   line-height: 16px;
 }
 
+:where(.menu-module[data-menu-module]) .category-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+/* Outlined destructive: visible as an action, but solid red stays reserved for the confirmation. */
+:where(.menu-module[data-menu-module]) .category-row__delete {
+  border-color: #fecaca;
+  background: var(--surface);
+  color: var(--danger);
+}
+:where(.menu-module[data-menu-module]) .category-row__delete:hover {
+  border-color: var(--danger);
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 /* Category Form Dialog (R06) */
 :where(.menu-module[data-menu-module]) .category-form-dialog {
   width: min(calc(100% - 32px), 520px);
@@ -231,6 +252,9 @@
   :where(.menu-module[data-menu-module]) .category-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+  :where(.menu-module[data-menu-module]) .category-row__actions {
+    width: 100%;
   }
   :where(.menu-module[data-menu-module]) .category-form-dialog__actions {
     flex-wrap: wrap;

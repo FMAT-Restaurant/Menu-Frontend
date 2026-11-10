@@ -504,6 +504,88 @@ test("does not update a category when its opening ETag is invalid or weak (0 HTT
   expect(requests).toEqual([]);
 });
 
+test("deletes an encoded category ID with a single conditional DELETE using the given ETag without pre-GET", async () => {
+  const requests: {
+    method?: string;
+    url?: string;
+    body?: unknown;
+    ifMatch?: string;
+  }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      body: config.data,
+      ifMatch: config.headers.get("If-Match")?.toString(),
+    });
+    return {
+      config,
+      data: "",
+      headers: {},
+      status: 204,
+      statusText: "No Content",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(
+    api.deleteCategory("category /2", '"rev-opening"'),
+  ).resolves.toBeUndefined();
+  expect(requests).toEqual([
+    {
+      method: "delete",
+      url: "/menu/categories/category%20%2F2",
+      body: undefined,
+      ifMatch: '"rev-opening"',
+    },
+  ]);
+});
+
+test.each([undefined, 'W/"v1"', "*", "unquoted", '"unterminated'])(
+  "does not delete a category when its ETag is not a strong version (%s): 0 HTTP calls",
+  async (etag) => {
+    const requests: string[] = [];
+    const adapter: AxiosAdapter = async (config) => {
+      requests.push(config.method ?? "");
+      return {
+        config,
+        data: "",
+        headers: {},
+        status: 204,
+        statusText: "No Content",
+      };
+    };
+    const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+    // Reflect supplies intentionally invalid runtime values without weakening the public signature.
+    await expect(
+      Reflect.apply(api.deleteCategory, api, ["category-1", etag]),
+    ).rejects.toThrow("No se recibió la versión de la categoría");
+    expect(requests).toEqual([]);
+  },
+);
+
+test.each([401, 403, 404, 412, 429])(
+  "propagates HTTP %i from the category DELETE with its contract body and without retrying",
+  async (status) => {
+    const body = { error: { message: `Rechazo ${status} del servidor` } };
+    const error = Object.assign(new Error(`HTTP ${status}`), {
+      response: { status, data: body },
+    });
+    const requests: string[] = [];
+    const adapter: AxiosAdapter = async (config) => {
+      requests.push(config.method ?? "");
+      throw error;
+    };
+    const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+    await expect(
+      api.deleteCategory("category-1", '"rev-1"'),
+    ).rejects.toMatchObject({ response: { status, data: body } });
+    expect(requests).toEqual(["delete"]);
+  },
+);
+
 test("reads a strong ETag before archiving and sends only the new status", async () => {
   const requests: {
     method?: string;
