@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 
 const recipe = { id: "recipe-1", name: "Receta base", description: "Preparación", instructions: "Cocinar",
   supplies: [{ inventoryItemId: "item-1", quantity: 1, inventoryItem: { id: "item-1", name: "Insumo", unit: "kg" } }] };
@@ -9,8 +10,7 @@ test.beforeEach(async ({ page }) => {
   } } }));
   await page.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [recipe],
     meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
-  await page.route("**/api/v1/inventory/items?*", route => route.fulfill({ json: { data: [recipe.supplies[0].inventoryItem],
-    meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: [recipe.supplies[0].inventoryItem] }));
 });
 
 async function openOption(page: Page, groupName = "Principal") {
@@ -90,7 +90,7 @@ test("RC04: Escape cannot dismiss a nested recipe while its POST is pending", as
   await form.getByLabel("Nombre", { exact: true }).fill("Receta guardada");
   await form.getByLabel("Descripción", { exact: true }).fill("Preparación");
   await form.getByLabel("Instrucciones", { exact: true }).fill("Cocinar");
-  await form.getByLabel("Insumo 1", { exact: true }).selectOption("item-1");
+  await addSupply(form, "Insumo");
   await form.getByRole("button", { name: "Guardar receta", exact: true }).click();
   await expect.poll(() => writes).toBe(1);
   try {

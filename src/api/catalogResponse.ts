@@ -351,11 +351,25 @@ export function recipeDetailResponse(value: unknown): RecipeDetail {
   return value.data;
 }
 
+/**
+ * El inventario responde con un arreglo plano de ítems (sin envoltorio ni paginación).
+ * Solo se toman los campos que usa este frontend: id (o _id), name y unit.
+ */
 export function inventoryPage(value: unknown): Page<InventoryItem> {
-  if (!page(value, isInventoryItem)) {
+  if (!Array.isArray(value)) {
     throw new CatalogResponseError("Respuesta de inventario inválida.", "inventory");
   }
-  return value;
+  const data: InventoryItem[] = value.map((raw) => {
+    const item = record(raw) ? { ...raw, id: raw.id ?? raw._id } : raw;
+    if (!isInventoryItem(item)) {
+      throw new CatalogResponseError("Respuesta de inventario inválida.", "inventory");
+    }
+    return { id: item.id, name: item.name, unit: item.unit };
+  });
+  return {
+    data,
+    meta: { page: 1, pageSize: Math.max(data.length, 1), total: data.length, totalPages: 1 },
+  };
 }
 
 export function inventoryItemResponse(value: unknown): InventoryItem {

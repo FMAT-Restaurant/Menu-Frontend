@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 import { writeFile } from "node:fs/promises";
 
 for (const status of [422, 503]) {
@@ -13,7 +14,7 @@ test(`UX10 creation HTTP ${status} preserves option and controls manual recovery
     const query = new URL(route.request().url());
     return route.fulfill({ json: { data: [{ id: "existing", name: "Receta existente", description: "Base", supplies: [] }], meta: { page: Number(query.searchParams.get("page") || 1), pageSize: 50, total: 51, totalPages: 2 } } });
   });
-  await page.route("**/api/v1/inventory/items?*", route => route.fulfill({ json: { data: [{ id: "flour", name: "Harina", unit: "kg" }], meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "flour", name: "Harina", unit: "kg" }] }));
   await page.route("**/api/v1/menu/recipes", async route => {
     posts.push({ key: route.request().headers()["idempotency-key"], body: route.request().postDataJSON() });
     if (posts.length === 1) return route.fulfill({ status, json: { message: "No se pudo guardar la receta" } });
@@ -36,8 +37,8 @@ test(`UX10 creation HTTP ${status} preserves option and controls manual recovery
   await page.getByLabel("Nombre", { exact: true }).fill("Nueva UX10");
   await page.getByLabel("Descripción", { exact: true }).fill("Descripción UX10");
   await page.getByLabel("Instrucciones", { exact: true }).fill("Mezclar");
-  await page.getByLabel("Insumo 1", { exact: true }).selectOption("flour");
-  await page.getByLabel("Cantidad del insumo 1", { exact: true }).fill("1");
+  await addSupply(page, "Harina");
+  await page.getByLabel("Cantidad de Harina", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Guardar receta", exact: true }).click();
   const retry = page.getByRole("button", { name: status === 422 ? "Guardar receta" : "Reintentar", exact: true });
   await expect(page.getByRole("alert")).toBeVisible();
@@ -71,7 +72,7 @@ test("UX10 pending recipe keeps one modal through repeated Escape after submit d
   const posts: Array<{ key?: string; body: unknown }> = [];
   await page.route("**/api/v1/menu/entries/entry-ux10", route => route.fulfill({ json: { data: { id: "entry-ux10", brandName: "Entrada UX10", description: "Contrato", status: "ACTIVE", categoryIds: [] } } }));
   await page.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [], meta: { page: 1, pageSize: 50, total: 0, totalPages: 1 } } }));
-  await page.route("**/api/v1/inventory/items?*", route => route.fulfill({ json: { data: [{ id: "flour", name: "Harina", unit: "kg" }], meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "flour", name: "Harina", unit: "kg" }] }));
   await page.route("**/api/v1/menu/recipes", async route => {
     posts.push({ key: route.request().headers()["idempotency-key"], body: route.request().postDataJSON() });
     await responseGate;
@@ -89,8 +90,8 @@ test("UX10 pending recipe keeps one modal through repeated Escape after submit d
     await page.getByLabel("Nombre", { exact: true }).fill("Receta pendiente");
     await page.getByLabel("Descripción", { exact: true }).fill("Respuesta controlada");
     await page.getByLabel("Instrucciones", { exact: true }).fill("Mezclar");
-    await page.getByLabel("Insumo 1", { exact: true }).selectOption("flour");
-    await page.getByLabel("Cantidad del insumo 1", { exact: true }).fill("1");
+    await addSupply(page, "Harina");
+    await page.getByLabel("Cantidad de Harina", { exact: true }).fill("1");
     await page.getByRole("button", { name: "Guardar receta", exact: true }).click();
     await expect.poll(() => posts.length).toBe(1);
     const states: unknown[] = [];

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 
 function observeDemo(page: Page) {
   const apiRequests: string[] = [];
@@ -50,13 +51,13 @@ test("categories and recipes can be created and edited through their real dialog
   await recipeDialog.getByLabel("Nombre", { exact: true }).fill("Bebida demo");
   await recipeDialog.getByLabel("Descripción").fill("Bebida preparada en el demo");
   await recipeDialog.getByLabel("Instrucciones").fill("Servir el agua fría.");
-  await recipeDialog.getByRole("combobox", { name: "Insumo 1" }).selectOption("demo-inventory-water");
-  await recipeDialog.getByLabel("Cantidad del insumo 1").fill("250");
+  await addSupply(recipeDialog, "Agua mineral");
+  await recipeDialog.getByLabel("Cantidad de Agua mineral", { exact: true }).fill("250");
   await recipeDialog.getByRole("button", { name: "Guardar receta" }).click();
   await expect(recipeDialog).toBeHidden();
   await page.getByRole("button", { name: "Editar Bebida demo" }).click();
   const editRecipe = page.getByRole("dialog", { name: "Editar receta" });
-  await expect(editRecipe.getByLabel("Cantidad del insumo 1")).toHaveValue("250");
+  await expect(editRecipe.getByLabel("Cantidad de Agua mineral", { exact: true })).toHaveValue("250");
   await editRecipe.getByLabel("Nombre", { exact: true }).fill("Bebida editada");
   await editRecipe.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page.getByRole("article", { name: "Bebida editada" })).toContainText("Agua mineral (250 ml)");

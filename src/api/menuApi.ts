@@ -651,12 +651,8 @@ export function createMenuApi(
       query?: InventoryQuery,
       signal?: AbortSignal,
     ): Promise<Page<InventoryItem>> {
-      const response = await inventoryClient.get<unknown>("/inventory/items", {
-        params: {
-          ...(query?.q ? { q: query.q } : {}),
-          page: query?.page ?? 1,
-          pageSize: query?.pageSize ?? 50,
-        },
+      const response = await inventoryClient.get<unknown>("/items", {
+        params: query?.q ? { q: query.q } : {},
         signal,
         timeout: READ_REQUEST_TIMEOUT_MS,
       });

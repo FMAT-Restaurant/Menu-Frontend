@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 
 const meta = { page: 1, pageSize: 50, total: 0, totalPages: 0 };
 
@@ -8,16 +9,14 @@ async function fillRecipe(page: Page, name: string) {
   await dialog.getByLabel("Nombre", { exact: true }).fill(name);
   await dialog.getByLabel("Descripción", { exact: true }).fill("Descripción");
   await dialog.getByLabel("Instrucciones", { exact: true }).fill("Preparar");
-  await dialog.getByLabel("Insumo 1", { exact: true }).selectOption("i1");
+  await addSupply(dialog, "Harina");
   await dialog.getByRole("button", { name: "Guardar receta", exact: true }).click();
   await expect(dialog.getByRole("button", { name: "Reintentar", exact: true })).toBeVisible();
 }
 
 test.beforeEach(async ({ context }) => {
   await context.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [], meta } }));
-  await context.route("**/api/v1/inventory/items?*", route => route.fulfill({ json: {
-    data: [{ id: "i1", name: "Harina", unit: "kg" }], meta: { ...meta, total: 1, totalPages: 1 },
-  } }));
+  await context.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "i1", name: "Harina", unit: "kg" }] }));
   await context.route("**/api/v1/menu/categories?*", route => route.fulfill({ json: { data: [], meta } }));
   await context.route("**/api/v1/menu/entries?*", route => route.fulfill({ json: { data: [], meta } }));
 });
@@ -76,7 +75,7 @@ test("RV13: recetas carga sus primitivas al entrar directamente y conserva estil
 test("RV04: F5 durante una carga incierta conserva bytes y clave sin enviar automáticamente", async ({ page, context }) => {
   const uploads: { key: string; body: Buffer }[] = [];
   let allowUpload = false;
-  await context.route("**/api/v1/media/images", route => {
+  await context.route("**/api/v1/menu/media/images", route => {
     uploads.push({ key: route.request().headers()["idempotency-key"], body: route.request().postDataBuffer()! });
     if (!allowUpload) return route.abort("timedout");
     return route.fulfill({ status: 201, json: { data: { id: "image-confirmed", url: "https://example.com/image.png", thumbnailUrl: "https://example.com/thumb.png" } } });

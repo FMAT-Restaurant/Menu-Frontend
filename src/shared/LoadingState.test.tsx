@@ -8,6 +8,7 @@ import type { Page, RecipeSummary } from "../application/catalog";
 import { RecipePage, type RecipeRepository } from "../features/recipes/RecipePage";
 import { RecipeFormDialog } from "../features/recipes/RecipeFormDialog";
 import { EntryCategorySelector } from "../features/entries/EntryCategorySelector";
+import { addSupply, supplySearch, waitForInventory } from "./recipeSupplies.test-helper";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -87,26 +88,26 @@ test("recipe administration keeps the confirmed query and cards when the next qu
   expect(screen.queryByText("No hay recetas que coincidan con tu búsqueda.")).not.toBeInTheDocument();
 });
 
-test("inventory updates preserve selected supplies, quantities and recipe edits when a new query fails", async () => {
-  const inventory = deferred<{ data: { id: string; name: string; unit: string }[]; meta: { page: number; pageSize: number; total: number; totalPages: number } }>();
-  const repository = { createRecipe: jest.fn(), updateRecipe: jest.fn(), getRecipe: jest.fn(), listInventoryItems: jest.fn().mockResolvedValueOnce({ data: [{ id: "rice", name: "Arroz", unit: "g" }], meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } }).mockReturnValueOnce(inventory.promise) };
+test("a failed inventory search keeps added supplies, quantities and recipe edits", async () => {
+  type InventoryPage = { data: { id: string; name: string; unit: string }[]; meta: { page: number; pageSize: number; total: number; totalPages: number } };
+  const failedSearch = deferred<InventoryPage>();
+  const rice: InventoryPage = { data: [{ id: "rice", name: "Arroz", unit: "g" }], meta: { page: 1, pageSize: 1, total: 1, totalPages: 1 } };
+  const listInventoryItems = jest.fn((query?: { q?: string }) => query?.q === "Otro" ? failedSearch.promise : Promise.resolve(rice));
+  const repository = { createRecipe: jest.fn(), updateRecipe: jest.fn(), getRecipe: jest.fn(), listInventoryItems };
   render(<MemoryRouter><RecipeFormDialog repository={repository} onClose={() => {}} /></MemoryRouter>);
-  await screen.findByRole("option", { name: "Arroz" });
   fireEvent.change(screen.getByLabelText("Nombre", { exact: true }), { target: { value: "Receta conservada" } });
-  fireEvent.change(screen.getByLabelText("Insumo 1"), { target: { value: "rice" } });
-  fireEvent.change(screen.getByLabelText("Cantidad del insumo 1"), { target: { value: "25" } });
-  const search = screen.getByRole("searchbox", { name: "Buscar insumos de inventario" });
-  fireEvent.change(search, { target: { value: "Otro" } });
-  fireEvent.keyDown(search, { key: "Enter" });
-  expect(screen.getByLabelText("Insumo 1")).toHaveValue("rice");
-  expect(screen.getByLabelText("Insumo 1")).toBeDisabled();
-  await act(async () => inventory.reject(new Error("offline")));
+  await addSupply("Arroz");
+  fireEvent.change(screen.getByLabelText("Cantidad de Arroz"), { target: { value: "25" } });
+  await waitForInventory();
+  fireEvent.change(supplySearch(), { target: { value: "Otro" } });
+  await waitFor(() => expect(listInventoryItems).toHaveBeenLastCalledWith({ q: "Otro" }, expect.any(AbortSignal)));
+  expect(screen.getByText("Cargando insumos…")).toBeVisible();
+  await act(async () => failedSearch.reject(new Error("offline")));
   expect(await screen.findByRole("alert")).toHaveTextContent("No se pudieron cargar");
+  expect(screen.queryByText("Cargando insumos…")).not.toBeInTheDocument();
   expect(screen.getByLabelText("Nombre", { exact: true })).toHaveValue("Receta conservada");
-  expect(screen.getByLabelText("Cantidad del insumo 1")).toHaveValue(25);
-  expect(screen.getByLabelText("Insumo 1")).toHaveValue("rice");
-  expect(screen.getByLabelText("Insumo 1")).toBeDisabled();
-  expect(screen.getByText(/Opciones anteriores de insumos: sin filtro, página 1/)).toBeVisible();
+  expect(screen.getByLabelText("Cantidad de Arroz")).toHaveValue(25);
+  expect(supplySearch()).toHaveValue("Otro");
   expect(repository.createRecipe).not.toHaveBeenCalled();
 });
 

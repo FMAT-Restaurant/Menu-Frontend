@@ -230,6 +230,14 @@ function createMemoryStorage(): PendingOperationStorageAdapter {
   };
 }
 
+/**
+ * El formulario muestra sus controles desde el primer render, deshabilitados mientras
+ * `loading` es true. Se espera a que desaparezca el aviso de carga antes de interactuar.
+ */
+async function waitForOfferFormLoaded() {
+  await waitFor(() => expect(screen.queryByText("Cargando datos de la oferta…")).not.toBeInTheDocument());
+}
+
 function renderComponent(
   repository: OfferFormRepository,
   path = "/entries/entry-1/offers/new",
@@ -296,6 +304,7 @@ describe("OfferFormPage (V4)", () => {
   test("renders creation view with commercial info and composition editor", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     expect(await screen.findByText("Hamburguesa Clásica")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Nueva oferta", level: 1 })).toBeVisible();
@@ -320,6 +329,7 @@ describe("OfferFormPage (V4)", () => {
   test("omits unavailable composition copy without draft or repository effects", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Agregar grupo" });
     expect(screen.queryByRole("button", { name: "Copiar composición desde otra oferta" })).not.toBeInTheDocument();
@@ -342,6 +352,7 @@ describe("OfferFormPage (V4)", () => {
   test("creates a new slot via SlotModal (C31)", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     const addGroupBtn = await screen.findByRole("button", { name: "Agregar grupo" });
     fireEvent.click(addGroupBtn);
@@ -370,6 +381,7 @@ describe("OfferFormPage (V4)", () => {
   test("edits and deletes a slot", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     const addGroupBtn = await screen.findByRole("button", { name: "Agregar grupo" });
 
@@ -396,6 +408,7 @@ describe("OfferFormPage (V4)", () => {
   test("omits unavailable inventory selection while adding a recipe option via V6", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     const addGroupBtn = await screen.findByRole("button", { name: "Agregar grupo" });
 
@@ -450,6 +463,7 @@ describe("OfferFormPage (V4)", () => {
   test("toggling option status updates slot derived status and offer activation capacity", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     // Wait for edit load
     expect(await screen.findByDisplayValue("Individual")).toBeVisible();
@@ -476,6 +490,7 @@ describe("OfferFormPage (V4)", () => {
   test("validates form fields before submitting", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -505,6 +520,7 @@ describe("OfferFormPage (V4)", () => {
   test("submits create offer successfully", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -572,6 +588,7 @@ describe("OfferFormPage (V4)", () => {
   test("submits update offer without replacing image", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
     expect(screen.getByDisplayValue("Individual")).toBeVisible();
@@ -624,6 +641,7 @@ describe("OfferFormPage (V4)", () => {
     repository.updateOffer.mockRejectedValueOnce(axios422Error);
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
 
     // Verify initial loaded draft values
@@ -648,6 +666,7 @@ describe("OfferFormPage (V4)", () => {
     repository.getEntry.mockRejectedValueOnce(new Error("Error al consultar la entrada"));
 
     renderComponent(repository);
+    await waitForOfferFormLoaded();
 
     expect(await screen.findByText("Error al consultar la entrada")).toBeVisible();
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeVisible();
@@ -658,6 +677,7 @@ describe("OfferFormPage (V4)", () => {
     repository.getOffer.mockRejectedValueOnce(new Error("Error al consultar la oferta"));
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     expect(await screen.findByText("Error al consultar la oferta")).toBeVisible();
 
     // Form inputs must not be present while in loadError state
@@ -689,6 +709,7 @@ describe("OfferFormPage (V4)", () => {
     });
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     expect(
       await screen.findByText("La oferta no pertenece a la entrada seleccionada.")
@@ -782,6 +803,7 @@ describe("OfferFormPage (V4)", () => {
     });
 
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
     const basePriceInput = await screen.findByLabelText(/Precio base/);
 
     // Fill minimum required fields
@@ -822,10 +844,11 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(within(recipeArticle).getByRole("button", { name: "Asignar" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
 
-    // Now test concurrent submits: slow createOffer
-    let resolveCreate: (val: MenuOfferDetail) => void = () => {};
-    repository.createOffer.mockImplementationOnce(() => new Promise<MenuOfferDetail>((resolve) => {
-      resolveCreate = resolve;
+    // Now test concurrent submits: slow createOffer that answers with the submitted composition
+    const createFromDraft = repository.createOffer.getMockImplementation()!;
+    let releaseCreate: () => void = () => {};
+    repository.createOffer.mockImplementationOnce((...args) => new Promise<MenuOfferDetail>((resolve, reject) => {
+      releaseCreate = () => { createFromDraft(...args).then(resolve, reject); };
     }));
 
     // First click
@@ -838,7 +861,9 @@ describe("OfferFormPage (V4)", () => {
       expect(repository.createOffer).toHaveBeenCalledTimes(1);
     });
 
-    resolveCreate(mockOffer);
+    releaseCreate();
+    expect(await screen.findByText("Vista de ofertas")).toBeVisible();
+    expect(repository.createOffer).toHaveBeenCalledTimes(1);
   });
 
   test("reuses confirmed imageId on uncertain outcome retry without re-uploading the image (O17)", async () => {
@@ -849,6 +874,7 @@ describe("OfferFormPage (V4)", () => {
     repository.createOffer.mockRejectedValueOnce(new Error("Network timeout on create"));
 
     renderComponent(repository, "/entries/entry-1/offers/new", undefined, storageAdapter);
+    await waitForOfferFormLoaded();
     const basePriceInput = await screen.findByLabelText(/Precio base/);
 
     // Fill form
@@ -909,6 +935,7 @@ describe("OfferFormPage (V4)", () => {
     expect(cachedEntries(repository, { page: 1, pageSize: 12 })).toBeDefined();
 
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
     // Fill form
@@ -940,6 +967,7 @@ describe("OfferFormPage (V4)", () => {
   test("allows editing and deleting an existing slot in the offer", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -958,6 +986,7 @@ describe("OfferFormPage (V4)", () => {
   test("allows editing, deleting, and toggling options in the offer", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -981,6 +1010,7 @@ describe("OfferFormPage (V4)", () => {
   test("opens recipe picker modal and closes it on cancel", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -998,6 +1028,7 @@ describe("OfferFormPage (V4)", () => {
   test("handles image drop with format validation", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1027,6 +1058,7 @@ describe("OfferFormPage (V4)", () => {
   test("saves update offer as INACTIVE when all options are inactive", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
     // Toggle option to inactive
@@ -1052,6 +1084,7 @@ describe("OfferFormPage (V4)", () => {
   test("closes slot modal and option modal when clicking cancel", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1074,6 +1107,7 @@ describe("OfferFormPage (V4)", () => {
       returnTo: "/custom/return",
       catalogReturnTo: "/?q=custom",
     });
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
     const backLink = screen.getByRole("link", { name: /Volver a ofertas/i });
@@ -1089,6 +1123,7 @@ describe("OfferFormPage (V4)", () => {
       returnTo: "//malicious.com",
       catalogReturnTo: "http://malicious.com",
     });
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
     const backLink = screen.getByRole("link", { name: /Volver a ofertas/i });
@@ -1128,6 +1163,7 @@ describe("OfferFormPage (V4)", () => {
     repository.getOffer.mockResolvedValueOnce({ data: inventoryOffer, etag: '"offer-rev-inv"' });
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
     expect(screen.getByText("Refresco 500ml")).toBeVisible();
@@ -1164,6 +1200,7 @@ describe("OfferFormPage (V4)", () => {
   test("validates when a slot has no options", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1199,6 +1236,7 @@ describe("OfferFormPage (V4)", () => {
   test("validates when image has an error before saving", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1228,6 +1266,7 @@ describe("OfferFormPage (V4)", () => {
     repository.updateOffer.mockRejectedValueOnce("Error de servidor en texto plano");
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
     await waitFor(() => expect(saveButton).toBeEnabled());
@@ -1241,6 +1280,7 @@ describe("OfferFormPage (V4)", () => {
   test("handles dialog cancel event on recipe picker modal", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Agregar opción a Plato principal" });
 
@@ -1250,6 +1290,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
     const dialog = screen.getByRole("dialog", { name: /Elegir receta ·/ });
     expect(dialog).toBeInTheDocument();
+    expect(await within(dialog).findByRole("article", { name: "Receta Hamburguesa" })).toBeVisible();
 
     // Fire native cancel event
     fireEvent(dialog, new Event("cancel"));
@@ -1260,6 +1301,7 @@ describe("OfferFormPage (V4)", () => {
   test("preserves option modal input when opening and canceling recipe picker (O13 single source)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1273,7 +1315,8 @@ describe("OfferFormPage (V4)", () => {
 
     // Open recipe picker
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
-    expect(screen.getByRole("dialog", { name: /Elegir receta ·/ })).toBeInTheDocument();
+    const picker = screen.getByRole("dialog", { name: /Elegir receta ·/ });
+    expect(await within(picker).findByRole("article", { name: "Receta Hamburguesa" })).toBeVisible();
 
     // Cancel recipe picker
     fireEvent.click(within(screen.getByRole("dialog", { name: /Elegir receta ·/ })).getByRole("button", { name: "Volver a la opción" }));
@@ -1286,6 +1329,7 @@ describe("OfferFormPage (V4)", () => {
   test("assigns chosen recipe while preserving previously typed display name", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1378,6 +1422,7 @@ describe("OfferFormPage (V4)", () => {
     });
 
     renderComponent(repository, "/entries/entry-1/offers/new", undefined, storage);
+    await waitForOfferFormLoaded();
 
     // The parent commercial fields are restored
     expect(await screen.findByDisplayValue("Super Promo Anidada")).toBeVisible();
@@ -1394,6 +1439,7 @@ describe("OfferFormPage (V4)", () => {
     const repository = createMockRepository();
     repository.getOffer.mockResolvedValueOnce({ data: { ...mockOffer, basePrice: 245.125 }, etag: '"offer-rev-1"' });
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     const price = await screen.findByLabelText("Precio base (MXN)");
     expect(price).toHaveValue(245.125);
     expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0245.13");
@@ -1408,6 +1454,7 @@ describe("OfferFormPage (V4)", () => {
   test.each(["0", "-1", ""])("UX12 retains positive-price validation for %s without sending a request", async raw => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     const price = await screen.findByLabelText("Precio base (MXN)");
     fireEvent.change(price, { target: { value: raw } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
@@ -1420,6 +1467,7 @@ describe("OfferFormPage (V4)", () => {
     const repository = createMockRepository();
     repository.updateOffer.mockRejectedValueOnce(Object.assign(new Error("Precondition Failed"), { status: 412, response: { status: 412 } }));
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     const price = await screen.findByLabelText("Precio base (MXN)");
     fireEvent.change(price, { target: { value: "145.125" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
@@ -1458,6 +1506,7 @@ describe("OfferFormPage (V4)", () => {
     repository.updateOffer.mockRejectedValueOnce(error412);
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
     const tagInput = screen.getByLabelText(/Etiqueta de presentación/);
@@ -1603,6 +1652,7 @@ describe("OfferFormPage (V4)", () => {
     });
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit", undefined, storage);
+    await waitForOfferFormLoaded();
 
     // Restores draft in form without auto-sending
     expect(await screen.findByDisplayValue("Oferta Recuperada de Intento Incierto")).toBeVisible();
@@ -1640,6 +1690,7 @@ describe("OfferFormPage (V4)", () => {
   test("does not send recipeRevision in create or update draft JSON payloads (Invariant 5)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
     fireEvent.click(saveButton);
@@ -1660,6 +1711,7 @@ describe("OfferFormPage (V4)", () => {
   test("omits recipeId in PATCH when existing recipe option was not re-selected, but includes it upon explicit selection of the same or another recipe (O13, O14, O35)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1687,6 +1739,7 @@ describe("OfferFormPage (V4)", () => {
     // Step B: In another instance, open picker and cancel -> still omits recipeId
     const repository2 = createMockRepository();
     renderComponent(repository2, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
@@ -1705,6 +1758,7 @@ describe("OfferFormPage (V4)", () => {
     // Step C: Explicitly select the same recipe ("rec-1") -> sets intent and includes recipeId
     const repository3 = createMockRepository();
     renderComponent(repository3, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
@@ -1728,6 +1782,7 @@ describe("OfferFormPage (V4)", () => {
   test("omits option status in POST draft payload on offer creation (O15, O35)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1783,6 +1838,7 @@ describe("OfferFormPage (V4)", () => {
   test("Escape returns from recipe selection preserving draft/focus, then confirms discard before closing (O19, O34) (O19, O34)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 
@@ -1831,6 +1887,7 @@ describe("OfferFormPage (V4)", () => {
   test("validates option fields and slots rejecting invalid attempts with 0 repository calls, and succeeds with exact payload upon correction (O09, O21, O35, O38)", async () => {
     const repository = createMockRepository();
     renderComponent(repository, "/entries/entry-1/offers/new");
+    await waitForOfferFormLoaded();
 
     await screen.findByRole("button", { name: "Guardar Oferta" });
 

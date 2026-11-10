@@ -8,7 +8,7 @@ async function fixture(page: Page, count = 3, rejectCreation = false, conflictEd
     categoryReads += 1;
     return route.fulfill({ json: { data: categories, meta: { page: 1, pageSize: 100, total: count, totalPages: Math.ceil(count / 100) } } });
   });
-  await page.route("**/api/v1/media/images", (route) => {
+  await page.route("**/api/v1/menu/media/images", (route) => {
     uploads += 1;
     return route.fulfill({ status: 201, json: { data: { id: "image-uploaded", url: "/images/uploaded.png", thumbnailUrl: "/images/uploaded-thumb.png" } } });
   });

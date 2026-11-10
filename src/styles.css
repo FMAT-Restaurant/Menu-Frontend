@@ -7,8 +7,8 @@
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
-  color: #111827;
-  background: #f8fafc;
+  color: var(--ink);
+  background: var(--canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --surface: #fff;
@@ -48,6 +48,42 @@
   --text-caption: 12px;
   --leading-caption: 16px;
   --control-height: 40px;
+}
+
+[data-theme="dark"] {
+  --color-primary: #E06A3B;
+  --color-primary-hover: #F07C48;
+  --color-accent: #FB923C;
+  --color-primary-soft: rgba(224, 106, 59, 0.16);
+  --color-ink: #FFFFFF;
+  --color-text: #E8E3DF;
+  --color-muted: #9C9288;
+  --color-border: #2C2420;
+  --color-canvas: #0A0908;
+  --color-surface: #161311;
+  --color-success: #22C55E;
+  --bg-success: rgba(34, 197, 94, 0.15);
+  --color-warning: #F59E0B;
+  --bg-warning: rgba(245, 158, 11, 0.15);
+  --color-danger: #EF4444;
+  --bg-danger: rgba(239, 68, 68, 0.15);
+}
+
+[data-theme="dark"] .menu-module:not([data-theme="light"] *) {
+  --surface: var(--color-surface);
+  --surface-container: #211c19;
+  --surface-muted: #211c19;
+  --canvas: var(--color-canvas);
+  --ink: var(--color-ink);
+  --text: var(--color-text);
+  --muted: var(--color-muted);
+  --border: var(--color-border);
+  --brand: var(--color-primary);
+  --brand-hover: var(--color-primary-hover);
+  --soft-brand: var(--color-primary-soft);
+  --danger: var(--color-danger);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
 }
 
 :where(.menu-module), :where(.menu-module) *, :where(.menu-module) *::before, :where(.menu-module) *::after {
@@ -172,7 +208,7 @@ html[data-menu-standalone] body {
 
 :where(.menu-module) .button--secondary:hover,
 :where(.menu-module) .button--quiet:hover {
-  background: #f3f4f6;
+  background: var(--surface-muted, #f3f4f6);
 }
 
 :where(.menu-module) .button--quiet {
@@ -209,8 +245,8 @@ html[data-menu-standalone] body {
 }
 
 :where(.menu-module) .button:disabled {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: var(--surface-muted, #f3f4f6);
+  color: var(--text, #4b5563);
   cursor: not-allowed;
 }
 
@@ -243,7 +279,7 @@ html[data-menu-standalone] body {
   gap: 4px;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--text);
   font-size: 12px;
   line-height: 16px;
@@ -337,7 +373,7 @@ html[data-menu-standalone] body {
   border-radius: var(--radius-control);
   font-size: 16px;
   line-height: 24px;
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--ink);
 }
 
@@ -370,7 +406,7 @@ html[data-menu-standalone] body {
 
 :where(.menu-module) .field-hint {
   margin: 0;
-  color: #6b7280;
+  color: var(--muted, #6b7280);
   font-size: 12px;
   line-height: 16px;
 }

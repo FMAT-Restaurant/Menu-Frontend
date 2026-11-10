@@ -26,7 +26,7 @@
   min-height: var(--control-height);
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
-  background: #fff;
+  background: var(--surface, #fff);
 }
 
 :where(.menu-module) .search-field__control:focus-within {
@@ -104,7 +104,7 @@
   min-height: var(--control-height);
   border: 1px solid #d1d5db;
   border-radius: var(--radius-control);
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--text);
 }
 
@@ -120,7 +120,7 @@
   justify-content: center;
   min-width: var(--control-height);
   min-height: var(--control-height);
-  color: #6b7280;
+  color: var(--muted, #6b7280);
   user-select: none;
 }
 
@@ -172,7 +172,7 @@
   padding: 24px;
   border: 0;
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface, #fff);
   box-shadow: 0 10px 25px rgb(0 0 0 / 12%);
 }
 
@@ -273,7 +273,7 @@
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface, #fff);
   box-shadow: 0 2px 10px rgb(17 24 39 / 4%);
 }
 

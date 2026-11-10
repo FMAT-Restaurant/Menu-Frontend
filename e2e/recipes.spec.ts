@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 
 test.describe("Recipe Library and Selector Flow (T13)", () => {
   test("allows searching, paginating recipes, and managing recipes in administration mode", async ({ page }) => {
@@ -48,15 +49,12 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
       });
     });
 
-    await page.route("**/api/v1/inventory/items?*", (route) =>
+    await page.route("**/api/v1/items*", (route) =>
       route.fulfill({
-        json: {
-          data: [
-            { id: "inv-1", name: "Carne", unit: "g" },
-            { id: "inv-2", name: "Pan", unit: "pza" },
-          ],
-          meta: { page: 1, pageSize: 50, total: 2, totalPages: 1 },
-        },
+        json: [
+          { id: "inv-1", name: "Carne", unit: "g" },
+          { id: "inv-2", name: "Pan", unit: "pza" },
+        ],
       }),
     );
 
@@ -81,8 +79,14 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
     await expect(page.getByRole("heading", { name: "Receta 51 Especial", level: 3 })).toBeVisible();
   });
 
-  test("creates recipe with inventory selection and paginating inventory in dialog", async ({ page }) => {
+  test("creates recipe adding an inventory item found with the server search", async ({ page }) => {
     let createdPayload: unknown = null;
+    const inventoryRequests: URL[] = [];
+    // El inventario responde la lista completa en un arreglo plano y solo filtra por `q`.
+    const inventory = [
+      ...Array.from({ length: 50 }, (_, i) => ({ id: `inv-${i + 1}`, name: `Insumo ${i + 1} Estándar`, unit: "g" })),
+      { id: "inv-101", name: "Insumo 101 Secreto", unit: "kg" },
+    ];
 
     await page.route("**/api/v1/menu/recipes?*", (route) =>
       route.fulfill({
@@ -93,25 +97,11 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
       }),
     );
 
-    await page.route("**/api/v1/inventory/items?*", (route) => {
+    await page.route("**/api/v1/items*", (route) => {
       const url = new URL(route.request().url());
-      const pageNum = parseInt(url.searchParams.get("page") ?? "1", 10);
-
-      if (pageNum === 2) {
-        return route.fulfill({
-          json: {
-            data: [{ id: "inv-101", name: "Insumo 101 Secreto", unit: "kg" }],
-            meta: { page: 2, pageSize: 50, total: 51, totalPages: 2 },
-          },
-        });
-      }
-
-      return route.fulfill({
-        json: {
-          data: [{ id: "inv-1", name: "Insumo 1 Estándar", unit: "g" }],
-          meta: { page: 1, pageSize: 50, total: 51, totalPages: 2 },
-        },
-      });
+      inventoryRequests.push(url);
+      const q = url.searchParams.get("q")?.toLowerCase();
+      return route.fulfill({ json: q ? inventory.filter((item) => item.name.toLowerCase().includes(q)) : inventory });
     });
 
     await page.route("**/api/v1/menu/recipes", (route) => {
@@ -140,15 +130,18 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
     await dialog.getByLabel("Descripción").fill("Descripción E2E");
     await dialog.getByLabel("Instrucciones").fill("Instrucciones E2E");
 
-    // Navigate to page 2 of inventory items
-    await expect(dialog.getByText("Página 1 de 2")).toBeVisible();
-    await dialog.getByRole("button", { name: "Siguiente página de inventario" }).click();
-    await expect(dialog.getByText("Página 2 de 2")).toBeVisible();
+    // Al enfocar el buscador se ve la lista completa que devuelve el inventario.
+    const search = dialog.getByRole("combobox", { name: "Buscar insumo para agregar" });
+    await search.focus();
+    await expect(dialog.getByRole("option")).toHaveCount(51);
 
-    // Select Insumo 101 from page 2
-    const select = dialog.getByRole("combobox", { name: "Insumo 1" });
-    await select.selectOption("inv-101");
-    await dialog.getByLabel("Cantidad del insumo 1").fill("3");
+    // Escribir consulta al servidor con `q` y elegir el resultado lo agrega como insumo.
+    await search.fill("Secreto");
+    await expect(dialog.getByRole("option")).toHaveCount(1);
+    await dialog.getByRole("option", { name: "Insumo 101 Secreto ·" }).click();
+    const quantity = dialog.getByLabel("Cantidad de Insumo 101 Secreto", { exact: true });
+    await expect(quantity).toBeFocused();
+    await quantity.fill("3");
 
     await dialog.getByRole("button", { name: "Guardar receta" }).click();
     await expect(dialog).not.toBeVisible();
@@ -159,6 +152,8 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
       instructions: "Instrucciones E2E",
       supplies: [{ inventoryItemId: "inv-101", quantity: 3 }],
     });
+    expect(inventoryRequests.some((url) => url.searchParams.get("q") === "Secreto")).toBe(true);
+    expect(inventoryRequests.every((url) => !url.searchParams.has("page") && !url.searchParams.has("pageSize"))).toBe(true);
   });
 
   test("isolates inventory error with independent retry without wiping the recipe draft", async ({ page }) => {
@@ -173,7 +168,7 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
       }),
     );
 
-    await page.route("**/api/v1/inventory/items?*", (route) => {
+    await page.route("**/api/v1/items*", (route) => {
       inventoryAttempts += 1;
       if (inventoryAttempts === 1) {
         return route.fulfill({
@@ -182,10 +177,7 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
         });
       }
       return route.fulfill({
-        json: {
-          data: [{ id: "inv-recov", name: "Insumo Recuperado", unit: "ml" }],
-          meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-        },
+        json: [{ id: "inv-recov", name: "Insumo Recuperado", unit: "ml" }],
       });
     });
 
@@ -210,10 +202,9 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
     await expect(dialog.getByLabel("Descripción")).toHaveValue("Descripción no se pierde");
     await expect(dialog.getByLabel("Instrucciones")).toHaveValue("Pasos no se pierden");
 
-    // Now select the recovered item
-    const select = dialog.getByRole("combobox", { name: "Insumo 1" });
-    await select.selectOption("inv-recov");
-    await expect(dialog.getByText("ml")).toBeVisible();
+    // Now add the recovered item
+    await addSupply(dialog, "Insumo Recuperado");
+    await expect(dialog.getByRole("cell", { name: "ml", exact: true })).toBeVisible();
   });
 
   test("supports selection mode with Asignar buttons and no management actions", async ({ page }) => {
