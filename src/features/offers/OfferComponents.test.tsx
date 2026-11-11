@@ -953,6 +953,66 @@ describe("OptionModal Component", () => {
     fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  test("triggers onOpenInventoryPicker and allows editing direct inventory quantity and read-only unit", () => {
+    const handleOpenInventoryPicker = jest.fn();
+    const handleChangeDraft = jest.fn();
+    const handleSave = jest.fn();
+    const invDraft: OptionDraft = {
+      displayName: "Refresco",
+      status: "ACTIVE",
+      sourceType: "INVENTORY_ITEM",
+      inventoryItemId: "inv-23",
+      inventoryItemName: "Refresco de Cola 355ml",
+      quantity: 1,
+      unit: "pza",
+    };
+
+    render(
+      <OptionModal
+        isOpen={true}
+        slotName="Bebidas"
+        initialData={invDraft}
+        onSave={handleSave}
+        onClose={jest.fn()}
+        onOpenRecipePicker={jest.fn()}
+        onOpenInventoryPicker={handleOpenInventoryPicker}
+        onChangeDraft={handleChangeDraft}
+      />
+    );
+
+    const invBtn = screen.getByRole("button", { name: /Elegir artículo de inventario/ });
+    expect(invBtn).toBeEnabled();
+    fireEvent.click(invBtn);
+    expect(handleOpenInventoryPicker).toHaveBeenCalledTimes(1);
+
+    const qtyInput = screen.getByLabelText("Cantidad del artículo");
+    const unitInput = screen.getByLabelText("Unidad de medida");
+    expect(qtyInput).toHaveValue(1);
+    expect(unitInput).toHaveValue("pza");
+    expect(unitInput).toHaveAttribute("readonly");
+
+    fireEvent.change(qtyInput, { target: { value: "2.5" } });
+    expect(handleChangeDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceType: "INVENTORY_ITEM",
+        inventoryItemId: "inv-23",
+        quantity: 2.5,
+        unit: "pza",
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
+    expect(handleSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceType: "INVENTORY_ITEM",
+        inventoryItemId: "inv-23",
+        inventoryItemName: "Refresco de Cola 355ml",
+        quantity: 2.5,
+        unit: "pza",
+      })
+    );
+  });
 });
 
 describe("SlotOptionItem Component", () => {
