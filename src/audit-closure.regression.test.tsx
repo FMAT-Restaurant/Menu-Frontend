@@ -98,7 +98,7 @@ test("24h: an expired offer PATCH requires review and explicit adoption before a
   expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Guardar Oferta" })).toBeDisabled();
   fireEvent.submit(screen.getByRole("button", { name: "Guardar Oferta" }).closest("form")!);
-  expect(screen.getByLabelText("Etiqueta de presentación (opcional)")).toHaveValue("Mi borrador");
+  expect(screen.getByLabelText("Etiqueta de presentación")).toHaveValue("Mi borrador");
   expect(repository.updateOffer).not.toHaveBeenCalled();
   fireEvent.click(review);
   const adopt = await screen.findByRole("button", { name: "Adoptar versión del servidor" });
@@ -106,7 +106,7 @@ test("24h: an expired offer PATCH requires review and explicit adoption before a
   fireEvent.click(adopt);
   await waitFor(() => expect(screen.getByRole("button", { name: "Guardar Oferta" })).toBeEnabled());
   expect(repository.updateOffer).not.toHaveBeenCalled();
-  expect(screen.getByLabelText("Etiqueta de presentación (opcional)")).toHaveValue("Mi borrador");
+  expect(screen.getByLabelText("Etiqueta de presentación")).toHaveValue("Mi borrador");
   fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
   await waitFor(() => expect(repository.updateOffer).toHaveBeenCalledTimes(1));
   expect(repository.updateOffer.mock.calls[0][2]).toBe('"v2"');

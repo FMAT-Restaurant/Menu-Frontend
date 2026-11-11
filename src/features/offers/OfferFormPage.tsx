@@ -144,6 +144,8 @@ function validateOfferSlot(slot: SlotDraft, isEditing: boolean): string | null {
   return null;
 }
 
+export const PRESENTATION_TAG_REQUIRED_MESSAGE = "Indica la etiqueta de presentación de la oferta.";
+
 function validateOfferForm(
   basePrice: string,
   isEditing: boolean,
@@ -180,7 +182,7 @@ interface OfferSaveBlockerContext {
   action: "submit" | "retry";
   pending: SealedOperationAttempt | null;
   newOperationAuthorized: boolean;
-  draft: Pick<OfferFormDraftState, "basePrice" | "slots">;
+  draft: Pick<OfferFormDraftState, "presentationTag" | "basePrice" | "slots">;
   isEditing: boolean;
   selectedFile: File | null;
   imageError: string;
@@ -207,6 +209,7 @@ function offerSaveBlockerMessage({
   }
   const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
   if (recovering) return null;
+  if (!imageValidating && draft.presentationTag.trim() === "") return PRESENTATION_TAG_REQUIRED_MESSAGE;
   return validateOfferForm(draft.basePrice, isEditing, selectedFile, imageError, draft.slots, confirmedImageId, imageValidating);
 }
 
@@ -1251,7 +1254,7 @@ export function OfferFormPage({
       action,
       pending,
       newOperationAuthorized,
-      draft: { basePrice, slots },
+      draft: { presentationTag, basePrice, slots },
       isEditing,
       selectedFile,
       imageError,

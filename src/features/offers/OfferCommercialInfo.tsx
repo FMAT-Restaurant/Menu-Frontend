@@ -144,13 +144,15 @@ export function OfferCommercialInfo({
       <div className="offer-commercial-info__grid">
         <div className="offer-commercial-info__fields">
           <div className="form-field">
-            <label htmlFor="offer-tag-input">Etiqueta de presentación (opcional)</label>
+            <label htmlFor="offer-tag-input">Etiqueta de presentación</label>
             {loading ? <LoadingValue /> : <input
               id="offer-tag-input"
               type="text"
               value={presentationTag}
               onChange={(e) => onPresentationTagChange(e.target.value)}
               placeholder="Ej. Individual, Mediana o Combo"
+              required
+              aria-required="true"
               disabled={disabled}
             />}
             <p className="field-hint">

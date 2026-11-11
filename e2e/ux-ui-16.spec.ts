@@ -36,7 +36,7 @@ for (const width of [390, 1024, 1440]) for (const [path, delayed, variant, visib
   ["/categories", "/menu/categories", "category-rows", "Categoría UX16"],
   ["/recipes", "/menu/recipes", "recipe-rows", "Receta UX16"],
   ["/entries/ux16-entry/offers", "/menu/offers", "offers", "Individual UX16"],
-  ["/entries/ux16-entry/offers/new", "/menu/entries/ux16-entry", "offer-form", "Etiqueta de presentación (opcional)"],
+  ["/entries/ux16-entry/offers/new", "/menu/entries/ux16-entry", "offer-form", "Etiqueta de presentación"],
   ["/entries/ux16-entry/edit", "/menu/entries/ux16-entry", "entry-form", "Nombre comercial"],
 ] as const) {
   test(`UX16 ${path} reserves local content at ${width}px until its initial response arrives`, async ({ page }, info) => {

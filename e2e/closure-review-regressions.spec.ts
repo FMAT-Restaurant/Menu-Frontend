@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
 
 async function openOption(page: Page, groupName = "Principal") {
   await page.goto("/entries/entry-1/offers/new");
-  await page.getByLabel("Etiqueta de presentación (opcional)").fill("Borrador conservado");
+  await page.getByLabel("Etiqueta de presentación").fill("Borrador conservado");
   await page.getByRole("button", { name: "Agregar grupo", exact: true }).click();
   await page.getByLabel("Nombre del grupo").fill(groupName);
   await page.getByRole("button", { name: "Guardar grupo", exact: true }).click();
@@ -31,7 +31,7 @@ test("RC02: quoted group names preserve editor, draft and focus after option can
   const option = page.getByRole("dialog", { name: 'Agregar opción · Menú "especial" \\ [casa]', exact: true });
   await option.getByRole("button", { name: "Cancelar", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Nueva oferta", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Etiqueta de presentación (opcional)")).toHaveValue("Borrador conservado");
+  await expect(page.getByLabel("Etiqueta de presentación")).toHaveValue("Borrador conservado");
   await expect(trigger).toBeFocused();
   await trigger.click();
   await page.keyboard.press("Escape");
@@ -70,7 +70,7 @@ test("RC04: each Escape affects only the active step and restores focus within o
   await expect(option).not.toBeVisible();
   await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  await expect(page.getByLabel("Etiqueta de presentación (opcional)")).toHaveValue("Borrador conservado");
+  await expect(page.getByLabel("Etiqueta de presentación")).toHaveValue("Borrador conservado");
 });
 
 test("RC04: Escape cannot dismiss a nested recipe while its POST is pending", async ({ page }) => {

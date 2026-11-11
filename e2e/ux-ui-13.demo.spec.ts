@@ -69,7 +69,7 @@ test("UX13 offer edits announce the named result once and preserve list context"
   await page.setViewportSize({ width: 390, height: 568 });
   await page.goto("/entries/demo-entry-burger/offers?q=Individual&page=1");
   await page.getByRole("link", { name: "Abrir oferta Individual para editar", exact: true }).click();
-  await page.getByLabel("Etiqueta de presentación (opcional)", { exact: true }).fill("Individual UX13");
+  await page.getByLabel("Etiqueta de presentación", { exact: true }).fill("Individual UX13");
   await page.getByRole("button", { name: "Agregar grupo", exact: true }).focus();
   await record(page, info, "offer-actions");
   await expectFocusClearOfFooter(page);
