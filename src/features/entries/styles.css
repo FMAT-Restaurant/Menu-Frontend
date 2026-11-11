@@ -63,7 +63,7 @@
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--ink);
   font: inherit;
   font-size: var(--text-body);
@@ -97,7 +97,7 @@
 
 :where(.menu-module[data-menu-module]) .entry-form__muted {
   margin: 8px 0 0;
-  color: #4b5563;
+  color: var(--text, #4b5563);
   font-size: 14px;
   line-height: 20px;
   overflow-wrap: anywhere;
@@ -319,7 +319,7 @@
   height: clamp(64px, calc(100dvh - 224px), 176px);
   place-items: center;
   overflow: hidden;
-  color: #4b5563;
+  color: var(--text, #4b5563);
   text-align: center;
   font-size: 14px;
   line-height: 20px;
@@ -451,7 +451,7 @@
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--text);
 }
 

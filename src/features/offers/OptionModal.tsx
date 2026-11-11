@@ -1,7 +1,7 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState, type ReactNode, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
 
 import { validateOptionDraft, type OptionDraft, type ValidatedOptionDraft } from "./optionDraft";
@@ -125,7 +125,7 @@ interface OptionSubmitContext {
 }
 
 function submitOptionForm(
-  event: SubmitEvent<HTMLFormElement>,
+  event: SyntheticEvent<HTMLFormElement>,
   context: OptionSubmitContext,
 ) {
   event.preventDefault();
@@ -286,7 +286,7 @@ export function OptionModal({
     }
   }
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     submitOptionForm(event, {
       draft: {
       localId: initialData?.localId,

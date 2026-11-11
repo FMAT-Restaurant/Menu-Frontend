@@ -7,6 +7,7 @@ import type { RecipeDraft } from "../../application/catalog";
 import { RecipeSelectionTask, type RecipeSelectionTaskHandle } from "./RecipeSelectionTask";
 import type { RecipeRepository } from "./RecipePage";
 import { buildRecipeCreateScope } from "./RecipeFormContent";
+import { addSupply, waitForInventory } from "../../shared/recipeSupplies.test-helper";
 
 const item = { id: "i1", name: "Harina", unit: "kg" };
 const recipe = { id: "r1", name: "Pan", description: "Descripción", instructions: "Hornear", supplies: [{ inventoryItemId: "i1", quantity: 1, inventoryItem: item }], etag: '"r1-v1"' };
@@ -36,13 +37,13 @@ async function openCreate() {
   const create = await screen.findByRole("button", { name: "+ Nueva receta" });
   await waitFor(() => expect(create).toBeEnabled());
   fireEvent.click(create);
-  await screen.findByRole("option", { name: "Harina" });
+  await waitForInventory();
 }
-function fillRecipe() {
+async function fillRecipe() {
   fireEvent.change(screen.getByLabelText("Nombre", { exact: true }), { target: { value: "Pan" } });
   fireEvent.change(screen.getByLabelText("Descripción", { exact: true }), { target: { value: "Descripción" } });
   fireEvent.change(screen.getByLabelText("Instrucciones", { exact: true }), { target: { value: "Hornear" } });
-  fireEvent.change(screen.getByLabelText("Insumo 1", { exact: true }), { target: { value: "i1" } });
+  await addSupply("Harina");
 }
 function cancel() { fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true })); }
 
@@ -56,7 +57,7 @@ test("one dialog keeps option identity, query/page and recipe draft through back
   await waitFor(() => expect(repo.listRecipes).toHaveBeenLastCalledWith({ q: "pan", page: 1, pageSize: 50 }, expect.any(AbortSignal)));
   fireEvent.click(await screen.findByRole("button", { name: "Siguiente página" }));
   await waitFor(() => expect(repo.listRecipes).toHaveBeenLastCalledWith({ q: "pan", page: 2, pageSize: 50 }, expect.any(AbortSignal)));
-  await openCreate(); fillRecipe();
+  await openCreate(); await fillRecipe();
   expect(screen.getAllByRole("dialog")).toEqual([dialog]);
   cancel();
   expect(screen.getByRole("button", { name: "Seguir editando receta" })).toHaveFocus();
@@ -82,7 +83,7 @@ test("uncertain creation survives remount without POST and retries sealed payloa
   const repo = repository(); const store = storage(); const selected = jest.fn();
   repo.createRecipe.mockRejectedValueOnce(Object.assign(new Error("timeout"), { code: "ECONNABORTED" }));
   const view = render(<Task repo={repo} store={store} onSelect={selected} />);
-  await openCreate(); fillRecipe();
+  await openCreate(); await fillRecipe();
   fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
   await screen.findByRole("button", { name: "Reintentar" });
   expect(screen.getByRole("alert")).toHaveTextContent("No sabemos si se creó la receta.");
@@ -129,7 +130,7 @@ test("an expired creation with a possible applied write cannot discard its recov
   const repo = repository(); const store = storage();
   repo.createRecipe.mockRejectedValueOnce(Object.assign(new Error("timeout"), { code: "ECONNABORTED" }));
   const view = render(<Task repo={repo} store={store} />);
-  await openCreate(); fillRecipe();
+  await openCreate(); await fillRecipe();
   fireEvent.click(screen.getByRole("button", { name: "Guardar receta" }));
   await screen.findByRole("button", { name: "Reintentar" });
   const pending = await store.getRecord<RecipeDraft>(buildRecipeCreateScope());
@@ -153,7 +154,7 @@ test("an expired creation with a possible applied write cannot discard its recov
 test("saving an option requires an explicit decision for its preserved recipe draft", async () => {
   const repo = repository(); const saved = jest.fn();
   render(<Task repo={repo} store={storage()} onSave={saved} />);
-  await openCreate(); fillRecipe();
+  await openCreate(); await fillRecipe();
   cancel(); fireEvent.click(screen.getByRole("button", { name: "Conservar borrador y volver" }));
   fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
@@ -176,7 +177,7 @@ test("saving an option requires an explicit decision for its preserved recipe dr
 test("local Escape handles repeated steps before the browser requests a native close", async () => {
   const repo = repository();
   render(<Task repo={repo} store={storage()} />);
-  await openCreate(); fillRecipe();
+  await openCreate(); await fillRecipe();
   const dialog = screen.getByRole("dialog");
   const escape = () => fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape", cancelable: true });
   expect(escape()).toBe(false);

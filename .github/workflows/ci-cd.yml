@@ -56,7 +56,7 @@ jobs:
         if: >-
           (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
           (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -172,7 +172,7 @@ jobs:
           docker pull "$IMAGE@$DIGEST"
           revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGE@$DIGEST")"
           test "$revision" = "$GITHUB_SHA"
-          docker run --detach --name verify-front --env API_BASE_URL=https://example.org/api/v1 "$IMAGE@$DIGEST"
+          docker run --detach --name verify-front --env API_BASE_URL=https://example.org/api/v1/menu --env INVENTORY_API_BASE_URL=https://example.org/api/v1 "$IMAGE@$DIGEST"
           for attempt in {1..30}; do
             health="$(docker inspect --format '{{.State.Health.Status}}' verify-front)"
             if [ "$health" = healthy ]; then break; fi
@@ -181,7 +181,9 @@ jobs:
           done
           test "$(docker inspect --format '{{.State.Health.Status}}' verify-front)" = healthy
           test "$(docker exec verify-front wget -qO- http://127.0.0.1:8080/healthz)" = ok
-          docker exec verify-front wget -qO- http://127.0.0.1:8080/runtime-config.js | grep -F 'https://example.org/api/v1'
+          runtime_config="$(docker exec verify-front wget -qO- http://127.0.0.1:8080/runtime-config.js)"
+          printf '%s' "$runtime_config" | grep -F 'apiBaseUrl: "https://example.org/api/v1/menu"'
+          printf '%s' "$runtime_config" | grep -F 'inventoryApiBaseUrl: "https://example.org/api/v1"'
           printf 'Verified %s@%s (revision %s)\n' "$IMAGE" "$DIGEST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop verification container

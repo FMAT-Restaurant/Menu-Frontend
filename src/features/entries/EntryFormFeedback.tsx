@@ -1,10 +1,10 @@
-import type { RefObject } from "react";
+import type { Ref } from "react";
 import { Link } from "react-router-dom";
 import { isStrongEntryVersion } from "../../application/entryVersion";
 import type { useEntryForm } from "./useEntryForm";
 
 type Model = ReturnType<typeof useEntryForm>;
-interface Props { model: Model; editing: boolean; returnTo: string; summaryRef: RefObject<HTMLDivElement | null> }
+interface Props { model: Model; editing: boolean; returnTo: string; summaryRef: Ref<HTMLDivElement> }
 
 function EntryReview({ model }: Readonly<{ model: Model }>) {
   if (!model.review) return null;

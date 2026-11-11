@@ -1,6 +1,6 @@
 import { LoadingState } from "../../shared/LoadingState";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type {
   MenuRepository,
@@ -154,8 +154,8 @@ interface RecipeDeleteDialogProps {
   recipe: RecipeSummary;
   actionError: string;
   isDeleting: boolean;
-  dialogRef: RefObject<HTMLDialogElement | null>;
-  cancelRef: RefObject<HTMLButtonElement | null>;
+  dialogRef: Ref<HTMLDialogElement>;
+  cancelRef: Ref<HTMLButtonElement>;
   onCancel(): void;
   onConfirm(): void;
 }

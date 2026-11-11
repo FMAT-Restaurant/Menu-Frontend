@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 
 test.describe("Operation recovery across page reloads (e2e/operation-recovery.spec.ts)", () => {
   test("category creation recovery: uncertain POST, real browser reload (F5) restores dialog without POST, manual retry sends same Idempotency-Key and recovers category", async ({
@@ -124,12 +125,9 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
       }),
     );
 
-    await page.route("**/api/v1/inventory/items?*", (route) =>
+    await page.route("**/api/v1/items*", (route) =>
       route.fulfill({
-        json: {
-          data: [{ id: "inv-papas", name: "Papas Criollas", unit: "kg" }],
-          meta: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
-        },
+        json: [{ id: "inv-papas", name: "Papas Criollas", unit: "kg" }],
       }),
     );
 
@@ -162,7 +160,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await expect(page.getByRole("heading", { name: "Nueva oferta", level: 1 })).toBeVisible();
 
     // 2. Fill commercial fields
-    await page.getByLabel("Etiqueta de presentación (opcional)").fill("Combo Especial");
+    await page.getByLabel("Etiqueta de presentación").fill("Combo Especial");
     await page.getByLabel("Precio base").fill("195");
 
     // 3. Create a slot
@@ -194,8 +192,8 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await recipeDialog.getByLabel("Nombre", { exact: true }).fill("Papas al Horno");
     await recipeDialog.getByLabel("Descripción").fill("Al romero y sal marina");
     await recipeDialog.getByLabel("Instrucciones").fill("Hornear 30 minutos a 200C");
-    await recipeDialog.getByLabel("Insumo 1", { exact: true }).selectOption("inv-papas");
-    await recipeDialog.getByLabel("Cantidad del insumo 1").fill("2");
+    await addSupply(recipeDialog, "Papas Criollas");
+    await recipeDialog.getByLabel("Cantidad de Papas Criollas", { exact: true }).fill("2");
 
     // 7. Save recipe -> times out
     await recipeDialog.getByRole("button", { name: "Guardar receta" }).click();
@@ -210,7 +208,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await page.reload();
 
     // 9. After reload, parent offer form retains commercial info, and nested recipe dialog reopens
-    await expect(page.getByLabel("Etiqueta de presentación (opcional)")).toHaveValue("Combo Especial");
+    await expect(page.getByLabel("Etiqueta de presentación")).toHaveValue("Combo Especial");
     await expect(page.getByLabel("Precio base")).toHaveValue("195");
 
     const restoredRecipeDialog = page.getByRole("dialog", { name: "Nueva receta" });
@@ -268,7 +266,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
       }),
     );
 
-    await page.route("**/api/v1/media/images", async (route) => {
+    await page.route("**/api/v1/menu/media/images", async (route) => {
       const key = route.request().headers()["idempotency-key"];
       uploadRequests.push({ key });
 
@@ -423,7 +421,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
       return route.fallback();
     });
 
-    await page.route("**/api/v1/media/images", async (route) => {
+    await page.route("**/api/v1/menu/media/images", async (route) => {
       const key = route.request().headers()["idempotency-key"];
       uploadRequests.push({ key });
       return route.fulfill({

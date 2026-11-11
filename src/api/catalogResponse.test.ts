@@ -214,11 +214,16 @@ describe("catalogResponse runtime validators", () => {
   test("validates recipes and inventory responses", () => {
     const item = { id: "inv-1", name: "Arroz", unit: "kg" };
     expect(isInventoryItem(item)).toBe(true);
-    expect(inventoryPage({ data: [item], meta }).data[0]).toEqual(item);
+    expect(inventoryPage([item]).data[0]).toEqual(item);
+    expect(inventoryPage([item]).meta).toEqual({ page: 1, pageSize: 1, total: 1, totalPages: 1 });
+    expect(inventoryPage([{ _id: "inv-2", name: "Sal", unit: "kg" }]).data[0]).toEqual({
+      id: "inv-2",
+      name: "Sal",
+      unit: "kg",
+    });
+    expect(() => inventoryPage([{ id: "inv-1" }])).toThrow("Respuesta de inventario inválida.");
+    expect(() => inventoryPage({ data: [item], meta })).toThrow("Respuesta de inventario inválida.");
     expect(inventoryItemResponse({ data: item })).toEqual(item);
-    expect(() => inventoryPage({ data: [{ id: "inv-1" }], meta })).toThrow(
-      "Respuesta de inventario inválida.",
-    );
     expect(() => inventoryItemResponse({ data: { id: "inv-1" } })).toThrow(
       "Respuesta de inventario inválida.",
     );

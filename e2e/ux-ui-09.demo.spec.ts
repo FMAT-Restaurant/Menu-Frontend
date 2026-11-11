@@ -144,15 +144,20 @@ test("UX09 existing inventory option remains editable and image replacement work
   } finally { await context.close(); }
 });
 
-test("UX09 cards retain untagged offers, independent state, deletion restriction and catalog return", async ({ page }, info) => {
+test("UX09 cards reject clearing the tag, keep independent state, deletion restriction and catalog return", async ({ page }, info) => {
   const check = observe(page);
   const returnTo = "/?q=Hamburguesa&status=ACTIVE&page=1&pageSize=12";
   await page.goto(returnTo);
   await page.getByRole("link", { name: "Ver ofertas de Hamburguesa clásica", exact: true }).click();
   await page.getByRole("link", { name: "Abrir oferta Combo con bebida para editar", exact: true }).click();
-  await page.getByLabel("Etiqueta de presentación (opcional)", { exact: true }).fill("");
+  const tag = page.getByLabel("Etiqueta de presentación", { exact: true });
+  await tag.fill("");
   await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Sin etiqueta de presentación", exact: true })).toBeVisible();
+  await expect(page.getByText("Indica la etiqueta de presentación de la oferta.", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/offers\/demo-offer-combo\/edit/);
+  await tag.fill("Combo renombrado");
+  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Combo renombrado", exact: true })).toBeVisible();
   const cards = page.locator(".offer-card");
   await expect(cards.locator(".offer-state--active")).toHaveText("Activa");
   await expect(cards.locator(".offer-state--inactive")).toHaveText("Inactiva");
@@ -160,11 +165,11 @@ test("UX09 cards retain untagged offers, independent state, deletion restriction
   await expect(activeDelete).toHaveCount(0);
   const keys = await cards.locator("[data-return-key]").evaluateAll(elements => elements.map(el => el.getAttribute("data-return-key")));
   expect(new Set(keys).size).toBe(keys.length);
-  await page.getByRole("button", { name: "Eliminar oferta Sin etiqueta de presentación", exact: true }).click();
+  await page.getByRole("button", { name: "Eliminar oferta Combo renombrado", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Sin etiqueta de presentación", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Combo renombrado", exact: true })).toBeVisible();
   await evidence(page, info, "cards", { keys, activeDeletionHidden: await activeDelete.count() === 0, returnTo });
   await page.getByRole("link", { name: /Volver a entradas/ }).click();
   await expect(page).toHaveURL(url => url.pathname + url.search === returnTo);

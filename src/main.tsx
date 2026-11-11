@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import "./styles.css";
 
 // This entry point owns the standalone document. Embedding App does not reset a host document.
 document.documentElement.dataset.menuStandalone = "";

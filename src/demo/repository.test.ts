@@ -111,3 +111,47 @@ test("demo instances and returned records are isolated, and aborted reads are re
   controller.abort();
   await expect(repository.listInventoryItems({}, controller.signal)).rejects.toMatchObject({ name: "AbortError" });
 });
+
+test("category deletion removes it from the catalog and from its entries while those entries remain listed", async () => {
+  const repository = createDemoRepository();
+  const opening = await repository.getCategory("demo-category-main");
+  expect(opening.data.entryCount).toBe(2);
+  const entryIdsBefore = (await repository.listEntries({ page: 1, pageSize: 10 })).data.map(item => item.id);
+
+  await expect(repository.deleteCategory("demo-category-main", opening.etag!)).resolves.toBeUndefined();
+
+  expect((await repository.listCategories()).map(item => item.id)).toEqual(["demo-category-drinks", "demo-category-desserts"]);
+  await expect(repository.getCategory("demo-category-main")).rejects.toMatchObject({ response: { status: 404 } });
+  const entries = (await repository.listEntries({ page: 1, pageSize: 10 })).data;
+  expect(entries.map(item => item.id)).toEqual(entryIdsBefore);
+  expect(entries.find(item => item.id === "demo-entry-burger")?.categories).toEqual([]);
+  expect(entries.find(item => item.id === "demo-entry-seasonal")?.categories).toEqual([]);
+  expect((await repository.getEntry("demo-entry-burger")).categoryIds).toEqual([]);
+  expect((await repository.getEntry("demo-entry-seasonal")).categoryIds).toEqual([]);
+  expect((await repository.getEntry("demo-entry-lemonade")).categoryIds).toEqual(["demo-category-drinks"]);
+  expect((await repository.listEntries({ categoryId: "demo-category-main", page: 1, pageSize: 10 })).data).toEqual([]);
+});
+
+test("category deletion rejects a stale ETag with 412 and keeps the category until the current version is used", async () => {
+  const repository = createDemoRepository();
+  const opening = await repository.getCategory("demo-category-drinks");
+  await repository.updateCategory("demo-category-drinks", { name: "Bebidas frías", description: "Solo frías." }, opening.etag!);
+
+  await expect(repository.deleteCategory("demo-category-drinks", opening.etag!)).rejects.toMatchObject({ response: { status: 412 } });
+
+  const current = await repository.getCategory("demo-category-drinks");
+  expect(current.data).toMatchObject({ name: "Bebidas frías", entryCount: 1 });
+  expect((await repository.getEntry("demo-entry-lemonade")).categoryIds).toEqual(["demo-category-drinks"]);
+  await repository.deleteCategory("demo-category-drinks", current.etag!);
+  expect((await repository.listCategories()).map(item => item.id)).not.toContain("demo-category-drinks");
+});
+
+test("category deletion reports 404 for an unknown category and for one that was already deleted", async () => {
+  const repository = createDemoRepository();
+  await expect(repository.deleteCategory("demo-category-missing", '"any-version"')).rejects.toMatchObject({ response: { status: 404 } });
+
+  const opening = await repository.getCategory("demo-category-desserts");
+  await repository.deleteCategory("demo-category-desserts", opening.etag!);
+  await expect(repository.deleteCategory("demo-category-desserts", opening.etag!)).rejects.toMatchObject({ response: { status: 404 } });
+  expect((await repository.listCategories()).map(item => item.id)).toEqual(["demo-category-main", "demo-category-drinks"]);
+});

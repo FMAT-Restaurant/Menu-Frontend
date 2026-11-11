@@ -2,6 +2,7 @@ import { consumeConfirmedRecipeAssignments } from "./features/offers/composition
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GuardedMemoryRouter } from './shared/GuardedMemoryRouter.test-helper';
+import { addSupply } from './shared/recipeSupplies.test-helper';
 import { OfferFormPage, buildOfferCreateScope, buildOfferUpdateScope, type OfferFormDraftState } from './features/offers/OfferFormPage';
 import { RecipePage } from './features/recipes/RecipePage';
 import { RecipeFormDialog } from './features/recipes/RecipeFormDialog';
@@ -50,20 +51,20 @@ async function initialOfferFailure(r: ReturnType<typeof repo>, s: ReturnType<typ
 test('oferta: recuperar el envío anterior conserva cambios posteriores visibles', async () => {
   const r = repo(); const s = storage();
   await initialOfferFailure(r, s);
-  fireEvent.change(screen.getByLabelText('Etiqueta de presentación (opcional)'), { target: { value: 'Cambio posterior' } });
+  fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Cambio posterior' } });
   fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
-  await waitFor(() => expect(screen.getByLabelText('Etiqueta de presentación (opcional)')).toHaveValue('Cambio posterior'));
+  await waitFor(() => expect(screen.getByLabelText('Etiqueta de presentación')).toHaveValue('Cambio posterior'));
 });
 
 test('oferta: recargar conserva el borrador editado después del timeout', async () => {
   const r = repo(); const s = storage();
   const view = await initialOfferFailure(r, s);
-  fireEvent.change(screen.getByLabelText('Etiqueta de presentación (opcional)'), { target: { value: 'Cambio posterior' } });
+  fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Cambio posterior' } });
   view.unmount();
   mountOffer(r, s);
   await screen.findByRole('button', { name: 'Reintentar' });
-  expect(screen.getByLabelText('Etiqueta de presentación (opcional)')).toHaveValue('Cambio posterior');
+  expect(screen.getByLabelText('Etiqueta de presentación')).toHaveValue('Cambio posterior');
 });
 
 test('oferta: cambiar imagen no reemplaza la clave del PATCH incierto', async () => {
@@ -140,8 +141,7 @@ test('receta: corregir datos después de un 422 envía la corrección con otra c
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Nombre rechazado' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción' } });
   fireEvent.change(screen.getByLabelText('Instrucciones'), { target: { value: 'Preparar' } });
-  await screen.findByRole('option', { name: /Harina/ });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'i1' } });
+  await addSupply('Harina');
   fireEvent.click(screen.getByRole('button', { name: 'Guardar receta' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Nombre rechazado'));
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Nombre corregido' } });
@@ -157,7 +157,7 @@ test('oferta: corregir datos después de un 422 envía la corrección con otra c
   mountOffer(r, s); await screen.findByDisplayValue('Original');
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Etiqueta rechazada'));
-  fireEvent.change(screen.getByLabelText('Etiqueta de presentación (opcional)'), { target: { value: 'Corregida' } });
+  fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Corregida' } });
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   expect(r.updateOffer.mock.calls[1][1].presentationTag).toBe('Corregida');
@@ -194,8 +194,7 @@ test('receta: recuperar una creación desde la biblioteca conserva el nombre edi
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Receta' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción' } });
   fireEvent.change(screen.getByLabelText('Instrucciones'), { target: { value: 'Instrucciones v1' } });
-  await screen.findByRole('option', { name: /Harina/ });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'i1' } });
+  await addSupply('Harina');
   fireEvent.click(screen.getByRole('button', { name: 'Guardar receta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
   fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Cambio posterior' } });
@@ -228,14 +227,14 @@ test('oferta: una creación ambigua sobrevive F5, consulta el ID confirmado y s�
   </Routes></MemoryRouter>); }
   const first = mount();
   await screen.findByRole('button', { name: 'Revisar oferta actual' });
-  expect(screen.getByLabelText('Etiqueta de presentación (opcional)')).toHaveValue('Mi borrador');
+  expect(screen.getByLabelText('Etiqueta de presentación')).toHaveValue('Mi borrador');
   first.unmount(); mount();
   r.getOffer.mockResolvedValue({ data: confirmed, etag: '"confirmed-version"' });
   fireEvent.click(await screen.findByRole('button', { name: 'Revisar oferta actual' }));
   await screen.findByRole('region', { name: 'Versión del servidor' });
   expect(r.getOffer.mock.calls[0][0]).toBe('created-on-server');
   fireEvent.click(screen.getByRole('button', { name: 'Adoptar versión del servidor' }));
-  expect(screen.getByLabelText('Etiqueta de presentación (opcional)')).toHaveValue('Mi borrador');
+  expect(screen.getByLabelText('Etiqueta de presentación')).toHaveValue('Mi borrador');
   expect(screen.getByLabelText('Precio base (MXN)')).toHaveValue(250);
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(1));
@@ -319,7 +318,7 @@ test('oferta: recuperar con ETag confirmado permite otro guardado explícito sin
   mountOffer(r, s); await screen.findByDisplayValue('Original');
   fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
-  fireEvent.change(screen.getByLabelText('Etiqueta de presentación (opcional)'), { target: { value: 'Borrador posterior' } });
+  fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Borrador posterior' } });
   fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
   await screen.findByRole('status');
   expect(screen.queryByRole('button', { name: 'Revisar oferta actual' })).not.toBeInTheDocument();

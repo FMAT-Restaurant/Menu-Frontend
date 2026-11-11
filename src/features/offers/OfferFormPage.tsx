@@ -5,7 +5,7 @@ import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { formatMoney } from "../../shared/formatMoney";
 import { isStrongEtag } from "../../application/entryVersion";
 import { Icon } from "../../shared/Icon";
-import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, type SyntheticEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { contractErrorResponse } from "../../api/catalogResponse";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
@@ -146,6 +146,8 @@ function validateOfferSlot(slot: SlotDraft, isEditing: boolean): string | null {
   return null;
 }
 
+export const PRESENTATION_TAG_REQUIRED_MESSAGE = "Indica la etiqueta de presentación de la oferta.";
+
 function validateOfferForm(
   basePrice: string,
   isEditing: boolean,
@@ -182,7 +184,7 @@ interface OfferSaveBlockerContext {
   action: "submit" | "retry";
   pending: SealedOperationAttempt | null;
   newOperationAuthorized: boolean;
-  draft: Pick<OfferFormDraftState, "basePrice" | "slots">;
+  draft: Pick<OfferFormDraftState, "presentationTag" | "basePrice" | "slots">;
   isEditing: boolean;
   selectedFile: File | null;
   imageError: string;
@@ -209,6 +211,7 @@ function offerSaveBlockerMessage({
   }
   const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
   if (recovering) return null;
+  if (!imageValidating && draft.presentationTag.trim() === "") return PRESENTATION_TAG_REQUIRED_MESSAGE;
   return validateOfferForm(draft.basePrice, isEditing, selectedFile, imageError, draft.slots, confirmedImageId, imageValidating);
 }
 
@@ -1292,7 +1295,7 @@ export function OfferFormPage({
       action,
       pending,
       newOperationAuthorized,
-      draft: { basePrice, slots },
+      draft: { presentationTag, basePrice, slots },
       isEditing,
       selectedFile,
       imageError,
@@ -1322,7 +1325,7 @@ export function OfferFormPage({
     }
   }
 
-  function handleSaveOffer(event: SubmitEvent<HTMLFormElement>) {
+  function handleSaveOffer(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading || loadError) return;
     void executeSave("submit");

@@ -1,7 +1,7 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import {
   analyzeIdempotentAttemptError,
   analyzeNonIdempotentWriteError,
@@ -556,7 +556,7 @@ export function CategoryFormDialog({
     return false;
   }
 
-  async function save(event: SubmitEvent<HTMLFormElement>) {
+  async function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
     if (activeCategory) {

@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { addSupply } from "./recipeSupplies";
 
 const recipe = { id: "rec-1", name: "Receta de hamburguesa clásica con queso", description: "Preparación de la casa",
   supplies: [{ inventoryItemId: "inv-carne", inventoryItem: { id: "inv-carne", name: "Carne molida", unit: "g" }, quantity: 180 }] };
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/api/v1/inventory/items?*", route => route.fulfill({ json: { data: [{ id: "inv-carne", name: "Carne molida", unit: "g" }],
-    meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "inv-carne", name: "Carne molida", unit: "g" }] }));
   await page.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [recipe],
     meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
   await page.route("**/api/v1/menu/entries/entry-1", route => route.fulfill({ json: { data: {
@@ -19,7 +19,8 @@ test("R05/R06: recipe fields and supply controls fit inside the dialog at all re
     await page.goto("/recipes");
     await page.getByRole("button", { name: "+ Nueva receta", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Nueva receta", exact: true });
-    for (const label of ["Nombre", "Descripción", "Instrucciones", "Buscar insumos de inventario", "Insumo 1", "Cantidad del insumo 1"]) {
+    await addSupply(dialog, "Carne molida");
+    for (const label of ["Nombre", "Descripción", "Instrucciones", "Buscar insumo para agregar", "Cantidad de Carne molida"]) {
       const field = dialog.getByLabel(label, { exact: true });
       await field.scrollIntoViewIfNeeded();
       await field.focus();

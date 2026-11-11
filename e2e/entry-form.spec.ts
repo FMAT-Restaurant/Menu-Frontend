@@ -23,7 +23,7 @@ test("creates and edits an entry with separate image upload and JSON writes", as
       meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
     },
   }));
-  await page.route("**/api/v1/media/images", async (route) => {
+  await page.route("**/api/v1/menu/media/images", async (route) => {
     const request = route.request();
     requests.push({ method: request.method(), url: request.url(), body: request.postData() ?? "" });
     await route.fulfill({ status: 201, json: { data: { id: "image-1", url: "/image-1", thumbnailUrl: "/image-1" } } });

@@ -504,6 +504,88 @@ test("does not update a category when its opening ETag is invalid or weak (0 HTT
   expect(requests).toEqual([]);
 });
 
+test("deletes an encoded category ID with a single conditional DELETE using the given ETag without pre-GET", async () => {
+  const requests: {
+    method?: string;
+    url?: string;
+    body?: unknown;
+    ifMatch?: string;
+  }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push({
+      method: config.method,
+      url: config.url,
+      body: config.data,
+      ifMatch: config.headers.get("If-Match")?.toString(),
+    });
+    return {
+      config,
+      data: "",
+      headers: {},
+      status: 204,
+      statusText: "No Content",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+  await expect(
+    api.deleteCategory("category /2", '"rev-opening"'),
+  ).resolves.toBeUndefined();
+  expect(requests).toEqual([
+    {
+      method: "delete",
+      url: "/menu/categories/category%20%2F2",
+      body: undefined,
+      ifMatch: '"rev-opening"',
+    },
+  ]);
+});
+
+test.each([undefined, 'W/"v1"', "*", "unquoted", '"unterminated'])(
+  "does not delete a category when its ETag is not a strong version (%s): 0 HTTP calls",
+  async (etag) => {
+    const requests: string[] = [];
+    const adapter: AxiosAdapter = async (config) => {
+      requests.push(config.method ?? "");
+      return {
+        config,
+        data: "",
+        headers: {},
+        status: 204,
+        statusText: "No Content",
+      };
+    };
+    const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+    // Reflect supplies intentionally invalid runtime values without weakening the public signature.
+    await expect(
+      Reflect.apply(api.deleteCategory, api, ["category-1", etag]),
+    ).rejects.toThrow("No se recibió la versión de la categoría");
+    expect(requests).toEqual([]);
+  },
+);
+
+test.each([401, 403, 404, 412, 429])(
+  "propagates HTTP %i from the category DELETE with its contract body and without retrying",
+  async (status) => {
+    const body = { error: { message: `Rechazo ${status} del servidor` } };
+    const error = Object.assign(new Error(`HTTP ${status}`), {
+      response: { status, data: body },
+    });
+    const requests: string[] = [];
+    const adapter: AxiosAdapter = async (config) => {
+      requests.push(config.method ?? "");
+      throw error;
+    };
+    const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+
+    await expect(
+      api.deleteCategory("category-1", '"rev-1"'),
+    ).rejects.toMatchObject({ response: { status, data: body } });
+    expect(requests).toEqual(["delete"]);
+  },
+);
+
 test("reads a strong ETag before archiving and sends only the new status", async () => {
   const requests: {
     method?: string;
@@ -1074,46 +1156,35 @@ test("deletes a recipe using If-Match from current recipe ETag", async () => {
   ]);
 });
 
-test("lists inventory items with search and pagination", async () => {
+test("lists inventory items with search", async () => {
   const requests: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     requests.push(axios.getUri(config));
     return {
       config,
-      data: {
-        data: [{ id: "item-1", name: "Carne Molida", unit: "g" }],
-        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-      },
+      data: [{ id: "item-1", name: "Carne Molida", unit: "g" }],
       headers: {},
       status: 200,
       statusText: "OK",
     };
   };
   const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
-  const result = await api.listInventoryItems({
-    q: "carne",
-    page: 1,
-    pageSize: 50,
-  });
+  const result = await api.listInventoryItems({ q: "carne" });
 
   expect(result.data).toHaveLength(1);
   expect(result.data[0].unit).toBe("g");
-  expect(requests).toEqual([
-    "/api/v1/inventory/items?q=carne&page=1&pageSize=50",
-  ]);
+  expect(result.meta.total).toBe(1);
+  expect(requests).toEqual(["/api/v1/items?q=carne"]);
 });
 
 test("rejects invalid recipe identifiers, stops category batches when aborted, and fetches offer with strong ETag", async () => {
   const methods: string[] = [];
   const adapter: AxiosAdapter = async (config) => {
     methods.push(config.method ?? "");
-    if (config.url?.includes("/inventory/items")) {
+    if (config.url?.includes("/items")) {
       return {
         config,
-        data: {
-          data: [{ id: "item-1", name: "Carne", unit: "g" }],
-          meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-        },
+        data: [{ id: "item-1", name: "Carne", unit: "g" }],
         headers: {},
         status: 200,
         statusText: "OK",
@@ -1174,10 +1245,7 @@ test("routes inventory queries to inventoryClient when parameterized independent
     inventoryRequests.push(`${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return {
       config,
-      data: {
-        data: [{ id: "inv-item-1", name: "Jitomate", unit: "kg" }],
-        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
-      },
+      data: [{ id: "inv-item-1", name: "Jitomate", unit: "kg" }],
       headers: {},
       status: 200,
       statusText: "OK",
@@ -1194,10 +1262,10 @@ test("routes inventory queries to inventoryClient when parameterized independent
   expect(menuRequests).toEqual(["GET http://menu.service.local/api/v1/menu/entries/entry-1"]);
   expect(inventoryRequests).toEqual([]);
 
-  const items = await repository.listInventoryItems({ page: 1, pageSize: 50 });
+  const items = await repository.listInventoryItems();
   expect(items.data).toHaveLength(1);
   expect(items.data[0].name).toBe("Jitomate");
-  expect(inventoryRequests).toEqual(["GET http://inventory.service.local/api/v1/inventory/items"]);
+  expect(inventoryRequests).toEqual(["GET http://inventory.service.local/api/v1/items"]);
   expect(menuRequests).toHaveLength(1);
 });
 

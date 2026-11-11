@@ -25,7 +25,7 @@
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface, #fff);
   box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
 }
 
@@ -91,7 +91,7 @@
   padding: 0;
   border: 0;
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--ink);
   box-shadow: 0 20px 50px rgb(17 24 39 / 22%);
 }
@@ -117,7 +117,7 @@
   gap: 16px;
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
-  background: #f8fafc;
+  background: var(--canvas, #f8fafc);
 }
 
 :where(.menu-module[data-menu-module]) .recipe-form-dialog__header h2 {
@@ -171,7 +171,7 @@
   min-height: var(--control-height);
   border: 1px solid #9ca3af;
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--ink);
   font: inherit;
   font-size: 14px;
@@ -218,14 +218,13 @@
 }
 
 :where(.menu-module[data-menu-module]) .recipe-supplies-table th {
-  background: #f1f5f9;
+  background: var(--surface-container, #f1f5f9);
   font-weight: 600;
   color: var(--text);
   font-size: 14px;
   line-height: 20px;
 }
 
-:where(.menu-module[data-menu-module]) .recipe-supplies-table td select,
 :where(.menu-module[data-menu-module]) .recipe-supplies-table td input {
   width: 100%;
   min-width: 0;
@@ -257,18 +256,84 @@
   gap: 8px;
   padding: 16px 24px;
   border-top: 1px solid var(--border);
-  background: #f8fafc;
+  background: var(--canvas, #f8fafc);
 }
 
-:where(.menu-module[data-menu-module]) .recipe-inventory-controls input {
-  flex: 1 1 200px;
+:where(.menu-module[data-menu-module]) .recipe-supply-search {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search input {
+  width: 100%;
   min-width: 0;
-  max-width: 100%;
   min-height: var(--control-height);
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: var(--surface, #fff);
+  color: var(--ink);
   font: inherit;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search__hint,
+:where(.menu-module[data-menu-module]) .recipe-supply-search__empty,
+:where(.menu-module[data-menu-module]) .recipe-supplies-empty {
+  margin: 0;
+  color: var(--muted, #6b7280);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search__results {
+  max-height: 16rem;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  box-shadow: 0 10px 25px rgb(0 0 0 / 8%);
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search__option {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search__option:hover,
+:where(.menu-module[data-menu-module]) .recipe-supply-search__option[aria-selected="true"] {
+  background: var(--soft-brand, #fff7ed);
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search__option[aria-disabled="true"] {
+  color: var(--muted, #6b7280);
+  background: none;
+  cursor: default;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supply-search__meta {
+  color: var(--muted, #6b7280);
+  font-size: 13px;
+}
+
+:where(.menu-module[data-menu-module]) .recipe-supplies-table .recipe-supplies-table__name {
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 @container recipe-form (width < 768px) {
@@ -325,8 +390,7 @@
 :where(.menu-module[data-menu-module]) .recipe-supplies-section legend { padding: 0 0 12px; font-weight: 600; font-size: 18px; line-height: 26px; }
 :where(.menu-module[data-menu-module]) .recipe-supplies-table td { vertical-align: top; }
 :where(.menu-module[data-menu-module]) .recipe-supplies-table input[type="number"] { text-align: right; }
-:where(.menu-module[data-menu-module]) .recipe-form-dialog .pagination__info { font-size: 12px; line-height: 16px; }
-:where(.menu-module[data-menu-module]) .recipe-form-dialog .pagination { flex-wrap: wrap; }
+
 
 /* The session content is reusable; only its host owns a modal/backdrop. */
 :where(.menu-module[data-menu-module]) dialog.recipe-form-dialog { container: menu-dialog recipe-form / inline-size; }
@@ -352,3 +416,5 @@
 :where(.menu-module[data-menu-module]) .recipe-back-confirm { padding-inline: 24px; }
 :where(.menu-module[data-menu-module]) .recipe-back-confirm button { margin: 8px 8px 0 0; }
 :where(.menu-module[data-menu-module]) .recipe-selector .recipe-selection-task [hidden], :where(.menu-module[data-menu-module]) .recipe-form-content[hidden] { display: none; }
+:where(.menu-module[data-menu-module]) .recipe-form-dialog .pagination__info { font-size: 12px; line-height: 16px; }
+:where(.menu-module[data-menu-module]) .recipe-form-dialog .pagination { flex-wrap: wrap; }
