@@ -405,7 +405,7 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.queryByRole("heading", { name: "Bebida fría", level: 3 })).not.toBeInTheDocument();
   });
 
-  test("omits unavailable inventory selection while adding a recipe option via V6", async () => {
+  test("offers both recipe and inventory sources and adds a recipe option via V6", async () => {
     const repository = createMockRepository();
     renderComponent(repository);
     await waitForOfferFormLoaded();
