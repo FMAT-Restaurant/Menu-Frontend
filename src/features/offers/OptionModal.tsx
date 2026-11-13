@@ -502,7 +502,7 @@ export function OptionModal({
           </button>
         </footer>
       </form>
-      <div hidden={confirmClose}>{children}</div>
+      <div className="option-modal-nested" hidden={confirmClose}>{children}</div>
     </dialog>
   );
 }

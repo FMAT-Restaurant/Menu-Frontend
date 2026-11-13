@@ -968,8 +968,35 @@
 :where(.menu-module[data-menu-module]) .offer-form input[type=radio], :where(.menu-module[data-menu-module]) .option-modal-dialog input[type=radio] { accent-color: var(--brand); }
 
 :where(.menu-module[data-menu-module]) .option-modal-dialog[open] [hidden] { display: none; }
-:where(.menu-module[data-menu-module]) .option-modal-dialog:has(.recipe-selection-task:not([hidden])) { width: min(calc(100% - 32px), calc(100cqw - 32px), 960px); }
-:where(.menu-module[data-menu-module]) .option-modal-dialog:has(.recipe-selection-task:not([hidden])) > div:last-child { min-height: 0; overflow-y: auto; }
+:where(.menu-module[data-menu-module]) .option-modal-dialog:has(:is(.recipe-selection-task, .category-screen, .inventory-screen):not([hidden])) {
+  width: min(calc(100% - 32px), calc(100cqw - 32px), 960px);
+  height: min(90vh, 800px);
+  height: min(90dvh, 800px);
+  max-height: min(90vh, 800px);
+  max-height: min(90dvh, 800px);
+  overflow: hidden;
+}
+:where(.menu-module[data-menu-module]) .option-modal-dialog:has(:is(.recipe-selection-task, .category-screen, .inventory-screen):not([hidden])) > div:last-child,
+:where(.menu-module[data-menu-module]) .option-modal-nested {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+:where(.menu-module[data-menu-module]) .option-modal-dialog .recipe-selection-task {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+:where(.menu-module[data-menu-module]) .option-modal-dialog :is(.category-screen, .inventory-screen) {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
 :where(.menu-module[data-menu-module]) .option-discard { padding: 24px; }
 :where(.menu-module[data-menu-module]) .option-discard button { margin: 8px 8px 0 0; }
 :where(.menu-module[data-menu-module]) .offer-state, :where(.menu-module[data-menu-module]) .slot-card__badge--active, :where(.menu-module[data-menu-module]) .slot-card__badge--inactive {
