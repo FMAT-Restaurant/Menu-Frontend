@@ -103,6 +103,25 @@ test("lists only offers of the selected entry with server pagination", async () 
   ]);
 });
 
+test("lists offers with excludeOfferId parameter and optional entryId", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(axios.getUri(config));
+    return {
+      config,
+      data: { data: [], meta: { page: 1, pageSize: 100, total: 0, totalPages: 0 } },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  await api.listOffers(undefined, 1, 100, undefined, "offer-current-123");
+  expect(requests).toEqual([
+    "/api/v1/menu/offers?page=1&pageSize=100&excludeOfferId=offer-current-123",
+  ]);
+});
+
 test("bounds entry, offer list, and offer mutation requests with distinct read (12s) and write (20s) timeouts", async () => {
   const timeouts: number[] = [];
   const adapter: AxiosAdapter = async (config) => {

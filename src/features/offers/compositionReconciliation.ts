@@ -256,3 +256,31 @@ export function reconcileComposition({
   if (optionResult) return optionResult;
   return { status: "success", slots: applyMatchedIds(currentSlots, matchedSlots, matchedOptions) };
 }
+
+export function cloneSlotsForDraft(sourceSlots: readonly CompositionSlotDetail[]): SlotDraft[] {
+  return sourceSlots.map((slot) => ({
+    localId: generateLocalId(),
+    name: slot.name,
+    quantity: slot.quantity,
+    course: slot.course ?? null,
+    options: (slot.options || []).map((opt) => {
+      const optionDraft: OptionDraft = {
+        localId: generateLocalId(),
+        displayName: opt.displayName,
+        status: opt.status ?? "ACTIVE",
+        sourceType: opt.sourceType,
+        ...(opt.sourceType === "RECIPE"
+          ? {
+              recipeId: opt.recipeId,
+              hasRecipeAssignmentIntent: true,
+            }
+          : {
+              inventoryItemId: opt.inventoryItemId,
+              quantity: opt.quantity,
+              unit: opt.unit,
+            }),
+      };
+      return optionDraft;
+    }),
+  }));
+}
