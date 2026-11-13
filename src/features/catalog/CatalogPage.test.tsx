@@ -263,3 +263,30 @@ test("opens V5 with the current V1 search and filters available for return navig
 
   expect(screen.getByText("/?q=pizza&status=ACTIVE")).toBeVisible();
 });
+
+test("ignores and removes an invalid categoryId from url query, keeping all entries visible without 422", async () => {
+  const api = repository();
+  renderPage(api, "/?categoryId=no-existe");
+
+  expect(await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
+  await waitFor(() => expect(screen.getByTestId("catalog-location")).toHaveTextContent("/"));
+  expect(screen.getByRole("combobox", { name: "Categoría" })).toHaveValue("");
+  expect(api.listEntries).toHaveBeenLastCalledWith(
+    expect.not.objectContaining({ categoryId: "no-existe" }),
+    expect.any(AbortSignal),
+  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("keeps a valid categoryId from url query and filters by it", async () => {
+  const api = repository();
+  renderPage(api, "/?categoryId=category-1");
+
+  expect(await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
+  expect(screen.getByTestId("catalog-location")).toHaveTextContent("/?categoryId=category-1");
+  expect(screen.getByRole("combobox", { name: "Categoría" })).toHaveValue("category-1");
+  expect(api.listEntries).toHaveBeenLastCalledWith(
+    expect.objectContaining({ categoryId: "category-1" }),
+    expect.any(AbortSignal),
+  );
+});
