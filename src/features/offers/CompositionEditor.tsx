@@ -12,6 +12,7 @@ export interface CompositionEditorProps {
   onEditOption: (slotIndex: number, optionIndex: number) => void;
   onDeleteOption: (slotIndex: number, optionIndex: number) => void;
   onToggleOptionStatus: (slotIndex: number, optionIndex: number) => void;
+  onCopyComposition?: () => void;
   disabled?: boolean;
 }
 
@@ -25,6 +26,7 @@ export function CompositionEditor({
   onEditOption,
   onDeleteOption,
   onToggleOptionStatus,
+  onCopyComposition,
   disabled = false,
 }: Readonly<CompositionEditorProps>) {
   return (
@@ -39,7 +41,16 @@ export function CompositionEditor({
           </p>
         </div>
 
-
+        {onCopyComposition && (
+          <button
+            type="button"
+            className="button button--secondary"
+            onClick={onCopyComposition}
+            disabled={disabled}
+          >
+            Copiar composición desde otra oferta
+          </button>
+        )}
       </div>
 
       {!loading && slots.length === 0 && (

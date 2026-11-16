@@ -307,7 +307,7 @@ export interface MenuRepository {
   uploadEntryImage(image: File, idempotencyKey: string): Promise<string>;
   createEntry(draft: EntryCreateRequest, idempotencyKey: string): Promise<MenuEntryDetail>;
   updateEntry(id: string, draft: EntryUpdateDraft, etag: string): Promise<MenuEntryDetail>;
-  listOffers(entryId: string, page: number, pageSize: number, signal?: AbortSignal): Promise<Page<MenuOffer>>;
+  listOffers(entryId: string | undefined, page: number, pageSize: number, signal?: AbortSignal, excludeOfferId?: string): Promise<Page<MenuOffer>>;
   getOffer(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuOfferDetail>>;
   createOffer(entryId: string, draft: OfferCreateDraft, imageId: string, idempotencyKey: string): Promise<MenuOfferDetail>;
   updateOffer(id: string, draft: OfferUpdateDraft, etag: string, idempotencyKey: string, imageId?: string): Promise<MenuOfferDetail>;

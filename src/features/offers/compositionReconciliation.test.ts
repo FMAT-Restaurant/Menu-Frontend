@@ -1,5 +1,6 @@
 import type { CompositionSlotDetail } from "../../application/catalog";
 import {
+  cloneSlotsForDraft,
   ensureSlotLocalIds,
   generateLocalId,
   reconcileComposition,
@@ -398,5 +399,98 @@ describe("compositionReconciliation (Section 3.6)", () => {
     if (result.status === "ambiguous") {
       expect(result.reason).toContain("no fue encontrado");
     }
+  });
+
+  describe("cloneSlotsForDraft (MVP1-T29 / REQ-MENU-OFFER-005)", () => {
+    test("clones slots and options into editable local definitions with fresh localIds and without server IDs", () => {
+      const sourceSlots: CompositionSlotDetail[] = [
+        {
+          slotId: "srv-slot-100",
+          name: "Guarniciones",
+          quantity: 2,
+          course: "entrada",
+          status: "ACTIVE",
+          options: [
+            {
+              optionId: "srv-opt-200",
+              displayName: "Papas Fritas",
+              status: "ACTIVE",
+              sourceType: "INVENTORY_ITEM",
+              inventoryItemId: "inv-potatoes",
+              quantity: 150,
+              unit: "g",
+            },
+          ],
+        },
+      ];
+
+      const cloned = cloneSlotsForDraft(sourceSlots);
+
+      expect(cloned).toHaveLength(1);
+      expect(cloned[0].slotId).toBeUndefined();
+      expect(cloned[0].localId).toBeDefined();
+      expect(cloned[0].localId).not.toBe("srv-slot-100");
+      expect(cloned[0].name).toBe("Guarniciones");
+      expect(cloned[0].quantity).toBe(2);
+      expect(cloned[0].course).toBe("entrada");
+
+      expect(cloned[0].options).toHaveLength(1);
+      expect(cloned[0].options[0].optionId).toBeUndefined();
+      expect(cloned[0].options[0].localId).toBeDefined();
+      expect(cloned[0].options[0].localId).not.toBe("srv-opt-200");
+      expect(cloned[0].options[0].displayName).toBe("Papas Fritas");
+      expect(cloned[0].options[0].status).toBe("ACTIVE");
+      expect(cloned[0].options[0].sourceType).toBe("INVENTORY_ITEM");
+      expect(cloned[0].options[0].inventoryItemId).toBe("inv-potatoes");
+      expect(cloned[0].options[0].quantity).toBe(150);
+      expect(cloned[0].options[0].unit).toBe("g");
+    });
+
+    test("preserves option status (ACTIVE/INACTIVE) and content origin references (RECIPE and INVENTORY_ITEM)", () => {
+      const sourceSlots: CompositionSlotDetail[] = [
+        {
+          slotId: "srv-slot-200",
+          name: "Bebidas y Complementos",
+          quantity: 1,
+          course: null,
+          status: "ACTIVE",
+          options: [
+            {
+              optionId: "srv-opt-301",
+              displayName: "Salsa Secreta",
+              status: "INACTIVE",
+              sourceType: "RECIPE",
+              recipeId: "rec-sauce-1",
+            },
+            {
+              optionId: "srv-opt-302",
+              displayName: "Jugo Natural",
+              status: "ACTIVE",
+              sourceType: "INVENTORY_ITEM",
+              inventoryItemId: "inv-juice-1",
+              quantity: 250,
+              unit: "ml",
+            },
+          ],
+        },
+      ];
+
+      const cloned = cloneSlotsForDraft(sourceSlots);
+
+      expect(cloned[0].options[0].status).toBe("INACTIVE");
+      expect(cloned[0].options[0].sourceType).toBe("RECIPE");
+      expect(cloned[0].options[0].recipeId).toBe("rec-sauce-1");
+      expect(cloned[0].options[0].hasRecipeAssignmentIntent).toBe(true);
+
+      expect(cloned[0].options[1].status).toBe("ACTIVE");
+      expect(cloned[0].options[1].sourceType).toBe("INVENTORY_ITEM");
+      expect(cloned[0].options[1].inventoryItemId).toBe("inv-juice-1");
+      expect(cloned[0].options[1].quantity).toBe(250);
+      expect(cloned[0].options[1].unit).toBe("ml");
+    });
+
+    test("returns empty array when source composition has no slots", () => {
+      expect(cloneSlotsForDraft([])).toEqual([]);
+    });
   });
 });

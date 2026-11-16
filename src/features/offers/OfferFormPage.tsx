@@ -48,12 +48,14 @@ import { type SlotDraft } from "./SlotCard";
 import { type SlotModalData, SlotModal } from "./SlotModal";
 import { validateOfferImage } from "./offerImage";
 import "./styles.css";
+import { CopyCompositionOverlay } from "./CopyCompositionOverlay";
 import {
   ensureOptionLocalId,
   ensureSlotLocalIds,
   generateLocalId,
   reconcileComposition,
   consumeConfirmedRecipeAssignments,
+  cloneSlotsForDraft,
 } from "./compositionReconciliation";
 
 export function buildOfferCreateScope(entryId: string, tabId = getOrCreateTabId()): OperationFlowScope {
@@ -329,7 +331,8 @@ export type OfferFormRepository = Pick<
   | "updateRecipe"
   | "deleteRecipe"
   | "listInventoryItems"
->;
+> &
+  Partial<Pick<MenuRepository, "listOffers">>;
 
 export interface OfferFormPageProps {
   repository: OfferFormRepository;
@@ -581,6 +584,13 @@ export function OfferFormPage({
   const [targetSlotIndex, setTargetSlotIndex] = useState<number | null>(null);
   const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
   const [currentOptionDraft, setCurrentOptionDraft] = useState<OptionDraft | null>(null);
+
+  const [copyOverlayOpen, setCopyOverlayOpen] = useState(false);
+  const canCopyComposition = Boolean(
+    repository &&
+    typeof repository.listOffers === "function" &&
+    typeof repository.getOffer === "function"
+  );
 
   const [recipePickerOpen, setRecipePickerOpen] = useState(false);
   const [inventoryPickerOpen, setInventoryPickerOpen] = useState(false);
@@ -1519,6 +1529,7 @@ export function OfferFormPage({
               onEditOption={handleOpenEditOption}
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
+              onCopyComposition={canCopyComposition ? () => setCopyOverlayOpen(true) : undefined}
               disabled={loading || saving || exitSucceeded.current}
             />
 
@@ -1588,6 +1599,20 @@ export function OfferFormPage({
             />
           )}
         </OptionModal>
+
+        {copyOverlayOpen && canCopyComposition && (
+          <CopyCompositionOverlay
+            repository={repository as Pick<MenuRepository, "listOffers" | "getOffer">}
+            excludeOfferId={offerId || confirmedOfferId}
+            onCopyComposition={(sourceOfferDetail) => {
+              const sourceSlots = sourceOfferDetail.composition?.slots ?? [];
+              const newSlots = cloneSlotsForDraft(sourceSlots);
+              setSlots((prev) => [...prev, ...newSlots]);
+              setCopyOverlayOpen(false);
+            }}
+            onClose={() => setCopyOverlayOpen(false)}
+          />
+        )}
       </main>
     </div>
   );

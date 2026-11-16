@@ -11,6 +11,7 @@ import type {
   OfferStatus,
   OfferUpdateDraft,
   RecipeSummary,
+  VersionedResource,
 } from "../../application/catalog";
 import type {
   OperationFlowScope,
@@ -347,6 +348,135 @@ describe("OfferFormPage (V4)", () => {
     expect(repository.getOffer).not.toHaveBeenCalled();
     expect(repository.createOffer).not.toHaveBeenCalled();
     expect(repository.updateOffer).not.toHaveBeenCalled();
+  });
+
+  test("renders 'Copiar composición desde otra oferta' button when repository supports listOffers and opens overlay (MVP1-T29)", async () => {
+    const repository = {
+      ...createMockRepository(),
+      listOffers: jest.fn().mockResolvedValue({
+        data: [
+          {
+            id: "offer-source-1",
+            entryId: "entry-2",
+            entryName: "Pizza Suprema",
+            presentationTag: "Familiar",
+            basePrice: 280,
+            status: "ACTIVE",
+            image: null,
+            slotCount: 1,
+          },
+        ],
+        meta: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+      }),
+    };
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
+
+    const copyBtn = await screen.findByRole("button", { name: "Copiar composición desde otra oferta" });
+    expect(copyBtn).toBeVisible();
+    expect(copyBtn).toBeEnabled();
+
+    fireEvent.click(copyBtn);
+
+    expect(await screen.findByRole("heading", { name: "Copiar composición desde otra oferta", level: 2 })).toBeVisible();
+    expect(await screen.findByText("Pizza Suprema")).toBeVisible();
+    expect(screen.getByText("Familiar")).toBeVisible();
+    expect(screen.getByText("$ 280")).toBeVisible();
+
+    // Cancel closes overlay without changes
+    const cancelOverlayBtn = screen.getByRole("button", { name: "[ X Cancelar ]" });
+    fireEvent.click(cancelOverlayBtn);
+
+    expect(screen.queryByRole("heading", { name: "Copiar composición desde otra oferta", level: 2 })).not.toBeInTheDocument();
+    expect(screen.getByText("Plato principal")).toBeVisible();
+  });
+
+  test("confirms copy: appends cloned slots, preserves existing destination slots and basePrice (MVP1-T29)", async () => {
+    const sourceOfferDetail: VersionedResource<MenuOfferDetail> = {
+      data: {
+        id: "offer-source-1",
+        entryId: "entry-2",
+        presentationTag: "Familiar",
+        basePrice: 300,
+        status: "ACTIVE",
+        image: null,
+        composition: {
+          slots: [
+            {
+              slotId: "slot-src-10",
+              name: "Postre incluido",
+              quantity: 2,
+              course: "postre",
+              status: "ACTIVE",
+              options: [
+                {
+                  optionId: "opt-src-20",
+                  displayName: "Helado de Vainilla",
+                  status: "ACTIVE",
+                  sourceType: "RECIPE",
+                  recipeId: "rec-helado-1",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      etag: '"offer-src-v1"',
+    };
+
+    const repository = {
+      ...createMockRepository(),
+      listOffers: jest.fn().mockResolvedValue({
+        data: [
+          {
+            id: "offer-source-1",
+            entryId: "entry-2",
+            entryName: "Pizza Suprema",
+            presentationTag: "Familiar",
+            basePrice: 300,
+            status: "ACTIVE",
+            image: null,
+            slotCount: 1,
+          },
+        ],
+        meta: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+      }),
+      getOffer: jest.fn().mockImplementation(async (id: string) => {
+        if (id === "offer-source-1") return sourceOfferDetail;
+        return { data: mockOffer, etag: '"offer-rev-1"' };
+      }),
+    };
+
+    renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
+    await waitForOfferFormLoaded();
+
+    // Existing slot and basePrice
+    expect(screen.getByText("Plato principal")).toBeVisible();
+    const priceInput = screen.getByLabelText(/Precio base/) as HTMLInputElement;
+    expect(priceInput.value).toBe("150");
+
+    // Open copy overlay
+    const copyBtn = await screen.findByRole("button", { name: "Copiar composición desde otra oferta" });
+    fireEvent.click(copyBtn);
+
+    // Select source offer to copy
+    const copyActionBtn = await screen.findByRole("button", {
+      name: "Copiar composición de Pizza Suprema Familiar",
+    });
+    fireEvent.click(copyActionBtn);
+
+    // Overlay closes and both slots are present
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Copiar composición desde otra oferta", level: 2 })).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Plato principal")).toBeVisible();
+    expect(screen.getByText("Postre incluido")).toBeVisible();
+    expect(screen.getByText("Helado de Vainilla")).toBeVisible();
+
+    // Destination basePrice is unchanged (REQ-MENU-OFFER-003, INV-MENU-007)
+    expect(priceInput.value).toBe("150");
   });
 
   test("creates a new slot via SlotModal (C31)", async () => {

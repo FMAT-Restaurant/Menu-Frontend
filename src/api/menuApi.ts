@@ -448,13 +448,19 @@ export function createMenuApi(
     },
 
     async listOffers(
-      entryId: string,
-      page: number,
-      pageSize: number,
+      entryId?: string,
+      page: number = 1,
+      pageSize: number = 12,
       signal?: AbortSignal,
+      excludeOfferId?: string,
     ): Promise<Page<MenuOffer>> {
       const response = await client.get<unknown>("/menu/offers", {
-        params: { entryId, page, pageSize },
+        params: {
+          ...(entryId ? { entryId } : {}),
+          page,
+          pageSize,
+          ...(excludeOfferId ? { excludeOfferId } : {}),
+        },
         signal,
         timeout: READ_REQUEST_TIMEOUT_MS,
       });

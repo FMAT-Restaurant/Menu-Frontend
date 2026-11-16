@@ -295,14 +295,26 @@ export function createDemoRepository(): MenuRepository {
         for (const offer of offers.values()) if (offer.entryId === id) offers.delete(offer.id);
       });
     },
-    listOffers(entryId, page, pageSize, signal) {
+    listOffers(entryId, page = 1, pageSize = 12, signal, excludeOfferId) {
       return runDemoOperation(() => {
         signal?.throwIfAborted();
-        const entry = required(entries, entryId, "La entrada");
-        const result = [...offers.values()].filter(offer => offer.entryId === entryId).map((offer): MenuOffer => ({
-          ...offer, entryName: entry.brandName, slotCount: offer.composition.slots.length,
-        }));
-        return pageOf(result, page, pageSize);
+        let result = [...offers.values()];
+        if (entryId) {
+          required(entries, entryId, "La entrada");
+          result = result.filter(offer => offer.entryId === entryId);
+        }
+        if (excludeOfferId) {
+          result = result.filter(offer => offer.id !== excludeOfferId);
+        }
+        const mapped = result.map((offer): MenuOffer => {
+          const entry = entries.get(offer.entryId);
+          return {
+            ...offer,
+            entryName: entry?.brandName ?? "Entrada",
+            slotCount: offer.composition.slots.length,
+          };
+        });
+        return pageOf(mapped, page, pageSize);
       });
     },
     getOffer(id, signal) {
