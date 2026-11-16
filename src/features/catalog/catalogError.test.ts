@@ -8,6 +8,8 @@ test.each([
   [428, "conflict", "change", "La entrada cambió desde que la abriste"],
   [400, "validation", "change", "El servidor rechazó el cambio por las reglas"],
   [422, "validation", "change", "El servidor rechazó el cambio por las reglas"],
+  [400, "validation", "load", "No se pudieron cargar las entradas. Comprueba los filtros indicados"],
+  [422, "validation", "load", "No se pudieron cargar las entradas. Comprueba los filtros indicados"],
   [429, "rate_limit", "load", "Demasiadas solicitudes. Espera un momento"],
   [429, "rate_limit", "change", "Demasiadas solicitudes. Espera un momento"],
   [429, "rate_limit", "delete", "Demasiadas solicitudes. Espera un momento"],

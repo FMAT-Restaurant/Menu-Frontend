@@ -3,7 +3,15 @@ import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { EntryQuery, EntryStatus, MenuCategory, MenuEntry, MenuRepository, Page } from "../../application/catalog";
-import { cachedEntries, entryQueryKey, invalidateCatalogCategories, invalidateCatalogEntries, rememberEntries } from "../../application/catalogCache";
+import {
+  cachedCategories,
+  cachedEntries,
+  entryQueryKey,
+  invalidateCatalogCategories,
+  invalidateCatalogEntries,
+  previousCategories,
+  rememberEntries,
+} from "../../application/catalogCache";
 import { loadEntryCategories } from "../../application/entryCategories";
 import { Icon } from "../../shared/Icon";
 import { CatalogFilters } from "./CatalogFilters";
@@ -28,17 +36,21 @@ function validPage(result: Page<MenuEntry>, requested: number): number {
   return Math.min(requested, last);
 }
 
-function queryFromUrl(searchParams: URLSearchParams): EntryQuery {
+function queryFromUrl(searchParams: URLSearchParams, validCategories?: MenuCategory[]): EntryQuery {
   const requestedPageSize = Number(searchParams.get("pageSize"));
   const query: EntryQuery = {
     page: positiveNumber(searchParams.get("page"), 1),
     pageSize: pageSizes.has(requestedPageSize) ? requestedPageSize : 12,
   };
   const q = searchParams.get("q")?.trim();
-  const categoryId = searchParams.get("categoryId");
+  const rawCategoryId = searchParams.get("categoryId");
   const status = statuses.find((value) => value === searchParams.get("status"));
   if (q) query.q = q;
-  if (categoryId) query.categoryId = categoryId;
+  if (rawCategoryId) {
+    if (!validCategories || validCategories.some((cat) => cat.id === rawCategoryId)) {
+      query.categoryId = rawCategoryId;
+    }
+  }
   if (status) query.status = status;
   return query;
 }
@@ -72,7 +84,11 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("entry");
   const [searchParams, setSearchParams] = useSearchParams();
-  const query = queryFromUrl(searchParams);
+  const [categories, setCategories] = useState<MenuCategory[]>(() => previousCategories(repository) ?? []);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(() => Boolean(cachedCategories(repository)));
+  const [categoryError, setCategoryError] = useState(false);
+  const rawCategoryId = searchParams.get("categoryId");
+  const query = queryFromUrl(searchParams, categoriesLoaded && !categoryError ? categories : undefined);
   const key = entryQueryKey(query);
   const currentQuery = useRef({ key, query });
   currentQuery.current = { key, query };
@@ -80,11 +96,9 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   paramsRef.current = searchParams;
   const [draftSearch, setDraftSearch] = useState(query.q ?? "");
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [displayed, setDisplayed] = useState<DisplayedPage | null>(null);
   const [fetching, setFetching] = useState(true);
   const [entryError, setEntryError] = useState<Feedback | null>(null);
-  const [categoryError, setCategoryError] = useState(false);
   const [actionError, setActionError] = useState<Feedback | null>(null);
   const [entryRetry, setEntryRetry] = useState(0);
   const [categoryRetry, setCategoryRetry] = useState(0);
@@ -136,18 +150,31 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
       .then((loaded) => {
         if (!controller.signal.aborted) {
           setCategories(loaded);
+          setCategoriesLoaded(true);
         }
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted && !(error instanceof DOMException && error.name === "AbortError")) {
           setCategoryError(true);
+          setCategoriesLoaded(true);
         }
       });
     return () => controller.abort();
   }, [repository, categoryRetry]);
 
   useEffect(() => {
-    const requested = queryFromUrl(searchParams);
+    const rawCategoryId = searchParams.get("categoryId");
+    if (rawCategoryId && !categoriesLoaded) {
+      return;
+    }
+    if (rawCategoryId && categoriesLoaded && !categoryError && !categories.some((cat) => cat.id === rawCategoryId)) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("categoryId");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
+    const requested = queryFromUrl(searchParams, categoriesLoaded && !categoryError ? categories : undefined);
     const requestedKey = entryQueryKey(requested);
     const cached = cachedEntries(repository, requested);
     if (cached) {
@@ -181,7 +208,15 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
       if (!controller.signal.aborted) setFetching(false);
     });
     return () => controller.abort();
-  }, [repository, key, entryRetry, setSearchParams]);
+  }, [
+    repository,
+    key,
+    entryRetry,
+    setSearchParams,
+    rawCategoryId ? categoriesLoaded : false,
+    rawCategoryId ? categories : undefined,
+    categoryError,
+  ]);
 
   function updateFilter(name: "categoryId" | "status" | "q" | "pageSize", value: string) {
     const next = new URLSearchParams(paramsRef.current);

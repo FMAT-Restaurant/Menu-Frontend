@@ -34,7 +34,7 @@ export function catalogErrorMessage(kind: CatalogErrorKind, action: "load" | "ch
   if (kind === "access") return "No tienes permiso para esta operación. Solicita acceso o vuelve a iniciar sesión.";
   if (kind === "missing") return "La entrada ya no está disponible. Actualiza la lista.";
   if (kind === "conflict") return "La entrada cambió desde que la abriste. Actualiza la lista antes de volver a intentarlo.";
-  if (kind === "validation") return "El servidor rechazó el cambio por las reglas de la entrada. Revisa su estado y vuelve a intentarlo.";
+  if (kind === "validation") return action === "load" ? "No se pudieron cargar las entradas. Comprueba los filtros indicados y vuelve a intentarlo." : "El servidor rechazó el cambio por las reglas de la entrada. Revisa su estado y vuelve a intentarlo.";
   if (kind === "rate_limit") return "Demasiadas solicitudes. Espera un momento antes de volver a intentarlo.";
   if (action === "load") return "No se pudieron cargar las entradas. Comprueba tu conexión y vuelve a intentarlo.";
   if (action === "delete") return "No se pudo confirmar la eliminación. Actualiza la lista antes de repetirla.";
