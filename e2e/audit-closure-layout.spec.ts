@@ -5,7 +5,7 @@ const recipe = { id: "rec-1", name: "Receta de hamburguesa clásica con queso", 
   supplies: [{ inventoryItemId: "inv-carne", inventoryItem: { id: "inv-carne", name: "Carne molida", unit: "g" }, quantity: 180 }] };
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "inv-carne", name: "Carne molida", unit: "g" }] }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: { items: [{ id: "inv-carne", name: "Carne molida", unit: "g" }], total: 1, page: 1, limit: 20, totalPages: 1 } }));
   await page.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [recipe],
     meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
   await page.route("**/api/v1/menu/entries/entry-1", route => route.fulfill({ json: { data: {

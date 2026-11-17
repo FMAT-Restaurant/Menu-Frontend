@@ -51,10 +51,16 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
 
     await page.route("**/api/v1/items*", (route) =>
       route.fulfill({
-        json: [
-          { id: "inv-1", name: "Carne", unit: "g" },
-          { id: "inv-2", name: "Pan", unit: "pza" },
-        ],
+        json: {
+          items: [
+            { id: "inv-1", name: "Carne", unit: "g" },
+            { id: "inv-2", name: "Pan", unit: "pza" },
+          ],
+          total: 2,
+          page: 1,
+          limit: 20,
+          totalPages: 1,
+        },
       }),
     );
 
@@ -101,7 +107,8 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
       const url = new URL(route.request().url());
       inventoryRequests.push(url);
       const q = url.searchParams.get("q")?.toLowerCase();
-      return route.fulfill({ json: q ? inventory.filter((item) => item.name.toLowerCase().includes(q)) : inventory });
+      const items = q ? inventory.filter((item) => item.name.toLowerCase().includes(q)) : inventory;
+      return route.fulfill({ json: { items, total: items.length, page: 1, limit: 20, totalPages: 1 } });
     });
 
     await page.route("**/api/v1/menu/recipes", (route) => {
@@ -177,7 +184,7 @@ test.describe("Recipe Library and Selector Flow (T13)", () => {
         });
       }
       return route.fulfill({
-        json: [{ id: "inv-recov", name: "Insumo Recuperado", unit: "ml" }],
+        json: { items: [{ id: "inv-recov", name: "Insumo Recuperado", unit: "ml" }], total: 1, page: 1, limit: 20, totalPages: 1 },
       });
     });
 

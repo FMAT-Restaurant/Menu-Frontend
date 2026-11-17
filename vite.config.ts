@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => {
     },
     preview: { port: 5175, strictPort: true, cors: true, host: true },
     // Requisitos de @originjs/vite-plugin-federation para el remoto.
-    build: { target: "esnext", cssCodeSplit: false },
+    // minify: false -> el minificador de Vite 8 (Oxc) convierte el placeholder '__v__css__...'
+    // a template literal (`...`) y el plugin (v1.4.1) solo lo reemplaza si usa comillas simples/dobles.
+    // Sin el reemplazo, remoteEntry.js llama dynamicLoadingCss con un string y falla con "e.forEach is not a function".
+    build: { target: "esnext", cssCodeSplit: false, minify: false },
   };
 });

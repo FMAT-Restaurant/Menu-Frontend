@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   } } }));
   await page.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [recipe],
     meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 } } }));
-  await page.route("**/api/v1/items*", route => route.fulfill({ json: [recipe.supplies[0].inventoryItem] }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: { items: [recipe.supplies[0].inventoryItem], total: 1, page: 1, limit: 20, totalPages: 1 } }));
 });
 
 async function openOption(page: Page, groupName = "Principal") {
