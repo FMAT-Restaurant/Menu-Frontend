@@ -352,24 +352,30 @@ export function recipeDetailResponse(value: unknown): RecipeDetail {
 }
 
 /**
- * El inventario responde con un arreglo plano de ítems (sin envoltorio ni paginación).
- * Solo se toman los campos que usa este frontend: id (o _id), name y unit.
+ * El inventario responde con `PaginatedResponse<Item>`:
+ * `{ items, total, page, limit, totalPages }`.
+ * Solo se toman los campos de ítem que usa este frontend: id (o _id), name y unit.
  */
 export function inventoryPage(value: unknown): Page<InventoryItem> {
-  if (!Array.isArray(value)) {
-    throw new CatalogResponseError("Respuesta de inventario inválida.", "inventory");
+  const invalid = () => new CatalogResponseError("Respuesta de inventario inválida.", "inventory");
+  if (!record(value) || !Array.isArray(value.items)) throw invalid();
+  const { total, page, limit, totalPages } = value;
+  if (
+    !nonNegativeSafeInteger(total) ||
+    !nonNegativeSafeInteger(page) ||
+    page < 1 ||
+    !nonNegativeSafeInteger(limit) ||
+    limit < 1 ||
+    !nonNegativeSafeInteger(totalPages)
+  ) {
+    throw invalid();
   }
-  const data: InventoryItem[] = value.map((raw) => {
+  const data: InventoryItem[] = value.items.map((raw) => {
     const item = record(raw) ? { ...raw, id: raw.id ?? raw._id } : raw;
-    if (!isInventoryItem(item)) {
-      throw new CatalogResponseError("Respuesta de inventario inválida.", "inventory");
-    }
+    if (!isInventoryItem(item)) throw invalid();
     return { id: item.id, name: item.name, unit: item.unit };
   });
-  return {
-    data,
-    meta: { page: 1, pageSize: Math.max(data.length, 1), total: data.length, totalPages: 1 },
-  };
+  return { data, meta: { page, pageSize: limit, total, totalPages } };
 }
 
 export function inventoryItemResponse(value: unknown): InventoryItem {

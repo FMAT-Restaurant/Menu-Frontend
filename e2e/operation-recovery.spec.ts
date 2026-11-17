@@ -127,7 +127,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
 
     await page.route("**/api/v1/items*", (route) =>
       route.fulfill({
-        json: [{ id: "inv-papas", name: "Papas Criollas", unit: "kg" }],
+        json: { items: [{ id: "inv-papas", name: "Papas Criollas", unit: "kg" }], total: 1, page: 1, limit: 20, totalPages: 1 },
       }),
     );
 

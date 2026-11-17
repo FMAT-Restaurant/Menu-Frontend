@@ -1181,7 +1181,7 @@ test("lists inventory items with search", async () => {
     requests.push(axios.getUri(config));
     return {
       config,
-      data: [{ id: "item-1", name: "Carne Molida", unit: "g" }],
+      data: { items: [{ _id: "item-1", name: "Carne Molida", unit: "g" }], total: 1, page: 1, limit: 20, totalPages: 1 },
       headers: {},
       status: 200,
       statusText: "OK",
@@ -1194,6 +1194,10 @@ test("lists inventory items with search", async () => {
   expect(result.data[0].unit).toBe("g");
   expect(result.meta.total).toBe(1);
   expect(requests).toEqual(["/api/v1/items?q=carne"]);
+
+  const paged = await api.listInventoryItems({ q: "carne", page: 2, pageSize: 50 });
+  expect(paged.data[0].id).toBe("item-1");
+  expect(requests[1]).toBe("/api/v1/items?q=carne&page=2&limit=50");
 });
 
 test("rejects invalid recipe identifiers, stops category batches when aborted, and fetches offer with strong ETag", async () => {
@@ -1203,7 +1207,7 @@ test("rejects invalid recipe identifiers, stops category batches when aborted, a
     if (config.url?.includes("/items")) {
       return {
         config,
-        data: [{ id: "item-1", name: "Carne", unit: "g" }],
+        data: { items: [{ _id: "item-1", name: "Carne", unit: "g" }], total: 1, page: 1, limit: 20, totalPages: 1 },
         headers: {},
         status: 200,
         statusText: "OK",
@@ -1264,7 +1268,7 @@ test("routes inventory queries to inventoryClient when parameterized independent
     inventoryRequests.push(`${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return {
       config,
-      data: [{ id: "inv-item-1", name: "Jitomate", unit: "kg" }],
+      data: { items: [{ _id: "inv-item-1", name: "Jitomate", unit: "kg" }], total: 1, page: 1, limit: 20, totalPages: 1 },
       headers: {},
       status: 200,
       statusText: "OK",

@@ -14,7 +14,7 @@ test(`UX10 creation HTTP ${status} preserves option and controls manual recovery
     const query = new URL(route.request().url());
     return route.fulfill({ json: { data: [{ id: "existing", name: "Receta existente", description: "Base", supplies: [] }], meta: { page: Number(query.searchParams.get("page") || 1), pageSize: 50, total: 51, totalPages: 2 } } });
   });
-  await page.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "flour", name: "Harina", unit: "kg" }] }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: { items: [{ id: "flour", name: "Harina", unit: "kg" }], total: 1, page: 1, limit: 20, totalPages: 1 } }));
   await page.route("**/api/v1/menu/recipes", async route => {
     posts.push({ key: route.request().headers()["idempotency-key"], body: route.request().postDataJSON() });
     if (posts.length === 1) return route.fulfill({ status, json: { message: "No se pudo guardar la receta" } });
@@ -72,7 +72,7 @@ test("UX10 pending recipe keeps one modal through repeated Escape after submit d
   const posts: Array<{ key?: string; body: unknown }> = [];
   await page.route("**/api/v1/menu/entries/entry-ux10", route => route.fulfill({ json: { data: { id: "entry-ux10", brandName: "Entrada UX10", description: "Contrato", status: "ACTIVE", categoryIds: [] } } }));
   await page.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [], meta: { page: 1, pageSize: 50, total: 0, totalPages: 1 } } }));
-  await page.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "flour", name: "Harina", unit: "kg" }] }));
+  await page.route("**/api/v1/items*", route => route.fulfill({ json: { items: [{ id: "flour", name: "Harina", unit: "kg" }], total: 1, page: 1, limit: 20, totalPages: 1 } }));
   await page.route("**/api/v1/menu/recipes", async route => {
     posts.push({ key: route.request().headers()["idempotency-key"], body: route.request().postDataJSON() });
     await responseGate;

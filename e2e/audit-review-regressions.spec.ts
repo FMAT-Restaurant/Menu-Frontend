@@ -16,7 +16,7 @@ async function fillRecipe(page: Page, name: string) {
 
 test.beforeEach(async ({ context }) => {
   await context.route("**/api/v1/menu/recipes?*", route => route.fulfill({ json: { data: [], meta } }));
-  await context.route("**/api/v1/items*", route => route.fulfill({ json: [{ id: "i1", name: "Harina", unit: "kg" }] }));
+  await context.route("**/api/v1/items*", route => route.fulfill({ json: { items: [{ id: "i1", name: "Harina", unit: "kg" }], total: 1, page: 1, limit: 20, totalPages: 1 } }));
   await context.route("**/api/v1/menu/categories?*", route => route.fulfill({ json: { data: [], meta } }));
   await context.route("**/api/v1/menu/entries?*", route => route.fulfill({ json: { data: [], meta } }));
 });

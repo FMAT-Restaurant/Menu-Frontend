@@ -214,15 +214,20 @@ describe("catalogResponse runtime validators", () => {
   test("validates recipes and inventory responses", () => {
     const item = { id: "inv-1", name: "Arroz", unit: "kg" };
     expect(isInventoryItem(item)).toBe(true);
-    expect(inventoryPage([item]).data[0]).toEqual(item);
-    expect(inventoryPage([item]).meta).toEqual({ page: 1, pageSize: 1, total: 1, totalPages: 1 });
-    expect(inventoryPage([{ _id: "inv-2", name: "Sal", unit: "kg" }]).data[0]).toEqual({
-      id: "inv-2",
-      name: "Sal",
-      unit: "kg",
-    });
-    expect(() => inventoryPage([{ id: "inv-1" }])).toThrow("Respuesta de inventario inválida.");
+    const inventoryResponse = (items: unknown[]) => ({ items, total: 25, page: 1, limit: 2, totalPages: 13 });
+    expect(inventoryPage(inventoryResponse([item])).data[0]).toEqual(item);
+    expect(inventoryPage(inventoryResponse([item])).meta).toEqual({ page: 1, pageSize: 2, total: 25, totalPages: 13 });
+    expect(
+      inventoryPage(
+        inventoryResponse([
+          { _id: "665f1a2b3c4d5e6f7a8b9c01", sku: "ING-0001", name: "Tomate", unit: "kg", availableStock: 32, isActive: true },
+        ]),
+      ).data[0],
+    ).toEqual({ id: "665f1a2b3c4d5e6f7a8b9c01", name: "Tomate", unit: "kg" });
+    expect(() => inventoryPage(inventoryResponse([{ id: "inv-1" }]))).toThrow("Respuesta de inventario inválida.");
+    expect(() => inventoryPage([item])).toThrow("Respuesta de inventario inválida.");
     expect(() => inventoryPage({ data: [item], meta })).toThrow("Respuesta de inventario inválida.");
+    expect(() => inventoryPage({ ...inventoryResponse([item]), limit: 0 })).toThrow("Respuesta de inventario inválida.");
     expect(inventoryItemResponse({ data: item })).toEqual(item);
     expect(() => inventoryItemResponse({ data: { id: "inv-1" } })).toThrow(
       "Respuesta de inventario inválida.",
