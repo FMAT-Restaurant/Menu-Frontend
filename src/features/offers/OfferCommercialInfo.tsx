@@ -1,4 +1,5 @@
 import { LoadingValue } from "../../shared/LoadingState";
+import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, type ReactNode, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
@@ -104,9 +105,10 @@ export function OfferCommercialInfo({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isImageBlocked = disabled || imageValidating;
   const numericPrice = basePrice.trim() === "" ? null : Number(basePrice);
-  const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice)
+  const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice) && numericPrice > 0
     ? formatMoney(numericPrice)
     : null;
+  const roundedPreview = formattedPrice !== null && numericPrice !== null && Number(numericPrice.toFixed(2)) !== numericPrice;
 
   function handleTriggerFileSelect() {
     if (isImageBlocked) return;
@@ -164,17 +166,16 @@ export function OfferCommercialInfo({
             <label htmlFor="offer-price-input">Precio base (MXN)</label>
             {loading ? <LoadingValue /> : <div className="price-input-wrapper">
               <span className="price-prefix" aria-hidden="true">MXN</span>
-              <input
+              <NativeNumberInput
                 id="offer-price-input"
-                type="number"
-                min="0"
-                step="any"
+                errorMessage="Escribe un precio base mayor que 0."
                 value={basePrice}
                 onChange={(e) => onBasePriceChange(e.target.value)}
                 placeholder="0.00"
                 required
                 disabled={disabled}
                 aria-describedby={formattedPrice === null ? "offer-price-help" : "offer-price-preview offer-price-help"}
+                aria-details={roundedPreview ? "offer-price-exact" : undefined}
               />
             </div>}
             {!loading && formattedPrice !== null && (
@@ -182,6 +183,7 @@ export function OfferCommercialInfo({
                 {formattedPrice}
               </p>
             )}
+            {roundedPreview && <p id="offer-price-exact" className="field-hint">Precio que se guardará: MXN {basePrice}. La vista previa se redondea a dos decimales.</p>}
             <p className="field-hint" id="offer-price-help">
               El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
             </p>
