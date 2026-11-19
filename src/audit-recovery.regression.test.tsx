@@ -1,5 +1,6 @@
 import { consumeConfirmedRecipeAssignments } from "./features/offers/compositionReconciliation";
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderWithMenuPermissions as render } from "./shared/permissions.test-helper";
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GuardedMemoryRouter } from './shared/GuardedMemoryRouter.test-helper';
 import { addSupply } from './shared/recipeSupplies.test-helper';
