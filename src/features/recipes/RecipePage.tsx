@@ -17,6 +17,7 @@ import type {
 import { SearchField } from "../../shared/SearchField";
 import { Icon } from "../../shared/Icon";
 import { analyzeNonIdempotentWriteError } from "../../api/idempotencyResponse";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFormDialog, buildRecipeCreateScope } from "./RecipeFormDialog";
@@ -140,6 +141,9 @@ function recipeDeleteFailure(error: unknown): { message: string; uncertain: bool
   }
   if (analysis.kind === "precondition_conflict") {
     return { message: analysis.message || "No se pudo eliminar la receta debido a un conflicto de versión. Actualiza la lista e inténtalo de nuevo.", uncertain: false };
+  }
+  if ((analysis.status === 401 || analysis.status === 403) && isGlobalAuthError(error)) {
+    return { message: "", uncertain: false };
   }
   if (analysis.status === 403) {
     return { message: analysis.message || "No tienes permisos para eliminar esta receta.", uncertain: false };
@@ -332,9 +336,9 @@ export function RecipePage({
           setDisplayedContext({ query: confirmedQuery, page: currentPage });
         }
       })
-      .catch(() => {
+      .catch((loadError: unknown) => {
         if (!controller.signal.aborted) {
-          setError("No se pudieron cargar las recetas.");
+          setError(isGlobalAuthError(loadError) ? "" : "No se pudieron cargar las recetas.");
         }
       })
       .finally(() => {
