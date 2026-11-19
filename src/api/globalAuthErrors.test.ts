@@ -1,18 +1,17 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { GLOBAL_AUTH_ERROR_EVENT, globalAuthMessage, installGlobalAuthInterceptor, isGlobalAuthError } from "./globalAuthErrors";
 
 test.each([401, 403] as const)("notifies the host for HTTP %i and preserves the rejection", async status => {
   const listener = jest.fn();
   window.addEventListener(GLOBAL_AUTH_ERROR_EVENT, listener);
   const client = axios.create({
-    validateStatus: () => false,
-    adapter: async config => ({
-      data: {},
-      status,
-      statusText: "Rejected",
-      headers: {},
+    adapter: async config => Promise.reject(new AxiosError(
+      "Request rejected",
+      "ERR_BAD_REQUEST",
       config,
-    }),
+      undefined,
+      { data: {}, status, statusText: "Rejected", headers: {}, config },
+    )),
   });
   installGlobalAuthInterceptor(client);
 
@@ -22,7 +21,7 @@ test.each([401, 403] as const)("notifies the host for HTTP %i and preserves the 
   );
 
   expect(isGlobalAuthError(error)).toBe(true);
-  expect(error.response.status).toBe(status);
+  expect(error).toMatchObject({ response: { status } });
   expect(listener).toHaveBeenCalledWith(expect.objectContaining({
     detail: { status, message: globalAuthMessage(status) },
   }));
