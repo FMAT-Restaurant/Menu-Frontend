@@ -9,7 +9,9 @@ async function setup(page: Page) {
     const request = route.request();
     if (request.method() !== "GET") writes.push(request.method());
     const path = new URL(request.url()).pathname;
-    if (path === "/api/v1/items") return route.fulfill({ json: [{ id: "item-1", name: "Harina", unit: "g" }] });
+    if (path === "/api/v1/items") return route.fulfill({ json: {
+      items: [{ id: "item-1", name: "Harina", unit: "g" }], total: 1, page: 1, limit: 20, totalPages: 1,
+    } });
     if (path === "/api/v1/menu/recipes") return route.fulfill({ json: { data: [], meta: { page: 1, pageSize: 50, total: 0, totalPages: 0 } } });
     if (path === "/api/v1/menu/entries/entry-1") return route.fulfill({ json: { data: {
       id: "entry-1", brandName: "Pastel", description: "Pastel de chocolate", status: "ACTIVE", categoryIds: [], categories: [], image: null,
