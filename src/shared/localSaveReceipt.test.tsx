@@ -3,6 +3,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { readSaveReceipt, receiptState, useLocalSaveReceipt } from "./localSaveReceipt";
 import { CatalogPage } from "../features/catalog/CatalogPage";
+import { MENU_PERMISSIONS, PermissionProvider } from "./permissions";
+
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
 
 const receipt = { receiptId: "confirmed-1", entity: "entry" as const, entityId: "entry-1", label: "Bowl", action: "created" as const };
 function StateViewer() {
@@ -13,7 +19,7 @@ function StateViewer() {
 
 test("a destination consumes a confirmed receipt once while failed collection retries preserve success and unrelated history", async () => {
   const repository = { listEntries: jest.fn().mockRejectedValue(new Error("offline")), listCategories: jest.fn().mockResolvedValue([]), deleteArchivedEntry: jest.fn() };
-  const view = render(<StrictMode><MemoryRouter initialEntries={[{ pathname: "/", search: "?q=Bowl&page=3", hash: "#list", state: receiptState({ returnTo: "/?status=ACTIVE", custom: 42 }, receipt) }]}><CatalogPage repository={repository} /><StateViewer /></MemoryRouter></StrictMode>);
+  const view = render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><StrictMode><MemoryRouter initialEntries={[{ pathname: "/", search: "?q=Bowl&page=3", hash: "#list", state: receiptState({ returnTo: "/?status=ACTIVE", custom: 42 }, receipt) }]}><CatalogPage repository={repository} /><StateViewer /></MemoryRouter></StrictMode></PermissionProvider>);
   expect(await screen.findByRole("status")).toHaveTextContent('Entrada "Bowl" creada.');
   await waitFor(() => expect(screen.getByTestId("state")).not.toHaveTextContent("saveResult"));
   expect(screen.getByTestId("state")).toHaveTextContent('"path":"/?q=Bowl&page=3#list"');

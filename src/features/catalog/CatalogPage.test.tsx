@@ -256,12 +256,12 @@ test("opens V5 with the current V1 search and filters available for return navig
     return <p>{(location.state as { returnTo: string }).returnTo}</p>;
   }
   render(
-    <MemoryRouter initialEntries={["/?q=pizza&status=ACTIVE"]}>
+    <PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={["/?q=pizza&status=ACTIVE"]}>
       <Routes>
         <Route path="/" element={<CatalogPage repository={api} />} />
         <Route path="/categories" element={<CategoryDestination />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></PermissionProvider>,
   );
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 

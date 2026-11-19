@@ -473,11 +473,11 @@ test("StrictMode and reopening reuse categories rather than sending duplicate co
   const harness = createControllableIndexedDbHarness();
   const storage = createIndexedDbPendingOperationStorage({ idbFactory: harness.factory });
   const first = render(
-    <StrictMode>
+    <PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><StrictMode>
       <MemoryRouter>
         <EntryFormPage repository={api} storage={storage} />
       </MemoryRouter>
-    </StrictMode>,
+    </StrictMode></PermissionProvider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Seleccionar categorías" }));
   await screen.findByRole("checkbox", { name: "Principales" });
@@ -742,7 +742,7 @@ test("a response for an entry abandoned by navigation never replaces the new ent
     const navigate = useNavigate();
     return <><button onClick={() => { void navigate("/entries/entry-2/edit"); }}>Cambiar entrada</button><EntryFormPage repository={api} storage={storage} /></>;
   }
-  render(<MemoryRouter initialEntries={["/entries/entry-1/edit"]}><Routes><Route path="/entries/:entryId/edit" element={<Navigation />} /></Routes></MemoryRouter>);
+  render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={["/entries/entry-1/edit"]}><Routes><Route path="/entries/:entryId/edit" element={<Navigation />} /></Routes></MemoryRouter></PermissionProvider>);
   fireEvent.click(screen.getByRole("button", { name: "Cambiar entrada" }));
   await screen.findByDisplayValue("Entrada siguiente");
   await act(async () => { old.resolve(entry); });
