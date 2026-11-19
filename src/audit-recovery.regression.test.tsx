@@ -7,8 +7,14 @@ import { OfferFormPage, buildOfferCreateScope, buildOfferUpdateScope, type Offer
 import { RecipePage } from './features/recipes/RecipePage';
 import { RecipeFormDialog } from './features/recipes/RecipeFormDialog';
 import { EntryFormPage } from './features/entries/EntryFormPage';
+import { MENU_PERMISSIONS, PermissionProvider } from './shared/permissions';
 import { createOperationAttemptController, sealJsonPayload, applyAttemptFailure, canManualRetryAttempt, createSealedAttempt } from './application/operationAttempt';
 import { createIndexedDbPendingOperationStorage, createControllableIndexedDbHarness } from './shared/pendingOperationStorage';
+
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
 
 const entry = { id: 'e1', brandName: 'Entrada', description: 'Descripción', status: 'ACTIVE', categoryIds: [] };
 const offer = { id: 'o1', entryId: 'e1', presentationTag: 'Original', basePrice: 100, status: 'ACTIVE', image: null,
@@ -118,7 +124,7 @@ test('receta: el PATCH usa la versión del detalle abierto, no una segunda lectu
 test('entrada: recuperar upload incierto tras recarga reenvía los bytes originales', async () => {
   const r = repo(); const s = storage();
   r.uploadEntryImage.mockRejectedValueOnce(timeout);
-  function mount() { return render(<MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter>); }
+  function mount() { return render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter></PermissionProvider>); }
   const view = mount();
   await waitFor(() => expect(r.listCategories).toHaveBeenCalled());
   fireEvent.change(screen.getByLabelText('Nombre comercial'), { target: { value: 'Nueva' } });
@@ -253,7 +259,7 @@ test('Retry-After ausente o inválido mantiene la operación pausada sin autoriz
 test('entrada: una creación recuperada conserva los cambios posteriores y sigue como edición del ID confirmado', async () => {
   const r = repo(); const s = storage();
   r.createEntry.mockRejectedValueOnce(timeout).mockResolvedValue({ ...entry, id: 'entry-confirmed' });
-  render(<MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter>);
+  render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter></PermissionProvider>);
   await waitFor(() => expect(r.listCategories).toHaveBeenCalled());
   fireEvent.change(screen.getByLabelText('Nombre comercial'), { target: { value: 'Nombre enviado' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción' } });
