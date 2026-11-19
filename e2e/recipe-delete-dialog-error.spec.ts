@@ -29,7 +29,7 @@ for (const closeMethod of ["cancel", "escape"]) {
     await page.getByRole("button", { name: "Buscar ahora" }).click();
     await expect(page.getByRole("heading", { name: "No hay recetas que coincidan con tu búsqueda." })).toBeVisible();
     await expect(page.getByRole("alert")).toHaveCount(0);
-    await page.getByRole("button", { name: "Limpiar búsqueda" }).first().click();
+    await page.locator(".category-empty").getByRole("button", { name: "Limpiar búsqueda" }).click();
     await expect(trigger).toBeVisible();
     await expect(page.getByRole("alert")).toHaveCount(0);
     await trigger.click();
