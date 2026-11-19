@@ -18,8 +18,9 @@ describe("JWT permissions context", () => {
   beforeEach(() => localStorage.clear());
 
   test("denies all thirteen permissions for an empty list and ignores ADMIN and wildcard shortcuts", () => {
-    render(<PermissionProvider token={tokenFor({ permissions: [], userType: "ADMIN" })}><Probe /></PermissionProvider>);
+    const empty = render(<PermissionProvider token={tokenFor({ permissions: [], userType: "ADMIN" })}><Probe /></PermissionProvider>);
     for (const permission of MENU_PERMISSIONS) expect(screen.getByText(`${permission}: false`)).toBeInTheDocument();
+    empty.unmount();
     const wildcard = render(<PermissionProvider token={tokenFor({ permissions: ["*"], userType: "ADMIN" })}><Probe permissions={["menu:entries:write"]} /></PermissionProvider>);
     expect(wildcard.getByText("menu:entries:write: false")).toBeInTheDocument();
   });
