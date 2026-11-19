@@ -27,3 +27,28 @@ test.each([401, 403] as const)("notifies the host for HTTP %i and preserves the 
   }));
   window.removeEventListener(GLOBAL_AUTH_ERROR_EVENT, listener);
 });
+
+test("preserves unrelated HTTP failures without showing a global auth message", async () => {
+  const listener = jest.fn();
+  window.addEventListener(GLOBAL_AUTH_ERROR_EVENT, listener);
+  const client = axios.create({
+    adapter: async config => Promise.reject(new AxiosError(
+      "Server error",
+      "ERR_BAD_RESPONSE",
+      config,
+      undefined,
+      { data: {}, status: 500, statusText: "Server Error", headers: {}, config },
+    )),
+  });
+  installGlobalAuthInterceptor(client);
+
+  const error = await client.get("/resource").then(
+    () => { throw new Error("Expected the request to reject."); },
+    reason => reason,
+  );
+
+  expect(isGlobalAuthError(error)).toBe(false);
+  expect(error).toMatchObject({ response: { status: 500 } });
+  expect(listener).not.toHaveBeenCalled();
+  window.removeEventListener(GLOBAL_AUTH_ERROR_EVENT, listener);
+});
