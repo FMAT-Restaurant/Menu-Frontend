@@ -10,6 +10,7 @@ import {
   createIndexedDbPendingOperationStorage,
 } from "../../shared/pendingOperationStorage";
 import { EntryFormPage } from "./EntryFormPage";
+import { MENU_PERMISSIONS, PermissionProvider } from "../../shared/permissions";
 import { buildEntryCreateScope } from "./useEntryForm";
 
 const categories = [
@@ -42,19 +43,25 @@ function repository(): jest.Mocked<EntryFormRepository> {
   };
 }
 
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
 function renderPage(
   api: EntryFormRepository,
   path = "/entries/new",
   state?: unknown,
   storage?: PendingOperationStorageAdapter,
   onSaved?: () => Promise<void>,
+  permissions: readonly string[] = MENU_PERMISSIONS,
 ) {
   const harness = storage ? null : createControllableIndexedDbHarness();
   const actualStorage =
     storage ??
     createIndexedDbPendingOperationStorage({ idbFactory: harness!.factory });
   return render(
-    <MemoryRouter initialEntries={[{ pathname: path, state }]}>
+    <PermissionProvider token={permissionToken(permissions)}><MemoryRouter initialEntries={[{ pathname: path, state }]}>
       <Routes>
         <Route
           path="/entries/new"
@@ -66,7 +73,7 @@ function renderPage(
         />
         <Route path="/" element={<CatalogDestination />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></PermissionProvider>,
   );
 }
 
@@ -1126,4 +1133,41 @@ test("a confirmed creation survives reload after navigation failure and never re
   expect(screen.getByLabelText("Nombre comercial")).toBeDisabled();
   expect(screen.queryByText(/El servidor pudo haber recibido/)).not.toBeInTheDocument();
   expect((await storage.getRecord(buildEntryCreateScope()))?.stages.at(-1)?.idempotencyKey).toBe(confirmed?.stages.at(-1)?.idempotencyKey);
+});
+
+
+test("blocks creation without entries write permission", async () => {
+  const api = repository();
+  renderPage(api, "/entries/new", undefined, undefined, undefined, []);
+  expect(screen.getByRole("alert")).toHaveTextContent("No tienes permiso para realizar esta operación");
+  expect(screen.queryByLabelText("Nombre comercial")).not.toBeInTheDocument();
+  expect(api.listCategories).not.toHaveBeenCalled();
+  expect(api.createEntry).not.toHaveBeenCalled();
+});
+
+test("allows status-only updates with entries status permission", async () => {
+  const api = repository();
+  renderPage(api, "/entries/entry-1/edit", undefined, undefined, undefined, ["menu:entries:status"]);
+  expect(await screen.findByDisplayValue("Hamburguesa de la casa")).toBeDisabled();
+  const status = screen.getByRole("combobox", { name: "Estado administrativo" });
+  expect(status).toBeEnabled();
+  expect(screen.getByLabelText("Archivo de imagen")).toBeDisabled();
+  fireEvent.change(status, { target: { value: "ACTIVE" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+  await waitFor(() => expect(api.updateEntry).toHaveBeenCalledWith("entry-1", expect.objectContaining({ status: "ACTIVE" }), '"entry-rev-1"'));
+  expect(api.uploadEntryImage).not.toHaveBeenCalled();
+});
+
+test("hides status and disables image replacement without their permissions", async () => {
+  const api = repository();
+  renderPage(api, "/entries/entry-1/edit", undefined, undefined, undefined, ["menu:entries:write"]);
+  expect(await screen.findByDisplayValue("Hamburguesa de la casa")).toBeEnabled();
+  expect(screen.queryByRole("combobox", { name: "Estado administrativo" })).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Archivo de imagen")).toBeDisabled();
+});
+
+test("allows image selection only when image write permission is granted", async () => {
+  const api = repository();
+  renderPage(api, "/entries/new", undefined, undefined, undefined, ["menu:entries:write", "menu:images:write"]);
+  expect(await screen.findByLabelText("Archivo de imagen")).toBeEnabled();
 });

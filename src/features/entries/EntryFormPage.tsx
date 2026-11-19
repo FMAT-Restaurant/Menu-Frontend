@@ -11,6 +11,7 @@ import { EntryCategorySelector } from "./EntryCategorySelector";
 import { EntryImageField } from "./EntryImageField";
 import { EntryFormFeedback } from "./EntryFormFeedback";
 import { useEntryForm } from "./useEntryForm";
+import { usePermission } from "../../shared/permissions";
 import "./styles.css";
 
 function entryFormTitle(missing: boolean, editing: boolean): string {
@@ -84,12 +85,18 @@ function EntryFormEditor({
   returnTo,
   storage,
   returnState,
+  canWrite,
+  canStatus,
+  canWriteImages,
   onSaved: customOnSaved,
 }: Readonly<{
   repository: EntryFormRepository;
   entryId?: string;
   returnTo: string;
   returnState: unknown;
+  canWrite: boolean;
+  canStatus: boolean;
+  canWriteImages: boolean;
   storage?: PendingOperationStorageAdapter;
   onSaved?: (receipt: LocalSaveReceipt) => Promise<void>;
 }>) {
@@ -108,7 +115,7 @@ function EntryFormEditor({
   const conflict = editing && model.failure?.kind === "conflict";
   const missing = editing && model.entryLoadFailure?.kind === "notFound";
   const catalogReturnTo = returnTo === "/" || returnTo.startsWith("/?") ? returnTo : "/";
-  const saveDisabled = !model.recoveryReady || disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle";
+  const saveDisabled = !model.recoveryReady || disabled || model.saveSucceeded || model.imageValidating || Boolean(model.imageError) || !model.versionReady || conflict || model.uncertain !== "idle" || (!canWrite && !canStatus);
   let saveLabel = progressLabels[model.stage];
   if (editing && !busy) saveLabel = "Guardar cambios";
 
@@ -138,12 +145,12 @@ function EntryFormEditor({
         {model.editingReady && !model.versionReady && <div className="feedback feedback--error" role="alert">No pudimos comprobar la versión de la entrada. Consulta sus datos actuales antes de guardar. <button type="button" disabled={model.reviewLoading} onClick={() => { void model.reviewCurrent(); }}>Revisar entrada actual</button></div>}
         <div className="entry-form__layout" aria-busy={model.entryLoading}>
           <div className="entry-form__primary">
-            <EntryIdentity model={model} disabled={disabled} />
-            <EntryCategorySelector selectionLoading={model.entryLoading} categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />
+            <EntryIdentity model={model} disabled={disabled || !canWrite} />
+            <EntryCategorySelector selectionLoading={model.entryLoading} categories={model.categories} selected={model.draft.categoryIds} loading={model.categoriesLoading} error={model.categoriesError} fieldError={model.failure?.fields.categoryIds} disabled={disabled || !canWrite} continuing={model.continuing} onChange={model.changeCategories} onRetry={model.retryCategories} onContinue={model.continueWithoutCategories} />
           </div>
           <aside className="entry-form__secondary">
-            <EntryImageField loading={model.entryLoading} file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled} onSelect={(file) => { void model.selectImage(file); }} />
-            {editing && <EntryStatusField model={model} busy={busy || model.saveSucceeded} />}
+            <EntryImageField loading={model.entryLoading} file={model.file} entry={model.entry} validating={model.imageValidating} error={model.imageError || model.failure?.fields.image || ""} disabled={disabled || !canWrite || !canWriteImages} onSelect={(file) => { void model.selectImage(file); }} />
+            {editing && canStatus && <EntryStatusField model={model} busy={busy || model.saveSucceeded} />}
           </aside>
         </div>
         <footer ref={actions} className="entry-form__actions">
@@ -155,8 +162,16 @@ function EntryFormEditor({
   </div>;
 }
 
+function EntryPermissionMessage() {
+  return <main className="app-shell"><section className="menu-page" role="alert"><h1>Acceso restringido</h1><p>No tienes permiso para realizar esta operación en las entradas del menú.</p></section></main>;
+}
+
 export function EntryFormPage({ repository, storage, onSaved }: Readonly<EntryFormPageProps>) {
   const { entryId } = useParams();
   const location = useLocation();
-  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} returnState={location.state} storage={storage} onSaved={onSaved} />;
+  const canWrite = usePermission("menu:entries:write");
+  const canStatus = usePermission("menu:entries:status");
+  const canWriteImages = usePermission("menu:images:write");
+  if ((!entryId && !canWrite) || (entryId && !canWrite && !canStatus)) return <EntryPermissionMessage />;
+  return <EntryFormEditor key={entryId ?? "new"} repository={repository} entryId={entryId} returnTo={safeReturnPath(location.state)} returnState={location.state} storage={storage} onSaved={onSaved} canWrite={canWrite} canStatus={canStatus} canWriteImages={canWriteImages} />;
 }

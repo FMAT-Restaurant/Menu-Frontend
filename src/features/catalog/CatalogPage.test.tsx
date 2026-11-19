@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MenuRepository } from "../../application/catalog";
 import { CatalogPage } from "./CatalogPage";
+import { MENU_PERMISSIONS, PermissionProvider } from "../../shared/permissions";
 
 const entries = [{
   id: "entry-1",
@@ -36,9 +37,14 @@ function LocationViewer() {
   return <div data-testid="catalog-location">{location.pathname + location.search}</div>;
 }
 
-function renderPage(api: CatalogRepository, url = "/") {
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
+function renderPage(api: CatalogRepository, url = "/", permissions: readonly string[] = MENU_PERMISSIONS) {
   render(
-    <MemoryRouter initialEntries={[url]}>
+    <PermissionProvider token={permissionToken(permissions)}><MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route
           path="/"
@@ -50,7 +56,7 @@ function renderPage(api: CatalogRepository, url = "/") {
           }
         />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></PermissionProvider>,
   );
 }
 
@@ -289,4 +295,34 @@ test("keeps a valid categoryId from url query and filters by it", async () => {
     expect.objectContaining({ categoryId: "category-1" }),
     expect.any(AbortSignal),
   );
+});
+
+
+test("requires entries read before loading or showing the catalog", () => {
+  const api = repository();
+  renderPage(api, "/", []);
+  expect(screen.getByRole("alert")).toHaveTextContent("No tienes permiso para consultar las entradas");
+  expect(api.listEntries).not.toHaveBeenCalled();
+  expect(api.listCategories).not.toHaveBeenCalled();
+});
+
+test("entries read without entries write hides create, edit and delete actions", async () => {
+  const api = repository();
+  api.listEntries.mockResolvedValue({
+    data: [{ ...entries[0], status: "ARCHIVED" }],
+    meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+  });
+  renderPage(api, "/", ["menu:entries:read"]);
+  expect(await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Nueva entrada" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Editar Hamburguesa Hawaiana" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).not.toBeInTheDocument();
+});
+
+
+test("does not offer entry creation from an empty catalog without entries write", async () => {
+  const api = repository(0);
+  renderPage(api, "/", ["menu:entries:read"]);
+  expect(await screen.findByText("Aún no hay entradas.")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Nueva entrada" })).not.toBeInTheDocument();
 });
