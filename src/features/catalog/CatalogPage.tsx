@@ -17,6 +17,7 @@ import { Icon } from "../../shared/Icon";
 import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import "./styles.css";
 
 const pageSizes = new Set([6, 12, 24]);
@@ -72,8 +73,8 @@ interface CatalogFeedbackProps {
 function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
   return <>
     {props.categoryError && <div className="feedback feedback--error catalog-feedback" role="alert">No se pudieron cargar las categorías. El listado sigue disponible. <button type="button" onClick={props.onRetryCategories}>Reintentar categorías</button></div>}
-    {props.entryError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
-    {!props.dialogOpen && props.actionError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
+    {props.entryError?.message && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
+    {!props.dialogOpen && props.actionError?.message && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
     {props.notice && <output className="feedback feedback--success">{props.notice}</output>}
     {props.fetching && props.hasDisplayed && <output className="catalog-updating">Actualizando entradas…</output>}
     {props.busyId && <output className="catalog-updating">Actualizando entrada…</output>}
@@ -203,7 +204,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       const kind = catalogErrorKind(error);
-      setEntryError({ kind, message: catalogErrorMessage(kind, "load") });
+      setEntryError({ kind, message: catalogErrorMessage(kind, "load", isGlobalAuthError(error)) });
     }).finally(() => {
       if (!controller.signal.aborted) setFetching(false);
     });
@@ -367,7 +368,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     } catch (error) {
       const kind = catalogErrorKind(error);
       setNeedsReconcile(kind === "network" || kind === "conflict");
-      setActionError({ kind, message: catalogErrorMessage(kind, "delete") });
+      setActionError({ kind, message: catalogErrorMessage(kind, "delete", isGlobalAuthError(error)) });
     } finally {
       actionInProgress.current = false;
       setBusyId(null);

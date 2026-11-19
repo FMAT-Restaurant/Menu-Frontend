@@ -4,6 +4,7 @@ import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { applyAttemptFailure, applyAttemptSendStart, canManualRetryAttempt, createSealedAttempt, isAttemptWindowExpired, markAttemptExpired, sealJsonPayload, type SealedOperationAttempt } from "../../application/operationAttempt";
@@ -54,6 +55,7 @@ function transportCode(error: unknown) {
 function failureMessage(error: unknown, scope: ErrorScope) {
   const status = httpStatus(error);
   const code = transportCode(error);
+  if ((status === 401 || status === 403) && isGlobalAuthError(error)) return "";
   if (status === 401 || status === 403) return "No tienes acceso a esta operación. Verifica tu sesión y permisos.";
   if (status === 404) return scope === "entry" ? "La entrada solicitada ya no existe." : "La entrada u oferta solicitada ya no existe.";
   if (status === 409 || status === 412) return "Los datos cambiaron desde que se cargaron. Actualiza la lista antes de volver a intentarlo.";
@@ -152,7 +154,7 @@ function OffersFeedback({
   const onRetry = loadError === "entry" ? onRetryEntry : onRetryOffers;
 
   return <>
-    {loadError && <div className="feedback feedback--error" role="alert">
+    {loadError && message && <div className="feedback feedback--error" role="alert">
       {message}
       <button type="button" onClick={onRetry}>Reintentar {retryLabel}</button>
     </div>}
