@@ -1,7 +1,27 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MenuRepository } from "../../application/catalog";
 import { CatalogPage } from "./CatalogPage";
+import { PermissionProvider } from "../../shared/permissions";
+import type { ReactElement, ReactNode } from "react";
+
+function permissionTestToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
+const allPermissionToken = permissionTestToken([
+  "menu:catalog:read", "menu:catalog:print", "menu:categories:read", "menu:categories:write",
+  "menu:entries:read", "menu:entries:write", "menu:entries:status", "menu:offers:read",
+  "menu:offers:write", "menu:offers:status", "menu:recipes:read", "menu:recipes:write", "menu:images:write",
+]);
+
+function render(ui: ReactElement, options?: Parameters<typeof rtlRender>[1]) {
+  return rtlRender(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => <PermissionProvider token={allPermissionToken}>{children}</PermissionProvider>,
+    ...options,
+  });
+}
 
 const entries = [{
   id: "entry-1",
@@ -36,9 +56,9 @@ function LocationViewer() {
   return <div data-testid="catalog-location">{location.pathname + location.search}</div>;
 }
 
-function renderPage(api: CatalogRepository, url = "/") {
-  render(
-    <MemoryRouter initialEntries={[url]}>
+function renderPage(api: CatalogRepository, url = "/", token = allPermissionToken) {
+  rtlRender(
+    <PermissionProvider token={token}><MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route
           path="/"
@@ -50,7 +70,7 @@ function renderPage(api: CatalogRepository, url = "/") {
           }
         />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></PermissionProvider>,
   );
 }
 
@@ -289,4 +309,15 @@ test("keeps a valid categoryId from url query and filters by it", async () => {
     expect.objectContaining({ categoryId: "category-1" }),
     expect.any(AbortSignal),
   );
+});
+
+
+test("hides category and recipe navigation links when their read permissions are absent", async () => {
+  const api = repository();
+  renderPage(api, "/", permissionTestToken(["menu:entries:read"]));
+
+  expect(await screen.findByRole("heading", { name: "Entradas del menú" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Categorías" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Biblioteca de recetas/ })).not.toBeInTheDocument();
+  expect(api.listCategories).not.toHaveBeenCalled();
 });

@@ -1,4 +1,5 @@
 import { LoadingState } from "../../shared/LoadingState";
+import { usePermission } from "../../shared/permissions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon } from "../../shared/Icon";
@@ -40,6 +41,8 @@ interface CategoryPageProps {
 }
 
 export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps>) {
+  const canRead = usePermission("menu:categories:read");
+  const canWrite = usePermission("menu:categories:write");
   const actualStorage = useMemo(
     () => storage ?? createIndexedDbPendingOperationStorage(),
     [storage],
@@ -63,6 +66,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
   const focusTitleAfterDeleteRef = useRef(false);
 
   useEffect(() => {
+    if (!canRead || !canWrite) return undefined;
     let active = true;
     void actualStorage
       .getRecord<CategoryDraft>(buildCategoryCreateScope())
@@ -80,9 +84,15 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
     return () => {
       active = false;
     };
-  }, [actualStorage]);
+  }, [actualStorage, canRead, canWrite]);
 
   useEffect(() => {
+    if (!canRead) {
+      setCategories([]);
+      setLoading(false);
+      setError("");
+      return undefined;
+    }
     const controller = new AbortController();
     setLoading(true);
     setError("");
@@ -94,7 +104,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
       if (!controller.signal.aborted) setLoading(false);
     });
     return () => controller.abort();
-  }, [repository, retry]);
+  }, [repository, retry, canRead]);
 
   useEffect(() => {
     if (deleteTarget || !focusTitleAfterDeleteRef.current) return;
@@ -132,24 +142,25 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
               <h1 ref={titleRef} id="category-page-title" data-route-heading tabIndex={-1}>Catálogo de categorías</h1>
               <p className="task-header__intro">Organiza las entradas del menú por categorías. Una entrada puede pertenecer a varias categorías.</p>
             </div>
-            <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Nueva categoría</button>
+            {canRead && canWrite && <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Nueva categoría</button>}
           </div>
         </header>
         <section className="category-panel" aria-labelledby="category-page-title" aria-busy={loading}>
-          {notice && <output className="feedback feedback--success">{notice}</output>}
-          {deleteAlert && <div className="feedback feedback--error" role="alert">{deleteAlert}</div>}
-          {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
-          {loading && categories.length === 0 && <LoadingState variant="category-rows" label="Cargando categorías…" />}
-          {loading && categories.length > 0 && <output className="feedback">Actualizando categorías…</output>}
-          {!loading && !error && categories.length === 0 && (
+          {!canRead && <div className="feedback feedback--error" role="alert">No tienes permisos para consultar las categorías.</div>}
+          {canRead && notice && <output className="feedback feedback--success">{notice}</output>}
+          {canRead && deleteAlert && <div className="feedback feedback--error" role="alert">{deleteAlert}</div>}
+          {canRead && error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
+          {canRead && loading && categories.length === 0 && <LoadingState variant="category-rows" label="Cargando categorías…" />}
+          {canRead && loading && categories.length > 0 && <output className="feedback">Actualizando categorías…</output>}
+          {canRead && !loading && !error && categories.length === 0 && (
             <div className="empty-state category-empty">
               <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
               <h3>Aún no hay categorías.</h3>
               <p>Crea una categoría para organizar las entradas del menú.</p>
-              <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Crear categoría</button>
+              {canWrite && <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Crear categoría</button>}
             </div>
           )}
-          {categories.length > 0 && (
+          {canRead && categories.length > 0 && (
             <ul className="category-list">
               {categories.map((category) => (
                 <li className="category-row" key={category.id}>
@@ -159,8 +170,8 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
                     <span>{formatCategoryEntryCount(category.entryCount)}</span>
                   </div>
                   <div className="category-row__actions">
-                    <button className="button button--secondary" type="button" onClick={() => setFormCategory(category)} aria-label={`Editar ${category.name}`}>Editar</button>
-                    <button
+                    {canWrite && <button className="button button--secondary" type="button" onClick={() => setFormCategory(category)} aria-label={`Editar ${category.name}`}>Editar</button>}
+                    {canWrite && <button
                       className="button button--danger-link category-row__delete"
                       type="button"
                       onClick={(event) => {
@@ -172,7 +183,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
                       aria-label={`Eliminar ${category.name}`}
                     >
                       Eliminar
-                    </button>
+                    </button>}
                   </div>
                 </li>
               ))}
@@ -181,7 +192,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
         </section>
       </main>
 
-      {formCategory && (
+      {canRead && canWrite && formCategory && (
         <CategoryFormDialog
           key={formCategory === "new" ? "new" : formCategory.id}
           category={formCategory === "new" ? undefined : formCategory}
@@ -222,7 +233,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
         />
       )}
 
-      {deleteTarget && (
+      {canRead && canWrite && deleteTarget && (
         <CategoryDeleteDialog
           key={deleteTarget.id}
           category={deleteTarget}

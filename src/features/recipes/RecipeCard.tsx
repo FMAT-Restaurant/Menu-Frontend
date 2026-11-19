@@ -3,6 +3,7 @@ import type { RecipeSummary } from "../../application/catalog";
 interface BaseRecipeCardProps {
   recipe: RecipeSummary;
   isBusy?: boolean;
+  canWrite?: boolean;
 }
 
 export interface ManagementRecipeCardProps extends BaseRecipeCardProps {
@@ -50,7 +51,7 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
             </button>
           ) : (
             <>
-              <button
+              {(props.canWrite ?? true) && <button
                 type="button"
                 className="button button--secondary"
                 onClick={() => props.onEdit(recipe)}
@@ -58,8 +59,8 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
                 aria-label={`Editar ${recipe.name}`}
               >
                 Editar
-              </button>
-              <button
+              </button>}
+              {(props.canWrite ?? true) && <button
                 type="button"
                 className="button button--quiet recipe-card__delete"
                 onClick={(e) => {
@@ -70,7 +71,7 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
                 aria-label={`Eliminar ${recipe.name}`}
               >
                 Eliminar
-              </button>
+              </button>}
             </>
           )}
         </div>
