@@ -4,7 +4,7 @@ import { RequirePermission } from "./RequirePermission";
 import { PermissionProvider } from "./permissions";
 
 function tokenFor(permissions: string[]) {
-  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\\+/g, "-").replace(/\\//g, "_");
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replaceAll("=", "").replaceAll("+", "-").replaceAll("/", "_");
   return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
 }
 
