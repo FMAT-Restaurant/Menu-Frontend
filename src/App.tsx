@@ -1,6 +1,6 @@
 import axios from "axios";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider, useLocation } from "react-router-dom";
 import { EditGuardProvider } from "./shared/editGuard";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
@@ -95,9 +95,40 @@ function createDefaultRepository(token?: string): MenuRepository {
 
 const defaultRepository = createDefaultRepository();
 
+function MenuLayout({ transitions }: Readonly<{ transitions?: ReturnType<typeof createRouteTransitionTracker> }>) {
+  const location = useLocation();
+  const [targetPathname, setTargetPathname] = useState<string | undefined>(() => transitions?.currentPath);
+
+  useEffect(() => {
+    setTargetPathname(transitions?.currentPath);
+    if (!transitions) return;
+    return transitions.subscribe((nextPath) => {
+      setTargetPathname(nextPath);
+    });
+  }, [transitions]);
+
+  const navigating = Boolean(targetPathname && targetPathname !== location.pathname);
+
+  return (
+    <div className="menu-module" data-menu-module data-route-loading={navigating ? "true" : undefined}>
+      {navigating && (
+        <div className="route-transition-bar" role="status" aria-live="polite" aria-label="Cargando página…">
+          <span className="route-transition-bar__indicator" />
+        </div>
+      )}
+      <EditGuardProvider>
+        <RouteContext transitions={transitions} />
+        <Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}>
+          <Outlet />
+        </Suspense>
+      </EditGuardProvider>
+    </div>
+  );
+}
+
 export function createMenuRoutes(repository: MenuRepository = defaultRepository, transitions?: ReturnType<typeof createRouteTransitionTracker>) {
   return createRoutesFromElements(
-    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
+    <Route element={<MenuLayout transitions={transitions} />}>
       <Route path="/" element={<CatalogPage repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
       <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />

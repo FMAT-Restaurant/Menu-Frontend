@@ -89,6 +89,13 @@ test("shows the count of active mobile filters and clears them to exactly root p
   await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/"));
 });
 
+test("counts search query in active filters and uses singular for 1 filter", async () => {
+  const repository = api();
+  page(repository, "/?q=postres");
+  await screen.findByRole("heading", { name: "Bowl de pollo" });
+  expect(screen.getByText("1 activo", { exact: true })).toBeVisible();
+});
+
 test("keeps cards and their summary visible while a new query loads, then handles failure", async () => {
   const repository = api();
   const pending = deferred<Page<MenuEntry>>();
