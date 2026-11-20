@@ -42,4 +42,17 @@ describe("public catalog API contract", () => {
       meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
     })).toThrow(CatalogResponseError);
   });
+
+  test("accepts a complete nested offer composition", () => {
+    expect(catalogViewPage({
+      data: [{ ...entry, offers: [{
+        id: "offer-1", presentationTag: "Individual", basePrice: 25, image: null, isAvailable: true,
+        composition: { slots: [{
+          slotId: "slot-1", name: "Plato", quantity: 1, course: "plato fuerte", isAvailable: true,
+          options: [{ optionId: "option-1", displayName: "Sopa", isAvailable: true }],
+        }] },
+      }] }],
+      meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+    })).toMatchObject({ data: [{ offers: [{ composition: { slots: [{ options: [{ displayName: "Sopa" }] }] } }] }] });
+  });
 });
