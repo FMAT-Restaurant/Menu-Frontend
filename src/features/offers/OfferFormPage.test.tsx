@@ -812,6 +812,18 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeVisible();
   });
 
+  test("displays entry missing screen if entry returns 404", async () => {
+    const repository = createMockRepository();
+    repository.getEntry.mockRejectedValueOnce({ response: { status: 404 } });
+
+    renderComponent(repository);
+    expect(await screen.findByRole("heading", { name: "Entrada no encontrada" })).toBeVisible();
+    expect(screen.getByRole("alert", { name: "Entrada no encontrada" })).toHaveTextContent("La entrada solicitada ya no existe.");
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Volver al catálogo" })).toBeVisible();
+  });
+
   test("retries loading entry and offer in edit mode and populates recovered form data (O32)", async () => {
     const repository = createMockRepository();
     repository.getOffer.mockRejectedValueOnce(new Error("Error al consultar la oferta"));
