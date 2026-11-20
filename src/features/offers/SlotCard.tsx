@@ -21,6 +21,7 @@ export interface SlotCardProps {
   onEditOption: (optionIndex: number) => void;
   onDeleteOption: (optionIndex: number) => void;
   onToggleOptionStatus: (optionIndex: number) => void;
+  canChangeStatus?: boolean;
   disabled?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function SlotCard({
   onEditOption,
   onDeleteOption,
   onToggleOptionStatus,
+  canChangeStatus = true,
   disabled = false,
 }: Readonly<SlotCardProps>) {
   const hasActiveOption = slot.options.some((opt) => opt.status === "ACTIVE");
@@ -112,6 +114,7 @@ export function SlotCard({
                 onEdit={() => onEditOption(optIdx)}
                 onDelete={() => onDeleteOption(optIdx)}
                 onToggleStatus={() => onToggleOptionStatus(optIdx)}
+                canChangeStatus={canChangeStatus}
                 disabled={disabled}
               />
             ))}

@@ -2,6 +2,8 @@ import "./shared/dataRouter.test-helper";
 import { cleanup, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { App } from "./App";
+import { ALL_MENU_PERMISSIONS, permissionToken } from "./shared/permissions.test-helper";
+
 import type {
   MenuEntry,
   MenuEntryDetail,
@@ -47,6 +49,8 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
 
 describe("App routing and lazy loading (T15)", () => {
   beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(ALL_MENU_PERMISSIONS) }));
     window.history.replaceState({}, "", "/");
   });
 

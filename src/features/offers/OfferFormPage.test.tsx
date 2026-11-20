@@ -1,6 +1,6 @@
 import { GuardedMemoryRouter as MemoryRouter } from "../../shared/GuardedMemoryRouter.test-helper";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import type {
   MenuEntryDetail,
@@ -29,6 +29,8 @@ import {
 } from "../../shared/pendingOperationStorage";
 import { buildOfferUpdateScope, OfferFormPage } from "./OfferFormPage";
 
+import { renderWithMenuPermissions } from "../../shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 const mockEntry: MenuEntryDetail = {
   id: "entry-1",
   brandName: "Hamburguesa Clásica",

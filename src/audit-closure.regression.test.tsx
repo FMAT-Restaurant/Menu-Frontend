@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { CategoryFormDialog, type CategoryDialogRepository } from "./features/categories/CategoryFormDialog";
 import { OptionModal } from "./features/offers/OptionModal";
 import type { MenuCategory, VersionedResource } from "./application/catalog";
@@ -8,6 +8,8 @@ import { OfferFormPage, buildOfferUpdateScope, type OfferFormDraftState } from "
 import { createOperationAttemptController, IDEMPOTENT_WINDOW_MS, sealJsonPayload } from "./application/operationAttempt";
 import { analyzeIdempotentAttemptError } from "./api/idempotencyResponse";
 
+import { renderWithMenuPermissions } from "./shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 test("A01/A09: editing while category opening GET is pending requires explicit review before using its ETag", async () => {
   let resolveOpening!: (resource: VersionedResource<MenuCategory>) => void;
   const response = new Promise<VersionedResource<MenuCategory>>(resolve => { resolveOpening = resolve; });
