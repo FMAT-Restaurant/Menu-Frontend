@@ -1,4 +1,4 @@
-import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { CategoryFormDialog, type CategoryDialogRepository } from "./features/categories/CategoryFormDialog";
 import { OptionModal } from "./features/offers/OptionModal";
 import type { MenuCategory, VersionedResource } from "./application/catalog";
