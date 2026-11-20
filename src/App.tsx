@@ -2,7 +2,7 @@ import axios from "axios";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
 import { EditGuardProvider } from "./shared/editGuard";
-import { PermissionProvider } from "./shared/permissions";
+import { PermissionProvider, usePermission } from "./shared/permissions";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
 import type { MenuRepository } from "./application/catalog";
@@ -34,11 +34,20 @@ function getStoredSession(): { accessToken?: string; token?: string; user?: Shel
 }
 
 const CatalogPage = lazy(() => import("./features/catalog/CatalogPage").then(({ CatalogPage }) => ({ default: CatalogPage })));
+const CatalogConsultationPage = lazy(() => import("./features/consultation/CatalogConsultationPage").then(({ CatalogConsultationPage }) => ({ default: CatalogConsultationPage })));
 const CategoryPage = lazy(() => import("./features/categories/CategoryPage").then(({ CategoryPage }) => ({ default: CategoryPage })));
 const EntryFormPage = lazy(() => import("./features/entries/EntryFormPage").then(({ EntryFormPage }) => ({ default: EntryFormPage })));
 const OffersPage = lazy(() => import("./features/offers/OffersPage").then(({ OffersPage }) => ({ default: OffersPage })));
 const OfferFormPage = lazy(() => import("./features/offers/OfferFormPage").then(({ OfferFormPage }) => ({ default: OfferFormPage })));
 const RecipePage = lazy(() => import("./features/recipes/RecipePage").then(({ RecipePage }) => ({ default: RecipePage })));
+
+function CatalogHome({ repository }: Readonly<{ repository: MenuRepository }>) {
+  const canManage = usePermission("menu:entries:read");
+  const canConsult = usePermission("menu:catalog:read");
+  if (canManage) return <CatalogPage repository={repository} />;
+  if (canConsult) return <CatalogConsultationPage repository={repository} />;
+  return <main className="app-shell menu-page menu-page--message"><h1 data-route-heading tabIndex={-1}>Sin acceso</h1><p>No tienes permiso para consultar el catálogo.</p></main>;
+}
 
 export function NotFoundPage() {
   return (
@@ -94,7 +103,7 @@ const defaultRepository = createDefaultRepository();
 export function createMenuRoutes(repository: MenuRepository = defaultRepository, transitions?: ReturnType<typeof createRouteTransitionTracker>) {
   return createRoutesFromElements(
     <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
-      <Route path="/" element={<CatalogPage repository={repository} />} />
+      <Route path="/" element={<CatalogHome repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
       <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
       <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />

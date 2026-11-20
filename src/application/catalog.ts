@@ -237,6 +237,56 @@ export interface Page<T> {
   meta: { page: number; pageSize: number; total: number; totalPages: number };
 }
 
+export interface CatalogViewOption {
+  optionId: string;
+  displayName: string;
+  isAvailable: boolean;
+}
+
+export interface CatalogViewSlot {
+  slotId: string;
+  name: string;
+  quantity: number;
+  course?: OfferCourse;
+  isAvailable: boolean;
+  options: CatalogViewOption[];
+}
+
+export interface CatalogViewOffer {
+  id: string;
+  presentationTag: string;
+  basePrice: number;
+  image: CatalogImage | null;
+  isAvailable: boolean;
+  composition: { slots: CatalogViewSlot[] };
+}
+
+export interface CatalogViewEntry {
+  id: string;
+  brandName: string;
+  description: string;
+  image: CatalogImage | null;
+  categoryIds: string[];
+  isAvailable: boolean;
+  offers: CatalogViewOffer[];
+}
+
+export interface CatalogViewCategory extends MenuCategory {
+  entryCount: number;
+}
+
+export interface CatalogViewCategories {
+  data: CatalogViewCategory[];
+  uncategorized: { entryCount: number };
+}
+
+export interface CatalogQuery {
+  q?: string;
+  categoryId?: string;
+  page: number;
+  pageSize: number;
+}
+
 export interface EntryQuery {
   q?: string;
   categoryId?: string;
@@ -294,6 +344,8 @@ export interface InventoryQuery {
 }
 
 export interface MenuRepository {
+  getMenuCatalog(query: CatalogQuery, signal?: AbortSignal): Promise<Page<CatalogViewEntry>>;
+  listMenuCatalogCategories(signal?: AbortSignal): Promise<CatalogViewCategories>;
   listEntries(query: EntryQuery, signal?: AbortSignal): Promise<Page<MenuEntry>>;
   listCategories(signal?: AbortSignal): Promise<MenuCategory[]>;
   getCategory(id: string, signal?: AbortSignal): Promise<VersionedResource<MenuCategory>>;
