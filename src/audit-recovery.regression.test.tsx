@@ -1,5 +1,5 @@
 import { consumeConfirmedRecipeAssignments } from "./features/offers/compositionReconciliation";
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GuardedMemoryRouter } from './shared/GuardedMemoryRouter.test-helper';
 import { addSupply } from './shared/recipeSupplies.test-helper';
@@ -10,6 +10,8 @@ import { EntryFormPage } from './features/entries/EntryFormPage';
 import { createOperationAttemptController, sealJsonPayload, applyAttemptFailure, canManualRetryAttempt, createSealedAttempt } from './application/operationAttempt';
 import { createIndexedDbPendingOperationStorage, createControllableIndexedDbHarness } from './shared/pendingOperationStorage';
 
+import { renderWithMenuPermissions } from "./shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 const entry = { id: 'e1', brandName: 'Entrada', description: 'Descripción', status: 'ACTIVE', categoryIds: [] };
 const offer = { id: 'o1', entryId: 'e1', presentationTag: 'Original', basePrice: 100, status: 'ACTIVE', image: null,
   composition: { slots: [{ slotId: 's1', name: 'Principal', quantity: 1, course: null,
