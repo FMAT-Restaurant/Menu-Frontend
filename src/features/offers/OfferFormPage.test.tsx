@@ -1,6 +1,6 @@
 import { GuardedMemoryRouter as MemoryRouter } from "../../shared/GuardedMemoryRouter.test-helper";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
-import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import type {
   MenuEntryDetail,
