@@ -378,7 +378,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   const olderResults = Boolean(displayed && (displayed.key !== key || entryError || needsReconcile));
   const actionsDisabled = Boolean(busyId || fetching || olderResults);
   const hasFilters = Boolean(draftSearch.trim() || query.q || query.categoryId || query.status);
-  const advancedCount = Number(Boolean(query.categoryId)) + Number(Boolean(query.status));
+  const advancedCount = Number(Boolean(query.q)) + Number(Boolean(query.categoryId)) + Number(Boolean(query.status));
   const returnTo = location.pathname + location.search;
 
   return (

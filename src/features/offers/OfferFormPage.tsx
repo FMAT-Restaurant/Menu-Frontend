@@ -1351,7 +1351,7 @@ export function OfferFormPage({
     setNewOperationAuthorized(true);
     setUncertainStage(null);
     setFormError("");
-    setSavedNotice("Nueva operación preparada. Pulsa Guardar Oferta para enviar tus cambios.");
+    setSavedNotice("Nueva operación preparada. Pulsa Guardar oferta para enviar tus cambios.");
   }
 
   const guard = useEditGuard({
@@ -1542,7 +1542,7 @@ export function OfferFormPage({
                 className="button button--primary"
                 disabled={loading || exitSucceeded.current || !recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
-                {saving ? "Guardando…" : "Guardar Oferta"}
+                {saving ? "Guardando…" : "Guardar oferta"}
               </button>
             </footer>
           </form>

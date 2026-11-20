@@ -514,7 +514,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await page.getByRole("button", { name: "Guardar opción" }).click();
 
     // 5. Submit form: Stage 1 upload succeeds, Stage 2 offer creation times out
-    await page.getByRole("button", { name: "Guardar Oferta" }).click();
+    await page.getByRole("button", { name: "Guardar oferta" }).click();
 
     // 6. Verify error feedback and manual retry
     await expect(page.getByRole("alert").first()).toBeVisible();
@@ -648,7 +648,7 @@ test.describe("Operation recovery across page reloads (e2e/operation-recovery.sp
     await page.getByLabel(/Precio base/).fill("350");
 
     // 3. Save offer: times out
-    await page.getByRole("button", { name: "Guardar Oferta" }).click();
+    await page.getByRole("button", { name: "Guardar oferta" }).click();
 
     // 4. Verification of error and retry
     await expect(page.getByRole("alert").first()).toBeVisible();

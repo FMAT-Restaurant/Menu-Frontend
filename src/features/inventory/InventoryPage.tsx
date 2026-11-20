@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { InventoryItem, MenuRepository, Page } from "../../application/catalog";
 import { SearchField } from "../../shared/SearchField";
+import { formatSupplyUnit } from "../../shared/formatUnit";
 
 export type InventoryRepository = Pick<MenuRepository, "listInventoryItems">;
 
@@ -157,7 +158,7 @@ export function InventoryPage({
                       <td className="inventory-selection-row__item">
                         <span className="inventory-selection-row__name">{item.name}</span>
                       </td>
-                      <td className="inventory-selection-row__unit">{item.unit}</td>
+                      <td className="inventory-selection-row__unit">{formatSupplyUnit(item.unit)}</td>
                       <td className="inventory-selection-row__action">
                         <button
                           type="button"
