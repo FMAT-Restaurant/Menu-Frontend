@@ -1,4 +1,4 @@
-import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MenuOffer, MenuOfferDetail, MenuRepository, VersionedResource, MenuCategory } from "./application/catalog";
 import { createOperationAttemptController, IDEMPOTENT_WINDOW_MS, sealJsonPayload } from "./application/operationAttempt";
