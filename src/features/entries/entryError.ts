@@ -1,3 +1,5 @@
+import { toSpanishErrorMessage } from "../../shared/errorMessage";
+
 export type EntryField = "brandName" | "description" | "categoryIds" | "image" | "status";
 export type FailureKind = "validation" | "conflict" | "notFound" | "access" | "temporary" | "timeout" | "network" | "general";
 export interface EntryViolation { field?: EntryField; message: string }
@@ -59,8 +61,8 @@ function serverPayload(error: unknown) {
 }
 
 function messageFor(error: unknown, payload: Record<string, unknown>, kind: FailureKind) {
-  if (typeof payload.message === "string" && payload.message.trim()) return payload.message.trim();
-  if (record(error) && error instanceof Error && !record(error.response) && !error.isAxiosError && error.message) return error.message;
+  if (typeof payload.message === "string" && payload.message.trim()) return toSpanishErrorMessage(payload.message.trim());
+  if (record(error) && error instanceof Error && !record(error.response) && !error.isAxiosError && error.message) return toSpanishErrorMessage(error.message, fallbackMessages[kind]);
   return fallbackMessages[kind];
 }
 
@@ -86,4 +88,20 @@ export function clearFieldFailure(failure: EntryFailure | null, field: EntryFiel
 
 export function localFieldFailure(field: EntryField, message: string): EntryFailure {
   return { kind: "validation", message, violations: [], fields: { [field]: message }, uncertain: false };
+}
+
+export function localValidationFailure(violations: EntryViolation[]): EntryFailure {
+  const fields: EntryFailure["fields"] = {};
+  for (const item of violations) {
+    if (item.field && !fields[item.field]) {
+      fields[item.field] = item.message;
+    }
+  }
+  return {
+    kind: "validation",
+    message: fallbackMessages.validation,
+    violations,
+    fields,
+    uncertain: false,
+  };
 }

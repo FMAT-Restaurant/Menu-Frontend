@@ -1,4 +1,5 @@
 import { LoadingState } from "../../shared/LoadingState";
+import { ToastNotification, useNotification } from "../../shared/ToastNotification";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon } from "../../shared/Icon";
@@ -51,7 +52,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const { notification, notify, clear: clearNotification } = useNotification();
   const [retry, setRetry] = useState(0);
   const [formCategory, setFormCategory] = useState<MenuCategory | "new" | null>(null);
   const [restoredPendingRecord, setRestoredPendingRecord] =
@@ -107,9 +108,9 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
     invalidateCatalogCategories(repository);
     invalidateCatalogEntries(repository);
     if (outcome.kind === "deleted") {
-      setNotice(`Categoría "${outcome.name}" eliminada.`);
+      notify(`Categoría "${outcome.name}" eliminada.`);
     } else {
-      setNotice("");
+      clearNotification();
       setDeleteAlert(
         outcome.kind === "missing"
           ? "La categoría ya no existe. Se actualizó la lista."
@@ -132,11 +133,11 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
               <h1 ref={titleRef} id="category-page-title" data-route-heading tabIndex={-1}>Catálogo de categorías</h1>
               <p className="task-header__intro">Organiza las entradas del menú por categorías. Una entrada puede pertenecer a varias categorías.</p>
             </div>
-            <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Nueva categoría</button>
+            <button className="button button--primary" type="button" onClick={() => { clearNotification(); setFormCategory("new"); }}>Nueva categoría</button>
           </div>
         </header>
+        <ToastNotification notification={notification} onDismiss={clearNotification} />
         <section className="category-panel" aria-labelledby="category-page-title" aria-busy={loading}>
-          {notice && <output className="feedback feedback--success">{notice}</output>}
           {deleteAlert && <div className="feedback feedback--error" role="alert">{deleteAlert}</div>}
           {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={() => setRetry((current) => current + 1)}>Reintentar</button></div>}
           {loading && categories.length === 0 && <LoadingState variant="category-rows" label="Cargando categorías…" />}
@@ -146,7 +147,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
               <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
               <h3>Aún no hay categorías.</h3>
               <p>Crea una categoría para organizar las entradas del menú.</p>
-              <button className="button button--primary" type="button" onClick={() => setFormCategory("new")}>Crear categoría</button>
+              <button className="button button--primary" type="button" onClick={() => { clearNotification(); setFormCategory("new"); }}>Crear categoría</button>
             </div>
           )}
           {categories.length > 0 && (
@@ -159,13 +160,14 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
                     <span>{formatCategoryEntryCount(category.entryCount)}</span>
                   </div>
                   <div className="category-row__actions">
-                    <button className="button button--secondary" type="button" onClick={() => setFormCategory(category)} aria-label={`Editar ${category.name}`}>Editar</button>
+                    <button className="button button--secondary" type="button" onClick={() => { clearNotification(); setFormCategory(category); }} aria-label={`Editar ${category.name}`}>Editar</button>
                     <button
                       className="button button--danger-link category-row__delete"
                       type="button"
                       onClick={(event) => {
                         // Safari does not focus a clicked button; the dialog returns focus to this one.
                         event.currentTarget.focus();
+                        clearNotification();
                         setDeleteAlert("");
                         setDeleteTarget(category);
                       }}
@@ -197,7 +199,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
             invalidateCatalogCategories(repository);
             invalidateCatalogEntries(repository);
             setDeleteAlert("");
-            setNotice("Categoría creada.");
+            notify("Categoría creada.");
             setFormCategory(null);
             setRetry((current) => current + 1);
           }}
@@ -206,7 +208,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
             invalidateCatalogCategories(repository);
             invalidateCatalogEntries(repository);
             setDeleteAlert("");
-            setNotice(
+            notify(
               "La categoría se creó. Conservamos tus cambios posteriores; guárdalos para actualizarla.",
             );
             setRetry((current) => current + 1);
@@ -215,7 +217,7 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
             invalidateCatalogCategories(repository);
             invalidateCatalogEntries(repository);
             setDeleteAlert("");
-            setNotice("Categoría actualizada.");
+            notify("Categoría actualizada.");
             setFormCategory(null);
             setRetry((current) => current + 1);
           }}

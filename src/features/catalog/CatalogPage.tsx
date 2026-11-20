@@ -1,4 +1,5 @@
 import { useLocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { ToastNotification, useNotification } from "../../shared/ToastNotification";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -59,7 +60,6 @@ interface CatalogFeedbackProps {
   categoryError: boolean;
   entryError: Feedback | null;
   actionError: Feedback | null;
-  notice: string;
   fetching: boolean;
   hasDisplayed: boolean;
   busyId: string | null;
@@ -74,7 +74,6 @@ function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
     {props.categoryError && <div className="feedback feedback--error catalog-feedback" role="alert">No se pudieron cargar las categorías. El listado sigue disponible. <button type="button" onClick={props.onRetryCategories}>Reintentar categorías</button></div>}
     {props.entryError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
     {!props.dialogOpen && props.actionError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
-    {props.notice && <output className="feedback feedback--success">{props.notice}</output>}
     {props.fetching && props.hasDisplayed && <output className="catalog-updating">Actualizando entradas…</output>}
     {props.busyId && <output className="catalog-updating">Actualizando entrada…</output>}
   </>;
@@ -106,9 +105,13 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   const actionInProgress = useRef(false);
   const [needsReconcile, setNeedsReconcile] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<MenuEntry | null>(null);
-  const [notice, setNotice] = useState("");
+  const { notification, notify, clear: clearNotification } = useNotification();
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (saveMessage) notify(saveMessage);
+  }, [saveMessage, notify]);
 
   useEffect(() => {
     if (searchTimer.current) {
@@ -120,8 +123,8 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
 
   useEffect(() => {
     setActionError(null);
-    setNotice("");
-  }, [key]);
+    clearNotification();
+  }, [key, clearNotification]);
 
   useEffect(() => () => {
     if (searchTimer.current) {
@@ -219,6 +222,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   ]);
 
   function updateFilter(name: "categoryId" | "status" | "q" | "pageSize", value: string) {
+    clearNotification();
     const next = new URLSearchParams(paramsRef.current);
     if (value) next.set(name, value);
     else next.delete(name);
@@ -227,6 +231,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   }
 
   function submitSearch() {
+    clearNotification();
     if (searchTimer.current) {
       clearTimeout(searchTimer.current);
       searchTimer.current = null;
@@ -243,6 +248,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   }
 
   function clearFilters() {
+    clearNotification();
     if (searchTimer.current) {
       clearTimeout(searchTimer.current);
       searchTimer.current = null;
@@ -252,6 +258,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   }
 
   function changePage(nextPage: number) {
+    clearNotification();
     const next = new URLSearchParams(paramsRef.current);
     if (nextPage <= 1) next.delete("page");
     else next.set("page", String(nextPage));
@@ -302,7 +309,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
       }
       const entryStillExists = updated.data.some((e) => e.id === entryToDelete?.id);
       if (!entryStillExists) {
-        setNotice("Entrada eliminada.");
+        notify("Entrada eliminada.");
         setEntryToDelete(null);
         setActionError(null);
         setNeedsReconcile(false);
@@ -323,7 +330,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     actionInProgress.current = true;
     setBusyId(entry.id);
     setActionError(null);
-    setNotice("");
+    clearNotification();
     try {
       await repository.deleteArchivedEntry(entry.id);
       invalidateCatalogEntries(repository);
@@ -356,7 +363,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
         }
         setNeedsReconcile(false);
         if (latestKey === currentQuery.current.key) {
-          setNotice("Entrada eliminada.");
+          notify("Entrada eliminada.");
         }
         setEntryToDelete(null);
         setActionError(null);
@@ -401,9 +408,9 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
           </div>
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={clearFilters} />
-        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
-        <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} notice={notice} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} dialogOpen={Boolean(entryToDelete)} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
-        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={setEntryToDelete} />
+        <ToastNotification notification={notification} onDismiss={clearNotification} />
+        <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} dialogOpen={Boolean(entryToDelete)} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
+        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={(entry) => { clearNotification(); setEntryToDelete(entry); }} />
         {entryToDelete && (
           <div className="dialog-backdrop">
             <dialog

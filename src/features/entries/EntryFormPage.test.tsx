@@ -301,7 +301,10 @@ test("reports blank required fields without calling the repository", async () =>
   await screen.findByRole("button", { name: "Guardar entrada" });
   fireEvent.submit(document.querySelector("form") as HTMLFormElement);
 
-  expect(await screen.findByRole("alert")).toHaveTextContent("Indica el nombre comercial de la entrada.");
+  const summary = await screen.findByRole("alert", { name: "Error al guardar entrada" });
+  expect(summary).toHaveTextContent("Indica el nombre comercial de la entrada.");
+  expect(summary).toHaveTextContent("Indica una descripción para la entrada.");
+  expect(summary).toHaveTextContent("Selecciona una imagen de referencia para la nueva entrada.");
   expect(api.createEntry).not.toHaveBeenCalled();
 });
 
@@ -746,7 +749,7 @@ test("description, required image and pending validation block saving with a loc
   const api = repository(); renderPage(api);
   fireEvent.change(screen.getByLabelText("Nombre comercial"), { target: { value: "Entrada" } });
   fireEvent.submit(document.querySelector("form")!);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Indica una descripción");
+  expect(await screen.findByRole("alert", { name: "Error al guardar entrada" })).toHaveTextContent("Indica una descripción");
   fireEvent.change(screen.getByLabelText("Descripción"), { target: { value: "Descripción" } });
   fireEvent.submit(document.querySelector("form")!);
   expect(await screen.findByRole("alert", { name: "Error al guardar entrada" })).toHaveTextContent("Selecciona una imagen");

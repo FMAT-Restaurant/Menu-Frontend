@@ -1,5 +1,6 @@
 import { LoadingState } from "../../shared/LoadingState";
 import { useLocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { ToastNotification, useNotification } from "../../shared/ToastNotification";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
@@ -125,7 +126,6 @@ interface OffersFeedbackProps {
   entryErrorMessage: string;
   offersErrorMessage: string;
   actionError: string;
-  notice: string;
   dialogOpen: boolean;
   hasPendingStatusMutation: boolean;
   retryStatusDisabled: boolean;
@@ -139,7 +139,6 @@ function OffersFeedback({
   entryErrorMessage,
   offersErrorMessage,
   actionError,
-  notice,
   dialogOpen,
   hasPendingStatusMutation,
   retryStatusDisabled,
@@ -161,7 +160,6 @@ function OffersFeedback({
       {hasPendingStatusMutation && <button type="button" disabled={retryStatusDisabled} onClick={onRetryStatus}>Reintentar cambio de estado</button>}
       <button type="button" onClick={onRetryOffers}>Actualizar datos</button>
     </div>}
-    {notice && <output className="feedback feedback--success">{notice}</output>}
   </>;
 }
 
@@ -260,8 +258,12 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const [offersErrorMessage, setOffersErrorMessage] = useState("");
   const [offersErrorContext, setOffersErrorContext] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
-  const [notice, setNotice] = useState("");
+  const { notification, notify, clear: clearNotification } = useNotification();
   const [pendingAction, setPendingAction] = useState("");
+
+  useEffect(() => {
+    if (saveMessage) notify(saveMessage);
+  }, [saveMessage, notify]);
   const [entryRetry, setEntryRetry] = useState(0);
   const [offersRetry, setOffersRetry] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -309,7 +311,6 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
 
   useEffect(() => {
     setActionError("");
-    setNotice("");
     setBusyId(null);
     setUpdatingOffers(false);
     setPendingAction("");
@@ -451,7 +452,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         setNeedsReconcile(false);
         setActionError("");
         invalidateCatalogEntries(repository);
-        setNotice(deleteNotice(false));
+        notify(deleteNotice(false));
       } else {
         setResult(offers);
         setResultEntryId(entryId ?? null);
@@ -558,7 +559,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setBusyId(offer.id);
     setUpdatingOffers(true);
     setActionError("");
-    setNotice("");
+    clearNotification();
     setPendingAction("Actualizando estado de la oferta…");
     let sentAttempt: SealedOperationAttempt | null = null;
     try {
@@ -575,7 +576,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
       if (updated === "stale") return;
       invalidateCatalogEntries(repository);
-      setNotice(statusNotice(status, updated === "failed"));
+      notify(statusNotice(status, updated === "failed"));
     } catch (error: unknown) {
       if (!isCurrentOperation(expectedContext, opId)) return;
       recordStatusMutationFailure(error, sentAttempt);
@@ -597,7 +598,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setBusyId(offerToDelete.id);
     setUpdatingOffers(true);
     setActionError("");
-    setNotice("");
+    clearNotification();
     setPendingAction("Eliminando oferta…");
     try {
       await repository.deleteInactiveOffer(offerToDelete.id);
@@ -612,7 +613,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       setNeedsReconcile(false);
       pendingStatusMutation.current = null;
       invalidateCatalogEntries(repository);
-      setNotice(deleteNotice(updated === "failed"));
+      notify(deleteNotice(updated === "failed"));
       setPendingAction("");
     } catch (error: unknown) {
       if (currentContextRef.current !== expectedContext || activeOperationId.current !== opId) return;
@@ -642,6 +643,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   }
 
   function goToPage(next: number) {
+    clearNotification();
     const params = new URLSearchParams(searchParams);
     if (next <= 1) params.delete("page");
     else params.set("page", String(next));
@@ -693,13 +695,12 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           </div>
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
-        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
+        <ToastNotification notification={notification} onDismiss={clearNotification} />
         <OffersFeedback
           loadError={loadError}
           entryErrorMessage={entryErrorMessage}
           offersErrorMessage={offersErrorMessage}
           actionError={actionError}
-          notice={notice}
           dialogOpen={Boolean(offerToDelete)}
           hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
           retryStatusDisabled={Boolean(busyId) || statusRetry?.allowed === false}
@@ -722,6 +723,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           catalogReturnTo={backTo}
           onStatusChange={changeStatus}
           onDelete={(selected) => {
+            clearNotification();
             deleteTriggerRef.current = document.activeElement as HTMLElement;
             setOfferToDelete(selected);
             setNeedsReconcile(false);
