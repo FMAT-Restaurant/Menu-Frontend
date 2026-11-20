@@ -65,6 +65,17 @@ test("focuses each task once, preserves demo title, and ignores result query, pa
   expect(focus).not.toHaveBeenCalled();
 });
 
+test("uses the accessible name as the standalone document title when one is provided", async () => {
+  document.documentElement.dataset.menuStandalone = "";
+  function AccessibleHeading() {
+    return <h1 data-route-heading tabIndex={-1} aria-label="Catálogo público">Consulta del menú</h1>;
+  }
+
+  render(<MemoryRouter><div data-menu-module><RouteContext /><Routes><Route path="/" element={<AccessibleHeading />} /></Routes></div></MemoryRouter>);
+
+  await waitFor(() => expect(document.title).toBe("Catálogo público | FMAT Restaurant"));
+});
+
 test("restores both nested origins and exact list queries through links, back and forward", async () => {
   render(<MemoryRouter initialEntries={["/?q=Bowl&page=2#results"]}><Fixture /></MemoryRouter>);
   await waitFor(() => expect(screen.getByRole("heading", { name: "Entradas" })).toHaveFocus());

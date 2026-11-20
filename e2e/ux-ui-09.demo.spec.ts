@@ -59,7 +59,7 @@ async function evidence(page: Page, info: TestInfo, name: string, data: unknown)
 }
 async function addRecipeOption(page: Page) {
   await page.getByRole("button", { name: "Agregar opción a Plato principal", exact: true }).click();
-  await expect(page.getByRole("button", { name: /Elegir artículo de inventario/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Elegir artículo de inventario/ })).toBeVisible();
   await page.getByRole("button", { name: /Elegir receta/ }).click();
   await page.getByRole("article", { name: "Limonada de la casa", exact: true }).getByRole("button", { name: "Asignar", exact: true }).click();
   await page.getByLabel("Nombre mostrado (opcional)").fill("Alternativa de limonada con nombre largo para comprobar opciones completas");
@@ -86,7 +86,7 @@ test("UX09 composition follows viewport, module and own form width without horiz
   await addRecipeOption(page);
   await page.getByRole("button", { name: "Cambiar estado de Alternativa de limonada con nombre largo para comprobar opciones completas", exact: true }).click();
   await expect(page.locator(".slot-option-item .offer-state--inactive")).toHaveText("Inactiva");
-  await expect(page.getByRole("button", { name: /Copiar composición/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Copiar composición/ })).toBeVisible();
   const all = [];
   for (const host of ["viewport", "module", "form"] as const) {
     for (const width of [320, 390, 600, 740, 1024, 1440]) {
