@@ -1013,6 +1013,10 @@ function OfferFormPageContent({
   }
 
   function handleDropImage(file: File) {
+    if (!canUploadImage) {
+      setImageError("No tienes permiso para cargar imágenes de ofertas.");
+      return;
+    }
     void processSelectedImage(file);
   }
 
