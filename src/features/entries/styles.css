@@ -177,8 +177,21 @@
   box-shadow: 0 4px 12px rgb(0 0 0 / 5%);
 }
 
+:where(.menu-module[data-menu-module]) .entry-form__label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+:where(.menu-module[data-menu-module]) .entry-form__required {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
 :where(.menu-module[data-menu-module]) .entry-category-selector__list {
   min-width: 0;
+  height: 192px;
   max-height: 192px;
   margin: 8px 0 0;
   padding: 0;

@@ -1,4 +1,5 @@
 import { LoadingState } from "../../shared/LoadingState";
+import { ToastNotification, useNotification } from "../../shared/ToastNotification";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type Ref } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -37,7 +38,6 @@ export interface RecipePageProps {
 }
 
 interface RecipeResultsContentProps {
-  notice: string;
   actionError: string;
   showActionError: boolean;
   error: string;
@@ -61,12 +61,11 @@ interface RecipeResultsContentProps {
 }
 
 function RecipeResultsContent({
-  notice, actionError, showActionError, error, onRetry, loading, hasResults, mode,
+  actionError, showActionError, error, onRetry, loading, hasResults, mode,
   olderResults, displayedContext, recipes, confirmedQuery, onClearSearch, onCreate,
   resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
 }: Readonly<RecipeResultsContentProps>) {
   return <>
-    {notice && <output className="feedback feedback--success">{notice}</output>}
     {showActionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
     {error && <div className="feedback feedback--error" role="alert">{error} <button type="button" onClick={onRetry}>Reintentar</button></div>}
     {loading && !hasResults && <LoadingState variant={mode === "selection" ? "recipe-selection" : "recipe-rows"} label="Cargando recetas…" />}
@@ -259,7 +258,7 @@ export function RecipePage({
   const [displayedContext, setDisplayedContext] = useState<{ query: string; page: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const { notification, notify, clear: clearNotification } = useNotification();
   const [retry, setRetry] = useState(0);
 
   const [editingRecipe, setEditingRecipe] = useState<RecipeDetail | RecipeSummary | "new" | null>(null);
@@ -369,6 +368,7 @@ export function RecipePage({
   }, [recipeToDelete, isDeleting]);
 
   function handleSearchSubmit() {
+    clearNotification();
     const trimmed = draftSearch.trim();
     if (propMode) {
       setLocalQuery(trimmed);
@@ -383,6 +383,7 @@ export function RecipePage({
   }
 
   function handlePageChange(newPage: number) {
+    clearNotification();
     if (propMode) {
       setLocalPage(newPage);
     } else {
@@ -393,6 +394,7 @@ export function RecipePage({
   }
 
   function clearSearch() {
+    clearNotification();
     setDraftSearch("");
     if (propMode) {
       setLocalQuery("");
@@ -425,7 +427,7 @@ export function RecipePage({
   }
 
   function handleRecipeCreated(created: RecipeDetail) {
-    setNotice("Receta creada exitosamente.");
+    notify("Receta creada exitosamente.");
     setEditingRecipe(null);
     setInitialPendingRecord(null);
     openingRecipeIdRef.current = null;
@@ -441,12 +443,12 @@ export function RecipePage({
   }
 
   function handleRecipeCreatedWithPendingEdits() {
-    setNotice("Receta creada exitosamente. Continuando con las ediciones locales.");
+    notify("Receta creada exitosamente. Continuando con las ediciones locales.");
     setRetry((r) => r + 1);
   }
 
   function handleRecipeUpdated() {
-    setNotice("Receta actualizada exitosamente.");
+    notify("Receta actualizada exitosamente.");
     setEditingRecipe(null);
     setInitialPendingRecord(null);
     openingRecipeIdRef.current = null;
@@ -460,7 +462,7 @@ export function RecipePage({
 
     try {
       await repository.deleteRecipe(recipeToDelete.id);
-      setNotice(`Receta "${recipeToDelete.name}" eliminada.`);
+      notify(`Receta "${recipeToDelete.name}" eliminada.`);
       setRecipeToDelete(null);
       setRetry((r) => r + 1);
       deleteTriggerRef.current?.focus();
@@ -530,8 +532,9 @@ export function RecipePage({
         returnTo={returnTo}
         title={title}
         subtitle={subtitle}
-        onCreate={handleStartCreate}
+        onCreate={() => { clearNotification(); handleStartCreate(); }}
       />
+        <ToastNotification notification={notification} onDismiss={clearNotification} />
         <section className="category-panel" aria-labelledby="recipe-page-title" aria-busy={loading}>
           <div className="recipe-toolbar">
             <SearchField
@@ -545,7 +548,6 @@ export function RecipePage({
           </div>
 
           <RecipeResultsContent
-            notice={notice}
             actionError={actionError}
             showActionError={!recipeToDelete && Boolean(actionError)}
             error={error}
@@ -558,11 +560,11 @@ export function RecipePage({
             recipes={recipes}
             confirmedQuery={confirmedQuery}
             onClearSearch={clearSearch}
-            onCreate={handleStartCreate}
+            onCreate={() => { clearNotification(); handleStartCreate(); }}
             resultsBusy={resultsBusy}
             onSelect={handleSelect}
-            onEdit={(recipe) => { void handleOpenEdit(recipe); }}
-            onDelete={handleDeleteRequest}
+            onEdit={(recipe) => { clearNotification(); void handleOpenEdit(recipe); }}
+            onDelete={(recipe) => { clearNotification(); handleDeleteRequest(recipe); }}
             recipesResult={recipesResult}
             currentPage={currentPage}
             onPageChange={handlePageChange}

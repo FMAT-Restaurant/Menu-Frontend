@@ -29,8 +29,10 @@ import {
   clearFieldFailure,
   entryFailure,
   localFieldFailure,
+  localValidationFailure,
   type EntryFailure,
   type EntryField,
+  type EntryViolation,
 } from "./entryError";
 import { validateEntryImage } from "./entryImage";
 import { useEntryResources } from "./useEntryResources";
@@ -76,19 +78,27 @@ function validateDraft(
   imageError: string,
   imagePending: boolean,
 ): EntryFailure | null {
-  if (!draft.brandName.trim())
-    return localFieldFailure("brandName", "Indica el nombre comercial de la entrada.");
-  if (!draft.description.trim())
-    return localFieldFailure("description", "Indica una descripción para la entrada.");
-  if (!editing && !file)
-    return localFieldFailure(
-      "image",
-      "Selecciona una imagen de referencia para la nueva entrada.",
-    );
-  if (imageError) return localFieldFailure("image", imageError);
-  if (imagePending)
-    return localFieldFailure("image", "Espera a que termine la validación de la imagen.");
-  return null;
+  const violations: EntryViolation[] = [];
+  if (!draft.brandName.trim()) {
+    violations.push({ field: "brandName", message: "Indica el nombre comercial de la entrada." });
+  }
+  if (!draft.description.trim()) {
+    violations.push({ field: "description", message: "Indica una descripción para la entrada." });
+  }
+  if (!editing && !file) {
+    violations.push({
+      field: "image",
+      message: "Selecciona una imagen de referencia para la nueva entrada.",
+    });
+  } else if (imageError) {
+    violations.push({ field: "image", message: imageError });
+  } else if (imagePending) {
+    violations.push({
+      field: "image",
+      message: "Espera a que termine la validación de la imagen.",
+    });
+  }
+  return violations.length > 0 ? localValidationFailure(violations) : null;
 }
 
 export type EntryFormRepository = Pick<
