@@ -6,6 +6,7 @@ export interface SlotOptionItemProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
+  canChangeStatus?: boolean;
   disabled?: boolean;
 }
 
@@ -15,6 +16,7 @@ export function SlotOptionItem({
   onEdit,
   onDelete,
   onToggleStatus,
+  canChangeStatus = true,
   disabled = false,
 }: Readonly<SlotOptionItemProps>) {
   const isRecipe = option.sourceType === "RECIPE";
@@ -48,7 +50,7 @@ export function SlotOptionItem({
 
       <span className={`offer-state ${isActive ? "offer-state--active" : "offer-state--inactive"}`}>{isActive ? "Activa" : "Inactiva"}</span>
       <div className="slot-option-item__actions">
-        <button
+        {canChangeStatus && <button
           type="button"
           className="button button--small button--secondary"
           onClick={onToggleStatus}
@@ -58,7 +60,7 @@ export function SlotOptionItem({
           aria-pressed={isActive}
         >
           {isActive ? "Desactivar" : "Activar"}
-        </button>
+        </button>}
 
         <button
           type="button"
