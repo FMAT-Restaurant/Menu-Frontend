@@ -9,6 +9,7 @@ test("serves only active entries and offers through the public consultation cata
   expect(result.data.map(entry => entry.id)).toEqual(["demo-entry-burger", "demo-entry-lemonade"]);
   expect(result.data.flatMap(entry => entry.offers.map(offer => offer.id))).not.toContain("demo-offer-combo");
   expect(result.data[0].offers[0].composition.slots[0].options[0]).toMatchObject({ isAvailable: true });
+  expect(result.data[1]).toMatchObject({ isAvailable: false, offers: [{ isAvailable: false, composition: { slots: [{ isAvailable: false, options: [{ isAvailable: false }] }] } }] });
   expect(categories.data.map(category => category.name)).toEqual(["Bebidas", "Platos fuertes", "Postres"]);
   expect(categories.uncategorized.entryCount).toBe(0);
 });

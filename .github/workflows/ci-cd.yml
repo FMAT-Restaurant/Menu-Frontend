@@ -104,6 +104,11 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           PLAYWRIGHT_USE_EXTERNAL_SERVER: "true"
 
+      - name: Run demo Playwright
+        run: npm run test:e2e:demo
+        env:
+          CI: true
+
       - name: Upload Playwright report and traces
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

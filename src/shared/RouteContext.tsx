@@ -84,7 +84,7 @@ export function RouteContext({ transitions }: Readonly<{ transitions?: RouteTran
       const heading = [...module.querySelectorAll<HTMLElement>("[data-route-heading]")]
         .find(element => !element.closest("dialog") && isAvailable(element));
       if (!heading) return;
-      const title = heading.textContent?.trim() ?? "";
+      const title = heading.getAttribute("aria-label")?.trim() || heading.textContent?.trim() || "";
       if (ownedDocument && title && title !== previousTitle) {
         document.title = `${demoPrefix}${title} | FMAT Restaurant`;
         previousTitle = title;

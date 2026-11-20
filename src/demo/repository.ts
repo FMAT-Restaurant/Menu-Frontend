@@ -216,7 +216,7 @@ export function createDemoRepository(): MenuRepository {
           description: entry.description,
           image: catalogImage(entry.image),
           categoryIds: [...entry.categoryIds],
-          isAvailable: true,
+          isAvailable: seed.availability.entries[entry.id] ?? true,
           offers: [...offers.values()].filter(offer => offer.entryId === entry.id && offer.status === "ACTIVE")
             .sort((a, b) => a.presentationTag.localeCompare(b.presentationTag, "es"))
             .map(offer => ({
@@ -224,17 +224,17 @@ export function createDemoRepository(): MenuRepository {
               presentationTag: offer.presentationTag,
               basePrice: offer.basePrice,
               image: catalogImage(offer.image),
-              isAvailable: true,
+              isAvailable: seed.availability.offers[offer.id] ?? true,
               composition: { slots: offer.composition.slots.map(slot => ({
                 slotId: slot.slotId,
                 name: slot.name,
                 quantity: slot.quantity,
                 ...(slot.course ? { course: slot.course } : {}),
-                isAvailable: true,
+                isAvailable: seed.availability.slots[slot.slotId] ?? true,
                 options: slot.options.filter(option => option.status === "ACTIVE").map(option => ({
                   optionId: option.optionId,
                   displayName: option.displayName,
-                  isAvailable: true,
+                  isAvailable: seed.availability.options[option.optionId] ?? true,
                 })),
               })) },
             })),

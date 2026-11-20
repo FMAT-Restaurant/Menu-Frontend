@@ -14,6 +14,12 @@ export interface DemoData {
   offers: MenuOfferDetail[];
   recipes: RecipeDetail[];
   inventoryItems: InventoryItem[];
+  availability: {
+    entries: Record<string, boolean>;
+    offers: Record<string, boolean>;
+    slots: Record<string, boolean>;
+    options: Record<string, boolean>;
+  };
 }
 
 function illustration(id: string, label: string, drawing: string): CatalogImage {
@@ -31,6 +37,12 @@ export function createDemoData(): DemoData {
 
   return {
     images: [burger, lemonade, brownie],
+    availability: {
+      entries: { "demo-entry-burger": true, "demo-entry-lemonade": false },
+      offers: { "demo-offer-burger": true, "demo-offer-lemonade": false },
+      slots: { "demo-slot-main": true, "demo-slot-lemonade": false },
+      options: { "demo-option-burger": true, "demo-option-lemonade": false },
+    },
     categories: [
       { id: "demo-category-main", name: "Platos fuertes", description: "Platillos preparados al momento." },
       { id: "demo-category-drinks", name: "Bebidas", description: "Bebidas frías y calientes." },
