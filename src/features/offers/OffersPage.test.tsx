@@ -1,4 +1,4 @@
-import { act, fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import type { MenuOffer, MenuOfferDetail, MenuRepository, Page } from "../../application/catalog";
 import { OffersPage } from "./OffersPage";
