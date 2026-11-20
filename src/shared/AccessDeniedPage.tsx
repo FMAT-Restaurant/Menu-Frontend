@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export function AccessDeniedPage() {
   return (
     <div className="app-shell not-found-page">
@@ -8,7 +10,7 @@ export function AccessDeniedPage() {
             <p className="task-header__intro">No tienes permiso para consultar esta sección.</p>
           </div>
         </header>
-        <a href="/" className="button button--primary">Volver al menú</a>
+        <Link to="/" className="button button--primary">Volver al menú</Link>
       </main>
     </div>
   );
