@@ -9,14 +9,14 @@ interface OfferCardProps {
   busy: boolean;
   returnTo: string;
   catalogReturnTo: string;
-  canWrite: boolean;
-  canChangeStatus: boolean;
+  canWrite?: boolean;
+  canChangeStatus?: boolean;
   onStatusChange(offer: MenuOffer, status: OfferStatus): void;
   onDelete(offer: MenuOffer): void;
 }
 
 export function OfferCard({
-  offer, busy, returnTo, catalogReturnTo, canWrite, canChangeStatus, onStatusChange, onDelete,
+  offer, busy, returnTo, catalogReturnTo, canWrite = true, canChangeStatus = true, onStatusChange, onDelete,
 }: Readonly<OfferCardProps>) {
   const active = offer.status === "ACTIVE";
   const presentation = offer.presentationTag || "Sin etiqueta de presentación";
