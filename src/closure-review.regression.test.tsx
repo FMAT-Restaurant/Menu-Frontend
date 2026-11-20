@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MenuOffer, MenuOfferDetail, MenuRepository, VersionedResource, MenuCategory } from "./application/catalog";
 import { createOperationAttemptController, IDEMPOTENT_WINDOW_MS, sealJsonPayload } from "./application/operationAttempt";
@@ -8,6 +8,8 @@ import { OfferFormPage, buildOfferCreateScope, type OfferFormDraftState, type Of
 import { OffersPage } from "./features/offers/OffersPage";
 import { createControllableIndexedDbHarness, createIndexedDbPendingOperationStorage } from "./shared/pendingOperationStorage";
 
+import { renderWithMenuPermissions } from "./shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 const storageForTest = () => createIndexedDbPendingOperationStorage({ idbFactory: createControllableIndexedDbHarness().factory });
 const offer: MenuOfferDetail = { id: "offer-1", entryId: "entry-1", presentationTag: "Combo", basePrice: 10,
   status: "INACTIVE", image: null, composition: { slots: [{ slotId: "slot-1", name: "Principal", quantity: 1, course: null,
