@@ -14,8 +14,16 @@ function unprepared(method: keyof MenuRepository) {
   return jest.fn(() => Promise.reject(new Error(`Unprepared MenuRepository.${method} call`)));
 }
 
+const allMenuPermissions = ["menu:catalog:read", "menu:catalog:print", "menu:categories:read", "menu:categories:write", "menu:entries:read", "menu:entries:write", "menu:entries:status", "menu:offers:read", "menu:offers:write", "menu:offers:status", "menu:recipes:read", "menu:recipes:write", "menu:images:write"];
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
 function createRepository(overrides: Partial<MenuRepository> = {}): MenuRepository {
   return {
+    getMenuCatalog: unprepared("getMenuCatalog"),
+    listMenuCatalogCategories: unprepared("listMenuCatalogCategories"),
     listEntries: unprepared("listEntries"),
     listCategories: unprepared("listCategories"),
     getCategory: unprepared("getCategory"),
@@ -47,6 +55,8 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
 
 describe("App routing and lazy loading (T15)", () => {
   beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(allMenuPermissions) }));
     window.history.replaceState({}, "", "/");
   });
 
@@ -102,6 +112,22 @@ describe("App routing and lazy loading (T15)", () => {
 
     expect(await screen.findByRole("heading", { name: "Entradas del menú", level: 1 })).toBeVisible();
     expect(screen.getByRole("searchbox", { name: "Buscar entradas" })).toBeVisible();
+  });
+
+  test("shows the read-only consultation view when the user only has catalog read", async () => {
+    const repository = createRepository({
+      getMenuCatalog: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 24, total: 0, totalPages: 0 } }),
+      listMenuCatalogCategories: jest.fn().mockResolvedValue({ data: [], uncategorized: { entryCount: 0 } }),
+    });
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(["menu:catalog:read"]) }));
+
+    render(<App repository={repository} />);
+
+    expect(await screen.findByRole("heading", { name: "Menú", level: 1 })).toBeVisible();
+    expect(screen.getByRole("searchbox", { name: "Buscar en el menú" })).toBeVisible();
+    expect(repository.getMenuCatalog).toHaveBeenCalled();
+    expect(repository.listEntries).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /Nueva entrada/ })).not.toBeInTheDocument();
   });
 
   test("redirects alias /menu to the administrative catalog root", async () => {

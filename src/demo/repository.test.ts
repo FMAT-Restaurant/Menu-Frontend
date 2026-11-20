@@ -1,5 +1,18 @@
 import { createDemoRepository } from "./repository";
 
+test("serves only active entries and offers through the public consultation catalog", async () => {
+  const repository = createDemoRepository();
+
+  const result = await repository.getMenuCatalog({ page: 1, pageSize: 24 });
+  const categories = await repository.listMenuCatalogCategories();
+
+  expect(result.data.map(entry => entry.id)).toEqual(["demo-entry-burger", "demo-entry-lemonade"]);
+  expect(result.data.flatMap(entry => entry.offers.map(offer => offer.id))).not.toContain("demo-offer-combo");
+  expect(result.data[0].offers[0].composition.slots[0].options[0]).toMatchObject({ isAvailable: true });
+  expect(categories.data.map(category => category.name)).toEqual(["Bebidas", "Platos fuertes", "Postres"]);
+  expect(categories.uncategorized.entryCount).toBe(0);
+});
+
 test("filters and paginates the demo catalog with consistent counts and local images", async () => {
   const repository = createDemoRepository();
   const result = await repository.listEntries({ q: "clasica", status: "ACTIVE", page: 1, pageSize: 1 });
