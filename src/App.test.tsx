@@ -130,6 +130,14 @@ describe("App routing and lazy loading (T15)", () => {
     expect(screen.queryByRole("link", { name: /Nueva entrada/ })).not.toBeInTheDocument();
   });
 
+  test("denies the root route when no menu permissions are present", async () => {
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken([]) }));
+
+    render(<App repository={createRepository()} />);
+
+    expect(await screen.findByRole("heading", { name: "Sin acceso", level: 1 })).toBeVisible();
+  });
+
   test("redirects alias /menu to the administrative catalog root", async () => {
     const repository = createRepository({
       listEntries: jest.fn().mockResolvedValue({

@@ -31,4 +31,15 @@ describe("public catalog API contract", () => {
     expect(() => catalogViewPage({ data: [{ ...entry, isAvailable: "yes" }], meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 } })).toThrow(CatalogResponseError);
     expect(() => catalogViewCategories({ data: [{ id: "cat-1", name: "Bebidas", entryCount: -1 }], uncategorized: { entryCount: 0 } })).toThrow(CatalogResponseError);
   });
+
+  test("rejects malformed nested offer composition before exposing it to the view", () => {
+    const offer = {
+      id: "offer-1", presentationTag: "Individual", basePrice: 25, image: null, isAvailable: true,
+      composition: { slots: [{ slotId: "slot-1", name: "Plato", quantity: 1, course: "invalid", isAvailable: true, options: [] }] },
+    };
+    expect(() => catalogViewPage({
+      data: [{ ...entry, offers: [offer] }],
+      meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+    })).toThrow(CatalogResponseError);
+  });
 });

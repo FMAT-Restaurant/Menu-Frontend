@@ -66,6 +66,16 @@ describe("CatalogConsultationPage", () => {
     );
   });
 
+  test("applies a category filter and clears the page parameter", async () => {
+    const repository = renderPage(["menu:catalog:read"], "/?page=2");
+    const category = await screen.findByRole("combobox", { name: /Categor/i });
+    await screen.findByRole("option", { name: /Tortas/ });
+    fireEvent.change(category, { target: { value: "cat-1" } });
+    await waitFor(() => expect(repository.getMenuCatalog).toHaveBeenLastCalledWith(
+      { categoryId: "cat-1", page: 1, pageSize: 24 }, expect.any(AbortSignal),
+    ));
+  });
+
   test("moves through catalog pages", async () => {
     const repository = {
       getMenuCatalog: jest.fn().mockResolvedValue({ ...page, meta: { ...page.meta, totalPages: 3 } }),
@@ -75,6 +85,18 @@ describe("CatalogConsultationPage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Siguiente" }));
     await waitFor(() => expect(repository.getMenuCatalog).toHaveBeenLastCalledWith(
       { page: 2, pageSize: 24 }, expect.any(AbortSignal),
+    ));
+  });
+
+  test("returns to the previous catalog page", async () => {
+    const repository = {
+      getMenuCatalog: jest.fn().mockResolvedValue({ ...page, meta: { ...page.meta, page: 2, totalPages: 3 } }),
+      listMenuCatalogCategories: jest.fn().mockResolvedValue({ data: [{ id: "cat-1", name: "Tortas", entryCount: 1 }], uncategorized: { entryCount: 0 } }),
+    } as unknown as MenuRepository;
+    render(<PermissionProvider token={permissionToken(["menu:catalog:read"])}><MemoryRouter initialEntries={["/?page=2"]}><CatalogConsultationPage repository={repository} /></MemoryRouter></PermissionProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: "Anterior" }));
+    await waitFor(() => expect(repository.getMenuCatalog).toHaveBeenLastCalledWith(
+      { page: 1, pageSize: 24 }, expect.any(AbortSignal),
     ));
   });
 
