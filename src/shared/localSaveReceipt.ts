@@ -21,7 +21,7 @@ export function readSaveReceipt(state: unknown, entity: LocalSaveReceipt["entity
   const receipt = value as Partial<LocalSaveReceipt>;
   if (receipt.entity !== entity || typeof receipt.receiptId !== "string" || !receipt.receiptId ||
     typeof receipt.entityId !== "string" || !receipt.entityId || typeof receipt.label !== "string" ||
-    !["created", "updated"].includes(receipt.action ?? "") || (entity === "offer" && receipt.entryId !== entryId)) return null;
+    !["created", "updated"].includes(receipt.action ?? "") || (entity === "offer" && entryId !== undefined && receipt.entryId !== entryId)) return null;
   return receipt as LocalSaveReceipt;
 }
 

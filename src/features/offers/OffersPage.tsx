@@ -166,6 +166,7 @@ function OffersFeedback({
 }
 
 interface OffersCollectionProps {
+  isGlobal: boolean;
   isEmpty: boolean;
   offers: MenuOffer[];
   updatingOffers: boolean;
@@ -178,12 +179,14 @@ interface OffersCollectionProps {
   onReload(): void;
 }
 
-function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
+function OffersCollection({ isGlobal, isEmpty, offers, updatingOffers, busy, offerPath, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
   if (isEmpty) {
     return <section className="empty-state offers-empty">
       <h2>No hay ofertas configuradas.</h2>
-      <p>Crea la primera oferta para comenzar a configurar sus opciones y precios.</p>
-      <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>
+      <p>{isGlobal ? "Selecciona una entrada en el catálogo para crear la primera oferta." : "Crea la primera oferta para comenzar a configurar sus opciones y precios."}</p>
+      {isGlobal
+        ? <Link className="button button--primary" to={catalogReturnTo}>Ir al catálogo de entradas</Link>
+        : <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>}
     </section>;
   }
 
@@ -191,7 +194,7 @@ function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, re
     return <div className="feedback feedback--error" role="alert">La respuesta no contiene ofertas para la página solicitada. <button type="button" onClick={onReload}>Actualizar lista</button></div>;
   }
 
-  return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label="Ofertas de la entrada" aria-busy={updatingOffers}>
+  return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label={isGlobal ? "Ofertas del catálogo" : "Ofertas de la entrada"} aria-busy={updatingOffers}>
     {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={busy} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
   </section>;
 }
@@ -238,11 +241,13 @@ function OffersResults({ initialLoading, result, offersLoading, first, last, ...
 
 export function OffersPage({ repository }: Readonly<{ repository: Repository }>) {
   const { entryId } = useParams();
+  const isGlobal = !entryId;
+  const contextKey = entryId ?? "__global__";
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("offer", entryId);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = selectedPage(searchParams.get("page"));
-  const currentContext = `${entryId ?? ""}:${page}`;
+  const currentContext = `${contextKey}:${page}`;
   const currentContextRef = useRef(currentContext);
   currentContextRef.current = currentContext;
   const activeOperationId = useRef<string | null>(null);
@@ -286,7 +291,13 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const offerPath = `/entries/${encodeURIComponent(entryId ?? "")}/offers`;
 
   useEffect(() => {
-    if (!entryId) return;
+    if (!entryId) {
+      setEntry(null);
+      setEntryDataId(null);
+      setEntryError(false);
+      setEntryLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setEntryLoading(true);
     setEntryError(false);
@@ -321,7 +332,6 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   }, [entryId, page]);
 
   const reloadOffers = useCallback(async (signal: AbortSignal) => {
-    if (!entryId) return;
     const pendingAtRead = pendingStatusMutation.current;
     setOffersLoading(true);
     setOffersError(false);
@@ -343,7 +353,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         return;
       }
       setResult(offers);
-      setResultEntryId(entryId);
+      setResultEntryId(contextKey);
       if (pendingAtRead && pendingStatusMutation.current === pendingAtRead && isAttemptWindowExpired(pendingAtRead.attempt)) {
         pendingStatusMutation.current = null;
         setStatusAttempt(null);
@@ -359,7 +369,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     } finally {
       if (!signal.aborted) setOffersLoading(false);
     }
-  }, [currentContext, entryId, page, repository, searchParams, setSearchParams]);
+  }, [contextKey, currentContext, entryId, page, repository, searchParams, setSearchParams]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -393,7 +403,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   ): Promise<"updated" | "navigating" | "failed" | "stale"> {
     setUpdatingOffers(true);
     try {
-      const offers = await repository.listOffers(entryId ?? "", page, pageSize, signal);
+      const offers = await repository.listOffers(entryId, page, pageSize, signal);
       if (signal?.aborted || currentContextRef.current !== expectedContext || (opId !== null && activeOperationId.current !== opId)) {
         return "stale";
       }
@@ -410,7 +420,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         return "navigating";
       } else {
         setResult(offers);
-        setResultEntryId(entryId ?? null);
+        setResultEntryId(contextKey);
         setOffersError(false);
         setOffersErrorMessage("");
         return "updated";
@@ -440,12 +450,12 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setUpdatingOffers(true);
     setPendingAction("Actualizando lista…");
     try {
-      const offers = await repository.listOffers(entryId ?? "", page, pageSize);
+      const offers = await repository.listOffers(entryId, page, pageSize);
       if (!isCurrentOperation(expectedContext, opId)) return;
       const stillPresent = offers.data.some((item) => item.id === offerToDelete?.id);
       if (!stillPresent) {
         setResult(offers);
-        setResultEntryId(entryId ?? null);
+        setResultEntryId(contextKey);
         deleteTriggerRef.current = null;
         setOfferToDelete(null);
         setNeedsReconcile(false);
@@ -454,7 +464,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
         setNotice(deleteNotice(false));
       } else {
         setResult(offers);
-        setResultEntryId(entryId ?? null);
+        setResultEntryId(contextKey);
         const updatedOffer = offers.data.find((item) => item.id === offerToDelete?.id);
         if (updatedOffer) setOfferToDelete(updatedOffer);
         setNeedsReconcile(false);
@@ -657,15 +667,15 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     }
   }
 
-  const visibleEntry = entryDataId === entryId ? entry : null;
-  const visibleResult = resultEntryId === entryId ? result : null;
+  const visibleEntry = !isGlobal && entryDataId === entryId ? entry : null;
+  const visibleResult = resultEntryId === contextKey ? result : null;
   const offers = visibleResult?.data ?? [];
   const displayedPage = visibleResult?.meta.page ?? page;
   const totalPages = visibleResult?.meta.totalPages ?? 0;
   const first = offers.length ? (displayedPage - 1) * pageSize + 1 : 0;
   const last = first ? first + offers.length - 1 : 0;
-  const initialLoading = (entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
-  const currentEntryError = entryError && entryErrorId === entryId;
+  const initialLoading = (!isGlobal && entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
+  const currentEntryError = !isGlobal && entryError && entryErrorId === entryId;
   const currentOffersError = offersError && offersErrorContext === currentContext;
   const loadError = loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
   const isEmpty = !initialLoading && !loadError && visibleResult?.meta.total === 0;
@@ -686,10 +696,16 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           <div className="task-header__row">
             <div className="task-header__content">
               <p className="eyebrow">Ofertas</p>
-              <h1 data-route-heading tabIndex={-1}>Ofertas de {visibleEntry?.brandName ?? "la entrada"}</h1>
-              <p className="task-header__intro">Presentaciones vendibles de la misma identidad comercial.</p>
+              <h1 data-route-heading tabIndex={-1}>
+                {isGlobal ? "Ofertas del catálogo" : `Ofertas de ${visibleEntry?.brandName ?? "la entrada"}`}
+              </h1>
+              <p className="task-header__intro">
+                {isGlobal
+                  ? "Listado administrativo global de ofertas del menú y acceso a su edición."
+                  : "Presentaciones vendibles de la misma identidad comercial."}
+              </p>
             </div>
-            {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
+            {!isGlobal && !isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
           </div>
         </header>
         {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
@@ -708,6 +724,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
           onRetryStatus={retryPendingStatus}
         />
         <OffersResults
+          isGlobal={isGlobal}
           initialLoading={initialLoading}
           result={visibleResult}
           offersLoading={offersLoading}
