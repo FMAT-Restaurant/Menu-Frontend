@@ -304,7 +304,11 @@ export function createDemoRepository(): MenuRepository {
           result = result.filter(offer => offer.entryId === entryId);
         }
         if (excludeOfferId) {
-          result = result.filter(offer => offer.id !== excludeOfferId);
+          result = result.filter((offer) => {
+            if (offer.id === excludeOfferId) return false;
+            const entry = entries.get(offer.entryId);
+            return entry?.status !== "ARCHIVED";
+          });
         }
         const mapped = result.map((offer): MenuOffer => {
           const entry = entries.get(offer.entryId);

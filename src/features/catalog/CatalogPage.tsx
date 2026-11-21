@@ -393,6 +393,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
             </div>
             <div className="task-header__actions catalog-header__actions">
               <nav className="catalog-header__navigation" aria-label="Administrar el menú">
+                <Link className="button button--secondary" to="/offers" state={{ returnTo: location.pathname + location.search }}>Ofertas</Link>
                 <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
                 <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
               </nav>

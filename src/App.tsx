@@ -103,6 +103,7 @@ export function createMenuRoutes(repository: MenuRepository = defaultRepository,
       <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
       <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
       <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
+      <Route path="/offers" element={<OffersPage repository={repository} />} />
       <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
       <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
       <Route path="/categories" element={<CategoryPage repository={repository} />} />
