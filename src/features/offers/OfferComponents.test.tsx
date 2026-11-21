@@ -1296,4 +1296,55 @@ describe("CompositionEditor Component", () => {
     fireEvent.click(screen.getByRole("button", { name: "Eliminar grupo Entrada" }));
     expect(handleDeleteSlot).toHaveBeenCalledWith(0);
   });
+
+  test("renders move up/down buttons for slots and options with boundary disabled states", () => {
+    const handleMoveSlot = jest.fn();
+    const handleMoveOption = jest.fn();
+    const slots: SlotDraft[] = [
+      {
+        localId: "slot-1",
+        name: "Primero",
+        quantity: 1,
+        course: "entrada",
+        options: [
+          { localId: "opt-1", sourceType: "RECIPE", recipeId: "r1", displayName: "Opción A", status: "ACTIVE" },
+          { localId: "opt-2", sourceType: "RECIPE", recipeId: "r2", displayName: "Opción B", status: "ACTIVE" },
+        ],
+      },
+      {
+        localId: "slot-2",
+        name: "Segundo",
+        quantity: 1,
+        course: "bebida",
+        options: [],
+      },
+    ];
+
+    render(
+      <CompositionEditor
+        slots={slots}
+        onAddSlot={jest.fn()}
+        onEditSlot={jest.fn()}
+        onDeleteSlot={jest.fn()}
+        onMoveSlot={handleMoveSlot}
+        onAddOption={jest.fn()}
+        onEditOption={jest.fn()}
+        onDeleteOption={jest.fn()}
+        onToggleOptionStatus={jest.fn()}
+        onMoveOption={handleMoveOption}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Subir grupo Primero" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bajar grupo Segundo" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Bajar grupo Primero" }));
+    expect(handleMoveSlot).toHaveBeenCalledWith(0, 1);
+
+    expect(screen.getByRole("button", { name: "Subir opción Opción A" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bajar opción Opción B" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Subir opción Opción B" }));
+    expect(handleMoveOption).toHaveBeenCalledWith(0, 1, 0);
+  });
 });

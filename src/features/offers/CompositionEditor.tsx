@@ -8,10 +8,12 @@ export interface CompositionEditorProps {
   onAddSlot: () => void;
   onEditSlot: (slotIndex: number) => void;
   onDeleteSlot: (slotIndex: number) => void;
+  onMoveSlot?: (fromIndex: number, toIndex: number) => void;
   onAddOption: (slotIndex: number) => void;
   onEditOption: (slotIndex: number, optionIndex: number) => void;
   onDeleteOption: (slotIndex: number, optionIndex: number) => void;
   onToggleOptionStatus: (slotIndex: number, optionIndex: number) => void;
+  onMoveOption?: (slotIndex: number, fromOptionIndex: number, toOptionIndex: number) => void;
   onCopyComposition?: () => void;
   disabled?: boolean;
 }
@@ -22,10 +24,12 @@ export function CompositionEditor({
   onAddSlot,
   onEditSlot,
   onDeleteSlot,
+  onMoveSlot,
   onAddOption,
   onEditOption,
   onDeleteOption,
   onToggleOptionStatus,
+  onMoveOption,
   onCopyComposition,
   disabled = false,
 }: Readonly<CompositionEditorProps>) {
@@ -66,12 +70,16 @@ export function CompositionEditor({
             key={slot.localId || slot.slotId || `slot-${index}`}
             slot={slot}
             slotIndex={index}
+            totalSlots={slots.length}
             onEdit={() => onEditSlot(index)}
             onDelete={() => onDeleteSlot(index)}
+            onMoveUp={onMoveSlot ? () => onMoveSlot(index, index - 1) : undefined}
+            onMoveDown={onMoveSlot ? () => onMoveSlot(index, index + 1) : undefined}
             onAddOption={() => onAddOption(index)}
             onEditOption={(optIdx) => onEditOption(index, optIdx)}
             onDeleteOption={(optIdx) => onDeleteOption(index, optIdx)}
             onToggleOptionStatus={(optIdx) => onToggleOptionStatus(index, optIdx)}
+            onMoveOption={onMoveOption ? (fromIdx, toIdx) => onMoveOption(index, fromIdx, toIdx) : undefined}
             disabled={disabled}
           />
         ))}

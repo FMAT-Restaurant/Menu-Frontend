@@ -56,6 +56,8 @@ import {
   reconcileComposition,
   consumeConfirmedRecipeAssignments,
   cloneSlotsForDraft,
+  moveSlot,
+  moveSlotOption,
 } from "./compositionReconciliation";
 
 export function buildOfferCreateScope(entryId: string, tabId = getOrCreateTabId()): OperationFlowScope {
@@ -1038,6 +1040,14 @@ export function OfferFormPage({
     setSlots((prev) => prev.filter((_, idx) => idx !== index));
   }
 
+  function handleMoveSlot(fromIndex: number, toIndex: number) {
+    setSlots((prev) => moveSlot(prev, fromIndex, toIndex));
+  }
+
+  function handleMoveOption(slotIndex: number, fromOptionIndex: number, toOptionIndex: number) {
+    setSlots((prev) => moveSlotOption(prev, slotIndex, fromOptionIndex, toOptionIndex));
+  }
+
   // Option modal handlers
   function handleOpenAddOption(slotIndex: number) {
     const active = document.activeElement as HTMLElement | null;
@@ -1525,10 +1535,12 @@ export function OfferFormPage({
               onAddSlot={handleOpenAddSlot}
               onEditSlot={handleOpenEditSlot}
               onDeleteSlot={handleDeleteSlot}
+              onMoveSlot={handleMoveSlot}
               onAddOption={handleOpenAddOption}
               onEditOption={handleOpenEditOption}
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
+              onMoveOption={handleMoveOption}
               onCopyComposition={canCopyComposition ? () => setCopyOverlayOpen(true) : undefined}
               disabled={loading || saving || exitSucceeded.current}
             />
