@@ -68,7 +68,7 @@ test("global offers listing navigates to edit and copies composition from anothe
     }),
   );
   await page.route("**/api/v1/menu/entries/entry-1", (route) =>
-    route.fulfill({ json: entry, headers: { ETag: '"entry-v1"' } }),
+    route.fulfill({ json: { data: entry }, headers: { ETag: '"entry-v1"' } }),
   );
   await page.route("**/api/v1/menu/offers?*", (route) => {
     const url = new URL(route.request().url());
@@ -82,18 +82,18 @@ test("global offers listing navigates to edit and copies composition from anothe
     if (route.request().method() === "PATCH") {
       lastUpdateBody = route.request().postDataJSON() as Record<string, unknown>;
       return route.fulfill({
-        json: { ...destOffer, composition: lastUpdateBody.composition },
+        json: { data: { ...destOffer, composition: lastUpdateBody.composition } },
         headers: { ETag: '"offer-dest-v2"' },
       });
     }
     return route.fulfill({
-      json: destOffer,
+      json: { data: destOffer },
       headers: { ETag: '"offer-dest-v1"' },
     });
   });
   await page.route("**/api/v1/menu/offers/offer-source", (route) =>
     route.fulfill({
-      json: sourceOffer,
+      json: { data: sourceOffer },
       headers: { ETag: '"offer-src-v1"' },
     }),
   );
