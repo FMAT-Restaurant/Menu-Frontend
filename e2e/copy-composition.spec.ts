@@ -9,7 +9,7 @@ test("global offers listing navigates to edit and copies composition from anothe
     description: "Hamburguesa artesanal",
     status: "ACTIVE",
     image: null,
-    categories: [],
+    categoryIds: [],
     offerCount: 2,
   };
 
