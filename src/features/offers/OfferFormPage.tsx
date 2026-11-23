@@ -508,7 +508,7 @@ function OfferSavedFeedback({
     </section>}
     {navigationFailed && <div className="feedback"><output>La oferta se guardó. No pudimos abrir el listado.</output>{" "}<button type="button" onClick={onReturnToList}>Volver al listado</button></div>}
     {savedNotice && <output className="feedback">{savedNotice}</output>}
-    {formError && <p className="feedback feedback--error" role="alert">
+    {formError && <p id="offer-form-error" tabIndex={-1} className="feedback feedback--error" role="alert">
       {requiresNewOperation && !recoveryExpired ? "El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar." : formError}
       {!recoveryReady && <button type="button" onClick={onRetryRecovery}>Reintentar recuperación</button>}
     </p>}
@@ -556,6 +556,7 @@ export function OfferFormPage({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [formError, setFormError] = useState("");
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
@@ -1312,7 +1313,17 @@ export function OfferFormPage({
       confirmedImageId: confirmedImageIdRef.current,
       imageValidating,
     });
-    if (blockerMessage) { setFormError(blockerMessage); return; }
+    if (blockerMessage) {
+      setValidationAttempted(true);
+      setFormError(blockerMessage);
+      requestAnimationFrame(() => {
+        const target = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]:not(input[type="file"])')
+          ?? formRef.current?.querySelector<HTMLElement>("#offer-form-error");
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView?.({ block: "center" });
+      });
+      return;
+    }
     const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
     isSubmittingRef.current = true;
     setSaving(true);
@@ -1451,6 +1462,13 @@ export function OfferFormPage({
       : null,
   };
 
+  const commercialFieldErrors = validationAttempted ? {
+    presentationTag: presentationTag.trim() ? "" : PRESENTATION_TAG_REQUIRED_MESSAGE,
+    basePrice: Number.isFinite(Number(basePrice)) && Number(basePrice) > 0 ? "" : "El precio base debe ser un número positivo.",
+    image: !isEditing && !selectedFile && !confirmedImageIdRef.current ? "La imagen de la oferta es obligatoria al crear." : "",
+  } : {};
+  const formErrorIsInline = Boolean(formError) && Object.values(commercialFieldErrors).includes(formError);
+
   return (
     <div className="app-shell offer-form-view">
       {guard.confirmation}
@@ -1489,7 +1507,7 @@ export function OfferFormPage({
               reviewedOffer={reviewedOffer}
               navigationFailed={navigationFailed}
               savedNotice={savedNotice}
-              formError={formError}
+              formError={formErrorIsInline ? "Revisa los campos marcados antes de guardar." : formError}
               requiresNewOperation={requiresNewOperation}
               recoveryExpired={recoveryExpired}
               recoveryReady={recoveryReady}
@@ -1516,6 +1534,7 @@ export function OfferFormPage({
               onDropImage={handleDropImage}
               imageError={imageError}
               imageValidating={imageValidating}
+              fieldErrors={commercialFieldErrors}
               disabled={loading || saving || exitSucceeded.current}
             />
 

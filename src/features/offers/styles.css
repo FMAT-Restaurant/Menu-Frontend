@@ -1151,4 +1151,7 @@
   text-align: center;
   width: 180px;
 }
+.menu-module .image-dropzone[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+}
 
