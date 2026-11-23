@@ -21,6 +21,7 @@ export interface OfferCommercialInfoProps {
   onDropImage: (file: File) => void;
   imageError: string;
   imageValidating: boolean;
+  fieldErrors?: { presentationTag?: string; basePrice?: string; image?: string };
   disabled?: boolean;
 }
 
@@ -100,6 +101,7 @@ export function OfferCommercialInfo({
   onDropImage,
   imageError,
   imageValidating,
+  fieldErrors = {},
   disabled = false,
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,8 +157,11 @@ export function OfferCommercialInfo({
               placeholder="Ej. Individual, Mediana o Combo"
               required
               aria-required="true"
+              aria-invalid={Boolean(fieldErrors.presentationTag)}
+              aria-describedby={fieldErrors.presentationTag ? "offer-tag-error" : undefined}
               disabled={disabled}
             />}
+            {fieldErrors.presentationTag && <p id="offer-tag-error" className="field-error">{fieldErrors.presentationTag}</p>}
             <p className="field-hint">
               La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
             </p>
@@ -174,10 +179,12 @@ export function OfferCommercialInfo({
                 placeholder="0.00"
                 required
                 disabled={disabled}
-                aria-describedby={formattedPrice === null ? "offer-price-help" : "offer-price-preview offer-price-help"}
+                aria-invalid={Boolean(fieldErrors.basePrice)}
+                aria-describedby={[formattedPrice !== null && "offer-price-preview", "offer-price-help", fieldErrors.basePrice && "offer-price-error"].filter(Boolean).join(" ")}
                 aria-details={roundedPreview ? "offer-price-exact" : undefined}
               />
             </div>}
+            {fieldErrors.basePrice && <p id="offer-price-error" className="field-error">{fieldErrors.basePrice}</p>}
             {!loading && formattedPrice !== null && (
               <p id="offer-price-preview" className="offer-money-preview">
                 {formattedPrice}
@@ -211,6 +218,8 @@ export function OfferCommercialInfo({
             {loading ? <LoadingValue kind="image" /> : <button
               type="button"
               className={`image-dropzone ${effectivePreview ? "image-dropzone--has-preview" : ""}`}
+              aria-invalid={Boolean(fieldErrors.image || imageError)}
+              aria-describedby={fieldErrors.image || imageError ? "offer-image-error" : undefined}
               onClick={handleTriggerFileSelect}
               onKeyDown={handleDropzoneKeyDown}
               onDragOver={handleDragOver}
@@ -239,9 +248,9 @@ export function OfferCommercialInfo({
             {imageValidating && (
               <p className="feedback feedback--info">Validando imagen…</p>
             )}
-            {imageError && (
-              <p className="feedback feedback--error" role="alert">
-                {imageError}
+            {(imageError || fieldErrors.image) && (
+              <p id="offer-image-error" className="field-error" role="alert">
+                {imageError || fieldErrors.image}
               </p>
             )}
 

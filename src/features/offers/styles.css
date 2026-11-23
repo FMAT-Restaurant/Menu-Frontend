@@ -1160,3 +1160,7 @@
   flex-basis: 100%;
 }
 
+.menu-module .image-dropzone[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+}
+
