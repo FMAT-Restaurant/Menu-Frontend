@@ -34,7 +34,14 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await expect(page.getByRole("heading", { name: "Bebidas" })).toBeVisible();
   await expect(page.getByText("2 entradas asociadas")).toBeVisible();
 
+  // The dialog reads the current version (ETag) when it opens; edits typed before
+  // that read resolves are intentionally treated as stale, so wait for it first.
+  const openingRead = () => page.waitForResponse((response) =>
+    response.url().endsWith("/api/v1/menu/categories/category-1") && response.request().method() === "GET");
+
+  let detailLoaded = openingRead();
   await page.getByRole("button", { name: "Editar Bebidas" }).click();
+  await detailLoaded;
   const dialog = page.getByRole("dialog", { name: "Editar categoría" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", { name: "Descripción" }).fill("Borrador descartado");
@@ -49,7 +56,9 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
   expect(mutations).toEqual([]);
 
+  detailLoaded = openingRead();
   await page.getByRole("button", { name: "Editar Bebidas" }).click();
+  await detailLoaded;
   await expect(dialog.getByRole("textbox", { name: "Descripción" })).toHaveValue("Frías");
   await dialog.getByRole("textbox", { name: "Descripción" }).fill("Frías y preparadas");
   await dialog.getByRole("button", { name: "Guardar cambios" }).click();
