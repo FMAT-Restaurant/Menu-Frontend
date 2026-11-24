@@ -40,7 +40,8 @@ for (const [width, moduleWidth] of [[320, 320], [390, 390], [600, 600], [740, 74
     if (moduleWidth !== width) await page.addStyleTag({ content: `[data-menu-module] { width: ${moduleWidth}px; max-width: 100%; margin-inline: auto; }` });
     const price = page.getByLabel("Precio base (MXN)", { exact: true });
     await expect(price).toHaveValue("0");
-    await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a00.00");
+    await expect(page.locator("#offer-price-preview")).toHaveCount(0);
+    await expect.poll(() => price.evaluate(input => (input as HTMLInputElement).validity.valid)).toBe(false);
     await price.fill("145.125");
     await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
     await page.getByRole("button", { name: "Revisar oferta actual", exact: true }).click();

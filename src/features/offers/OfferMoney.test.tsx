@@ -16,7 +16,7 @@ test.each([
   ["123456789.5", "MXN\u00a0123,456,789.50"],
   ["0", "MXN\u00a00.00"],
   ["145.125", "MXN\u00a0145.13"],
-])("UX12 card and editor share the money display for %s without changing the input", (raw, formatted) => {
+])("UX12 formats valid editor prices and preserves the captured value for %s", (raw, formatted) => {
   const { container } = render(<>
     <MemoryRouter><OfferCard offer={{ id: "offer", entryId: "entry", entryName: "Entrada", presentationTag: "Individual",
       basePrice: Number(raw), status: "INACTIVE", image: null, slotCount: 0 }} busy={false} returnTo="/" catalogReturnTo="/"
@@ -24,11 +24,16 @@ test.each([
     <OfferCommercialInfo {...props} basePrice={raw} />
   </>);
   expect(container.querySelector(".offer-card__price")?.textContent).toBe(formatted);
-  expect(container.querySelector("#offer-price-preview")?.textContent).toBe(formatted);
   const input = screen.getByLabelText("Precio base (MXN)");
+  if (raw === "0") {
+    expect(container.querySelector("#offer-price-preview")).toBeNull();
+    expect((input as HTMLInputElement).checkValidity()).toBe(false);
+  } else {
+    expect(container.querySelector("#offer-price-preview")?.textContent).toBe(formatted);
+  }
   expect(input).toHaveAttribute("step", "any");
   expect((input as HTMLInputElement).value).toBe(raw);
-  expect(input).toHaveAccessibleDescription(`${formatted} El precio base pertenece a la oferta y no suma automáticamente precios de componentes.`);
+  expect(input).toHaveAccessibleDescription(`${raw === "0" ? "" : `${formatted} `}El precio base pertenece a la oferta y no suma automáticamente precios de componentes.`);
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
 
