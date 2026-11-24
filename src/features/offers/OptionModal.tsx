@@ -1,5 +1,6 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
+import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import type { OfferStatus } from "../../application/catalog";
@@ -433,11 +434,9 @@ export function OptionModal({
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="option-item-quantity">Cantidad del artículo</label>
-                <input
+                <NativeNumberInput
                   id="option-item-quantity"
-                  type="number"
-                  min="0"
-                  step="any"
+                  errorMessage="Escribe una cantidad del artículo mayor que 0."
                   value={quantity ?? ""}
                   onChange={(e) => handleQuantityChange(e.target.value)}
                   required
