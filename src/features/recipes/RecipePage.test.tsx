@@ -118,6 +118,37 @@ function createMockRepository(): jest.Mocked<RecipeRepository> {
 }
 
 describe("UX08 recipe recovery and field validation", () => {
+  test.each(["cancel", "escape"])("issue 81 keeps a referenced-recipe rejection in its dialog and clears it on %s", async closeMethod => {
+    const repository = createMockRepository();
+    repository.deleteRecipe.mockRejectedValue({ response: { status: 409, data: { error: {
+      code: "RECIPE_IN_USE", message: "The recipe is referenced by current offers.", details: { offerIds: ["offer-1"] },
+    } } } });
+    render(<MemoryRouter><RecipePage repository={repository} mode="management" storage={createMemoryStorage()} /></MemoryRouter>);
+    const trigger = await screen.findByRole("button", { name: "Eliminar Hamburguesa Clásica" });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar receta" }));
+    const dialog = screen.getByRole("dialog");
+    await within(dialog).findByRole("alert");
+    expect(within(dialog).getByRole("button", { name: "Eliminar receta" })).toBeDisabled();
+    expect(dialog).toHaveTextContent("No se puede eliminar la receta porque está referenciada por una oferta vigente.");
+    expect(dialog).toHaveTextContent(/Quita las referencias/);
+    if (closeMethod === "escape") fireEvent.keyDown(document, { key: "Escape" });
+    else fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    fireEvent.change(screen.getByLabelText("Buscar recetas"), { target: { value: "zzz" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
+    await waitFor(() => expect(repository.listRecipes).toHaveBeenLastCalledWith(expect.objectContaining({ q: "zzz" }), expect.any(AbortSignal)));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "Eliminar receta" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(repository.deleteRecipe).toHaveBeenCalledTimes(1);
+  });
+
   test("explains a detail loaded without supplies and focuses the recovery action without writing", async () => {
     const repository = createMockRepository();
     repository.getRecipe.mockResolvedValue({ data: { ...recipeDetail, supplies: [] }, etag: '"empty-supplies"' });
