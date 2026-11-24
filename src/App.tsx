@@ -6,6 +6,7 @@ import { PermissionProvider } from "./shared/permissions";
 import { RequirePermission } from "./shared/RequirePermission";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
+import { GLOBAL_AUTH_ERROR_EVENT, installGlobalAuthInterceptor, type GlobalAuthErrorDetail } from "./api/globalAuthErrors";
 import type { MenuRepository } from "./application/catalog";
 import "./styles.css";
 
@@ -74,6 +75,7 @@ function createDefaultRepository(token?: string): MenuRepository {
   // `stripPrefix` evita duplicar `/menu` cuando la base ya termina en `/api/v1/menu`.
   const makeClient = (baseURL: string, stripPrefix?: string) => {
     const client = axios.create({ baseURL });
+    installGlobalAuthInterceptor(client);
     client.interceptors.request.use(config => {
       if (stripPrefix && config.url?.startsWith(`${stripPrefix}/`) && baseURL.replace(/\/$/, "").endsWith(stripPrefix)) {
         config.url = config.url.slice(stripPrefix.length);
@@ -115,6 +117,14 @@ export function App({ repository, token, currentUser, theme }: Readonly<Federate
   const activeToken = token || session?.accessToken || session?.token;
   const isFederated = token !== undefined || currentUser !== undefined || theme !== undefined;
   const [router, setRouter] = useState<ReturnType<typeof createBrowserRouter> | null>(null);
+  const [globalAuthMessage, setGlobalAuthMessage] = useState("");
+  useEffect(() => {
+    const announceAuthError = (event: Event) => {
+      setGlobalAuthMessage((event as CustomEvent<GlobalAuthErrorDetail>).detail.message);
+    };
+    window.addEventListener(GLOBAL_AUTH_ERROR_EVENT, announceAuthError);
+    return () => window.removeEventListener(GLOBAL_AUTH_ERROR_EVENT, announceAuthError);
+  }, []);
   useEffect(() => {
     // Router construction attaches history listeners. Own it in an effect so a
     // StrictMode replay disposes the discarded instance before creating another.
@@ -127,7 +137,10 @@ export function App({ repository, token, currentUser, theme }: Readonly<Federate
     setRouter(ownedRouter);
     return () => { unsubscribe(); ownedRouter.dispose(); };
   }, [repository, activeToken, isFederated]);
-  return <PermissionProvider token={activeToken}><div data-theme={theme} data-menu-user-id={activeUser?.id}>{router ? <RouterProvider router={router} /> : null}</div></PermissionProvider>;
+  return <PermissionProvider token={activeToken}><div data-theme={theme} data-menu-user-id={activeUser?.id}>
+    {globalAuthMessage && <div className="feedback feedback--error global-auth-notice" role="alert" aria-live="assertive">{globalAuthMessage}</div>}
+    {router ? <RouterProvider router={router} /> : null}
+  </div></PermissionProvider>;
 }
 
 export default App;
