@@ -256,6 +256,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const [entryLoading, setEntryLoading] = useState(true);
   const [offersLoading, setOffersLoading] = useState(true);
   const [entryError, setEntryError] = useState(false);
+  const [entryNotFound, setEntryNotFound] = useState(false);
   const [entryErrorMessage, setEntryErrorMessage] = useState("");
   const [entryErrorId, setEntryErrorId] = useState<string | null>(null);
   const [offersError, setOffersError] = useState(false);
@@ -292,13 +293,18 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     const controller = new AbortController();
     setEntryLoading(true);
     setEntryError(false);
+    setEntryNotFound(false);
     repository.getEntry(entryId, controller.signal).then((loadedEntry) => {
       if (!controller.signal.aborted) {
         setEntry(loadedEntry);
         setEntryDataId(entryId);
+        setEntryNotFound(false);
       }
     }).catch((error: unknown) => {
       if (!controller.signal.aborted) {
+        if (httpStatus(error) === 404) {
+          setEntryNotFound(true);
+        }
         setEntryError(true);
         setEntryErrorMessage(failureMessage(error, "entry"));
         setEntryErrorId(entryId);
@@ -317,6 +323,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setPendingAction("");
     setOfferToDelete(null);
     setNeedsReconcile(false);
+    setEntryNotFound(false);
     pendingStatusMutation.current = null;
     setStatusAttempt(null);
     activeOperationId.current = null;
@@ -668,9 +675,10 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const last = first ? first + offers.length - 1 : 0;
   const initialLoading = (entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
   const currentEntryError = entryError && entryErrorId === entryId;
+  const isEntryNotFound = currentEntryError && entryNotFound;
   const currentOffersError = offersError && offersErrorContext === currentContext;
-  const loadError = loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
-  const isEmpty = !initialLoading && !loadError && visibleResult?.meta.total === 0;
+  const loadError = isEntryNotFound ? null : loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
+  const isEmpty = !initialLoading && !loadError && !isEntryNotFound && visibleResult?.meta.total === 0;
 
   const isCardActionBlocked =
     Boolean(busyId) ||
@@ -684,56 +692,86 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     <div className="app-shell">
       <main className="menu-page offers-page" aria-busy={entryLoading || offersLoading || updatingOffers}>
         <header className="task-header offers-header">
-          <Link className="back-link" to={backTo}><Icon name="arrow-left" /> Volver a entradas</Link>
+          <Link className="back-link" to={backTo}>
+            <Icon name="arrow-left" /> {isEntryNotFound ? "Volver al catálogo" : "Volver a entradas"}
+          </Link>
           <div className="task-header__row">
             <div className="task-header__content">
-              <p className="eyebrow">Ofertas</p>
-              <h1 data-route-heading tabIndex={-1}>Ofertas de {visibleEntry?.brandName ?? "la entrada"}</h1>
-              <p className="task-header__intro">Presentaciones vendibles de la misma identidad comercial.</p>
+              <p className="eyebrow">{isEntryNotFound ? "Entradas" : "Ofertas"}</p>
+              <h1 data-route-heading tabIndex={-1}>
+                {isEntryNotFound ? "Entrada no encontrada" : `Ofertas de ${visibleEntry?.brandName ?? "la entrada"}`}
+              </h1>
+              <p className="task-header__intro">
+                {isEntryNotFound
+                  ? "No pudimos abrir la entrada cuyas ofertas intentas consultar."
+                  : "Presentaciones vendibles de la misma identidad comercial."}
+              </p>
             </div>
-            {!isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
+            {!isEntryNotFound && !isEmpty && (
+              <Link
+                className="button button--primary offers-header__action"
+                to={`${offerPath}/new`}
+                state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}
+              >
+                Nueva oferta
+              </Link>
+            )}
           </div>
         </header>
-        {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
-        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
-        <OffersFeedback
-          loadError={loadError}
-          entryErrorMessage={entryErrorMessage}
-          offersErrorMessage={offersErrorMessage}
-          actionError={actionError}
-          notice={notice}
-          dialogOpen={Boolean(offerToDelete)}
-          hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
-          retryStatusDisabled={Boolean(busyId) || statusRetry?.allowed === false}
-          onRetryEntry={() => setEntryRetry((current) => current + 1)}
-          onRetryOffers={() => setOffersRetry((current) => current + 1)}
-          onRetryStatus={retryPendingStatus}
-        />
-        <OffersResults
-          initialLoading={initialLoading}
-          result={visibleResult}
-          offersLoading={offersLoading}
-          first={first}
-          last={last}
-          isEmpty={isEmpty}
-          offers={offers}
-          updatingOffers={updatingOffers}
-          busy={isCardActionBlocked}
-          offerPath={offerPath}
-          returnTo={location.pathname + location.search}
-          catalogReturnTo={backTo}
-          onStatusChange={changeStatus}
-          onDelete={(selected) => {
-            deleteTriggerRef.current = document.activeElement as HTMLElement;
-            setOfferToDelete(selected);
-            setNeedsReconcile(false);
-          }}
-          onReload={() => setOffersRetry((current) => current + 1)}
-          totalPages={totalPages}
-          page={page}
-          displayedPage={displayedPage}
-          onPageChange={goToPage}
-        />
+        {isEntryNotFound ? (
+          <section className="entry-missing" role="alert" aria-label="Entrada no encontrada">
+            <span className="entry-missing__icon"><Icon name="image" /></span>
+            <p>La entrada solicitada ya no existe.</p>
+            <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
+          </section>
+        ) : (
+          <>
+            {visibleEntry && (
+              <p className="offers-page__context">
+                Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.
+              </p>
+            )}
+            {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
+            <OffersFeedback
+              loadError={loadError}
+              entryErrorMessage={entryErrorMessage}
+              offersErrorMessage={offersErrorMessage}
+              actionError={actionError}
+              notice={notice}
+              dialogOpen={Boolean(offerToDelete)}
+              hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
+              retryStatusDisabled={Boolean(busyId) || statusRetry?.allowed === false}
+              onRetryEntry={() => setEntryRetry((current) => current + 1)}
+              onRetryOffers={() => setOffersRetry((current) => current + 1)}
+              onRetryStatus={retryPendingStatus}
+            />
+            <OffersResults
+              initialLoading={initialLoading}
+              result={visibleResult}
+              offersLoading={offersLoading}
+              first={first}
+              last={last}
+              isEmpty={isEmpty}
+              offers={offers}
+              updatingOffers={updatingOffers}
+              busy={isCardActionBlocked}
+              offerPath={offerPath}
+              returnTo={location.pathname + location.search}
+              catalogReturnTo={backTo}
+              onStatusChange={changeStatus}
+              onDelete={(selected) => {
+                deleteTriggerRef.current = document.activeElement as HTMLElement;
+                setOfferToDelete(selected);
+                setNeedsReconcile(false);
+              }}
+              onReload={() => setOffersRetry((current) => current + 1)}
+              totalPages={totalPages}
+              page={page}
+              displayedPage={displayedPage}
+              onPageChange={goToPage}
+            />
+          </>
+        )}
         {offerToDelete && <div className="dialog-backdrop">
           <dialog
             ref={dialogRef}
