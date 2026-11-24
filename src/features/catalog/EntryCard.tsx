@@ -8,11 +8,12 @@ const statusLabel = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archiva
 export interface EntryCardProps {
   entry: MenuEntry;
   busy: boolean;
+  canWrite?: boolean;
   returnTo: string;
   onDelete(entry: MenuEntry): void;
 }
 
-export function EntryCard({ entry, busy, returnTo, onDelete }: Readonly<EntryCardProps>) {
+export function EntryCard({ entry, busy, canWrite = true, returnTo, onDelete }: Readonly<EntryCardProps>) {
   const source = entry.image?.thumbnailUrl || entry.image?.url;
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [source]);
@@ -42,9 +43,9 @@ export function EntryCard({ entry, busy, returnTo, onDelete }: Readonly<EntryCar
         <div className="entry-card__meta"><span>Estado: <strong>{statusLabel[entry.status]}</strong></span><span>Ofertas: <strong>{entry.offerCount}</strong></span></div>
         <div className="entry-card__actions">
           <Link className="button button--primary" data-return-key={`${returnKey}:offers`} to={`/entries/${encodedId}/offers`} state={{ returnTo }} aria-label={`Ver ofertas de ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Ver ofertas</Link>
-          <Link className="button button--secondary" data-return-key={`${returnKey}:edit`} to={`/entries/${encodedId}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>
+          {canWrite && <Link className="button button--secondary" data-return-key={`${returnKey}:edit`} to={`/entries/${encodedId}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>}
         </div>
-        {entry.status === "ARCHIVED" && <div className="entry-card__secondary-actions">
+        {canWrite && entry.status === "ARCHIVED" && <div className="entry-card__secondary-actions">
           <p className="entry-card__delete-help" id={deleteHelpId}>La eliminación es definitiva.</p>
           <button className="button entry-card__delete" data-return-key={`${returnKey}:delete`} type="button" disabled={busy} onClick={() => onDelete(entry)} aria-label={`Eliminar definitivamente ${entry.brandName}`} aria-describedby={deleteHelpId}>Eliminar</button>
         </div>}

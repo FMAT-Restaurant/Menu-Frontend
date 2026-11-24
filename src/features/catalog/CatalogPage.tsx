@@ -14,6 +14,7 @@ import {
 } from "../../application/catalogCache";
 import { loadEntryCategories } from "../../application/entryCategories";
 import { Icon } from "../../shared/Icon";
+import { usePermission } from "../../shared/permissions";
 import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
@@ -80,7 +81,8 @@ function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
   </>;
 }
 
-export function CatalogPage({ repository }: Readonly<{ repository: CatalogRepository }>) {
+function CatalogPageContent({ repository }: Readonly<{ repository: CatalogRepository }>) {
+  const canWrite = usePermission("menu:entries:write");
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("entry");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -396,14 +398,14 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
                 <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
                 <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
               </nav>
-              <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>
+              {canWrite && <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>}
             </div>
           </div>
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={clearFilters} />
         {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
         <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} notice={notice} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} dialogOpen={Boolean(entryToDelete)} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
-        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={setEntryToDelete} />
+        <CatalogResults canWrite={canWrite} displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={setEntryToDelete} />
         {entryToDelete && (
           <div className="dialog-backdrop">
             <dialog
@@ -456,4 +458,11 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
       </main>
     </div>
   );
+}
+
+
+export function CatalogPage({ repository }: Readonly<{ repository: CatalogRepository }>) {
+  const canRead = usePermission("menu:entries:read");
+  if (!canRead) return <main className="app-shell"><section className="menu-page" role="alert"><h1>Acceso restringido</h1><p>No tienes permiso para consultar las entradas del menú.</p></section></main>;
+  return <CatalogPageContent repository={repository} />;
 }
