@@ -1,5 +1,6 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
+import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import type { OfferCourse } from "../../application/catalog";
@@ -130,10 +131,10 @@ export function SlotModal({
               <label htmlFor="slot-quantity-input">
                 Rondas de selección
               </label>
-              <input
+              <NativeNumberInput
                 id="slot-quantity-input"
-                type="text"
-                inputMode="numeric"
+                integer
+                errorMessage="Escribe un número entero de rondas, igual o mayor que 1."
                 value={quantityText}
                 onChange={(e) => setQuantityText(e.target.value)}
                 required

@@ -104,7 +104,7 @@ test("a group confirms Escape within its existing dialog, preserves fields and f
   expect(screen.getAllByRole("dialog")).toEqual([dialog]);
   fireEvent.click(screen.getByRole("button", { name: "Seguir editando" }));
   expect(name).toHaveValue("Postres"); expect(name).toHaveFocus();
-  expect(screen.getByLabelText("Rondas de selección")).toHaveValue("3");
+  expect(screen.getByLabelText("Rondas de selección")).toHaveValue(3);
   fireEvent.change(name, { target: { value: "" } });
   fireEvent.change(screen.getByLabelText("Rondas de selección"), { target: { value: "1" } });
   fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));

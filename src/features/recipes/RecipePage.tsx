@@ -133,10 +133,10 @@ function RecipeResultList({
   </>;
 }
 
-function recipeDeleteFailure(error: unknown): { message: string; uncertain: boolean } {
+function recipeDeleteFailure(error: unknown): { message: string; uncertain: boolean; blocked?: boolean } {
   const analysis = analyzeNonIdempotentWriteError(error);
   if (analysis.kind === "resource_in_use") {
-    return { message: analysis.message || "No se puede eliminar la receta porque está referenciada por una oferta vigente.", uncertain: false };
+    return { message: "No se puede eliminar la receta porque está referenciada por una oferta vigente.", uncertain: false, blocked: true };
   }
   if (analysis.kind === "precondition_conflict") {
     return { message: analysis.message || "No se pudo eliminar la receta debido a un conflicto de versión. Actualiza la lista e inténtalo de nuevo.", uncertain: false };
@@ -154,13 +154,14 @@ interface RecipeDeleteDialogProps {
   recipe: RecipeSummary;
   actionError: string;
   isDeleting: boolean;
+  deleteBlocked: boolean;
   dialogRef: Ref<HTMLDialogElement>;
   cancelRef: Ref<HTMLButtonElement>;
   onCancel(): void;
   onConfirm(): void;
 }
 
-function RecipeDeleteDialog({ recipe, actionError, isDeleting, dialogRef, cancelRef, onCancel, onConfirm }: Readonly<RecipeDeleteDialogProps>) {
+function RecipeDeleteDialog({ recipe, actionError, isDeleting, deleteBlocked, dialogRef, cancelRef, onCancel, onConfirm }: Readonly<RecipeDeleteDialogProps>) {
   return <div className="dialog-backdrop">
     <dialog ref={dialogRef} className="confirm-dialog menu-task-dialog" aria-labelledby="confirm-delete-title" onCancel={(event) => {
       if (isDeleting) {
@@ -172,9 +173,10 @@ function RecipeDeleteDialog({ recipe, actionError, isDeleting, dialogRef, cancel
       <h2 id="confirm-delete-title">¿Eliminar receta?</h2>
       <p>¿Estás seguro de que deseas eliminar la receta &quot;{recipe.name}&quot;? Esta acción no se puede deshacer.</p>
       {actionError && <p className="feedback feedback--error" role="alert">{actionError}</p>}
+      {deleteBlocked && <p>Quita las referencias a esta receta en las ofertas vigentes y vuelve a abrir este diálogo para intentar eliminarla.</p>}
       <div className="confirm-dialog__actions">
         <button ref={cancelRef} type="button" className="button button--secondary" disabled={isDeleting} onClick={onCancel}>Cancelar</button>
-        <button type="button" className="button button--danger" disabled={isDeleting} onClick={onConfirm}>
+        <button type="button" className="button button--danger" disabled={isDeleting || deleteBlocked} onClick={onConfirm}>
           {isDeleting ? "Eliminando…" : "Eliminar receta"}
         </button>
       </div>
@@ -268,6 +270,7 @@ export function RecipePage({
     useState<PendingOperationChainRecord<RecipeDraft> | null>(null);
   const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
   const [actionError, setActionError] = useState("");
+  const [deleteFailure, setDeleteFailure] = useState<ReturnType<typeof recipeDeleteFailure> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const openingRecipeIdRef = useRef<string | null>(null);
@@ -358,8 +361,7 @@ export function RecipePage({
           event.stopPropagation();
           return;
         }
-        setRecipeToDelete(null);
-        deleteTriggerRef.current?.focus();
+        handleDeleteCancel();
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -454,9 +456,9 @@ export function RecipePage({
   }
 
   async function handleConfirmDelete() {
-    if (!recipeToDelete) return;
+    if (!recipeToDelete || isDeleting || deleteFailure?.blocked) return;
     setIsDeleting(true);
-    setActionError("");
+    setDeleteFailure(null);
 
     try {
       await repository.deleteRecipe(recipeToDelete.id);
@@ -472,7 +474,7 @@ export function RecipePage({
         setActionError(failure.message);
         deleteTriggerRef.current?.focus();
       } else {
-        setActionError(failure.message);
+        setDeleteFailure(failure);
       }
     } finally {
       setIsDeleting(false);
@@ -497,10 +499,12 @@ export function RecipePage({
       (document.activeElement as HTMLElement | null) ??
       document.querySelector<HTMLElement>(`button[aria-label="Eliminar ${recipe.name}"]`);
     setActionError("");
+    setDeleteFailure(null);
     setRecipeToDelete(recipe);
   }
 
   function handleDeleteCancel() {
+    setDeleteFailure(null);
     setRecipeToDelete(null);
     deleteTriggerRef.current?.focus();
   }
@@ -592,7 +596,8 @@ export function RecipePage({
 
       {recipeToDelete && <RecipeDeleteDialog
         recipe={recipeToDelete}
-        actionError={actionError}
+        actionError={deleteFailure?.message ?? ""}
+        deleteBlocked={Boolean(deleteFailure?.blocked)}
         isDeleting={isDeleting}
         dialogRef={deleteDialogRef}
         cancelRef={cancelDeleteRef}

@@ -1151,4 +1151,16 @@
   text-align: center;
   width: 180px;
 }
+.menu-module .price-input-wrapper {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.menu-module .price-input-wrapper > .field-error {
+  flex-basis: 100%;
+}
+
+.menu-module .image-dropzone[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+}
 
