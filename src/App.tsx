@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
 import { EditGuardProvider } from "./shared/editGuard";
 import { PermissionProvider } from "./shared/permissions";
+import { RequirePermission } from "./shared/RequirePermission";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
 import type { MenuRepository } from "./application/catalog";
@@ -96,13 +97,13 @@ export function createMenuRoutes(repository: MenuRepository = defaultRepository,
     <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
       <Route path="/" element={<CatalogPage repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
-      <Route path="/entries/new" element={<EntryFormPage repository={repository} />} />
-      <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={repository} />} />
-      <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
-      <Route path="/entries/:entryId/offers/new" element={<OfferFormPage repository={repository} />} />
-      <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} />} />
-      <Route path="/categories" element={<CategoryPage repository={repository} />} />
-      <Route path="/recipes" element={<RecipePage repository={repository} />} />
+      <Route path="/entries/new" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
+      <Route path="/entries/:entryId/edit" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
+      <Route path="/entries/:entryId/offers" element={<RequirePermission permission="menu:offers:read"><OffersPage repository={repository} /></RequirePermission>} />
+      <Route path="/entries/:entryId/offers/new" element={<RequirePermission permission="menu:offers:read"><OfferFormPage repository={repository} /></RequirePermission>} />
+      <Route path="/entries/:entryId/offers/:offerId/edit" element={<RequirePermission permission="menu:offers:read"><OfferFormPage repository={repository} /></RequirePermission>} />
+      <Route path="/categories" element={<RequirePermission permission="menu:categories:read"><CategoryPage repository={repository} /></RequirePermission>} />
+      <Route path="/recipes" element={<RequirePermission permission="menu:recipes:read"><RecipePage repository={repository} /></RequirePermission>} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>,
   );
