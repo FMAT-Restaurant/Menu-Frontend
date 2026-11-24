@@ -304,6 +304,32 @@ afterEach(() => {
 });
 
 describe("OfferFormPage (V4)", () => {
+  test("issue 80 focuses and identifies invalid commercial fields on every save attempt", async () => {
+    const repository = createMockRepository();
+    renderComponent(repository);
+    await waitForOfferFormLoaded();
+    fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
+    const price = screen.getByLabelText(/Precio base/);
+    fireEvent.change(price, { target: { value: "-12.999" } });
+    const save = screen.getByRole("button", { name: "Guardar Oferta" });
+    fireEvent.click(save);
+    await waitFor(() => expect(price).toHaveFocus());
+    expect(price).toHaveAttribute("aria-invalid", "true");
+    expect(price).toHaveAccessibleDescription(/El precio base debe ser un número positivo\./);
+    save.focus();
+    fireEvent.click(save);
+    await waitFor(() => expect(price).toHaveFocus());
+    fireEvent.change(price, { target: { value: "150" } });
+    fireEvent.click(save);
+    const image = screen.getByRole("button", { name: "Seleccionar o arrastrar imagen de la oferta" });
+    await waitFor(() => expect(image).toHaveFocus());
+    expect(image).toHaveAttribute("aria-invalid", "true");
+    expect(image).toHaveAccessibleDescription(/La imagen de la oferta es obligatoria al crear\./);
+    expect(price).toHaveAttribute("aria-invalid", "false");
+    expect(repository.createOffer).not.toHaveBeenCalled();
+    expect(repository.uploadImage).not.toHaveBeenCalled();
+  });
+
   test("renders creation view with commercial info and composition editor", async () => {
     const repository = createMockRepository();
     renderComponent(repository);

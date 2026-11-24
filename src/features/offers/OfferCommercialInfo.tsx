@@ -1,4 +1,5 @@
 import { LoadingValue } from "../../shared/LoadingState";
+import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, type ReactNode, useRef } from "react";
 import type { MenuImage, OfferStatus } from "../../application/catalog";
@@ -22,6 +23,7 @@ export interface OfferCommercialInfoProps {
   imageValidating: boolean;
   canChangeStatus?: boolean;
   canUploadImage?: boolean;
+  fieldErrors?: { presentationTag?: string; basePrice?: string; image?: string };
   disabled?: boolean;
 }
 
@@ -107,14 +109,16 @@ export function OfferCommercialInfo({
   imageValidating,
   canChangeStatus = true,
   canUploadImage = true,
+  fieldErrors = {},
   disabled = false,
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isImageBlocked = disabled || imageValidating || !canUploadImage;
   const numericPrice = basePrice.trim() === "" ? null : Number(basePrice);
-  const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice)
+  const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice) && numericPrice > 0
     ? formatMoney(numericPrice)
     : null;
+  const roundedPreview = formattedPrice !== null && numericPrice !== null && Number(numericPrice.toFixed(2)) !== numericPrice;
 
   function handleTriggerFileSelect() {
     if (isImageBlocked) return;
@@ -161,8 +165,11 @@ export function OfferCommercialInfo({
               placeholder="Ej. Individual, Mediana o Combo"
               required
               aria-required="true"
+              aria-invalid={Boolean(fieldErrors.presentationTag)}
+              aria-describedby={fieldErrors.presentationTag ? "offer-tag-error" : undefined}
               disabled={disabled}
             />}
+            {fieldErrors.presentationTag && <p id="offer-tag-error" className="field-error">{fieldErrors.presentationTag}</p>}
             <p className="field-hint">
               La entrada ya identifica el producto; usa esta etiqueta para distinguir su presentación.
             </p>
@@ -172,24 +179,26 @@ export function OfferCommercialInfo({
             <label htmlFor="offer-price-input">Precio base (MXN)</label>
             {loading ? <LoadingValue /> : <div className="price-input-wrapper">
               <span className="price-prefix" aria-hidden="true">MXN</span>
-              <input
+              <NativeNumberInput
                 id="offer-price-input"
-                type="number"
-                min="0"
-                step="any"
+                errorMessage="Escribe un precio base mayor que 0."
                 value={basePrice}
                 onChange={(e) => onBasePriceChange(e.target.value)}
                 placeholder="0.00"
                 required
                 disabled={disabled}
-                aria-describedby={formattedPrice === null ? "offer-price-help" : "offer-price-preview offer-price-help"}
+                aria-invalid={Boolean(fieldErrors.basePrice)}
+                aria-describedby={[formattedPrice !== null && "offer-price-preview", "offer-price-help", fieldErrors.basePrice && "offer-price-error"].filter(Boolean).join(" ")}
+                aria-details={roundedPreview ? "offer-price-exact" : undefined}
               />
             </div>}
+            {fieldErrors.basePrice && <p id="offer-price-error" className="field-error">{fieldErrors.basePrice}</p>}
             {!loading && formattedPrice !== null && (
               <p id="offer-price-preview" className="offer-money-preview">
                 {formattedPrice}
               </p>
             )}
+            {roundedPreview && <p id="offer-price-exact" className="field-hint">Precio que se guardará: MXN {basePrice}. La vista previa se redondea a dos decimales.</p>}
             <p className="field-hint" id="offer-price-help">
               El precio base pertenece a la oferta y no suma automáticamente precios de componentes.
             </p>
@@ -217,6 +226,8 @@ export function OfferCommercialInfo({
             {loading ? <LoadingValue kind="image" /> : <button
               type="button"
               className={`image-dropzone ${effectivePreview ? "image-dropzone--has-preview" : ""}`}
+              aria-invalid={Boolean(fieldErrors.image || imageError)}
+              aria-describedby={fieldErrors.image || imageError ? "offer-image-error" : undefined}
               onClick={handleTriggerFileSelect}
               onKeyDown={handleDropzoneKeyDown}
               onDragOver={handleDragOver}
@@ -245,9 +256,9 @@ export function OfferCommercialInfo({
             {imageValidating && (
               <p className="feedback feedback--info">Validando imagen…</p>
             )}
-            {imageError && (
-              <p className="feedback feedback--error" role="alert">
-                {imageError}
+            {(imageError || fieldErrors.image) && (
+              <p id="offer-image-error" className="field-error" role="alert">
+                {imageError || fieldErrors.image}
               </p>
             )}
 
