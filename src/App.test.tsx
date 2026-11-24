@@ -48,11 +48,15 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
 describe("App routing and lazy loading (T15)", () => {
   beforeEach(() => {
     window.history.replaceState({}, "", "/");
+    const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    const token = `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions: ["menu:categories:read", "menu:entries:write", "menu:offers:read", "menu:recipes:read"] })}.signature`;
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: token }));
   });
 
   afterEach(() => {
     cleanup();
     window.history.replaceState({}, "", "/");
+    localStorage.clear();
   });
 
   test("StrictMode owns one live router and disposes its history listeners on unmount", async () => {
