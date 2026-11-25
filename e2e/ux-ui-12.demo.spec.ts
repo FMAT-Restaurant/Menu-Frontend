@@ -19,7 +19,7 @@ for (const [width, moduleWidth] of [[320, 320], [390, 390], [600, 600], [740, 74
     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a0123,456,789.50");
     await expect(price).toHaveValue("123456789.5");
     await moneyEvidence(page, info, "editor-long-price");
-    await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+    await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
     const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "Individual", exact: true }) });
     await expect(card.locator(".offer-card__price")).toHaveText("MXN\u00a0123,456,789.50");
     await moneyEvidence(page, info, "card-long-price");
@@ -28,7 +28,7 @@ for (const [width, moduleWidth] of [[320, 320], [390, 390], [600, 600], [740, 74
     await price.fill("145.125");
     await expect(page.locator("#offer-price-preview")).toHaveText("MXN\u00a0145.13");
     await expect(price).toHaveValue("145.125");
-    await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+    await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
     await expect(card.locator(".offer-card__price")).toHaveText("MXN\u00a0145.13");
     await card.getByRole("link").click();
     await expect(price).toHaveValue("145.125");

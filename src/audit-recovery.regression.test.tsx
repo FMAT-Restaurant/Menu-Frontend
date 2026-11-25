@@ -49,7 +49,7 @@ async function initialOfferFailure(r: ReturnType<typeof repo>, s: ReturnType<typ
   r.updateOffer.mockRejectedValueOnce(timeout);
   const view = mountOffer(r, s);
   await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
   return view;
 }
@@ -78,8 +78,8 @@ test('oferta: cambiar imagen no reemplaza la clave del PATCH incierto', async ()
   await initialOfferFailure(r, s);
   const firstKey = r.updateOffer.mock.calls[0][3];
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar oferta' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   expect(r.updateOffer.mock.calls[1][3]).toBe(firstKey);
 });
@@ -91,8 +91,8 @@ test('oferta: desmontar durante upload detiene el PATCH posterior', async () => 
   const view = mountOffer(r, s);
   await screen.findByDisplayValue('Original');
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar oferta' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.uploadEntryImage).toHaveBeenCalledTimes(1));
   view.unmount();
   await act(async () => { resolveUpload('img'); });
@@ -103,7 +103,7 @@ test('oferta: Retry-After habilita Reintentar al cumplirse el plazo', async () =
   const r = repo(); const s = storage();
   r.updateOffer.mockRejectedValueOnce({ response: { status: 409, headers: { 'retry-after': '1' }, data: { error: { code: 'CONFLICT', message: 'En progreso', details: { code: 'IDEMPOTENCY_IN_PROGRESS' } } } } });
   mountOffer(r, s); await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   const retry = await screen.findByRole('button', { name: 'Reintentar' });
   await waitFor(() => expect(retry).toBeEnabled(), { timeout: 2200 });
 });
@@ -161,10 +161,10 @@ test('oferta: corregir datos después de un 422 envía la corrección con otra c
   const r = repo(); const s = storage();
   r.updateOffer.mockRejectedValueOnce({ response: { status: 422, data: { error: { code: 'VALIDATION_ERROR', message: 'Etiqueta rechazada' } } } });
   mountOffer(r, s); await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Etiqueta rechazada'));
   fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Corregida' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   expect(r.updateOffer.mock.calls[1][1].presentationTag).toBe('Corregida');
   expect(r.updateOffer.mock.calls[1][3]).not.toBe(r.updateOffer.mock.calls[0][3]);
@@ -242,7 +242,7 @@ test('oferta: una creación ambigua sobrevive F5, consulta el ID confirmado y s�
   fireEvent.click(screen.getByRole('button', { name: 'Adoptar versión del servidor' }));
   expect(screen.getByLabelText('Etiqueta de presentación')).toHaveValue('Mi borrador');
   expect(screen.getByLabelText('Precio base (MXN)')).toHaveValue(250);
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(1));
   expect(r.updateOffer.mock.calls[0][0]).toBe('created-on-server');
   expect(r.updateOffer.mock.calls[0][2]).toBe('"confirmed-version"');
@@ -300,8 +300,8 @@ test('oferta: una carga pendiente bloquea la salida y una respuesta tras desmont
   r.uploadEntryImage.mockImplementation(() => new Promise(resolve => { resolveUpload = resolve; }));
   const view = mountOffer(r, s); await screen.findByDisplayValue('Original');
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar oferta' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.uploadEntryImage).toHaveBeenCalledTimes(1));
   const pending = await s.getRecord(buildOfferUpdateScope('o1'));
   expect(pending).not.toBeNull();
@@ -322,13 +322,13 @@ test('oferta: recuperar con ETag confirmado permite otro guardado explícito sin
   const r = repo(); const s = storage();
   r.updateOffer.mockRejectedValueOnce(timeout).mockResolvedValueOnce({ ...offer, etag: '"confirmed"' });
   mountOffer(r, s); await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
   fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Borrador posterior' } });
   fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
   await screen.findByRole('status');
   expect(screen.queryByRole('button', { name: 'Revisar oferta actual' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(3));
   expect(r.updateOffer.mock.calls[2][1].presentationTag).toBe('Borrador posterior');
   expect(r.updateOffer.mock.calls[2][2]).toBe('"confirmed"');
@@ -366,7 +366,7 @@ test('oferta: F5 conserva identidades enviadas, eliminaciones y opciones añadid
   expect(screen.getByText('Segundo editado')).toBeVisible();
   expect(screen.queryByText('Primero')).not.toBeInTheDocument();
   expect(screen.getByText('Nueva después')).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   const sent = r.updateOffer.mock.calls[1][1].composition.slots;
   expect(sent).toHaveLength(1);
