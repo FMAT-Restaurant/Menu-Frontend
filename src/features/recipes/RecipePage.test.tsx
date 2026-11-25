@@ -141,7 +141,7 @@ describe("UX08 recipe recovery and field validation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
     await waitFor(() => expect(repository.listRecipes).toHaveBeenLastCalledWith(expect.objectContaining({ q: "zzz" }), expect.any(AbortSignal)));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
+    fireEvent.click(screen.getByRole("button", { name: "Borrar texto de búsqueda" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     fireEvent.click(trigger);
     expect(screen.getByRole("button", { name: "Eliminar receta" })).toBeEnabled();

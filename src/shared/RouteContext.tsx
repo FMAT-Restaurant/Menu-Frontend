@@ -1,6 +1,10 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
+function headingTitle(heading: HTMLElement) {
+  return heading.getAttribute("aria-label")?.trim() || heading.textContent?.trim() || "";
+}
+
 function isAvailable(element: HTMLElement) {
   if (!element.isConnected || element.closest("[hidden], [inert], [aria-hidden=true]")) return false;
   if (element.matches(":disabled, [aria-disabled=true]")) return false;
@@ -91,7 +95,7 @@ export function RouteContext({ transitions }: Readonly<{ transitions?: RouteTran
       const heading = [...module.querySelectorAll<HTMLElement>("[data-route-heading]")]
         .find(element => !element.closest("dialog") && isAvailable(element));
       if (!heading) return;
-      const title = heading.textContent?.trim() ?? "";
+      const title = headingTitle(heading);
       if (ownedDocument && title && title !== previousTitle) {
         document.title = `${demoPrefix}${title} | FMAT Restaurant`;
         previousTitle = title;
@@ -149,7 +153,7 @@ export function RouteContext({ transitions }: Readonly<{ transitions?: RouteTran
       const heading = [...module.querySelectorAll<HTMLElement>("[data-route-heading]")]
         .find((element) => !element.closest("dialog") && isAvailable(element));
       if (!heading) return;
-      const title = heading.textContent?.trim() ?? "";
+      const title = headingTitle(heading);
       if (!title) return;
       const expected = `${demoPrefix}${title} | FMAT Restaurant`;
       if (document.title !== expected) {

@@ -1,5 +1,32 @@
 import { createDemoRepository } from "./repository";
 
+test("serves only active entries and offers through the public consultation catalog", async () => {
+  const repository = createDemoRepository();
+
+  const result = await repository.getMenuCatalog({ page: 1, pageSize: 24 });
+  const categories = await repository.listMenuCatalogCategories();
+
+  expect(result.data.map(entry => entry.id)).toEqual(["demo-entry-burger", "demo-entry-lemonade"]);
+  expect(result.data.flatMap(entry => entry.offers.map(offer => offer.id))).not.toContain("demo-offer-combo");
+  expect(result.data[0].offers[0].composition.slots[0].options[0]).toMatchObject({ isAvailable: true });
+  expect(result.data[1]).toMatchObject({ isAvailable: false, offers: [{ isAvailable: false, composition: { slots: [{ isAvailable: false, options: [{ isAvailable: false }] }] } }] });
+  expect(categories.data.map(category => category.name)).toEqual(["Bebidas", "Platos fuertes", "Postres"]);
+  expect(categories.uncategorized.entryCount).toBe(0);
+});
+
+test("sorts public offers by presentation name", async () => {
+  const repository = createDemoRepository();
+  const combo = await repository.getOffer("demo-offer-combo");
+  await repository.setOfferStatus("demo-offer-combo", {
+    presentationTag: combo.data.presentationTag,
+    status: "ACTIVE",
+  }, combo.etag!, "activate-combo");
+
+  const burger = (await repository.getMenuCatalog({ page: 1, pageSize: 24 })).data.find(entry => entry.id === "demo-entry-burger");
+
+  expect(burger?.offers.map(offer => offer.presentationTag)).toEqual(["Combo con bebida", "Individual"]);
+});
+
 test("filters and paginates the demo catalog with consistent counts and local images", async () => {
   const repository = createDemoRepository();
   const result = await repository.listEntries({ q: "clasica", status: "ACTIVE", page: 1, pageSize: 1 });

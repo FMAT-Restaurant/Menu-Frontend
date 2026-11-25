@@ -419,6 +419,7 @@
   padding: 16px 24px 24px;
   min-width: 0;
 }
+:where(.menu-module[data-menu-module]) .recipe-selector[hidden] { display: none; }
 :where(.menu-module[data-menu-module]) .recipe-selector__header { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
 :where(.menu-module[data-menu-module]) .recipe-selector__header h2 { flex: 1 1 200px; margin: 0; font-size: 22px; line-height: 30px; }
 :where(.menu-module[data-menu-module]) .recipe-selector .recipe-list { margin-top: 16px; }

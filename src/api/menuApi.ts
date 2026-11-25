@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import type {
   CategoryDraft,
+  CatalogQuery,
   EntryCreateRequest,
   EntryQuery,
   EntryStatus,
@@ -8,6 +9,8 @@ import type {
   InventoryItem,
   InventoryQuery,
   MenuCategory,
+  CatalogViewEntry,
+  CatalogViewCategories,
   MenuEntry,
   MenuEntryDetail,
   MenuOffer,
@@ -26,6 +29,8 @@ import type {
 import {
   categoryPage,
   categoryResponse,
+  catalogViewCategories,
+  catalogViewPage,
   entryDetailResponse,
   entryPage,
   inventoryPage,
@@ -270,6 +275,28 @@ export function createMenuApi(
   }
 
   return {
+    async getMenuCatalog(query: CatalogQuery, signal?: AbortSignal): Promise<Page<CatalogViewEntry>> {
+      const response = await client.get<unknown>("/menu/catalog", {
+        params: {
+          ...(query.q ? { q: query.q } : {}),
+          ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+          page: query.page,
+          pageSize: query.pageSize,
+        },
+        signal,
+        timeout: READ_REQUEST_TIMEOUT_MS,
+      });
+      return catalogViewPage(response.data);
+    },
+
+    async listMenuCatalogCategories(signal?: AbortSignal): Promise<CatalogViewCategories> {
+      const response = await client.get<unknown>("/menu/catalog/categories", {
+        signal,
+        timeout: READ_REQUEST_TIMEOUT_MS,
+      });
+      return catalogViewCategories(response.data);
+    },
+
     async listEntries(
       query: EntryQuery,
       signal?: AbortSignal,
