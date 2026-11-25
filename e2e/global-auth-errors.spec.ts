@@ -1,4 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+// The edit dialog refuses to save when its opening read arrives after the user
+// has typed, so a user-like test waits for that read before editing.
+async function openCategoryEditor(page: Page, name: string) {
+  const openingRead = page.waitForResponse((response) =>
+    response.request().method() === "GET" && /\/api\/v1\/menu\/categories\/[^/?]+$/.test(response.url()));
+  await page.getByRole("button", { name: `Editar ${name}` }).click();
+  await openingRead;
+}
 
 test("shows a global session-expired notice for a 401 response", async ({ page }) => {
   await page.route("**/api/v1/menu/entries?*", route => route.fulfill({ status: 401, json: { message: "expired" } }));
@@ -34,7 +43,7 @@ test("shows a global 403 notice and preserves the category draft", async ({ page
   });
 
   await page.goto("/categories");
-  await page.getByRole("button", { name: "Editar Bebidas" }).click();
+  await openCategoryEditor(page, "Bebidas");
   const dialog = page.getByRole("dialog", { name: "Editar categoría" });
   const description = dialog.getByRole("textbox", { name: "Descripción" });
   await description.fill("Borrador que debe conservarse");
