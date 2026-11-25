@@ -1,6 +1,5 @@
 import { consumeConfirmedRecipeAssignments } from "./features/offers/compositionReconciliation";
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
-import { renderWithMenuPermissions as render } from "./shared/permissions.test-helper";
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GuardedMemoryRouter } from './shared/GuardedMemoryRouter.test-helper';
 import { addSupply } from './shared/recipeSupplies.test-helper';
@@ -12,11 +11,8 @@ import { MENU_PERMISSIONS, PermissionProvider } from './shared/permissions';
 import { createOperationAttemptController, sealJsonPayload, applyAttemptFailure, canManualRetryAttempt, createSealedAttempt } from './application/operationAttempt';
 import { createIndexedDbPendingOperationStorage, createControllableIndexedDbHarness } from './shared/pendingOperationStorage';
 
-function permissionToken(permissions: readonly string[]) {
-  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
-}
-
+import { permissionToken, renderWithMenuPermissions } from "./shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 const entry = { id: 'e1', brandName: 'Entrada', description: 'Descripción', status: 'ACTIVE', categoryIds: [] };
 const offer = { id: 'o1', entryId: 'e1', presentationTag: 'Original', basePrice: 100, status: 'ACTIVE', image: null,
   composition: { slots: [{ slotId: 's1', name: 'Principal', quantity: 1, course: null,

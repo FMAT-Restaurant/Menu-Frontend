@@ -10,6 +10,8 @@ import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { applyAttemptFailure, applyAttemptSendStart, canManualRetryAttempt, createSealedAttempt, isAttemptWindowExpired, markAttemptExpired, sealJsonPayload, type SealedOperationAttempt } from "../../application/operationAttempt";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
 import { Icon } from "../../shared/Icon";
+import { usePermission } from "../../shared/permissions";
+import { AccessDeniedPage } from "../../shared/AccessDeniedPage";
 import { OfferCard } from "./OfferCard";
 import "./styles.css";
 
@@ -173,6 +175,8 @@ interface OffersCollectionProps {
   updatingOffers: boolean;
   busy: boolean;
   offerPath: string;
+  canWrite: boolean;
+  canChangeStatus: boolean;
   returnTo: string;
   catalogReturnTo: string;
   onStatusChange(offer: MenuOffer, status: OfferStatus): void;
@@ -180,12 +184,12 @@ interface OffersCollectionProps {
   onReload(): void;
 }
 
-function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
+function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, canWrite, canChangeStatus, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
   if (isEmpty) {
     return <section className="empty-state offers-empty">
       <h2>No hay ofertas configuradas.</h2>
-      <p>Crea la primera oferta para comenzar a configurar sus opciones y precios.</p>
-      <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>
+      <p>{canWrite ? "Crea la primera oferta para comenzar a configurar sus opciones y precios." : "Un administrador puede configurar ofertas para esta entrada."}</p>
+      {canWrite && <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>}
     </section>;
   }
 
@@ -194,7 +198,7 @@ function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, re
   }
 
   return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label="Ofertas de la entrada" aria-busy={updatingOffers}>
-    {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={busy} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
+    {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={busy} canWrite={canWrite} canChangeStatus={canChangeStatus} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
   </section>;
 }
 
@@ -238,7 +242,9 @@ function OffersResults({ initialLoading, result, offersLoading, first, last, ...
   </>;
 }
 
-export function OffersPage({ repository }: Readonly<{ repository: Repository }>) {
+function OffersPageContent({ repository }: Readonly<{ repository: Repository }>) {
+  const canWrite = usePermission("menu:offers:write");
+  const canChangeStatus = usePermission("menu:offers:status");
   const { entryId } = useParams();
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("offer", entryId);
@@ -707,7 +713,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
                   : "Presentaciones vendibles de la misma identidad comercial."}
               </p>
             </div>
-            {!isEntryNotFound && !isEmpty && (
+            {canWrite && !isEntryNotFound && !isEmpty && (
               <Link
                 className="button button--primary offers-header__action"
                 to={`${offerPath}/new`}
@@ -756,6 +762,8 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
               updatingOffers={updatingOffers}
               busy={isCardActionBlocked}
               offerPath={offerPath}
+              canWrite={canWrite}
+              canChangeStatus={canChangeStatus}
               returnTo={location.pathname + location.search}
               catalogReturnTo={backTo}
               onStatusChange={changeStatus}
@@ -827,4 +835,10 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
       </main>
     </div>
   );
+}
+
+
+export function OffersPage({ repository }: Readonly<{ repository: Repository }>) {
+  const canRead = usePermission("menu:offers:read");
+  return canRead ? <OffersPageContent repository={repository} /> : <AccessDeniedPage />;
 }
