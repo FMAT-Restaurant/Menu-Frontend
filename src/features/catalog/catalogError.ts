@@ -29,8 +29,9 @@ function responseStatus(error: unknown): number | undefined {
   return typeof response.status === "number" ? response.status : undefined;
 }
 
-export function catalogErrorMessage(kind: CatalogErrorKind, action: "load" | "change" | "delete") {
+export function catalogErrorMessage(kind: CatalogErrorKind, action: "load" | "change" | "delete", globalAuthHandled = false) {
   if (kind === "invalid") return "El servidor devolvió datos incompletos. Actualiza la lista o inténtalo más tarde.";
+  if (kind === "access" && globalAuthHandled) return "";
   if (kind === "access") return "No tienes permiso para esta operación. Solicita acceso o vuelve a iniciar sesión.";
   if (kind === "missing") return "La entrada ya no está disponible. Actualiza la lista.";
   if (kind === "conflict") return "La entrada cambió desde que la abriste. Actualiza la lista antes de volver a intentarlo.";

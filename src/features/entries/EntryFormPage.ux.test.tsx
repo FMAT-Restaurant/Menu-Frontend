@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MenuEntryDetail } from "../../application/catalog";
 import { createControllableIndexedDbHarness, createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { EntryFormPage, type EntryFormRepository } from "./EntryFormPage";
+import { MENU_PERMISSIONS, PermissionProvider } from "../../shared/permissions";
 
 const current: MenuEntryDetail = {
   id: "ux07-entry", brandName: "Entrada vigente", description: "Descripción conservada", status: "INACTIVE",
@@ -17,14 +18,19 @@ function repository(): jest.Mocked<EntryFormRepository> {
   };
 }
 
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
 function renderEditor(api: EntryFormRepository) {
   const storage = createIndexedDbPendingOperationStorage({ idbFactory: createControllableIndexedDbHarness().factory });
-  return render(<MemoryRouter initialEntries={[{ pathname: "/entries/ux07-entry/edit", state: { returnTo: "/?q=vigente&page=2" } }]}>
+  return render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={[{ pathname: "/entries/ux07-entry/edit", state: { returnTo: "/?q=vigente&page=2" } }]}>
     <Routes>
       <Route path="/entries/:entryId/edit" element={<EntryFormPage repository={api} storage={storage} />} />
       <Route path="/" element={<h1>Catálogo restaurado</h1>} />
     </Routes>
-  </MemoryRouter>);
+  </MemoryRouter></PermissionProvider>);
 }
 
 test("an entry HTTP 404 presents a useful missing state instead of a disabled creation form or retry", async () => {

@@ -15,7 +15,7 @@ test("offers without a tag retain separate state and omit deletion while active"
   const indicator = screen.getByText("Activa", { selector: ".offer-state" });
   expect(indicator.closest("button")).toBeNull();
   expect(screen.queryByRole("button", { name: "Eliminar oferta Sin etiqueta de presentación" })).not.toBeInTheDocument();
-  expect(screen.queryByText(/eliminarla|eliminación/)).not.toBeInTheDocument();
+  expect(screen.getByText("Desactiva la oferta para poder eliminarla.")).toBeVisible();
   expect(remove).not.toHaveBeenCalled();
   fireEvent.click(status);
   expect(changeStatus).toHaveBeenCalledWith(offer, "INACTIVE");

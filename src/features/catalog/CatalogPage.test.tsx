@@ -1,27 +1,8 @@
-import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MenuRepository } from "../../application/catalog";
 import { CatalogPage } from "./CatalogPage";
-import { PermissionProvider } from "../../shared/permissions";
-import type { ReactElement, ReactNode } from "react";
-
-function permissionTestToken(permissions: readonly string[]) {
-  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
-}
-
-const allPermissionToken = permissionTestToken([
-  "menu:catalog:read", "menu:catalog:print", "menu:categories:read", "menu:categories:write",
-  "menu:entries:read", "menu:entries:write", "menu:entries:status", "menu:offers:read",
-  "menu:offers:write", "menu:offers:status", "menu:recipes:read", "menu:recipes:write", "menu:images:write",
-]);
-
-function render(ui: ReactElement, options?: Parameters<typeof rtlRender>[1]) {
-  return rtlRender(ui, {
-    wrapper: ({ children }: { children: ReactNode }) => <PermissionProvider token={allPermissionToken}>{children}</PermissionProvider>,
-    ...options,
-  });
-}
+import { MENU_PERMISSIONS, PermissionProvider } from "../../shared/permissions";
 
 const entries = [{
   id: "entry-1",
@@ -56,9 +37,14 @@ function LocationViewer() {
   return <div data-testid="catalog-location">{location.pathname + location.search}</div>;
 }
 
-function renderPage(api: CatalogRepository, url = "/", token = allPermissionToken) {
-  rtlRender(
-    <PermissionProvider token={token}><MemoryRouter initialEntries={[url]}>
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
+function renderPage(api: CatalogRepository, url = "/", permissions: readonly string[] = MENU_PERMISSIONS) {
+  render(
+    <PermissionProvider token={permissionToken(permissions)}><MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route
           path="/"
@@ -270,12 +256,12 @@ test("opens V5 with the current V1 search and filters available for return navig
     return <p>{(location.state as { returnTo: string }).returnTo}</p>;
   }
   render(
-    <MemoryRouter initialEntries={["/?q=pizza&status=ACTIVE"]}>
+    <PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={["/?q=pizza&status=ACTIVE"]}>
       <Routes>
         <Route path="/" element={<CatalogPage repository={api} />} />
         <Route path="/categories" element={<CategoryDestination />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></PermissionProvider>,
   );
   await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" });
 
@@ -312,9 +298,38 @@ test("keeps a valid categoryId from url query and filters by it", async () => {
 });
 
 
+test("requires entries read before loading or showing the catalog", () => {
+  const api = repository();
+  renderPage(api, "/", []);
+  expect(screen.getByRole("alert")).toHaveTextContent("No tienes permiso para consultar las entradas");
+  expect(api.listEntries).not.toHaveBeenCalled();
+  expect(api.listCategories).not.toHaveBeenCalled();
+});
+
+test("entries read without entries write hides create, edit and delete actions", async () => {
+  const api = repository();
+  api.listEntries.mockResolvedValue({
+    data: [{ ...entries[0], status: "ARCHIVED" }],
+    meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+  });
+  renderPage(api, "/", ["menu:entries:read"]);
+  expect(await screen.findByRole("heading", { name: "Hamburguesa Hawaiana" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Nueva entrada" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Editar Hamburguesa Hawaiana" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Eliminar definitivamente Hamburguesa Hawaiana" })).not.toBeInTheDocument();
+});
+
+
+test("does not offer entry creation from an empty catalog without entries write", async () => {
+  const api = repository(0);
+  renderPage(api, "/", ["menu:entries:read"]);
+  expect(await screen.findByText("Aún no hay entradas.")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Nueva entrada" })).not.toBeInTheDocument();
+});
+
 test("hides category and recipe navigation links when their read permissions are absent", async () => {
   const api = repository();
-  renderPage(api, "/", permissionTestToken(["menu:entries:read"]));
+  renderPage(api, "/", ["menu:entries:read"]);
 
   expect(await screen.findByRole("heading", { name: "Entradas del menú" })).toBeVisible();
   expect(screen.queryByRole("link", { name: "Categorías" })).not.toBeInTheDocument();

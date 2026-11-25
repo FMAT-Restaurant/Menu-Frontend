@@ -75,7 +75,7 @@ export function EntryFormFeedback({ model, editing, returnTo, summaryRef }: Read
   return <>
     {model.navigationFailed && <div className="feedback"><output aria-live="polite">La entrada se guardó. No pudimos abrir el listado.</output> <button type="button" onClick={() => { void model.finishNavigation(); }}>Volver al listado</button></div>}
     {model.infoNotice && <output className="feedback" aria-live="polite">{model.infoNotice}</output>}
-    {model.failure && <div ref={summaryRef} className="feedback feedback--error entry-form__summary" role="alert" aria-label="Error al guardar entrada" tabIndex={-1}>
+    {model.failure?.message && <div ref={summaryRef} className="feedback feedback--error entry-form__summary" role="alert" aria-label="Error al guardar entrada" tabIndex={-1}>
       <p>{model.failure.message}</p>
       {!model.recoveryReady && <button type="button" onClick={model.retryRecovery}>Reintentar recuperación</button>}
       {model.failure.violations.length > 0 && <ul>{model.failure.violations.map((item, index) => <li key={`${item.field ?? "general"}-${index}`}>

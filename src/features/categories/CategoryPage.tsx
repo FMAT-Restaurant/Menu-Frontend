@@ -1,5 +1,6 @@
 import { LoadingState } from "../../shared/LoadingState";
 import { usePermission } from "../../shared/permissions";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon } from "../../shared/Icon";
@@ -98,8 +99,8 @@ export function CategoryPage({ repository, storage }: Readonly<CategoryPageProps
     setError("");
     repository.listCategories(controller.signal).then((items) => {
       if (!controller.signal.aborted) setCategories(items);
-    }).catch(() => {
-      if (!controller.signal.aborted) setError("No se pudieron cargar las categorías.");
+    }).catch((loadError: unknown) => {
+      if (!controller.signal.aborted) setError(isGlobalAuthError(loadError) ? "" : "No se pudieron cargar las categorías.");
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(false);
     });

@@ -3,18 +3,24 @@ import type { OptionDraft } from "./optionDraft";
 export interface SlotOptionItemProps {
   option: OptionDraft;
   optionIndex: number;
+  totalOptions?: number;
   onEdit: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   disabled?: boolean;
 }
 
 export function SlotOptionItem({
   option,
   optionIndex,
+  totalOptions,
   onEdit,
   onDelete,
   onToggleStatus,
+  onMoveUp,
+  onMoveDown,
   disabled = false,
 }: Readonly<SlotOptionItemProps>) {
   const isRecipe = option.sourceType === "RECIPE";
@@ -48,6 +54,30 @@ export function SlotOptionItem({
 
       <span className={`offer-state ${isActive ? "offer-state--active" : "offer-state--inactive"}`}>{isActive ? "Activa" : "Inactiva"}</span>
       <div className="slot-option-item__actions">
+        {onMoveUp && (
+          <button
+            type="button"
+            className="button button--small button--secondary"
+            onClick={onMoveUp}
+            disabled={disabled || optionIndex === 0}
+            aria-label={`Subir opción ${label}`}
+          >
+            Subir
+          </button>
+        )}
+
+        {onMoveDown && (
+          <button
+            type="button"
+            className="button button--small button--secondary"
+            onClick={onMoveDown}
+            disabled={disabled || (totalOptions !== undefined && optionIndex >= totalOptions - 1)}
+            aria-label={`Bajar opción ${label}`}
+          >
+            Bajar
+          </button>
+        )}
+
         <button
           type="button"
           className="button button--small button--secondary"
