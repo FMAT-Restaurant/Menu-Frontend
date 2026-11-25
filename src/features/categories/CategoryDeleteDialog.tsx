@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { contractErrorResponse } from "../../api/catalogResponse";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import {
   analyzeNonIdempotentWriteError,
   extractHttpFailureContext,
@@ -54,6 +55,7 @@ function categoryDeleteFailure(error: unknown): CategoryDeleteFailure {
     };
   }
   if (analysis.status === 404) return { kind: "missing" };
+  if ((analysis.status === 401 || analysis.status === 403) && isGlobalAuthError(error)) return { kind: "rejected", message: "" };
   const rejection = safeRejectionMessage(analysis.status);
   if (rejection) return { kind: "rejected", message: serverMessage ?? rejection };
   return { kind: "unconfirmed" };

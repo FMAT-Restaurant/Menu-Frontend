@@ -4,6 +4,7 @@ import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { applyAttemptFailure, applyAttemptSendStart, canManualRetryAttempt, createSealedAttempt, isAttemptWindowExpired, markAttemptExpired, sealJsonPayload, type SealedOperationAttempt } from "../../application/operationAttempt";
@@ -54,6 +55,7 @@ function transportCode(error: unknown) {
 function failureMessage(error: unknown, scope: ErrorScope) {
   const status = httpStatus(error);
   const code = transportCode(error);
+  if ((status === 401 || status === 403) && isGlobalAuthError(error)) return "";
   if (status === 401 || status === 403) return "No tienes acceso a esta operación. Verifica tu sesión y permisos.";
   if (status === 404) return scope === "entry" ? "La entrada solicitada ya no existe." : "La entrada u oferta solicitada ya no existe.";
   if (status === 409 || status === 412) return "Los datos cambiaron desde que se cargaron. Actualiza la lista antes de volver a intentarlo.";
@@ -152,7 +154,7 @@ function OffersFeedback({
   const onRetry = loadError === "entry" ? onRetryEntry : onRetryOffers;
 
   return <>
-    {loadError && <div className="feedback feedback--error" role="alert">
+    {loadError && message && <div className="feedback feedback--error" role="alert">
       {message}
       <button type="button" onClick={onRetry}>Reintentar {retryLabel}</button>
     </div>}
@@ -259,6 +261,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const [entryLoading, setEntryLoading] = useState(true);
   const [offersLoading, setOffersLoading] = useState(true);
   const [entryError, setEntryError] = useState(false);
+  const [entryNotFound, setEntryNotFound] = useState(false);
   const [entryErrorMessage, setEntryErrorMessage] = useState("");
   const [entryErrorId, setEntryErrorId] = useState<string | null>(null);
   const [offersError, setOffersError] = useState(false);
@@ -301,13 +304,18 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     const controller = new AbortController();
     setEntryLoading(true);
     setEntryError(false);
+    setEntryNotFound(false);
     repository.getEntry(entryId, controller.signal).then((loadedEntry) => {
       if (!controller.signal.aborted) {
         setEntry(loadedEntry);
         setEntryDataId(entryId);
+        setEntryNotFound(false);
       }
     }).catch((error: unknown) => {
       if (!controller.signal.aborted) {
+        if (httpStatus(error) === 404) {
+          setEntryNotFound(true);
+        }
         setEntryError(true);
         setEntryErrorMessage(failureMessage(error, "entry"));
         setEntryErrorId(entryId);
@@ -326,6 +334,7 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     setPendingAction("");
     setOfferToDelete(null);
     setNeedsReconcile(false);
+    setEntryNotFound(false);
     pendingStatusMutation.current = null;
     setStatusAttempt(null);
     activeOperationId.current = null;
@@ -676,9 +685,10 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
   const last = first ? first + offers.length - 1 : 0;
   const initialLoading = (!isGlobal && entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
   const currentEntryError = !isGlobal && entryError && entryErrorId === entryId;
+  const isEntryNotFound = currentEntryError && entryNotFound;
   const currentOffersError = offersError && offersErrorContext === currentContext;
-  const loadError = loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
-  const isEmpty = !initialLoading && !loadError && visibleResult?.meta.total === 0;
+  const loadError = isEntryNotFound ? null : loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
+  const isEmpty = !initialLoading && !loadError && !isEntryNotFound && visibleResult?.meta.total === 0;
 
   const isCardActionBlocked =
     Boolean(busyId) ||
@@ -692,63 +702,89 @@ export function OffersPage({ repository }: Readonly<{ repository: Repository }>)
     <div className="app-shell">
       <main className="menu-page offers-page" aria-busy={entryLoading || offersLoading || updatingOffers}>
         <header className="task-header offers-header">
-          <Link className="back-link" to={backTo}><Icon name="arrow-left" /> Volver a entradas</Link>
+          <Link className="back-link" to={backTo}>
+            <Icon name="arrow-left" /> {isEntryNotFound ? "Volver al catálogo" : "Volver a entradas"}
+          </Link>
           <div className="task-header__row">
             <div className="task-header__content">
-              <p className="eyebrow">Ofertas</p>
+              <p className="eyebrow">{isEntryNotFound ? "Entradas" : "Ofertas"}</p>
               <h1 data-route-heading tabIndex={-1}>
-                {isGlobal ? "Ofertas del catálogo" : `Ofertas de ${visibleEntry?.brandName ?? "la entrada"}`}
+                {isEntryNotFound ? "Entrada no encontrada" : isGlobal ? "Ofertas del catálogo" : `Ofertas de ${visibleEntry?.brandName ?? "la entrada"}`}
               </h1>
               <p className="task-header__intro">
-                {isGlobal
-                  ? "Listado administrativo global de ofertas del menú y acceso a su edición."
-                  : "Presentaciones vendibles de la misma identidad comercial."}
+                {isEntryNotFound
+                  ? "No pudimos abrir la entrada cuyas ofertas intentas consultar."
+                  : isGlobal
+                    ? "Listado administrativo global de ofertas del menú y acceso a su edición."
+                    : "Presentaciones vendibles de la misma identidad comercial."}
               </p>
             </div>
-            {!isGlobal && !isEmpty && <Link className="button button--primary offers-header__action" to={`${offerPath}/new`} state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}>Nueva oferta</Link>}
+            {!isGlobal && !isEntryNotFound && !isEmpty && (
+              <Link
+                className="button button--primary offers-header__action"
+                to={`${offerPath}/new`}
+                state={{ returnTo: location.pathname + location.search, catalogReturnTo: backTo }}
+              >
+                Nueva oferta
+              </Link>
+            )}
           </div>
         </header>
-        {visibleEntry && <p className="offers-page__context">Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.</p>}
-        {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
-        <OffersFeedback
-          loadError={loadError}
-          entryErrorMessage={entryErrorMessage}
-          offersErrorMessage={offersErrorMessage}
-          actionError={actionError}
-          notice={notice}
-          dialogOpen={Boolean(offerToDelete)}
-          hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
-          retryStatusDisabled={Boolean(busyId) || statusRetry?.allowed === false}
-          onRetryEntry={() => setEntryRetry((current) => current + 1)}
-          onRetryOffers={() => setOffersRetry((current) => current + 1)}
-          onRetryStatus={retryPendingStatus}
-        />
-        <OffersResults
-          isGlobal={isGlobal}
-          initialLoading={initialLoading}
-          result={visibleResult}
-          offersLoading={offersLoading}
-          first={first}
-          last={last}
-          isEmpty={isEmpty}
-          offers={offers}
-          updatingOffers={updatingOffers}
-          busy={isCardActionBlocked}
-          offerPath={offerPath}
-          returnTo={location.pathname + location.search}
-          catalogReturnTo={backTo}
-          onStatusChange={changeStatus}
-          onDelete={(selected) => {
-            deleteTriggerRef.current = document.activeElement as HTMLElement;
-            setOfferToDelete(selected);
-            setNeedsReconcile(false);
-          }}
-          onReload={() => setOffersRetry((current) => current + 1)}
-          totalPages={totalPages}
-          page={page}
-          displayedPage={displayedPage}
-          onPageChange={goToPage}
-        />
+        {isEntryNotFound ? (
+          <section className="entry-missing" role="alert" aria-label="Entrada no encontrada">
+            <span className="entry-missing__icon"><Icon name="image" /></span>
+            <p>La entrada solicitada ya no existe.</p>
+            <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
+          </section>
+        ) : (
+          <>
+            {visibleEntry && (
+              <p className="offers-page__context">
+                Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.
+              </p>
+            )}
+            {saveMessage && <output className="feedback feedback--success">{saveMessage}</output>}
+            <OffersFeedback
+              loadError={loadError}
+              entryErrorMessage={entryErrorMessage}
+              offersErrorMessage={offersErrorMessage}
+              actionError={actionError}
+              notice={notice}
+              dialogOpen={Boolean(offerToDelete)}
+              hasPendingStatusMutation={Boolean(pendingStatusMutation.current)}
+              retryStatusDisabled={Boolean(busyId) || statusRetry?.allowed === false}
+              onRetryEntry={() => setEntryRetry((current) => current + 1)}
+              onRetryOffers={() => setOffersRetry((current) => current + 1)}
+              onRetryStatus={retryPendingStatus}
+            />
+            <OffersResults
+              isGlobal={isGlobal}
+              initialLoading={initialLoading}
+              result={visibleResult}
+              offersLoading={offersLoading}
+              first={first}
+              last={last}
+              isEmpty={isEmpty}
+              offers={offers}
+              updatingOffers={updatingOffers}
+              busy={isCardActionBlocked}
+              offerPath={offerPath}
+              returnTo={location.pathname + location.search}
+              catalogReturnTo={backTo}
+              onStatusChange={changeStatus}
+              onDelete={(selected) => {
+                deleteTriggerRef.current = document.activeElement as HTMLElement;
+                setOfferToDelete(selected);
+                setNeedsReconcile(false);
+              }}
+              onReload={() => setOffersRetry((current) => current + 1)}
+              totalPages={totalPages}
+              page={page}
+              displayedPage={displayedPage}
+              onPageChange={goToPage}
+            />
+          </>
+        )}
         {offerToDelete && <div className="dialog-backdrop">
           <dialog
             ref={dialogRef}

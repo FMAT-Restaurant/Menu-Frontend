@@ -9,6 +9,7 @@ export interface DisplayedPage { key: string; query: EntryQuery; result: Page<Me
 
 interface ResultsProps {
   displayed: DisplayedPage | null;
+  canWrite?: boolean;
   pageSize: number;
   returnTo: string;
   fetching: boolean;
@@ -21,7 +22,7 @@ interface ResultsProps {
   onDelete(entry: MenuEntry): void;
 }
 
-function EmptyEntries({ hasFilters, returnTo, onClear }: Readonly<Pick<ResultsProps, "hasFilters" | "returnTo" | "onClear">>) {
+function EmptyEntries({ hasFilters, returnTo, onClear, canWrite = true }: Readonly<Pick<ResultsProps, "hasFilters" | "returnTo" | "onClear" | "canWrite">>) {
   let title = "Aún no hay entradas.";
   let description = "Crea la primera entrada para comenzar a administrar el menú.";
   if (hasFilters) {
@@ -31,7 +32,7 @@ function EmptyEntries({ hasFilters, returnTo, onClear }: Readonly<Pick<ResultsPr
   return <section className="empty-state">
     <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
     <h2>{title}</h2><p>{description}</p>
-    {hasFilters ? <button className="button button--primary" type="button" onClick={onClear}>Limpiar filtros</button> : <Link className="button button--primary" to="/entries/new" state={{ returnTo }}>Nueva entrada</Link>}
+    {hasFilters ? <button className="button button--primary" type="button" onClick={onClear}>Limpiar filtros</button> : canWrite && <Link className="button button--primary" to="/entries/new" state={{ returnTo }}>Nueva entrada</Link>}
   </section>;
 }
 
@@ -83,8 +84,8 @@ export function EntryPagination({ page, totalPages, disabled, onPage }: Readonly
   );
 }
 
-function EntryGrid(props: Readonly<Pick<ResultsProps, "displayed" | "busy" | "returnTo" | "onDelete">>) {
-  return <div className="entry-grid" aria-label="Entradas administrativas">{props.displayed?.result.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={props.busy} returnTo={props.returnTo} onDelete={props.onDelete} />)}</div>;
+function EntryGrid(props: Readonly<Pick<ResultsProps, "displayed" | "busy" | "returnTo" | "onDelete" | "canWrite">>) {
+  return <div className="entry-grid" aria-label="Entradas administrativas">{props.displayed?.result.data.map((entry) => <EntryCard key={entry.id} entry={entry} busy={props.busy} canWrite={props.canWrite} returnTo={props.returnTo} onDelete={props.onDelete} />)}</div>;
 }
 
 function showEmpty(props: Pick<ResultsProps, "displayed" | "olderResults" | "fetching">, count: number) {
@@ -116,7 +117,7 @@ function ResultsBody(props: Readonly<Omit<ResultsProps, "pageSize" | "onPageSize
     <section className="catalog-results" aria-busy={props.fetching || props.busy}>
       {!shown && props.fetching && <LoadingState variant="entries" />}
       {shown && count > 0 && <EntryGrid {...props} />}
-      {showEmpty(props, count) && <EmptyEntries hasFilters={props.hasFilters} returnTo={props.returnTo} onClear={props.onClear} />}
+      {showEmpty(props, count) && <EmptyEntries canWrite={props.canWrite} hasFilters={props.hasFilters} returnTo={props.returnTo} onClear={props.onClear} />}
       {shown && totalPages > 1 && <EntryPagination page={shownPage} totalPages={totalPages} disabled={props.busy} onPage={props.onPage} />}
     </section>
   );

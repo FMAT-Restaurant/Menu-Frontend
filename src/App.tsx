@@ -1,11 +1,12 @@
 import axios from "axios";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Link, Navigate, Outlet, Route, RouterProvider, useLocation } from "react-router-dom";
 import { EditGuardProvider } from "./shared/editGuard";
 import { PermissionProvider } from "./shared/permissions";
 import { RequirePermission } from "./shared/RequirePermission";
 import { createRouteTransitionTracker, RouteContext } from "./shared/RouteContext";
 import { createMenuApi } from "./api/menuApi";
+import { GLOBAL_AUTH_ERROR_EVENT, installGlobalAuthInterceptor, type GlobalAuthErrorDetail } from "./api/globalAuthErrors";
 import type { MenuRepository } from "./application/catalog";
 import "./styles.css";
 
@@ -74,6 +75,7 @@ function createDefaultRepository(token?: string): MenuRepository {
   // `stripPrefix` evita duplicar `/menu` cuando la base ya termina en `/api/v1/menu`.
   const makeClient = (baseURL: string, stripPrefix?: string) => {
     const client = axios.create({ baseURL });
+    installGlobalAuthInterceptor(client);
     client.interceptors.request.use(config => {
       if (stripPrefix && config.url?.startsWith(`${stripPrefix}/`) && baseURL.replace(/\/$/, "").endsWith(stripPrefix)) {
         config.url = config.url.slice(stripPrefix.length);
@@ -92,9 +94,40 @@ function createDefaultRepository(token?: string): MenuRepository {
 
 const defaultRepository = createDefaultRepository();
 
+function MenuLayout({ transitions }: Readonly<{ transitions?: ReturnType<typeof createRouteTransitionTracker> }>) {
+  const location = useLocation();
+  const [targetPathname, setTargetPathname] = useState<string | undefined>(() => transitions?.currentPath);
+
+  useEffect(() => {
+    setTargetPathname(transitions?.currentPath);
+    if (!transitions) return;
+    return transitions.subscribe((nextPath) => {
+      setTargetPathname(nextPath);
+    });
+  }, [transitions]);
+
+  const navigating = Boolean(targetPathname && targetPathname !== location.pathname);
+
+  return (
+    <div className="menu-module" data-menu-module data-route-loading={navigating ? "true" : undefined}>
+      {navigating && (
+        <div className="route-transition-bar" role="status" aria-live="polite" aria-label="Cargando página…">
+          <span className="route-transition-bar__indicator" />
+        </div>
+      )}
+      <EditGuardProvider>
+        <RouteContext transitions={transitions} />
+        <Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}>
+          <Outlet />
+        </Suspense>
+      </EditGuardProvider>
+    </div>
+  );
+}
+
 export function createMenuRoutes(repository: MenuRepository = defaultRepository, transitions?: ReturnType<typeof createRouteTransitionTracker>) {
   return createRoutesFromElements(
-    <Route element={<div className="menu-module" data-menu-module><EditGuardProvider><RouteContext transitions={transitions} /><Suspense fallback={<div className="app-shell loading-shell" role="status" aria-live="polite"><p>Cargando página…</p></div>}><Outlet /></Suspense></EditGuardProvider></div>}>
+    <Route element={<MenuLayout transitions={transitions} />}>
       <Route path="/" element={<CatalogPage repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
       <Route path="/entries/new" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
@@ -116,6 +149,14 @@ export function App({ repository, token, currentUser, theme }: Readonly<Federate
   const activeToken = token || session?.accessToken || session?.token;
   const isFederated = token !== undefined || currentUser !== undefined || theme !== undefined;
   const [router, setRouter] = useState<ReturnType<typeof createBrowserRouter> | null>(null);
+  const [globalAuthMessage, setGlobalAuthMessage] = useState("");
+  useEffect(() => {
+    const announceAuthError = (event: Event) => {
+      setGlobalAuthMessage((event as CustomEvent<GlobalAuthErrorDetail>).detail.message);
+    };
+    window.addEventListener(GLOBAL_AUTH_ERROR_EVENT, announceAuthError);
+    return () => window.removeEventListener(GLOBAL_AUTH_ERROR_EVENT, announceAuthError);
+  }, []);
   useEffect(() => {
     // Router construction attaches history listeners. Own it in an effect so a
     // StrictMode replay disposes the discarded instance before creating another.
@@ -128,7 +169,10 @@ export function App({ repository, token, currentUser, theme }: Readonly<Federate
     setRouter(ownedRouter);
     return () => { unsubscribe(); ownedRouter.dispose(); };
   }, [repository, activeToken, isFederated]);
-  return <PermissionProvider token={activeToken}><div data-theme={theme} data-menu-user-id={activeUser?.id}>{router ? <RouterProvider router={router} /> : null}</div></PermissionProvider>;
+  return <PermissionProvider token={activeToken}><div data-theme={theme} data-menu-user-id={activeUser?.id}>
+    {globalAuthMessage && <div className="feedback feedback--error global-auth-notice" role="alert" aria-live="assertive">{globalAuthMessage}</div>}
+    {router ? <RouterProvider router={router} /> : null}
+  </div></PermissionProvider>;
 }
 
 export default App;

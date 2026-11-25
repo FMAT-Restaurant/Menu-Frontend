@@ -19,14 +19,21 @@ function currentUrl(location: { pathname: string; search: string; hash: string }
 export function createRouteTransitionTracker() {
   let observedPath: string | undefined;
   let interrupted = false;
+  const listeners = new Set<(pathname: string) => void>();
   return {
     observe(pathname: string) {
       if (pathname === observedPath) return;
       observedPath = pathname;
       interrupted = false;
+      for (const listener of listeners) listener(pathname);
     },
     interrupt() { interrupted = true; },
     wasInterrupted(pathname: string) { return pathname === observedPath && interrupted; },
+    get currentPath() { return observedPath; },
+    subscribe(listener: (pathname: string) => void) {
+      listeners.add(listener);
+      return () => { listeners.delete(listener); };
+    },
   };
 }
 
@@ -129,6 +136,44 @@ export function RouteContext({ transitions }: Readonly<{ transitions?: RouteTran
     };
     // Search, pagination, hash and receipt consumption keep the current task's focus.
   }, [location.pathname, transitions]);
+
+  useEffect(() => {
+    const module = marker.current?.closest<HTMLElement>("[data-menu-module]");
+    if (!module) return;
+    const ownedDocument = document.documentElement.dataset.menuStandalone !== undefined;
+    if (!ownedDocument) return;
+    const demoPrefix = document.title.startsWith("[DEMO]") ? "[DEMO] " : "";
+
+    const syncTitle = () => {
+      if (transitions?.currentPath && transitions.currentPath !== location.pathname) return;
+      const heading = [...module.querySelectorAll<HTMLElement>("[data-route-heading]")]
+        .find((element) => !element.closest("dialog") && isAvailable(element));
+      if (!heading) return;
+      const title = heading.textContent?.trim() ?? "";
+      if (!title) return;
+      const expected = `${demoPrefix}${title} | FMAT Restaurant`;
+      if (document.title !== expected) {
+        document.title = expected;
+      }
+    };
+
+    let frame = requestAnimationFrame(syncTitle);
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(syncTitle);
+    });
+    observer.observe(module, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["hidden", "inert", "aria-hidden", "style"],
+    });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [location.pathname, location.search, transitions]);
 
   return <span ref={marker} hidden data-route-context />;
 }

@@ -7,8 +7,14 @@ import { OfferFormPage, buildOfferCreateScope, buildOfferUpdateScope, type Offer
 import { RecipePage } from './features/recipes/RecipePage';
 import { RecipeFormDialog } from './features/recipes/RecipeFormDialog';
 import { EntryFormPage } from './features/entries/EntryFormPage';
+import { MENU_PERMISSIONS, PermissionProvider } from './shared/permissions';
 import { createOperationAttemptController, sealJsonPayload, applyAttemptFailure, canManualRetryAttempt, createSealedAttempt } from './application/operationAttempt';
 import { createIndexedDbPendingOperationStorage, createControllableIndexedDbHarness } from './shared/pendingOperationStorage';
+
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
 
 const entry = { id: 'e1', brandName: 'Entrada', description: 'Descripción', status: 'ACTIVE', categoryIds: [] };
 const offer = { id: 'o1', entryId: 'e1', presentationTag: 'Original', basePrice: 100, status: 'ACTIVE', image: null,
@@ -43,7 +49,7 @@ async function initialOfferFailure(r: ReturnType<typeof repo>, s: ReturnType<typ
   r.updateOffer.mockRejectedValueOnce(timeout);
   const view = mountOffer(r, s);
   await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
   return view;
 }
@@ -72,8 +78,8 @@ test('oferta: cambiar imagen no reemplaza la clave del PATCH incierto', async ()
   await initialOfferFailure(r, s);
   const firstKey = r.updateOffer.mock.calls[0][3];
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar oferta' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   expect(r.updateOffer.mock.calls[1][3]).toBe(firstKey);
 });
@@ -85,8 +91,8 @@ test('oferta: desmontar durante upload detiene el PATCH posterior', async () => 
   const view = mountOffer(r, s);
   await screen.findByDisplayValue('Original');
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar oferta' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.uploadEntryImage).toHaveBeenCalledTimes(1));
   view.unmount();
   await act(async () => { resolveUpload('img'); });
@@ -97,7 +103,7 @@ test('oferta: Retry-After habilita Reintentar al cumplirse el plazo', async () =
   const r = repo(); const s = storage();
   r.updateOffer.mockRejectedValueOnce({ response: { status: 409, headers: { 'retry-after': '1' }, data: { error: { code: 'CONFLICT', message: 'En progreso', details: { code: 'IDEMPOTENCY_IN_PROGRESS' } } } } });
   mountOffer(r, s); await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   const retry = await screen.findByRole('button', { name: 'Reintentar' });
   await waitFor(() => expect(retry).toBeEnabled(), { timeout: 2200 });
 });
@@ -118,7 +124,7 @@ test('receta: el PATCH usa la versión del detalle abierto, no una segunda lectu
 test('entrada: recuperar upload incierto tras recarga reenvía los bytes originales', async () => {
   const r = repo(); const s = storage();
   r.uploadEntryImage.mockRejectedValueOnce(timeout);
-  function mount() { return render(<MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter>); }
+  function mount() { return render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter></PermissionProvider>); }
   const view = mount();
   await waitFor(() => expect(r.listCategories).toHaveBeenCalled());
   fireEvent.change(screen.getByLabelText('Nombre comercial'), { target: { value: 'Nueva' } });
@@ -155,10 +161,10 @@ test('oferta: corregir datos después de un 422 envía la corrección con otra c
   const r = repo(); const s = storage();
   r.updateOffer.mockRejectedValueOnce({ response: { status: 422, data: { error: { code: 'VALIDATION_ERROR', message: 'Etiqueta rechazada' } } } });
   mountOffer(r, s); await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Etiqueta rechazada'));
   fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Corregida' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   expect(r.updateOffer.mock.calls[1][1].presentationTag).toBe('Corregida');
   expect(r.updateOffer.mock.calls[1][3]).not.toBe(r.updateOffer.mock.calls[0][3]);
@@ -236,7 +242,7 @@ test('oferta: una creación ambigua sobrevive F5, consulta el ID confirmado y s�
   fireEvent.click(screen.getByRole('button', { name: 'Adoptar versión del servidor' }));
   expect(screen.getByLabelText('Etiqueta de presentación')).toHaveValue('Mi borrador');
   expect(screen.getByLabelText('Precio base (MXN)')).toHaveValue(250);
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(1));
   expect(r.updateOffer.mock.calls[0][0]).toBe('created-on-server');
   expect(r.updateOffer.mock.calls[0][2]).toBe('"confirmed-version"');
@@ -253,7 +259,7 @@ test('Retry-After ausente o inválido mantiene la operación pausada sin autoriz
 test('entrada: una creación recuperada conserva los cambios posteriores y sigue como edición del ID confirmado', async () => {
   const r = repo(); const s = storage();
   r.createEntry.mockRejectedValueOnce(timeout).mockResolvedValue({ ...entry, id: 'entry-confirmed' });
-  render(<MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter>);
+  render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={['/entries/new']}><Routes><Route path='/entries/new' element={<EntryFormPage repository={r} storage={s} />} /></Routes></MemoryRouter></PermissionProvider>);
   await waitFor(() => expect(r.listCategories).toHaveBeenCalled());
   fireEvent.change(screen.getByLabelText('Nombre comercial'), { target: { value: 'Nombre enviado' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Descripción' } });
@@ -294,8 +300,8 @@ test('oferta: una carga pendiente bloquea la salida y una respuesta tras desmont
   r.uploadEntryImage.mockImplementation(() => new Promise(resolve => { resolveUpload = resolve; }));
   const view = mountOffer(r, s); await screen.findByDisplayValue('Original');
   fireEvent.change(document.querySelector('#offer-image-input')!, { target: { files: [new File(['bytes'], 'nueva.png', { type: 'image/png' })] } });
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Oferta' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar oferta' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.uploadEntryImage).toHaveBeenCalledTimes(1));
   const pending = await s.getRecord(buildOfferUpdateScope('o1'));
   expect(pending).not.toBeNull();
@@ -316,13 +322,13 @@ test('oferta: recuperar con ETag confirmado permite otro guardado explícito sin
   const r = repo(); const s = storage();
   r.updateOffer.mockRejectedValueOnce(timeout).mockResolvedValueOnce({ ...offer, etag: '"confirmed"' });
   mountOffer(r, s); await screen.findByDisplayValue('Original');
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await screen.findByRole('button', { name: 'Reintentar' });
   fireEvent.change(screen.getByLabelText('Etiqueta de presentación'), { target: { value: 'Borrador posterior' } });
   fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
   await screen.findByRole('status');
   expect(screen.queryByRole('button', { name: 'Revisar oferta actual' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(3));
   expect(r.updateOffer.mock.calls[2][1].presentationTag).toBe('Borrador posterior');
   expect(r.updateOffer.mock.calls[2][2]).toBe('"confirmed"');
@@ -360,7 +366,7 @@ test('oferta: F5 conserva identidades enviadas, eliminaciones y opciones añadid
   expect(screen.getByText('Segundo editado')).toBeVisible();
   expect(screen.queryByText('Primero')).not.toBeInTheDocument();
   expect(screen.getByText('Nueva después')).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Guardar Oferta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar oferta' }));
   await waitFor(() => expect(r.updateOffer).toHaveBeenCalledTimes(2));
   const sent = r.updateOffer.mock.calls[1][1].composition.slots;
   expect(sent).toHaveLength(1);
