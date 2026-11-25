@@ -309,7 +309,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     const price = screen.getByLabelText(/Precio base/);
     fireEvent.change(price, { target: { value: "-12.999" } });
-    const save = screen.getByRole("button", { name: "Guardar Oferta" });
+    const save = screen.getByRole("button", { name: "Guardar oferta" });
     fireEvent.click(save);
     await waitFor(() => expect(price).toHaveFocus());
     expect(price).toHaveAttribute("aria-invalid", "true");
