@@ -1,4 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+// The edit dialog refuses to save when its opening read arrives after the user
+// has typed, so a user-like test waits for that read before editing.
+async function openCategoryEditor(page: Page, name: string) {
+  const openingRead = page.waitForResponse((response) =>
+    response.request().method() === "GET" && /\/api\/v1\/menu\/categories\/[^/?]+$/.test(response.url()));
+  await page.getByRole("button", { name: `Editar ${name}` }).click();
+  await openingRead;
+}
 
 test("opens V5 from the menu and creates, edits and cancels categories", async ({ page }) => {
   const categories = [{ id: "category-1", name: "Bebidas", description: "Frías", entryCount: 2 }];
@@ -34,14 +43,7 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await expect(page.getByRole("heading", { name: "Bebidas" })).toBeVisible();
   await expect(page.getByText("2 entradas asociadas")).toBeVisible();
 
-  // The dialog reads the current version (ETag) when it opens; edits typed before
-  // that read resolves are intentionally treated as stale, so wait for it first.
-  const openingRead = () => page.waitForResponse((response) =>
-    response.url().endsWith("/api/v1/menu/categories/category-1") && response.request().method() === "GET");
-
-  let detailLoaded = openingRead();
-  await page.getByRole("button", { name: "Editar Bebidas" }).click();
-  await detailLoaded;
+  await openCategoryEditor(page, "Bebidas");
   const dialog = page.getByRole("dialog", { name: "Editar categoría" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", { name: "Descripción" }).fill("Borrador descartado");
@@ -56,9 +58,7 @@ test("opens V5 from the menu and creates, edits and cancels categories", async (
   await expect(page.locator("dialog[open]:modal")).toHaveCount(0);
   expect(mutations).toEqual([]);
 
-  detailLoaded = openingRead();
-  await page.getByRole("button", { name: "Editar Bebidas" }).click();
-  await detailLoaded;
+  await openCategoryEditor(page, "Bebidas");
   await expect(dialog.getByRole("textbox", { name: "Descripción" })).toHaveValue("Frías");
   await dialog.getByRole("textbox", { name: "Descripción" }).fill("Frías y preparadas");
   await dialog.getByRole("button", { name: "Guardar cambios" }).click();
