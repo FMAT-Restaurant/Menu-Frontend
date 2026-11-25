@@ -11,6 +11,8 @@ describe("SearchField", () => {
     expect(input).toHaveValue("pan");
     fireEvent.change(input, { target: { value: "sopa" } });
     expect(onChange).toHaveBeenCalledWith("sopa");
+    fireEvent.click(screen.getByRole("button", { name: "Borrar texto de búsqueda" }));
+    expect(onChange).toHaveBeenLastCalledWith("");
     fireEvent.click(screen.getByRole("button", { name: "Buscar ahora" }));
     expect(onSearch).toHaveBeenCalledTimes(1);
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
