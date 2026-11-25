@@ -73,7 +73,7 @@ test("UX13 offer edits announce the named result once and preserve list context"
   await page.getByRole("button", { name: "Agregar grupo", exact: true }).focus();
   await record(page, info, "offer-actions");
   await expectFocusClearOfFooter(page);
-  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: 'Oferta "Individual UX13" actualizada.' })).toHaveCount(1);
   await expect(page).toHaveURL(/offers\?q=Individual&page=1$/);
   await page.reload();

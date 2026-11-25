@@ -20,7 +20,11 @@ function imageLabels(file: File | null, editing: boolean) {
 }
 
 function ImageContent({ source, broken, reference }: Readonly<{ source: string; broken: boolean; reference?: string }>) {
-  if (broken) return <span>No se pudo mostrar la imagen. Puedes seleccionar otra; la referencia actual se conserva.</span>;
+  if (broken) {
+    return reference
+      ? <span>No se pudo mostrar la imagen. Puedes seleccionar otra; la referencia actual se conserva.</span>
+      : <span>No se pudo mostrar la imagen. Selecciona otro archivo.</span>;
+  }
   if (reference && !source) return <span>Imagen actual conservada · referencia {reference}</span>;
   return <span>Selecciona una imagen de referencia</span>;
 }

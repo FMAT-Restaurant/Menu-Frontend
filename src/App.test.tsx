@@ -2,6 +2,7 @@ import "./shared/dataRouter.test-helper";
 import { cleanup, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { App } from "./App";
+import { MENU_PERMISSIONS } from "./shared/permissions";
 import type {
   MenuEntry,
   MenuEntryDetail,
@@ -10,14 +11,13 @@ import type {
   Page,
 } from "./application/catalog";
 
-function unprepared(method: keyof MenuRepository) {
-  return jest.fn(() => Promise.reject(new Error(`Unprepared MenuRepository.${method} call`)));
-}
-
-const allMenuPermissions = ["menu:catalog:read", "menu:catalog:print", "menu:categories:read", "menu:categories:write", "menu:entries:read", "menu:entries:write", "menu:entries:status", "menu:offers:read", "menu:offers:write", "menu:offers:status", "menu:recipes:read", "menu:recipes:write", "menu:images:write"];
 function permissionToken(permissions: readonly string[]) {
   const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
+function unprepared(method: keyof MenuRepository) {
+  return jest.fn(() => Promise.reject(new Error(`Unprepared MenuRepository.${method} call`)));
 }
 
 function createRepository(overrides: Partial<MenuRepository> = {}): MenuRepository {
@@ -56,14 +56,14 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
 describe("App routing and lazy loading (T15)", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(allMenuPermissions) }));
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(MENU_PERMISSIONS) }));
     window.history.replaceState({}, "", "/");
   });
 
   afterEach(() => {
     cleanup();
-    window.history.replaceState({}, "", "/");
     localStorage.clear();
+    window.history.replaceState({}, "", "/");
   });
 
   test("StrictMode owns one live router and disposes its history listeners on unmount", async () => {

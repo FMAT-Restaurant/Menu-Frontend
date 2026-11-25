@@ -152,11 +152,11 @@ test("UX09 cards reject clearing the tag, keep independent state, deletion restr
   await page.getByRole("link", { name: "Abrir oferta Combo con bebida para editar", exact: true }).click();
   const tag = page.getByLabel("Etiqueta de presentación", { exact: true });
   await tag.fill("");
-  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
   await expect(page.getByText("Indica la etiqueta de presentación de la oferta.", { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/offers\/demo-offer-combo\/edit/);
   await tag.fill("Combo renombrado");
-  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Combo renombrado", exact: true })).toBeVisible();
   const cards = page.locator(".offer-card");
   await expect(cards.locator(".offer-state--active")).toHaveText("Activa");
