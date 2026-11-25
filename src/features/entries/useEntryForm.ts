@@ -409,8 +409,10 @@ export function useEntryForm(
       await validateEntryImage(selected);
       if (mounted.current && validationRun.current === run) clearField("image");
     } catch (error: unknown) {
-      if (mounted.current && validationRun.current === run)
+      if (mounted.current && validationRun.current === run) {
+        setFile(null);
         setImageError(entryFailure(error).message);
+      }
     } finally {
       if (mounted.current && validationRun.current === run) {
         validationPending.current = false;

@@ -69,7 +69,7 @@ test("UX15 a confirmed save keeps one local receipt after the route state is con
   await page.getByRole("link", { name: "Abrir oferta Individual para editar", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Editar oferta", exact: true })).toBeFocused();
   await page.getByLabel("Etiqueta de presentación", { exact: true }).fill("Individual UX15");
-  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
   const success = page.getByRole("status").filter({ hasText: 'Oferta "Individual UX15" actualizada.' });
   await expect(success).toHaveCount(1);
   await expect(page.getByRole("link", { name: "Abrir oferta Individual UX15 para editar", exact: true })).toBeFocused();

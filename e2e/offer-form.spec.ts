@@ -200,7 +200,7 @@ test("creates and deletes an offer updating catalog offerCount within cache TTL 
   await page.getByRole("button", { name: "Guardar opción" }).click();
 
   // Step 5: Save offer -> invalidates catalog entries cache and navigates to offers view
-  await page.getByRole("button", { name: "Guardar Oferta" }).click();
+  await page.getByRole("button", { name: "Guardar oferta" }).click();
   await expect(page.getByRole("heading", { name: "Ofertas de Hamburguesa Hawaiana" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Combo Especial" })).toBeVisible();
 

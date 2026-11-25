@@ -15,9 +15,11 @@ import {
 } from "../../application/catalogCache";
 import { loadEntryCategories } from "../../application/entryCategories";
 import { Icon } from "../../shared/Icon";
+import { usePermission } from "../../shared/permissions";
 import { CatalogFilters } from "./CatalogFilters";
 import { CatalogResults, type DisplayedPage } from "./CatalogResults";
 import { catalogErrorKind, catalogErrorMessage, type CatalogErrorKind } from "./catalogError";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import "./styles.css";
 
 const pageSizes = new Set([6, 12, 24]);
@@ -72,14 +74,15 @@ interface CatalogFeedbackProps {
 function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
   return <>
     {props.categoryError && <div className="feedback feedback--error catalog-feedback" role="alert">No se pudieron cargar las categorías. El listado sigue disponible. <button type="button" onClick={props.onRetryCategories}>Reintentar categorías</button></div>}
-    {props.entryError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
-    {!props.dialogOpen && props.actionError && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
+    {props.entryError?.message && <div className="feedback feedback--error catalog-feedback" role="alert">{props.entryError.message} <button type="button" onClick={props.onRetryEntries}>Reintentar entradas</button></div>}
+    {!props.dialogOpen && props.actionError?.message && <div className="feedback feedback--error catalog-feedback" role="alert">{props.actionError.message} {(props.actionError.kind === "conflict" || props.needsReconcile) && <button type="button" onClick={props.onRetryEntries}>Actualizar lista</button>}</div>}
     {props.fetching && props.hasDisplayed && <output className="catalog-updating">Actualizando entradas…</output>}
     {props.busyId && <output className="catalog-updating">Actualizando entrada…</output>}
   </>;
 }
 
-export function CatalogPage({ repository }: Readonly<{ repository: CatalogRepository }>) {
+function CatalogPageContent({ repository }: Readonly<{ repository: CatalogRepository }>) {
+  const canWrite = usePermission("menu:entries:write");
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("entry");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -206,7 +209,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       const kind = catalogErrorKind(error);
-      setEntryError({ kind, message: catalogErrorMessage(kind, "load") });
+      setEntryError({ kind, message: catalogErrorMessage(kind, "load", isGlobalAuthError(error)) });
     }).finally(() => {
       if (!controller.signal.aborted) setFetching(false);
     });
@@ -374,7 +377,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
     } catch (error) {
       const kind = catalogErrorKind(error);
       setNeedsReconcile(kind === "network" || kind === "conflict");
-      setActionError({ kind, message: catalogErrorMessage(kind, "delete") });
+      setActionError({ kind, message: catalogErrorMessage(kind, "delete", isGlobalAuthError(error)) });
     } finally {
       actionInProgress.current = false;
       setBusyId(null);
@@ -385,7 +388,7 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
   const olderResults = Boolean(displayed && (displayed.key !== key || entryError || needsReconcile));
   const actionsDisabled = Boolean(busyId || fetching || olderResults);
   const hasFilters = Boolean(draftSearch.trim() || query.q || query.categoryId || query.status);
-  const advancedCount = Number(Boolean(query.categoryId)) + Number(Boolean(query.status));
+  const advancedCount = Number(Boolean(query.q)) + Number(Boolean(query.categoryId)) + Number(Boolean(query.status));
   const returnTo = location.pathname + location.search;
 
   return (
@@ -403,14 +406,14 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
                 <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
                 <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
               </nav>
-              <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>
+              {canWrite && <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>}
             </div>
           </div>
         </header>
         <CatalogFilters search={draftSearch} onSearchChange={changeSearch} onSearch={submitSearch} advancedCount={advancedCount} categories={categories} categoryId={query.categoryId ?? ""} status={query.status ?? ""} hasFilters={hasFilters} onFilterChange={updateFilter} onClear={clearFilters} />
         <ToastNotification notification={notification} onDismiss={clearNotification} />
         <CatalogFeedback categoryError={categoryError} entryError={entryError} actionError={actionError} fetching={fetching} hasDisplayed={Boolean(shown)} busyId={busyId} needsReconcile={needsReconcile} dialogOpen={Boolean(entryToDelete)} onRetryCategories={retryCategories} onRetryEntries={retryEntries} />
-        <CatalogResults displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={(entry) => { clearNotification(); setEntryToDelete(entry); }} />
+        <CatalogResults canWrite={canWrite} displayed={displayed} pageSize={query.pageSize} returnTo={returnTo} fetching={fetching} busy={actionsDisabled} olderResults={olderResults} hasFilters={hasFilters} onPageSize={(value) => updateFilter("pageSize", value)} onPage={changePage} onClear={clearFilters} onDelete={(entry) => { clearNotification(); setEntryToDelete(entry); }} />
         {entryToDelete && (
           <div className="dialog-backdrop">
             <dialog
@@ -463,4 +466,11 @@ export function CatalogPage({ repository }: Readonly<{ repository: CatalogReposi
       </main>
     </div>
   );
+}
+
+
+export function CatalogPage({ repository }: Readonly<{ repository: CatalogRepository }>) {
+  const canRead = usePermission("menu:entries:read");
+  if (!canRead) return <main className="app-shell"><section className="menu-page" role="alert"><h1>Acceso restringido</h1><p>No tienes permiso para consultar las entradas del menú.</p></section></main>;
+  return <CatalogPageContent repository={repository} />;
 }

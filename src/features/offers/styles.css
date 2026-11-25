@@ -724,6 +724,21 @@
   flex-direction: column;
 }
 
+:where(.menu-module[data-menu-module]) .slot-modal-dialog [aria-invalid="true"],
+:where(.menu-module[data-menu-module]) .option-modal-dialog [aria-invalid="true"] {
+  border-color: #dc2626;
+  outline: 1px solid #dc2626;
+}
+
+:where(.menu-module[data-menu-module]) .slot-modal-dialog .field-error,
+:where(.menu-module[data-menu-module]) .option-modal-dialog .field-error {
+  min-height: 20px;
+  margin: 4px 0 0;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 20px;
+}
+
 :where(.menu-module[data-menu-module]) .slot-modal-dialog form,
 :where(.menu-module[data-menu-module]) .option-modal-dialog form,
 :where(.menu-module[data-menu-module]) .slot-modal-form,
@@ -1151,4 +1166,43 @@
   text-align: center;
   width: 180px;
 }
+.menu-module .price-input-wrapper {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.menu-module .price-input-wrapper > .field-error {
+  flex-basis: 100%;
+}
+
+.menu-module .image-dropzone[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+}
+
+:where(.menu-module[data-menu-module]) .entry-missing {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+:where(.menu-module[data-menu-module]) .entry-missing p {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--text);
+}
+
+:where(.menu-module[data-menu-module]) .entry-missing__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  color: var(--muted);
+}
+
 

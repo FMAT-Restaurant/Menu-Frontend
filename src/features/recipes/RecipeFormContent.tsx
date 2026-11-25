@@ -1,6 +1,8 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { toSpanishErrorMessage } from "../../shared/errorMessage";
+import { formatSupplyUnit } from "../../shared/formatUnit";
 import { Icon } from "../../shared/Icon";
+import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { useEffect, useRef, useState, useImperativeHandle, type ChangeEvent, type Ref, type SyntheticEvent } from "react";
 import type {
   InventoryItem,
@@ -262,9 +264,9 @@ function RecipeSupplyTable({
         return <tr key={supply.key}>
           <td data-label="Insumo" className="recipe-supplies-table__name">{itemName}</td>
           <td data-label="Cantidad">
-            <input id={`${supply.key}-quantity`} aria-invalid={Boolean(quantityError)}
+            <NativeNumberInput id={`${supply.key}-quantity`} aria-invalid={Boolean(quantityError)}
               aria-describedby={quantityError ? `${supply.key}-quantity-error` : undefined}
-              type="number" step="any" min="0" aria-label={`Cantidad de ${itemName}`}
+              errorMessage="Escribe una cantidad del insumo mayor que 0." aria-label={`Cantidad de ${itemName}`}
               value={supply.quantity}
               onChange={event => onQuantityChange(index, event.target.value)}
               disabled={busy} required />
@@ -394,7 +396,7 @@ function RecipeSupplySearch({
             }
           }}>
           <span>{item.name}</span>
-          <span className="recipe-supply-search__meta"> · {item.unit}{added ? " · Agregado" : ""}</span>
+          <span className="recipe-supply-search__meta"> · {formatSupplyUnit(item.unit)}{added ? " · Agregado" : ""}</span>
         </li>;
       })}
     </ul>
@@ -954,7 +956,8 @@ export function RecipeFormContent({
   }
 
   function unitForItem(inventoryItemId: string) {
-    return knownItems.get(inventoryItemId)?.unit || recipeSupplyItem(inventoryItemId)?.unit || "--";
+    const raw = knownItems.get(inventoryItemId)?.unit || recipeSupplyItem(inventoryItemId)?.unit;
+    return raw ? formatSupplyUnit(raw) : "--";
   }
 
   function validateDraft(): {

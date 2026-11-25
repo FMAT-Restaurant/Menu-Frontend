@@ -1,4 +1,5 @@
 import { toSpanishErrorMessage } from "../../shared/errorMessage";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 
 export type EntryField = "brandName" | "description" | "categoryIds" | "image" | "status";
 export type FailureKind = "validation" | "conflict" | "notFound" | "access" | "temporary" | "timeout" | "network" | "general";
@@ -61,6 +62,7 @@ function serverPayload(error: unknown) {
 }
 
 function messageFor(error: unknown, payload: Record<string, unknown>, kind: FailureKind) {
+  if (kind === "access" && isGlobalAuthError(error)) return "";
   if (typeof payload.message === "string" && payload.message.trim()) return toSpanishErrorMessage(payload.message.trim());
   if (record(error) && error instanceof Error && !record(error.response) && !error.isAxiosError && error.message) return toSpanishErrorMessage(error.message, fallbackMessages[kind]);
   return fallbackMessages[kind];

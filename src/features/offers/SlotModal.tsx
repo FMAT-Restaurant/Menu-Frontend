@@ -1,5 +1,6 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
+import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { useTaskDialog } from "../../shared/useTaskDialog";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import type { OfferCourse } from "../../application/catalog";
@@ -36,7 +37,7 @@ export function SlotModal({
   const [name, setName] = useState("");
   const [quantityText, setQuantityText] = useState("1");
   const [course, setCourse] = useState<OfferCourse | "">("");
-  const [validationError, setValidationError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; quantity?: string }>({});
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export function SlotModal({
       setQuantityText("1");
       setCourse("");
     }
-    setValidationError("");
+    setFieldErrors({});
   }, [initialData, isOpen]);
 
   useTaskDialog(dialogRef, isOpen);
@@ -62,13 +63,16 @@ export function SlotModal({
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleanName = name.trim();
-    if (!cleanName) {
-      setValidationError("El nombre del grupo es obligatorio.");
-      return;
-    }
     const parsedQuantity = parseRoundsQuantity(quantityText);
+    const nextErrors: { name?: string; quantity?: string } = {};
+    if (!cleanName) {
+      nextErrors.name = "El nombre del grupo es obligatorio.";
+    }
     if (parsedQuantity === null) {
-      setValidationError("Escribe un número entero de rondas de selección, igual o mayor que 1.");
+      nextErrors.quantity = "Escribe un número entero de rondas de selección, igual o mayor que 1.";
+    }
+    if (nextErrors.name || nextErrors.quantity || parsedQuantity === null) {
+      setFieldErrors(nextErrors);
       return;
     }
     onSave({
@@ -106,23 +110,25 @@ export function SlotModal({
 
       <form onSubmit={handleSubmit} className="slot-form" noValidate>
         <div className="modal-body">
-          {validationError && (
-            <p className="feedback feedback--error" role="alert">
-              {validationError}
-            </p>
-          )}
-
           <div className="form-field">
             <label htmlFor="slot-name-input">Nombre del grupo</label>
             <input
               id="slot-name-input"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
+              }}
               placeholder="Ej. Plato principal o Acompañamiento"
               autoFocus
               required
+              aria-invalid={Boolean(fieldErrors.name)}
+              aria-describedby={fieldErrors.name ? "slot-name-error" : undefined}
             />
+            <p id="slot-name-error" className="field-error" role={fieldErrors.name ? "alert" : undefined}>
+              {fieldErrors.name ?? ""}
+            </p>
           </div>
 
           <div className="form-row">
@@ -130,15 +136,22 @@ export function SlotModal({
               <label htmlFor="slot-quantity-input">
                 Rondas de selección
               </label>
-              <input
+              <NativeNumberInput
                 id="slot-quantity-input"
-                type="text"
-                inputMode="numeric"
+                integer
+                errorMessage="Escribe un número entero de rondas, igual o mayor que 1."
                 value={quantityText}
-                onChange={(e) => setQuantityText(e.target.value)}
+                onChange={(e) => {
+                  setQuantityText(e.target.value);
+                  if (fieldErrors.quantity) setFieldErrors((prev) => ({ ...prev, quantity: undefined }));
+                }}
                 required
-                aria-describedby="slot-rounds-help"
+                aria-invalid={Boolean(fieldErrors.quantity)}
+                aria-describedby={fieldErrors.quantity ? "slot-quantity-error slot-rounds-help" : "slot-rounds-help"}
               />
+              <p id="slot-quantity-error" className="field-error" role={fieldErrors.quantity ? "alert" : undefined}>
+                {fieldErrors.quantity ?? ""}
+              </p>
               <p id="slot-rounds-help" className="field-hint">Indica cuántas veces se elige entre las opciones de este grupo.</p>
             </div>
 

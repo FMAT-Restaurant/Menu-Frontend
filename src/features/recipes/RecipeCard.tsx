@@ -1,4 +1,5 @@
 import type { RecipeSummary } from "../../application/catalog";
+import { formatSupplyUnit } from "../../shared/formatUnit";
 
 interface BaseRecipeCardProps {
   recipe: RecipeSummary;
@@ -26,8 +27,8 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
   const suppliesText = recipe.supplies
     .map((supply) => {
       const name = supply.inventoryItem?.name ?? supply.inventoryItemId;
-      const unit = supply.inventoryItem?.unit ?? "";
-      return `${name} (${supply.quantity} ${unit})`.trim();
+      const unit = formatSupplyUnit(supply.inventoryItem?.unit ?? "", supply.quantity);
+      return unit ? `${name} (${supply.quantity} ${unit})` : `${name} (${supply.quantity})`;
     })
     .join(", ");
 
@@ -61,7 +62,7 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
               </button>
               <button
                 type="button"
-                className="button button--quiet recipe-card__delete"
+                className="button button--danger-link recipe-card__delete"
                 onClick={(e) => {
                   e.currentTarget.focus();
                   props.onDelete(recipe);

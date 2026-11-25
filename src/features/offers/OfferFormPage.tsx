@@ -56,6 +56,8 @@ import {
   reconcileComposition,
   consumeConfirmedRecipeAssignments,
   cloneSlotsForDraft,
+  moveSlot,
+  moveSlotOption,
 } from "./compositionReconciliation";
 
 export function buildOfferCreateScope(entryId: string, tabId = getOrCreateTabId()): OperationFlowScope {
@@ -295,6 +297,13 @@ function buildUpdateDraft(
   };
 }
 
+function httpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object" || !("response" in error)) return undefined;
+  const response = (error as { response?: { status?: unknown } }).response;
+  if (!response || typeof response !== "object" || !("status" in response)) return undefined;
+  return typeof response.status === "number" ? response.status : undefined;
+}
+
 function extractStructuredErrorMessage(err: unknown): string {
   return toSpanishErrorMessage(err, "Ocurrió un error al guardar la oferta.");
 }
@@ -490,7 +499,7 @@ function OfferSavedFeedback({
     </section>}
     {navigationFailed && <div className="feedback"><output>La oferta se guardó. No pudimos abrir el listado.</output>{" "}<button type="button" onClick={onReturnToList}>Volver al listado</button></div>}
     {savedNotice && <output className="feedback">{savedNotice}</output>}
-    {formError && <p className="feedback feedback--error" role="alert">
+    {formError && <p id="offer-form-error" tabIndex={-1} className="feedback feedback--error" role="alert">
       {requiresNewOperation && !recoveryExpired ? "El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar." : formError}
       {!recoveryReady && <button type="button" onClick={onRetryRecovery}>Reintentar recuperación</button>}
     </p>}
@@ -537,7 +546,9 @@ export function OfferFormPage({
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [entryNotFound, setEntryNotFound] = useState(false);
   const [formError, setFormError] = useState("");
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
@@ -835,9 +846,17 @@ export function OfferFormPage({
     const controller = new AbortController();
     setLoading(true);
     setLoadError("");
+    setEntryNotFound(false);
+
+    const loadEntry = repository.getEntry(entryId, controller.signal).catch((err: unknown) => {
+      if (httpStatus(err) === 404) {
+        setEntryNotFound(true);
+      }
+      throw err;
+    });
 
     const promises: [Promise<MenuEntryDetail>, Promise<VersionedResource<MenuOfferDetail> | null>] = [
-      repository.getEntry(entryId, controller.signal),
+      loadEntry,
       offerId ? repository.getOffer(offerId, controller.signal) : Promise.resolve(null),
     ];
 
@@ -1018,6 +1037,14 @@ export function OfferFormPage({
 
   function handleDeleteSlot(index: number) {
     setSlots((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  function handleMoveSlot(fromIndex: number, toIndex: number) {
+    setSlots((prev) => moveSlot(prev, fromIndex, toIndex));
+  }
+
+  function handleMoveOption(slotIndex: number, fromOptionIndex: number, toOptionIndex: number) {
+    setSlots((prev) => moveSlotOption(prev, slotIndex, fromOptionIndex, toOptionIndex));
   }
 
   // Option modal handlers
@@ -1294,7 +1321,17 @@ export function OfferFormPage({
       confirmedImageId: confirmedImageIdRef.current,
       imageValidating,
     });
-    if (blockerMessage) { setFormError(blockerMessage); return; }
+    if (blockerMessage) {
+      setValidationAttempted(true);
+      setFormError(blockerMessage);
+      requestAnimationFrame(() => {
+        const target = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]:not(input[type="file"])')
+          ?? formRef.current?.querySelector<HTMLElement>("#offer-form-error");
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView?.({ block: "center" });
+      });
+      return;
+    }
     const recovering = action === "retry" || pending?.status === "uncertain" || pending?.status === "conflict_in_progress";
     isSubmittingRef.current = true;
     setSaving(true);
@@ -1333,7 +1370,7 @@ export function OfferFormPage({
     setNewOperationAuthorized(true);
     setUncertainStage(null);
     setFormError("");
-    setSavedNotice("Nueva operación preparada. Pulsa Guardar Oferta para enviar tus cambios.");
+    setSavedNotice("Nueva operación preparada. Pulsa Guardar oferta para enviar tus cambios.");
   }
 
   const guard = useEditGuard({
@@ -1433,24 +1470,43 @@ export function OfferFormPage({
       : null,
   };
 
+  const commercialFieldErrors = validationAttempted ? {
+    presentationTag: presentationTag.trim() ? "" : PRESENTATION_TAG_REQUIRED_MESSAGE,
+    basePrice: Number.isFinite(Number(basePrice)) && Number(basePrice) > 0 ? "" : "El precio base debe ser un número positivo.",
+    image: !isEditing && !selectedFile && !confirmedImageIdRef.current ? "La imagen de la oferta es obligatoria al crear." : "",
+  } : {};
+  const formErrorIsInline = Boolean(formError) && Object.values(commercialFieldErrors).includes(formError);
+
   return (
     <div className="app-shell offer-form-view">
       {guard.confirmation}
       <main className="menu-page offer-form-page">
         <header className="task-header offer-form-page__heading">
-          <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
-            <Icon name="arrow-left" /> Volver a ofertas
+          <Link to={entryNotFound ? catalogReturnTo : returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
+            <Icon name="arrow-left" /> {entryNotFound ? "Volver al catálogo" : "Volver a ofertas"}
           </Link>
           <div className="task-header__content">
-            <p className="eyebrow">Ofertas</p>
-            <h1 data-route-heading tabIndex={-1}>{isEditing ? "Editar oferta" : "Nueva oferta"}</h1>
-            <p className="task-header__intro offer-form-page__subtitle">Entrada: <strong>{entry?.brandName || (loading ? <LoadingValue kind="line" /> : "No disponible")}</strong></p>
+            <p className="eyebrow">{entryNotFound ? "Entradas" : "Ofertas"}</p>
+            <h1 data-route-heading tabIndex={-1}>{entryNotFound ? "Entrada no encontrada" : (isEditing ? "Editar oferta" : "Nueva oferta")}</h1>
+            <p className="task-header__intro offer-form-page__subtitle">
+              {entryNotFound
+                ? "No pudimos abrir la entrada cuyas ofertas intentas consultar."
+                : <>Entrada: <strong>{entry?.brandName || (loading ? <LoadingValue kind="line" /> : "No disponible")}</strong></>}
+            </p>
           </div>
         </header>
 
-        <OfferLoadFeedback loading={loading} loadError={loadError} onRetry={() => setRetryCount((count) => count + 1)} />
+        {entryNotFound ? (
+          <section className="entry-missing" role="alert" aria-label="Entrada no encontrada">
+            <span className="entry-missing__icon"><Icon name="image" /></span>
+            <p>La entrada solicitada ya no existe.</p>
+            <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
+          </section>
+        ) : (
+          <>
+            <OfferLoadFeedback loading={loading} loadError={loadError} onRetry={() => setRetryCount((count) => count + 1)} />
 
-        {!loadError && (
+            {!loadError && (
           <form ref={formRef} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="offer-form" onFocusCapture={(event) => { const control = event.target; requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actionsRef.current); }); }} onSubmit={handleSaveOffer} aria-busy={loading || saving} noValidate>
             <OfferRecoveryFeedback
               requiresNewOperation={requiresNewOperation}
@@ -1471,7 +1527,7 @@ export function OfferFormPage({
               reviewedOffer={reviewedOffer}
               navigationFailed={navigationFailed}
               savedNotice={savedNotice}
-              formError={formError}
+              formError={formErrorIsInline ? "Revisa los campos marcados antes de guardar." : formError}
               requiresNewOperation={requiresNewOperation}
               recoveryExpired={recoveryExpired}
               recoveryReady={recoveryReady}
@@ -1498,6 +1554,7 @@ export function OfferFormPage({
               onDropImage={handleDropImage}
               imageError={imageError}
               imageValidating={imageValidating}
+              fieldErrors={commercialFieldErrors}
               disabled={loading || saving || exitSucceeded.current}
             />
 
@@ -1507,10 +1564,12 @@ export function OfferFormPage({
               onAddSlot={handleOpenAddSlot}
               onEditSlot={handleOpenEditSlot}
               onDeleteSlot={handleDeleteSlot}
+              onMoveSlot={handleMoveSlot}
               onAddOption={handleOpenAddOption}
               onEditOption={handleOpenEditOption}
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
+              onMoveOption={handleMoveOption}
               onCopyComposition={canCopyComposition ? () => setCopyOverlayOpen(true) : undefined}
               disabled={loading || saving || exitSucceeded.current}
             />
@@ -1524,7 +1583,7 @@ export function OfferFormPage({
                 className="button button--primary"
                 disabled={loading || exitSucceeded.current || !recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
-                {saving ? "Guardando…" : "Guardar Oferta"}
+                {saving ? "Guardando…" : "Guardar oferta"}
               </button>
             </footer>
           </form>
@@ -1594,6 +1653,8 @@ export function OfferFormPage({
             }}
             onClose={() => setCopyOverlayOpen(false)}
           />
+        )}
+          </>
         )}
       </main>
     </div>

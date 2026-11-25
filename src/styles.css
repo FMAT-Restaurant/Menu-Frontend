@@ -531,3 +531,41 @@ html[data-menu-standalone] body {
   background: rgb(0 0 0 / 6%);
 }
 
+/* =========================================================
+   Route Transition Loading Indicator
+   ========================================================= */
+
+:where(.menu-module[data-route-loading="true"]) {
+  cursor: progress;
+}
+
+:where(.menu-module[data-route-loading="true"]) a.button,
+:where(.menu-module[data-route-loading="true"]) .back-link {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+:where(.menu-module) .route-transition-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 3px;
+  background: rgba(194, 65, 12, 0.16);
+  overflow: hidden;
+}
+
+:where(.menu-module) .route-transition-bar__indicator {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--brand, #c2410c);
+  animation: menu-route-progress 1.1s ease-in-out infinite;
+}
+
+@keyframes menu-route-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+

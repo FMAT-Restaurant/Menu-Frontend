@@ -3,6 +3,8 @@ import {
   cloneSlotsForDraft,
   ensureSlotLocalIds,
   generateLocalId,
+  moveSlot,
+  moveSlotOption,
   reconcileComposition,
 } from "./compositionReconciliation";
 import type { SlotDraft } from "./SlotCard";
@@ -491,6 +493,40 @@ describe("compositionReconciliation (Section 3.6)", () => {
 
     test("returns empty array when source composition has no slots", () => {
       expect(cloneSlotsForDraft([])).toEqual([]);
+    });
+  });
+
+  describe("moveSlot and moveSlotOption (FE-13)", () => {
+    test("reorders slots and preserves out-of-bounds safety", () => {
+      const slots: SlotDraft[] = [
+        { localId: "s1", name: "Entrada", quantity: 1, course: "entrada", options: [] },
+        { localId: "s2", name: "Fuerte", quantity: 1, course: "plato fuerte", options: [] },
+        { localId: "s3", name: "Postre", quantity: 1, course: "postre", options: [] },
+      ];
+
+      expect(moveSlot(slots, 0, 2).map((s) => s.localId)).toEqual(["s2", "s3", "s1"]);
+      expect(moveSlot(slots, 2, 0).map((s) => s.localId)).toEqual(["s3", "s1", "s2"]);
+      expect(moveSlot(slots, -1, 1).map((s) => s.localId)).toEqual(["s1", "s2", "s3"]);
+      expect(moveSlot(slots, 0, 5).map((s) => s.localId)).toEqual(["s1", "s2", "s3"]);
+    });
+
+    test("reorders options within a specific slot", () => {
+      const slots: SlotDraft[] = [
+        {
+          localId: "s1",
+          name: "Bebidas",
+          quantity: 1,
+          course: "bebida",
+          options: [
+            { localId: "o1", sourceType: "RECIPE", recipeId: "r1", displayName: "Agua", status: "ACTIVE" },
+            { localId: "o2", sourceType: "RECIPE", recipeId: "r2", displayName: "Jugo", status: "ACTIVE" },
+          ],
+        },
+      ];
+
+      const moved = moveSlotOption(slots, 0, 1, 0);
+      expect(moved[0].options.map((o) => o.localId)).toEqual(["o2", "o1"]);
+      expect(moveSlotOption(slots, 5, 0, 1)[0].options.map((o) => o.localId)).toEqual(["o1", "o2"]);
     });
   });
 });

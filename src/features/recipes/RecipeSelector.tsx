@@ -1,3 +1,4 @@
+import { Icon } from "../../shared/Icon";
 import { LoadingState } from "../../shared/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import type { MenuRepository, Page, RecipeSummary } from "../../application/catalog";
@@ -49,6 +50,9 @@ export function RecipeSelector({ repository, state, onChange, onSelect, onCreate
       <button type="button" className="button button--quiet" onClick={onBack}>Volver a la opción</button>
       <h2 id="recipe-selector-title">Elegir receta · {slotName}</h2>
       <button ref={createRef} type="button" className="button button--secondary" aria-label="+ Nueva receta" disabled={createDisabled} onClick={onCreate}>Nueva receta</button>
+      <button type="button" className="modal-close" onClick={onBack} aria-label="Cerrar selector de receta">
+        <Icon name="close" />
+      </button>
     </header>
     <SearchField id="recipe-search" label="Buscar recetas" placeholder="Buscar por nombre o descripción…"
       value={state.draftSearch} onChange={draftSearch => onChange({ ...state, draftSearch })}
