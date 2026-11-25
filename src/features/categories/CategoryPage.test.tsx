@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { MenuCategory } from "../../application/catalog";
 import { isUuidV4 } from "../../application/operationAttempt";
@@ -9,6 +9,26 @@ import {
 } from "../../shared/pendingOperationStorage";
 import { buildCategoryCreateScope } from "./CategoryFormDialog";
 import { CategoryPage, type CategoryRepository } from "./CategoryPage";
+import { PermissionProvider } from "../../shared/permissions";
+import type { ReactElement, ReactNode } from "react";
+
+function permissionTestToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
+const allPermissionToken = permissionTestToken([
+  "menu:catalog:read", "menu:catalog:print", "menu:categories:read", "menu:categories:write",
+  "menu:entries:read", "menu:entries:write", "menu:entries:status", "menu:offers:read",
+  "menu:offers:write", "menu:offers:status", "menu:recipes:read", "menu:recipes:write", "menu:images:write",
+]);
+
+function render(ui: ReactElement, options?: Parameters<typeof rtlRender>[1]) {
+  return rtlRender(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => <PermissionProvider token={allPermissionToken}>{children}</PermissionProvider>,
+    ...options,
+  });
+}
 
 const category: MenuCategory = {
   id: "category-1",
@@ -41,13 +61,14 @@ function createMockRepository(items = [category]): jest.Mocked<CategoryRepositor
 function renderPage(
   api: CategoryRepository,
   storage?: PendingOperationStorageAdapter,
+  token = allPermissionToken,
 ) {
   const harness = storage ? null : createControllableIndexedDbHarness();
   const actualStorage = storage ?? createIndexedDbPendingOperationStorage({ idbFactory: harness!.factory });
-  const view = render(
-    <MemoryRouter>
+  const view = rtlRender(
+    <PermissionProvider token={token}><MemoryRouter>
       <CategoryPage repository={api} storage={actualStorage} />
-    </MemoryRouter>,
+    </MemoryRouter></PermissionProvider>,
   );
   return { ...view, storage: actualStorage };
 }
@@ -487,5 +508,30 @@ describe("CategoryPage & CategoryFormDialog (T02A)", () => {
     expect(within(dialog).getByRole("textbox", { name: "Nombre" })).toHaveValue("Draft Guardado");
     expect(within(dialog).getByRole("textbox", { name: "Descripción" })).toHaveValue("Desc");
     expect(api.createCategory).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("CategoryPage permissions", () => {
+  test("requires categories:read before loading or displaying category data", async () => {
+    const api = createMockRepository();
+    renderPage(api, undefined, permissionTestToken(["menu:categories:write"]));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No tienes permisos para consultar las categorías.");
+    await waitFor(() => expect(screen.getByRole("region", { name: "Catálogo de categorías" })).toHaveAttribute("aria-busy", "false"));
+    expect(screen.queryByRole("heading", { name: "Bebidas" })).not.toBeInTheDocument();
+    expect(api.listCategories).not.toHaveBeenCalled();
+  });
+
+  test("categories:read keeps browsing available while categories:write hides all CRUD controls", async () => {
+    const api = createMockRepository();
+    renderPage(api, undefined, permissionTestToken(["menu:categories:read"]));
+
+    expect(await screen.findByRole("heading", { name: "Bebidas" })).toBeVisible();
+    expect(api.listCategories).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Nueva categoría" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Crear categoría" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar Bebidas" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eliminar Bebidas" })).not.toBeInTheDocument();
   });
 });

@@ -16,6 +16,7 @@ import type {
 } from "../../application/operationAttempt";
 import { SearchField } from "../../shared/SearchField";
 import { Icon } from "../../shared/Icon";
+import { usePermission } from "../../shared/permissions";
 import { analyzeNonIdempotentWriteError } from "../../api/idempotencyResponse";
 import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
@@ -46,6 +47,7 @@ interface RecipeResultsContentProps {
   loading: boolean;
   hasResults: boolean;
   mode: "management" | "selection";
+  canWrite: boolean;
   olderResults: boolean;
   displayedContext: { query: string; page: number } | null;
   recipes: RecipeSummary[];
@@ -62,7 +64,7 @@ interface RecipeResultsContentProps {
 }
 
 function RecipeResultsContent({
-  notice, actionError, showActionError, error, onRetry, loading, hasResults, mode,
+  notice, actionError, showActionError, error, onRetry, loading, hasResults, mode, canWrite,
   olderResults, displayedContext, recipes, confirmedQuery, onClearSearch, onCreate,
   resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
 }: Readonly<RecipeResultsContentProps>) {
@@ -73,7 +75,7 @@ function RecipeResultsContent({
     {loading && !hasResults && <LoadingState variant={mode === "selection" ? "recipe-selection" : "recipe-rows"} label="Cargando recetas…" />}
     {loading && hasResults && <output className="feedback">Actualizando recetas…</output>}
     {olderResults && <p className="feedback">Resultados anteriores: {displayedContext?.query ? `búsqueda “${displayedContext.query}”` : "todas las recetas"}, página {displayedContext?.page}. La nueva consulta aún no se ha confirmado.</p>}
-    {!loading && !error && !olderResults && recipes.length === 0 && <RecipeEmptyState query={confirmedQuery} onClearSearch={onClearSearch} onCreate={onCreate} />}
+    {!loading && !error && !olderResults && recipes.length === 0 && <RecipeEmptyState query={confirmedQuery} onClearSearch={onClearSearch} onCreate={onCreate} canCreate={canWrite} />}
     {recipes.length > 0 && <RecipeResultList
       recipes={recipes}
       mode={mode}
@@ -81,6 +83,7 @@ function RecipeResultsContent({
       onSelect={onSelect}
       onEdit={onEdit}
       onDelete={onDelete}
+      canWrite={canWrite}
       recipesResult={recipesResult}
       currentPage={currentPage}
       onPageChange={onPageChange}
@@ -88,10 +91,11 @@ function RecipeResultsContent({
   </>;
 }
 
-function RecipeEmptyState({ query, onClearSearch, onCreate }: Readonly<{
+function RecipeEmptyState({ query, onClearSearch, onCreate, canCreate }: Readonly<{
   query: string;
   onClearSearch(): void;
   onCreate(): void;
+  canCreate: boolean;
 }>) {
   return <div className="empty-state category-empty">
     <span className="empty-state__icon" aria-hidden="true"><Icon name="search" /></span>
@@ -101,12 +105,12 @@ function RecipeEmptyState({ query, onClearSearch, onCreate }: Readonly<{
       : "Crea una receta para asociar insumos y pasos de preparación."}</p>
     {query
       ? <button type="button" className="button button--secondary" onClick={onClearSearch}>Limpiar búsqueda</button>
-      : <button className="button button--primary" type="button" onClick={onCreate}>Crear receta</button>}
+      : canCreate ? <button className="button button--primary" type="button" onClick={onCreate}>Crear receta</button> : null}
   </div>;
 }
 
 function RecipeResultList({
-  recipes, mode, resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
+  recipes, mode, resultsBusy, onSelect, onEdit, onDelete, canWrite, recipesResult, currentPage, onPageChange,
 }: Readonly<{
   recipes: RecipeSummary[];
   mode: "management" | "selection";
@@ -114,6 +118,7 @@ function RecipeResultList({
   onSelect(recipe: RecipeSummary): void;
   onEdit(recipe: RecipeSummary): void;
   onDelete(recipe: RecipeSummary): void;
+  canWrite: boolean;
   recipesResult: Page<RecipeSummary> | null;
   currentPage: number;
   onPageChange(page: number): void;
@@ -123,7 +128,7 @@ function RecipeResultList({
       {recipes.map((recipe) => <li key={recipe.id} className="recipe-list__item">
         {mode === "selection"
           ? <RecipeCard recipe={recipe} mode="selection" onSelect={onSelect} isBusy={resultsBusy} />
-          : <RecipeCard recipe={recipe} mode="management" onEdit={onEdit} onDelete={onDelete} isBusy={resultsBusy} />}
+          : <RecipeCard recipe={recipe} mode="management" onEdit={onEdit} onDelete={onDelete} isBusy={resultsBusy} canWrite={canWrite} />}
       </li>)}
     </ul>
     {recipesResult && recipesResult.meta.totalPages > 1 && <nav className="pagination" aria-label="Páginas de recetas">
@@ -195,9 +200,10 @@ interface RecipePageHeaderProps {
   title: string;
   subtitle: string;
   onCreate(): void;
+  canCreate: boolean;
 }
 
-function RecipePageHeader({ mode, onClose, returnTo, title, subtitle, onCreate }: Readonly<RecipePageHeaderProps>) {
+function RecipePageHeader({ mode, onClose, returnTo, title, subtitle, onCreate, canCreate }: Readonly<RecipePageHeaderProps>) {
   const cancelAction = <><Icon name="close" /> Cancelar</>;
   const menuAction = <><Icon name="arrow-left" /> Volver al menú</>;
   let backLabel = menuAction;
@@ -220,9 +226,9 @@ function RecipePageHeader({ mode, onClose, returnTo, title, subtitle, onCreate }
         <h1 id="recipe-page-title" data-route-heading={onClose ? undefined : true} tabIndex={-1}>{title}</h1>
         <p className="task-header__intro">{subtitle}</p>
       </div>
-      <button className="button button--primary" type="button" aria-label="+ Nueva receta" onClick={onCreate}>
+      {canCreate && <button className="button button--primary" type="button" aria-label="+ Nueva receta" onClick={onCreate}>
         <Icon name="add" /> Nueva receta
-      </button>
+      </button>}
     </div>
   </header>;
 }
@@ -242,6 +248,8 @@ export function RecipePage({
   const [searchParams, setSearchParams] = useSearchParams();
 
   const mode = propMode ?? (searchParams.get("mode") === "selection" ? "selection" : "management");
+  const canRead = usePermission("menu:recipes:read");
+  const canWrite = usePermission("menu:recipes:write");
 
   const returnTo =
     typeof location.state?.returnTo === "string" && /^\/(?:\?.*)?$/.test(location.state.returnTo)
@@ -298,6 +306,7 @@ export function RecipePage({
   }, [recipeToDelete]);
 
   useEffect(() => {
+    if (!canRead || !canWrite) return undefined;
     let cancelled = false;
     storage
       .getRecord<RecipeDraft>(buildRecipeCreateScope())
@@ -313,13 +322,20 @@ export function RecipePage({
     return () => {
       cancelled = true;
     };
-  }, [storage]);
+  }, [storage, canRead, canWrite]);
 
   useEffect(() => {
     setDraftSearch(confirmedQuery);
   }, [confirmedQuery]);
 
   useEffect(() => {
+    if (!canRead) {
+      setRecipesResult(null);
+      setDisplayedContext(null);
+      setLoading(false);
+      setError("");
+      return undefined;
+    }
     const controller = new AbortController();
     setLoading(true);
     setError("");
@@ -351,7 +367,7 @@ export function RecipePage({
       });
 
     return () => controller.abort();
-  }, [repository, confirmedQuery, currentPage, retry]);
+  }, [repository, confirmedQuery, currentPage, retry, canRead]);
 
   useTaskDialog(deleteDialogRef, Boolean(recipeToDelete), cancelDeleteRef);
 
@@ -413,6 +429,7 @@ export function RecipePage({
   }
 
   async function handleOpenEdit(recipe: RecipeSummary) {
+    if (!canRead || !canWrite) return;
     openingControllerRef.current?.abort();
     const controller = new AbortController();
     openingControllerRef.current = controller;
@@ -460,7 +477,7 @@ export function RecipePage({
   }
 
   async function handleConfirmDelete() {
-    if (!recipeToDelete || isDeleting || deleteFailure?.blocked) return;
+    if (!canRead || !canWrite || !recipeToDelete || isDeleting || deleteFailure?.blocked) return;
     setIsDeleting(true);
     setDeleteFailure(null);
 
@@ -494,11 +511,13 @@ export function RecipePage({
   }
 
   function handleStartCreate() {
+    if (!canRead || !canWrite) return;
     openingRecipeIdRef.current = null;
     setEditingRecipe("new");
   }
 
   function handleDeleteRequest(recipe: RecipeSummary) {
+    if (!canRead || !canWrite) return;
     deleteTriggerRef.current =
       (document.activeElement as HTMLElement | null) ??
       document.querySelector<HTMLElement>(`button[aria-label="Eliminar ${recipe.name}"]`);
@@ -539,9 +558,11 @@ export function RecipePage({
         title={title}
         subtitle={subtitle}
         onCreate={handleStartCreate}
+        canCreate={canRead && canWrite}
       />
         <section className="category-panel" aria-labelledby="recipe-page-title" aria-busy={loading}>
-          <div className="recipe-toolbar">
+          {!canRead && <div className="feedback feedback--error" role="alert">No tienes permisos para consultar las recetas.</div>}
+          {canRead && <div className="recipe-toolbar">
             <SearchField
               id="recipe-search"
               label="Buscar recetas"
@@ -550,9 +571,9 @@ export function RecipePage({
               onChange={setDraftSearch}
               onSearch={handleSearchSubmit}
             />
-          </div>
+          </div>}
 
-          <RecipeResultsContent
+          {canRead && <RecipeResultsContent
             notice={notice}
             actionError={actionError}
             showActionError={!recipeToDelete && Boolean(actionError)}
@@ -561,6 +582,7 @@ export function RecipePage({
             loading={loading}
             hasResults={Boolean(recipesResult)}
             mode={mode}
+            canWrite={canWrite}
             olderResults={olderResults}
             displayedContext={displayedContext}
             recipes={recipes}
@@ -574,11 +596,11 @@ export function RecipePage({
             recipesResult={recipesResult}
             currentPage={currentPage}
             onPageChange={handlePageChange}
-          />
+          />}
         </section>
       </main>
 
-      {editingRecipe && (
+      {canRead && canWrite && editingRecipe && (
         <RecipeFormDialog
           key={recipeDialogKey}
           recipe={editingRecipe === "new" ? undefined : editingRecipe}
@@ -598,7 +620,7 @@ export function RecipePage({
         />
       )}
 
-      {recipeToDelete && <RecipeDeleteDialog
+      {canRead && canWrite && recipeToDelete && <RecipeDeleteDialog
         recipe={recipeToDelete}
         actionError={deleteFailure?.message ?? ""}
         deleteBlocked={Boolean(deleteFailure?.blocked)}

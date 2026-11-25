@@ -326,3 +326,13 @@ test("does not offer entry creation from an empty catalog without entries write"
   expect(await screen.findByText("Aún no hay entradas.")).toBeVisible();
   expect(screen.queryByRole("link", { name: "Nueva entrada" })).not.toBeInTheDocument();
 });
+
+test("hides category and recipe navigation links when their read permissions are absent", async () => {
+  const api = repository();
+  renderPage(api, "/", ["menu:entries:read"]);
+
+  expect(await screen.findByRole("heading", { name: "Entradas del menú" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Categorías" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Biblioteca de recetas/ })).not.toBeInTheDocument();
+  expect(api.listCategories).not.toHaveBeenCalled();
+});
