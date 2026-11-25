@@ -21,6 +21,8 @@ export interface OfferCommercialInfoProps {
   onDropImage: (file: File) => void;
   imageError: string;
   imageValidating: boolean;
+  canChangeStatus?: boolean;
+  canUploadImage?: boolean;
   fieldErrors?: { presentationTag?: string; basePrice?: string; image?: string };
   disabled?: boolean;
 }
@@ -32,6 +34,7 @@ interface OfferStatusFieldProps {
   hasActiveSlot: boolean;
   isEditing: boolean;
   disabled: boolean;
+  canChangeStatus: boolean;
 }
 
 function OfferStatusField({
@@ -41,6 +44,7 @@ function OfferStatusField({
   hasActiveSlot,
   isEditing,
   disabled,
+  canChangeStatus,
 }: Readonly<OfferStatusFieldProps>) {
   let statusContent: ReactNode;
   if (loading) {
@@ -52,6 +56,8 @@ function OfferStatusField({
           La oferta se crea inactiva. Guardar la composición no la activa; podrás solicitar su activación después.
         </p>
       </div>;
+  } else if (!canChangeStatus) {
+    statusContent = <span className={`offer-state ${desiredStatus === "ACTIVE" ? "offer-state--active" : "offer-state--inactive"}`}>{desiredStatus === "ACTIVE" ? "Activa" : "Inactiva"}</span>;
   } else {
     statusContent = <div>
         <div className="radio-group" role="radiogroup" aria-labelledby="offer-status-label">
@@ -101,11 +107,13 @@ export function OfferCommercialInfo({
   onDropImage,
   imageError,
   imageValidating,
+  canChangeStatus = true,
+  canUploadImage = true,
   fieldErrors = {},
   disabled = false,
 }: Readonly<OfferCommercialInfoProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isImageBlocked = disabled || imageValidating;
+  const isImageBlocked = disabled || imageValidating || !canUploadImage;
   const numericPrice = basePrice.trim() === "" ? null : Number(basePrice);
   const formattedPrice = numericPrice !== null && Number.isFinite(numericPrice) && numericPrice > 0
     ? formatMoney(numericPrice)
@@ -197,13 +205,13 @@ export function OfferCommercialInfo({
           </div>
 
           <OfferStatusField loading={loading} desiredStatus={desiredStatus} onStatusChange={onStatusChange}
-            hasActiveSlot={hasActiveSlot} isEditing={isEditing} disabled={disabled} />
+            hasActiveSlot={hasActiveSlot} isEditing={isEditing} canChangeStatus={canChangeStatus} disabled={disabled} />
         </div>
 
         <div className="offer-commercial-info__image-column">
           <div className="form-field">
             <label className="field-label" htmlFor="offer-image-input">
-              Imagen de la oferta {isEditing ? "(opcional si se conserva)" : "(obligatoria)"}
+              Imagen de la oferta {isEditing ? "(opcional si se conserva)" : "(obligatoria)"}{!canUploadImage ? " (sin permiso para cambiarla)" : ""}
             </label>
             <input
               id="offer-image-input"
@@ -254,6 +262,7 @@ export function OfferCommercialInfo({
               </p>
             )}
 
+            {!canUploadImage && <p className="field-hint">Solicita `menu:images:write` para cargar o reemplazar imágenes.</p>}
             <p className="field-hint">
               JPEG, PNG o WebP. Máximo 10 MiB y 4096 × 4096 px.
             </p>

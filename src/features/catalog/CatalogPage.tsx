@@ -84,6 +84,8 @@ function CatalogFeedback(props: Readonly<CatalogFeedbackProps>) {
 
 function CatalogPageContent({ repository }: Readonly<{ repository: CatalogRepository }>) {
   const canWrite = usePermission("menu:entries:write");
+  const canReadRecipes = usePermission("menu:recipes:read");
+  const canReadCategories = usePermission("menu:categories:read");
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("entry");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -147,6 +149,12 @@ function CatalogPageContent({ repository }: Readonly<{ repository: CatalogReposi
   }, [entryToDelete]);
 
   useEffect(() => {
+    if (!canReadCategories) {
+      setCategories([]);
+      setCategoriesLoaded(true);
+      setCategoryError(false);
+      return undefined;
+    }
     const controller = new AbortController();
     setCategoryError(false);
     loadEntryCategories(repository, controller.signal, categoryRetry > 0)
@@ -163,7 +171,7 @@ function CatalogPageContent({ repository }: Readonly<{ repository: CatalogReposi
         }
       });
     return () => controller.abort();
-  }, [repository, categoryRetry]);
+  }, [repository, categoryRetry, canReadCategories]);
 
   useEffect(() => {
     const rawCategoryId = searchParams.get("categoryId");
@@ -396,8 +404,8 @@ function CatalogPageContent({ repository }: Readonly<{ repository: CatalogReposi
             </div>
             <div className="task-header__actions catalog-header__actions">
               <nav className="catalog-header__navigation" aria-label="Administrar el menú">
-                <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>
-                <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>
+                {canReadRecipes && <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>}
+                {canReadCategories && <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>}
               </nav>
               {canWrite && <Link className="button button--primary catalog-header__new" to="/entries/new" state={{ returnTo: location.pathname + location.search }}><Icon name="add" /> Nueva entrada</Link>}
             </div>

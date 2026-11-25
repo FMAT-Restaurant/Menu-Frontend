@@ -2,7 +2,8 @@ import "./shared/dataRouter.test-helper";
 import { cleanup, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { App } from "./App";
-import { MENU_PERMISSIONS } from "./shared/permissions";
+import { ALL_MENU_PERMISSIONS, permissionToken } from "./shared/permissions.test-helper";
+
 import type {
   MenuEntry,
   MenuEntryDetail,
@@ -10,11 +11,6 @@ import type {
   MenuRepository,
   Page,
 } from "./application/catalog";
-
-function permissionToken(permissions: readonly string[]) {
-  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
-}
 
 function unprepared(method: keyof MenuRepository) {
   return jest.fn(() => Promise.reject(new Error(`Unprepared MenuRepository.${method} call`)));
@@ -56,7 +52,7 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
 describe("App routing and lazy loading (T15)", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(MENU_PERMISSIONS) }));
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(ALL_MENU_PERMISSIONS) }));
     window.history.replaceState({}, "", "/");
   });
 

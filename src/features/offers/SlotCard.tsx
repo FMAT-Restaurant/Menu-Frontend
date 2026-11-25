@@ -25,6 +25,7 @@ export interface SlotCardProps {
   onDeleteOption: (optionIndex: number) => void;
   onToggleOptionStatus: (optionIndex: number) => void;
   onMoveOption?: (fromOptionIndex: number, toOptionIndex: number) => void;
+  canChangeStatus?: boolean;
   disabled?: boolean;
 }
 
@@ -41,6 +42,7 @@ export function SlotCard({
   onDeleteOption,
   onToggleOptionStatus,
   onMoveOption,
+  canChangeStatus = true,
   disabled = false,
 }: Readonly<SlotCardProps>) {
   const hasActiveOption = slot.options.some((opt) => opt.status === "ACTIVE");
@@ -145,6 +147,7 @@ export function SlotCard({
                 onToggleStatus={() => onToggleOptionStatus(optIdx)}
                 onMoveUp={onMoveOption ? () => onMoveOption(optIdx, optIdx - 1) : undefined}
                 onMoveDown={onMoveOption ? () => onMoveOption(optIdx, optIdx + 1) : undefined}
+                canChangeStatus={canChangeStatus}
                 disabled={disabled}
               />
             ))}

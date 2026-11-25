@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { renderWithMenuPermissions as render } from "./permissions.test-helper";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { LoadingState } from "./LoadingState";
