@@ -21,7 +21,7 @@ export function CatalogFilters(props: Readonly<CatalogFiltersProps>) {
   return (
     <section className="filters" aria-label="Filtros de entradas">
       <div className="filters__header">
-        <p className="filters__label">Filtros{props.advancedCount ? <span className="filters__count">{props.advancedCount} activos</span> : null}</p>
+        <p className="filters__label">Filtros{props.advancedCount ? <span className="filters__count">{props.advancedCount} {props.advancedCount === 1 ? "activo" : "activos"}</span> : null}</p>
         <button className="button button--secondary filters__clear" type="button" onClick={props.onClear} disabled={!props.hasFilters}>Limpiar filtros</button>
       </div>
       <SearchField value={props.search} onChange={props.onSearchChange} onSearch={props.onSearch} />

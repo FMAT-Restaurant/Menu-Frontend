@@ -92,12 +92,12 @@ test("entry uploads, editing, offer composition and state changes work without A
   await page.getByRole("button", { name: "Elegir receta" }).click();
   await page.getByRole("article", { name: "Hamburguesa de res" }).getByRole("button", { name: "Asignar" }).click();
   await page.getByRole("button", { name: "Guardar opción" }).click();
-  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Presentación demo", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Abrir oferta Presentación demo para editar" }).click();
   await expect(page.getByRole("heading", { name: "Principal", exact: true })).toBeVisible();
   await page.getByLabel("Precio base").fill("135");
-  await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
   await expect(page.getByText("MXN\u00a0135.00", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cambiar estado de oferta Presentación demo: Inactiva" }).click();
   await expect(page.getByRole("button", { name: "Cambiar estado de oferta Presentación demo: Activa" })).toHaveAttribute("aria-pressed", "true");

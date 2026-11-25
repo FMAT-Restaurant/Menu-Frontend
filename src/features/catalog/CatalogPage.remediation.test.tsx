@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MenuEntry, MenuRepository, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { CatalogPage } from "./CatalogPage";
+import { MENU_PERMISSIONS, PermissionProvider } from "../../shared/permissions";
 
 const entry: MenuEntry = {
   id: "entry-1", brandName: "Bowl de pollo", description: "Pollo con arroz", status: "INACTIVE",
@@ -23,13 +24,18 @@ function api(): jest.Mocked<CatalogRepository> {
   };
 }
 
+function permissionToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
 function Location() {
   const location = useLocation();
   return <output data-testid="location">{location.pathname + location.search}</output>;
 }
 
 function page(repository: CatalogRepository, url = "/") {
-  return render(<MemoryRouter initialEntries={[url]}><Routes><Route path="/" element={<><CatalogPage repository={repository} /><Location /></>} /></Routes></MemoryRouter>);
+  return render(<PermissionProvider token={permissionToken(MENU_PERMISSIONS)}><MemoryRouter initialEntries={[url]}><Routes><Route path="/" element={<><CatalogPage repository={repository} /><Location /></>} /></Routes></MemoryRouter></PermissionProvider>);
 }
 
 function deferred<T>() {
@@ -87,6 +93,13 @@ test("shows the count of active mobile filters and clears them to exactly root p
   expect(screen.getByRole("combobox", { name: "Estado administrativo" })).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
   await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/"));
+});
+
+test("counts search query in active filters and uses singular for 1 filter", async () => {
+  const repository = api();
+  page(repository, "/?q=postres");
+  await screen.findByRole("heading", { name: "Bowl de pollo" });
+  expect(screen.getByText("1 activo", { exact: true })).toBeVisible();
 });
 
 test("keeps cards and their summary visible while a new query loads, then handles failure", async () => {

@@ -98,7 +98,7 @@ for (const width of [390, 1440]) {
       }, { imageWidth, imageHeight }), "base64");
       await page.getByLabel(/Imagen de la oferta/).setInputFiles({ name: `${shape}.png`, mimeType: "image/png", buffer });
       await expect(page.getByText("Validando imagen…", { exact: true })).toHaveCount(0);
-      await page.getByRole("button", { name: "Guardar Oferta", exact: true }).click();
+      await page.getByRole("button", { name: "Guardar oferta", exact: true }).click();
       const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name, exact: true }) });
       await expect(card.getByRole("img")).toHaveJSProperty("naturalWidth", imageWidth);
       const geometry = await assertSeparatedContent(card);
