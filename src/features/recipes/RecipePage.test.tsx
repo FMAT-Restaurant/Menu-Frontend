@@ -1,10 +1,30 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { InventoryItem, Page, RecipeDetail, RecipeSummary } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
 import { RecipePage, type RecipeRepository } from "./RecipePage";
 import { RecipeFormDialog } from "./RecipeFormDialog";
 import { addSupply, supplySearch, waitForInventory } from "../../shared/recipeSupplies.test-helper";
+import { PermissionProvider } from "../../shared/permissions";
+import type { ReactElement, ReactNode } from "react";
+
+function permissionTestToken(permissions: readonly string[]) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
+}
+
+const allPermissionToken = permissionTestToken([
+  "menu:catalog:read", "menu:catalog:print", "menu:categories:read", "menu:categories:write",
+  "menu:entries:read", "menu:entries:write", "menu:entries:status", "menu:offers:read",
+  "menu:offers:write", "menu:offers:status", "menu:recipes:read", "menu:recipes:write", "menu:images:write",
+]);
+
+function render(ui: ReactElement, options?: Parameters<typeof rtlRender>[1]) {
+  return rtlRender(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => <PermissionProvider token={allPermissionToken}>{children}</PermissionProvider>,
+    ...options,
+  });
+}
 
 const inventoryItems: InventoryItem[] = [
   { id: "inv-1", name: "Carne Molida Res 80/20", unit: "g" },
@@ -1290,5 +1310,40 @@ describe("RecipePage Component (V6 Integration)", () => {
         '"rec-etag-v2"',
       );
     });
+  });
+});
+
+
+describe("RecipePage permissions", () => {
+  test("recipes:read allows the offer selector to list and assign recipes without recipes:write", async () => {
+    const repository = createMockRepository();
+    rtlRender(
+      <PermissionProvider token={permissionTestToken(["menu:recipes:read"])}>
+        <MemoryRouter><RecipePage repository={repository} mode="selection" storage={createMemoryStorage()} /></MemoryRouter>
+      </PermissionProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Hamburguesa Clásica", level: 3 })).toBeVisible();
+    expect(repository.listRecipes).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Asignar" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "+ Nueva receta" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar Hamburguesa Clásica" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eliminar Hamburguesa Clásica" })).not.toBeInTheDocument();
+  });
+
+  test("recipes:write without recipes:read does not load or expose recipe actions", async () => {
+    const repository = createMockRepository();
+    rtlRender(
+      <PermissionProvider token={permissionTestToken(["menu:recipes:write"])}>
+        <MemoryRouter><RecipePage repository={repository} mode="management" storage={createMemoryStorage()} /></MemoryRouter>
+      </PermissionProvider>,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No tienes permisos para consultar las recetas.");
+    await waitFor(() => expect(screen.getByRole("region", { name: "Biblioteca de recetas" })).toHaveAttribute("aria-busy", "false"));
+    expect(repository.listRecipes).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "+ Nueva receta" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar Hamburguesa Clásica" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eliminar Hamburguesa Clásica" })).not.toBeInTheDocument();
   });
 });

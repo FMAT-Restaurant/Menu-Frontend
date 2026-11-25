@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { renderWithMenuPermissions as render } from "../../shared/permissions.test-helper";
 import { MemoryRouter } from "react-router-dom";
 import type {
   EntryQuery,

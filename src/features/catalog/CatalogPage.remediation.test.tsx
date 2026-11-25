@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { renderWithMenuPermissions as render } from "../../shared/permissions.test-helper";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { MenuEntry, MenuRepository, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
