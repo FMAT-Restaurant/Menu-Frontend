@@ -170,6 +170,7 @@ function OffersFeedback({
 }
 
 interface OffersCollectionProps {
+  isGlobal: boolean;
   isEmpty: boolean;
   offers: MenuOffer[];
   updatingOffers: boolean;
@@ -184,12 +185,14 @@ interface OffersCollectionProps {
   onReload(): void;
 }
 
-function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, canWrite, canChangeStatus, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
+function OffersCollection({ isGlobal, isEmpty, offers, updatingOffers, busy, offerPath, canWrite, canChangeStatus, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
   if (isEmpty) {
     return <section className="empty-state offers-empty">
       <h2>No hay ofertas configuradas.</h2>
-      <p>{canWrite ? "Crea la primera oferta para comenzar a configurar sus opciones y precios." : "Un administrador puede configurar ofertas para esta entrada."}</p>
-      {canWrite && <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>}
+      <p>{isGlobal ? "Selecciona una entrada en el catálogo para crear la primera oferta." : canWrite ? "Crea la primera oferta para comenzar a configurar sus opciones y precios." : "Un administrador puede configurar ofertas para esta entrada."}</p>
+      {isGlobal
+        ? <Link className="button button--primary" to={catalogReturnTo}>Ir al catálogo de entradas</Link>
+        : canWrite && <Link className="button button--primary" to={`${offerPath}/new`} state={{ returnTo, catalogReturnTo }}>Crear primera oferta</Link>}
     </section>;
   }
 
@@ -197,7 +200,7 @@ function OffersCollection({ isEmpty, offers, updatingOffers, busy, offerPath, ca
     return <div className="feedback feedback--error" role="alert">La respuesta no contiene ofertas para la página solicitada. <button type="button" onClick={onReload}>Actualizar lista</button></div>;
   }
 
-  return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label="Ofertas de la entrada" aria-busy={updatingOffers}>
+  return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label={isGlobal ? "Ofertas del catálogo" : "Ofertas de la entrada"} aria-busy={updatingOffers}>
     {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={busy} canWrite={canWrite} canChangeStatus={canChangeStatus} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
   </section>;
 }
@@ -246,11 +249,13 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
   const canWrite = usePermission("menu:offers:write");
   const canChangeStatus = usePermission("menu:offers:status");
   const { entryId } = useParams();
+  const isGlobal = !entryId;
+  const contextKey = entryId ?? "__global__";
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("offer", entryId);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = selectedPage(searchParams.get("page"));
-  const currentContext = `${entryId ?? ""}:${page}`;
+  const currentContext = `${contextKey}:${page}`;
   const currentContextRef = useRef(currentContext);
   currentContextRef.current = currentContext;
   const activeOperationId = useRef<string | null>(null);
@@ -295,7 +300,13 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
   const offerPath = `/entries/${encodeURIComponent(entryId ?? "")}/offers`;
 
   useEffect(() => {
-    if (!entryId) return;
+    if (!entryId) {
+      setEntry(null);
+      setEntryDataId(null);
+      setEntryError(false);
+      setEntryLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setEntryLoading(true);
     setEntryError(false);
@@ -336,7 +347,6 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
   }, [entryId, page]);
 
   const reloadOffers = useCallback(async (signal: AbortSignal) => {
-    if (!entryId) return;
     const pendingAtRead = pendingStatusMutation.current;
     setOffersLoading(true);
     setOffersError(false);
@@ -358,7 +368,7 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
         return;
       }
       setResult(offers);
-      setResultEntryId(entryId);
+      setResultEntryId(contextKey);
       if (pendingAtRead && pendingStatusMutation.current === pendingAtRead && isAttemptWindowExpired(pendingAtRead.attempt)) {
         pendingStatusMutation.current = null;
         setStatusAttempt(null);
@@ -374,7 +384,7 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
     } finally {
       if (!signal.aborted) setOffersLoading(false);
     }
-  }, [currentContext, entryId, page, repository, searchParams, setSearchParams]);
+  }, [contextKey, currentContext, entryId, page, repository, searchParams, setSearchParams]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -408,7 +418,7 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
   ): Promise<"updated" | "navigating" | "failed" | "stale"> {
     setUpdatingOffers(true);
     try {
-      const offers = await repository.listOffers(entryId ?? "", page, pageSize, signal);
+      const offers = await repository.listOffers(entryId, page, pageSize, signal);
       if (signal?.aborted || currentContextRef.current !== expectedContext || (opId !== null && activeOperationId.current !== opId)) {
         return "stale";
       }
@@ -425,7 +435,7 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
         return "navigating";
       } else {
         setResult(offers);
-        setResultEntryId(entryId ?? null);
+        setResultEntryId(contextKey);
         setOffersError(false);
         setOffersErrorMessage("");
         return "updated";
@@ -455,12 +465,12 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
     setUpdatingOffers(true);
     setPendingAction("Actualizando lista…");
     try {
-      const offers = await repository.listOffers(entryId ?? "", page, pageSize);
+      const offers = await repository.listOffers(entryId, page, pageSize);
       if (!isCurrentOperation(expectedContext, opId)) return;
       const stillPresent = offers.data.some((item) => item.id === offerToDelete?.id);
       if (!stillPresent) {
         setResult(offers);
-        setResultEntryId(entryId ?? null);
+        setResultEntryId(contextKey);
         deleteTriggerRef.current = null;
         setOfferToDelete(null);
         setNeedsReconcile(false);
@@ -469,7 +479,7 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
         setNotice(deleteNotice(false));
       } else {
         setResult(offers);
-        setResultEntryId(entryId ?? null);
+        setResultEntryId(contextKey);
         const updatedOffer = offers.data.find((item) => item.id === offerToDelete?.id);
         if (updatedOffer) setOfferToDelete(updatedOffer);
         setNeedsReconcile(false);
@@ -672,15 +682,15 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
     }
   }
 
-  const visibleEntry = entryDataId === entryId ? entry : null;
-  const visibleResult = resultEntryId === entryId ? result : null;
+  const visibleEntry = !isGlobal && entryDataId === entryId ? entry : null;
+  const visibleResult = resultEntryId === contextKey ? result : null;
   const offers = visibleResult?.data ?? [];
   const displayedPage = visibleResult?.meta.page ?? page;
   const totalPages = visibleResult?.meta.totalPages ?? 0;
   const first = offers.length ? (displayedPage - 1) * pageSize + 1 : 0;
   const last = first ? first + offers.length - 1 : 0;
-  const initialLoading = (entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
-  const currentEntryError = entryError && entryErrorId === entryId;
+  const initialLoading = (!isGlobal && entryLoading && !visibleEntry) || (offersLoading && !visibleResult);
+  const currentEntryError = !isGlobal && entryError && entryErrorId === entryId;
   const isEntryNotFound = currentEntryError && entryNotFound;
   const currentOffersError = offersError && offersErrorContext === currentContext;
   const loadError = isEntryNotFound ? null : loadErrorForView(currentEntryError, visibleEntry, currentOffersError);
@@ -705,15 +715,17 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
             <div className="task-header__content">
               <p className="eyebrow">{isEntryNotFound ? "Entradas" : "Ofertas"}</p>
               <h1 data-route-heading tabIndex={-1}>
-                {isEntryNotFound ? "Entrada no encontrada" : `Ofertas de ${visibleEntry?.brandName ?? "la entrada"}`}
+                {isEntryNotFound ? "Entrada no encontrada" : isGlobal ? "Ofertas del catálogo" : `Ofertas de ${visibleEntry?.brandName ?? "la entrada"}`}
               </h1>
               <p className="task-header__intro">
                 {isEntryNotFound
                   ? "No pudimos abrir la entrada cuyas ofertas intentas consultar."
-                  : "Presentaciones vendibles de la misma identidad comercial."}
+                  : isGlobal
+                    ? "Listado administrativo global de ofertas del menú y acceso a su edición."
+                    : "Presentaciones vendibles de la misma identidad comercial."}
               </p>
             </div>
-            {canWrite && !isEntryNotFound && !isEmpty && (
+            {canWrite && !isGlobal && !isEntryNotFound && !isEmpty && (
               <Link
                 className="button button--primary offers-header__action"
                 to={`${offerPath}/new`}
@@ -752,6 +764,7 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
               onRetryStatus={retryPendingStatus}
             />
             <OffersResults
+              isGlobal={isGlobal}
               initialLoading={initialLoading}
               result={visibleResult}
               offersLoading={offersLoading}

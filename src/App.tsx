@@ -142,6 +142,7 @@ export function createMenuRoutes(repository: MenuRepository = defaultRepository,
       <Route path="/entries/new" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/:entryId/edit" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/:entryId/offers" element={<RequirePermission permission="menu:offers:read"><OffersPage repository={repository} /></RequirePermission>} />
+      <Route path="/offers" element={<RequirePermission permission="menu:offers:read"><OffersPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/:entryId/offers/new" element={<RequirePermission permission="menu:offers:read"><OfferFormPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/:entryId/offers/:offerId/edit" element={<RequirePermission permission="menu:offers:read"><OfferFormPage repository={repository} /></RequirePermission>} />
       <Route path="/categories" element={<RequirePermission permission="menu:categories:read"><CategoryPage repository={repository} /></RequirePermission>} />
