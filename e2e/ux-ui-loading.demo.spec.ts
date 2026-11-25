@@ -55,7 +55,7 @@ for (const width of [390, 1280]) {
           await expect(page.getByLabel("Nombre comercial", { exact: true })).toBeEnabled();
           await expect(page.locator(".loading-value")).toHaveCount(0);
         } else {
-          await expect(page.getByRole("button", { name: /Guardar (entrada|Oferta|cambios)/ })).toBeDisabled();
+          await expect(page.getByRole("button", { name: /Guardar (entrada|oferta|cambios)/ })).toBeDisabled();
           if (view.name !== "offer-new") await expect(page.locator(".loading-value--image")).toBeVisible();
         }
         if (view.name.startsWith("offer")) {

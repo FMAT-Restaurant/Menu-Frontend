@@ -1,0 +1,129 @@
+.consultation-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.consultation-filters {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) minmax(12rem, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border, #d7dce2);
+  border-radius: 1rem;
+  background: var(--color-surface, #fff);
+}
+
+.consultation-filters label {
+  display: grid;
+  gap: .45rem;
+  font-weight: 600;
+}
+
+.consultation-filters input,
+.consultation-filters select {
+  min-height: 2.75rem;
+  padding: .55rem .75rem;
+  border: 1px solid var(--color-border, #aeb7c2);
+  border-radius: .5rem;
+  color: inherit;
+  background: var(--color-surface, #fff);
+}
+
+.consultation-group {
+  display: grid;
+  gap: 1rem;
+}
+
+.consultation-group > h2 {
+  margin: 0;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid var(--color-border, #d7dce2);
+}
+
+.consultation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+}
+
+.consultation-entry {
+  overflow: hidden;
+  border: 1px solid var(--color-border, #d7dce2);
+  border-radius: 1rem;
+  background: var(--color-surface, #fff);
+}
+
+.consultation-entry--unavailable,
+.consultation-offer--unavailable,
+.consultation-slot--unavailable,
+.consultation-option--unavailable {
+  opacity: .68;
+}
+
+.consultation-entry__image {
+  display: block;
+  width: 100%;
+  max-height: 14rem;
+  object-fit: cover;
+}
+
+.consultation-entry__body {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+}
+
+.consultation-entry__heading,
+.consultation-offer__heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
+.consultation-entry__heading h3,
+.consultation-offer__heading h4 {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.consultation-entry__body > p {
+  margin: 0;
+}
+
+.consultation-offer {
+  padding: .75rem 0;
+  border-top: 1px solid var(--color-border, #d7dce2);
+}
+
+.consultation-offer__heading img {
+  width: 3rem;
+  height: 3rem;
+  border-radius: .5rem;
+  object-fit: cover;
+}
+
+.consultation-slots,
+.consultation-slots ul {
+  display: grid;
+  gap: .4rem;
+  margin: .6rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .2rem .5rem;
+  border-radius: 999px;
+  background: #fff0e8;
+  color: #8a3215;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .consultation-filters {
+    grid-template-columns: 1fr;
+  }
+}

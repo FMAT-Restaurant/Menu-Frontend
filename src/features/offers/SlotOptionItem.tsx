@@ -9,6 +9,7 @@ export interface SlotOptionItemProps {
   onToggleStatus: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  canChangeStatus?: boolean;
   disabled?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function SlotOptionItem({
   onToggleStatus,
   onMoveUp,
   onMoveDown,
+  canChangeStatus = true,
   disabled = false,
 }: Readonly<SlotOptionItemProps>) {
   const isRecipe = option.sourceType === "RECIPE";
@@ -78,7 +80,7 @@ export function SlotOptionItem({
           </button>
         )}
 
-        <button
+        {canChangeStatus && <button
           type="button"
           className="button button--small button--secondary"
           onClick={onToggleStatus}
@@ -88,7 +90,7 @@ export function SlotOptionItem({
           aria-pressed={isActive}
         >
           {isActive ? "Desactivar" : "Activar"}
-        </button>
+        </button>}
 
         <button
           type="button"

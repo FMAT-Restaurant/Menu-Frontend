@@ -15,6 +15,7 @@ export interface CompositionEditorProps {
   onToggleOptionStatus: (slotIndex: number, optionIndex: number) => void;
   onMoveOption?: (slotIndex: number, fromOptionIndex: number, toOptionIndex: number) => void;
   onCopyComposition?: () => void;
+  canChangeStatus?: boolean;
   disabled?: boolean;
 }
 
@@ -31,6 +32,7 @@ export function CompositionEditor({
   onToggleOptionStatus,
   onMoveOption,
   onCopyComposition,
+  canChangeStatus = true,
   disabled = false,
 }: Readonly<CompositionEditorProps>) {
   return (
@@ -80,6 +82,7 @@ export function CompositionEditor({
             onDeleteOption={(optIdx) => onDeleteOption(index, optIdx)}
             onToggleOptionStatus={(optIdx) => onToggleOptionStatus(index, optIdx)}
             onMoveOption={onMoveOption ? (fromIdx, toIdx) => onMoveOption(index, fromIdx, toIdx) : undefined}
+            canChangeStatus={canChangeStatus}
             disabled={disabled}
           />
         ))}

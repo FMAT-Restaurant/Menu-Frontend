@@ -1,5 +1,9 @@
 import type {
   CompositionSlotDetail,
+  CatalogQuery,
+  CatalogViewCategories,
+  CatalogViewEntry,
+  CatalogImage,
   MenuEntry,
   MenuOffer,
   MenuRepository,
@@ -98,6 +102,8 @@ export function createDemoRepository(): MenuRepository {
   const version = (id: string) => `"${id}-v${versions.get(id) ?? 1}"`;
   const bump = (id: string) => versions.set(id, (versions.get(id) ?? 1) + 1);
   const snapshot = <T extends { id: string }>(item: T) => copy({ ...item, etag: version(item.id) });
+  const catalogImage = (image: { id?: string; url?: string; thumbnailUrl?: string } | null | undefined): CatalogImage | null =>
+    image?.id && image.url ? { id: image.id, url: image.url, thumbnailUrl: image.thumbnailUrl ?? image.url } : null;
   const checkVersion = (id: string, etag: string) => {
     if (etag !== version(id)) fail(412, "Los datos cambiaron. Revisa la versión actual antes de guardar.");
   };
@@ -198,6 +204,57 @@ export function createDemoRepository(): MenuRepository {
   };
 
   return {
+    getMenuCatalog(query: CatalogQuery, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        const visibleEntries = [...entries.values()].filter(entry => entry.status === "ACTIVE" &&
+          matches(`${entry.brandName} ${entry.description} ${entry.categoryIds.map(id => categories.get(id)?.name ?? "").join(" ")}`, query.q) &&
+          (!query.categoryId || (query.categoryId === "__uncategorized__" ? entry.categoryIds.length === 0 : entry.categoryIds.includes(query.categoryId))));
+        const result: CatalogViewEntry[] = visibleEntries.map(entry => ({
+          id: entry.id,
+          brandName: entry.brandName,
+          description: entry.description,
+          image: catalogImage(entry.image),
+          categoryIds: [...entry.categoryIds],
+          isAvailable: seed.availability.entries[entry.id] ?? true,
+          offers: [...offers.values()].filter(offer => offer.entryId === entry.id && offer.status === "ACTIVE")
+            .sort((a, b) => a.presentationTag.localeCompare(b.presentationTag, "es"))
+            .map(offer => ({
+              id: offer.id,
+              presentationTag: offer.presentationTag,
+              basePrice: offer.basePrice,
+              image: catalogImage(offer.image),
+              isAvailable: seed.availability.offers[offer.id] ?? true,
+              composition: { slots: offer.composition.slots.map(slot => ({
+                slotId: slot.slotId,
+                name: slot.name,
+                quantity: slot.quantity,
+                ...(slot.course ? { course: slot.course } : {}),
+                isAvailable: seed.availability.slots[slot.slotId] ?? true,
+                options: slot.options.filter(option => option.status === "ACTIVE").map(option => ({
+                  optionId: option.optionId,
+                  displayName: option.displayName,
+                  isAvailable: seed.availability.options[option.optionId] ?? true,
+                })),
+              })) },
+            })),
+        }));
+        return pageOf(result, query.page, query.pageSize);
+      });
+    },
+    listMenuCatalogCategories(signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        const active = [...entries.values()].filter(entry => entry.status === "ACTIVE");
+        return {
+          data: [...categories.values()].map(category => ({
+            ...category,
+            entryCount: active.filter(entry => entry.categoryIds.includes(category.id)).length,
+          })).sort((a, b) => a.name.localeCompare(b.name, "es")),
+          uncategorized: { entryCount: active.filter(entry => entry.categoryIds.length === 0).length },
+        } satisfies CatalogViewCategories;
+      });
+    },
     listEntries(query, signal) {
       return runDemoOperation(() => {
         signal?.throwIfAborted();

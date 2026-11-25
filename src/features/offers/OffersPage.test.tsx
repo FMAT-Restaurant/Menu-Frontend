@@ -1,8 +1,10 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import type { MenuOffer, MenuOfferDetail, MenuRepository, Page } from "../../application/catalog";
 import { OffersPage } from "./OffersPage";
 
+import { renderWithMenuPermissions } from "../../shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 const offer: MenuOffer = {
   id: "offer-1", entryId: "entry-1", entryName: "Hamburguesa Hawaiana", presentationTag: "Individual",
   basePrice: 180, status: "ACTIVE", image: { id: "image-1", url: "https://images.example/offer.jpg" }, slotCount: 2,

@@ -2,7 +2,8 @@ import "./shared/dataRouter.test-helper";
 import { cleanup, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { App } from "./App";
-import { MENU_PERMISSIONS } from "./shared/permissions";
+import { ALL_MENU_PERMISSIONS, permissionToken } from "./shared/permissions.test-helper";
+
 import type {
   MenuEntry,
   MenuEntryDetail,
@@ -11,17 +12,14 @@ import type {
   Page,
 } from "./application/catalog";
 
-function permissionToken(permissions: readonly string[]) {
-  const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  return `${encode({ alg: "none", typ: "JWT" })}.${encode({ permissions })}.signature`;
-}
-
 function unprepared(method: keyof MenuRepository) {
   return jest.fn(() => Promise.reject(new Error(`Unprepared MenuRepository.${method} call`)));
 }
 
 function createRepository(overrides: Partial<MenuRepository> = {}): MenuRepository {
   return {
+    getMenuCatalog: unprepared("getMenuCatalog"),
+    listMenuCatalogCategories: unprepared("listMenuCatalogCategories"),
     listEntries: unprepared("listEntries"),
     listCategories: unprepared("listCategories"),
     getCategory: unprepared("getCategory"),
@@ -54,7 +52,7 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
 describe("App routing and lazy loading (T15)", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(MENU_PERMISSIONS) }));
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(ALL_MENU_PERMISSIONS) }));
     window.history.replaceState({}, "", "/");
   });
 
@@ -111,6 +109,30 @@ describe("App routing and lazy loading (T15)", () => {
 
     expect(await screen.findByRole("heading", { name: "Entradas del menú", level: 1 })).toBeVisible();
     expect(screen.getByRole("searchbox", { name: "Buscar entradas" })).toBeVisible();
+  });
+
+  test("shows the read-only consultation view when the user only has catalog read", async () => {
+    const repository = createRepository({
+      getMenuCatalog: jest.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 24, total: 0, totalPages: 0 } }),
+      listMenuCatalogCategories: jest.fn().mockResolvedValue({ data: [], uncategorized: { entryCount: 0 } }),
+    });
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken(["menu:catalog:read"]) }));
+
+    render(<App repository={repository} />);
+
+    expect(await screen.findByRole("heading", { name: "Menú", level: 1 })).toBeVisible();
+    expect(screen.getByRole("searchbox", { name: "Buscar en el menú" })).toBeVisible();
+    expect(repository.getMenuCatalog).toHaveBeenCalled();
+    expect(repository.listEntries).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /Nueva entrada/ })).not.toBeInTheDocument();
+  });
+
+  test("denies the root route when no menu permissions are present", async () => {
+    localStorage.setItem("fmat_restaurant_auth_session", JSON.stringify({ accessToken: permissionToken([]) }));
+
+    render(<App repository={createRepository()} />);
+
+    expect(await screen.findByRole("heading", { name: "Sin acceso", level: 1 })).toBeVisible();
   });
 
   test("redirects alias /menu to the administrative catalog root", async () => {

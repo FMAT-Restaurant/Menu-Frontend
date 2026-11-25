@@ -36,7 +36,7 @@ export function SearchField({
           placeholder={placeholder}
         />
         {value && (
-          <button type="button" className="search-field__clear" aria-label="Limpiar búsqueda" onClick={() => onChange("")}>
+          <button type="button" className="search-field__clear" aria-label="Borrar texto de búsqueda" onClick={() => onChange("")}>
             <Icon name="close" />
           </button>
         )}
