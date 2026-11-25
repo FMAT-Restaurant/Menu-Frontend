@@ -15,12 +15,16 @@ export interface SlotDraft {
 export interface SlotCardProps {
   slot: SlotDraft;
   slotIndex: number;
+  totalSlots?: number;
   onEdit: () => void;
   onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onAddOption: () => void;
   onEditOption: (optionIndex: number) => void;
   onDeleteOption: (optionIndex: number) => void;
   onToggleOptionStatus: (optionIndex: number) => void;
+  onMoveOption?: (fromOptionIndex: number, toOptionIndex: number) => void;
   canChangeStatus?: boolean;
   disabled?: boolean;
 }
@@ -28,12 +32,16 @@ export interface SlotCardProps {
 export function SlotCard({
   slot,
   slotIndex,
+  totalSlots,
   onEdit,
   onDelete,
+  onMoveUp,
+  onMoveDown,
   onAddOption,
   onEditOption,
   onDeleteOption,
   onToggleOptionStatus,
+  onMoveOption,
   canChangeStatus = true,
   disabled = false,
 }: Readonly<SlotCardProps>) {
@@ -76,6 +84,28 @@ export function SlotCard({
         </div>
 
         <div className="slot-card__header-actions">
+          {onMoveUp && (
+            <button
+              type="button"
+              className="button button--small button--secondary"
+              onClick={onMoveUp}
+              disabled={disabled || slotIndex === 0}
+              aria-label={`Subir grupo ${slot.name}`}
+            >
+              Subir
+            </button>
+          )}
+          {onMoveDown && (
+            <button
+              type="button"
+              className="button button--small button--secondary"
+              onClick={onMoveDown}
+              disabled={disabled || (totalSlots !== undefined && slotIndex >= totalSlots - 1)}
+              aria-label={`Bajar grupo ${slot.name}`}
+            >
+              Bajar
+            </button>
+          )}
           <button
             type="button"
             className="button button--small button--secondary"
@@ -111,9 +141,12 @@ export function SlotCard({
                 key={option.localId || option.optionId || `opt-${optIdx}`}
                 option={option}
                 optionIndex={optIdx}
+                totalOptions={slot.options.length}
                 onEdit={() => onEditOption(optIdx)}
                 onDelete={() => onDeleteOption(optIdx)}
                 onToggleStatus={() => onToggleOptionStatus(optIdx)}
+                onMoveUp={onMoveOption ? () => onMoveOption(optIdx, optIdx - 1) : undefined}
+                onMoveDown={onMoveOption ? () => onMoveOption(optIdx, optIdx + 1) : undefined}
                 canChangeStatus={canChangeStatus}
                 disabled={disabled}
               />

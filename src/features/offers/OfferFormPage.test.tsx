@@ -311,7 +311,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
     const price = screen.getByLabelText(/Precio base/);
     fireEvent.change(price, { target: { value: "-12.999" } });
-    const save = screen.getByRole("button", { name: "Guardar Oferta" });
+    const save = screen.getByRole("button", { name: "Guardar oferta" });
     fireEvent.click(save);
     await waitFor(() => expect(price).toHaveFocus());
     expect(price).toHaveAttribute("aria-invalid", "true");
@@ -650,7 +650,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository);
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Try submitting empty
     fireEvent.click(saveButton);
@@ -690,7 +690,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository);
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
 
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
       target: { value: "Combo Familiar" },
@@ -758,7 +758,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
     expect(screen.getByDisplayValue("Individual")).toBeVisible();
 
     fireEvent.change(screen.getByLabelText(/Precio base/), { target: { value: "175" } });
@@ -810,7 +810,7 @@ describe("OfferFormPage (V4)", () => {
 
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Verify initial loaded draft values
     expect(screen.getByDisplayValue("Individual")).toBeVisible();
@@ -840,6 +840,18 @@ describe("OfferFormPage (V4)", () => {
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeVisible();
   });
 
+  test("displays entry missing screen if entry returns 404", async () => {
+    const repository = createMockRepository();
+    repository.getEntry.mockRejectedValueOnce({ response: { status: 404 } });
+
+    renderComponent(repository);
+    expect(await screen.findByRole("heading", { name: "Entrada no encontrada" })).toBeVisible();
+    expect(screen.getByRole("alert", { name: "Entrada no encontrada" })).toHaveTextContent("La entrada solicitada ya no existe.");
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Volver al catálogo" })).toBeVisible();
+  });
+
   test("retries loading entry and offer in edit mode and populates recovered form data (O32)", async () => {
     const repository = createMockRepository();
     repository.getOffer.mockRejectedValueOnce(new Error("Error al consultar la oferta"));
@@ -863,7 +875,7 @@ describe("OfferFormPage (V4)", () => {
     // Expect real recovered offer data displayed in inputs
     expect(await screen.findByDisplayValue("Individual")).toBeVisible();
     expect(screen.getByDisplayValue("150")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Guardar Oferta" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Guardar oferta" })).toBeVisible();
   });
 
   test("blocks editing and displays error when offer does not belong to the entry in route (O11)", async () => {
@@ -884,7 +896,7 @@ describe("OfferFormPage (V4)", () => {
     ).toBeVisible();
 
     // Form and save controls are not rendered
-    expect(screen.queryByRole("button", { name: "Guardar Oferta" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Guardar oferta" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Etiqueta de presentación/)).not.toBeInTheDocument();
     // Retry button is also not rendered for route belonging mismatch
     expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
@@ -984,7 +996,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     // Submit button should be disabled during image validation
-    const submitBtn = screen.getByRole("button", { name: "Guardar Oferta" });
+    const submitBtn = screen.getByRole("button", { name: "Guardar oferta" });
     expect(submitBtn).toBeDisabled();
 
     // Attempting submit while validating produces validation error
@@ -1064,7 +1076,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
 
     // Submit
-    const submitBtn = screen.getByRole("button", { name: "Guardar Oferta" });
+    const submitBtn = screen.getByRole("button", { name: "Guardar oferta" });
     fireEvent.click(submitBtn);
 
     // uploadEntryImage was called
@@ -1106,7 +1118,7 @@ describe("OfferFormPage (V4)", () => {
 
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Fill form
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
@@ -1126,7 +1138,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
 
     // Submit
-    const submitBtn = screen.getByRole("button", { name: "Guardar Oferta" });
+    const submitBtn = screen.getByRole("button", { name: "Guardar oferta" });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText("Vista de ofertas")).toBeVisible();
@@ -1140,7 +1152,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Edit slot
     fireEvent.click(screen.getByRole("button", { name: "Editar grupo Plato principal" }));
@@ -1159,7 +1171,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Toggle option status to inactive
     const toggleBtn = screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Doble" });
@@ -1183,7 +1195,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Open option modal
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
@@ -1201,7 +1213,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     const dropzone = screen.getByRole("button", {
       name: "Seleccionar o arrastrar imagen de la oferta",
@@ -1231,7 +1243,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
     // Toggle option to inactive
     fireEvent.click(screen.getByRole("button", { name: "Cambiar estado de Hamburguesa Doble" }));
     // Submit
@@ -1257,7 +1269,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Open SlotModal and cancel
     fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
@@ -1280,7 +1292,7 @@ describe("OfferFormPage (V4)", () => {
     });
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
     const backLink = screen.getByRole("link", { name: /Volver a ofertas/i });
     expect(backLink).toHaveAttribute("href", "/custom/return");
 
@@ -1296,7 +1308,7 @@ describe("OfferFormPage (V4)", () => {
     });
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
     const backLink = screen.getByRole("link", { name: /Volver a ofertas/i });
     expect(backLink).toHaveAttribute("href", "/entries/entry-1/offers");
 
@@ -1336,7 +1348,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
     expect(screen.getByText("Refresco 500ml")).toBeVisible();
 
     fireEvent.click(saveButton);
@@ -1373,7 +1385,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Fill valid tag and base price
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
@@ -1397,7 +1409,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
 
     // Now submit
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     expect(
       await screen.findByText('El grupo "Grupo Vacío" debe incluir al menos una opción.')
@@ -1410,7 +1422,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Fill valid tag and base price
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), { target: { value: "Individual" } });
@@ -1426,7 +1438,7 @@ describe("OfferFormPage (V4)", () => {
     expect(await screen.findByText("Selecciona una imagen JPEG, PNG o WebP.")).toBeVisible();
 
     // Now submit
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     expect(
       await screen.findByText("Corrige el error de la imagen antes de guardar.")
@@ -1442,7 +1454,7 @@ describe("OfferFormPage (V4)", () => {
     const tagInput = await screen.findByLabelText(/Etiqueta de presentación/);
     expect(tagInput).toBeRequired();
     fireEvent.change(tagInput, { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     expect(
       await screen.findByText("Indica la etiqueta de presentación de la oferta.")
@@ -1457,7 +1469,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
     await waitFor(() => expect(saveButton).toBeEnabled());
     fireEvent.click(saveButton);
 
@@ -1492,7 +1504,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Open option modal for "Plato principal"
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
@@ -1520,7 +1532,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     fireEvent.click(screen.getByRole("button", { name: "Agregar opción a Plato principal" }));
 
@@ -1635,7 +1647,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.change(price, { target: { value: "145.125" } });
     expect(price).toHaveValue(145.125);
     expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0145.13");
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     await waitFor(() => expect(repository.updateOffer).toHaveBeenCalledTimes(1));
     expect(repository.updateOffer.mock.calls[0][1].basePrice).toBe(145.125);
   });
@@ -1646,7 +1658,7 @@ describe("OfferFormPage (V4)", () => {
     await waitForOfferFormLoaded();
     const price = await screen.findByLabelText("Precio base (MXN)");
     fireEvent.change(price, { target: { value: raw } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     expect(await screen.findByText("El precio base debe ser un número positivo.")).toBeVisible();
     expect(repository.updateOffer).not.toHaveBeenCalled();
     expect(repository.createOffer).not.toHaveBeenCalled();
@@ -1659,7 +1671,7 @@ describe("OfferFormPage (V4)", () => {
     await waitForOfferFormLoaded();
     const price = await screen.findByLabelText("Precio base (MXN)");
     fireEvent.change(price, { target: { value: "145.125" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     const review = await screen.findByRole("button", { name: "Revisar oferta actual" });
     repository.getOffer.mockResolvedValueOnce({ data: { ...mockOffer, basePrice: 123456789.5 }, etag: '"offer-rev-2"' });
     fireEvent.click(review);
@@ -1674,7 +1686,7 @@ describe("OfferFormPage (V4)", () => {
     expect(price).toHaveValue(145.125);
     expect(document.querySelector("#offer-price-preview")?.textContent).toBe("MXN\u00a0145.13");
     expect(repository.updateOffer).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     await waitFor(() => expect(repository.updateOffer).toHaveBeenCalledTimes(2));
     expect(repository.updateOffer.mock.calls[1][1].basePrice).toBe(145.125);
     expect(repository.updateOffer.mock.calls[1][2]).toBe('"offer-rev-2"');
@@ -1697,7 +1709,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
     const tagInput = screen.getByLabelText(/Etiqueta de presentación/);
 
     // User edits draft
@@ -1881,7 +1893,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    const saveButton = await screen.findByRole("button", { name: "Guardar Oferta" });
+    const saveButton = await screen.findByRole("button", { name: "Guardar oferta" });
     fireEvent.click(saveButton);
 
     await waitFor(() => {
@@ -1902,7 +1914,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Step A: Edit display name of existing option without selecting recipe
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
@@ -1911,7 +1923,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
 
     // Save offer
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     await waitFor(() => {
       expect(repository.updateOffer).toHaveBeenCalledTimes(1);
@@ -1929,14 +1941,14 @@ describe("OfferFormPage (V4)", () => {
     const repository2 = createMockRepository();
     renderComponent(repository2, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
     // Cancel recipe picker without selecting
     fireEvent.click(within(screen.getByRole("dialog", { name: /Elegir receta ·/ })).getByRole("button", { name: "Volver a la opción" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     await waitFor(() => {
       expect(repository2.updateOffer).toHaveBeenCalledTimes(1);
@@ -1948,14 +1960,14 @@ describe("OfferFormPage (V4)", () => {
     const repository3 = createMockRepository();
     renderComponent(repository3, "/entries/entry-1/offers/offer-1/edit");
     await waitForOfferFormLoaded();
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     fireEvent.click(screen.getByRole("button", { name: "Editar opción Hamburguesa Doble" }));
     fireEvent.click(screen.getByRole("button", { name: /Elegir receta/ }));
     await screen.findByRole("heading", { name: "Receta Hamburguesa", level: 3 });
     fireEvent.click(screen.getByRole("button", { name: "Asignar" }));
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     await waitFor(() => {
       expect(repository3.updateOffer).toHaveBeenCalledTimes(1);
@@ -1973,7 +1985,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Fill valid commercial info
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
@@ -2005,7 +2017,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
 
     // Submit offer create
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
 
     await waitFor(() => {
       expect(repository.createOffer).toHaveBeenCalledTimes(1);
@@ -2029,7 +2041,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     // Add a slot
     fireEvent.click(screen.getByRole("button", { name: "Agregar grupo" }));
@@ -2078,7 +2090,7 @@ describe("OfferFormPage (V4)", () => {
     renderComponent(repository, "/entries/entry-1/offers/new");
     await waitForOfferFormLoaded();
 
-    await screen.findByRole("button", { name: "Guardar Oferta" });
+    await screen.findByRole("button", { name: "Guardar oferta" });
 
     fireEvent.change(screen.getByLabelText(/Etiqueta de presentación/), {
       target: { value: "Oferta Válida" },
@@ -2096,7 +2108,7 @@ describe("OfferFormPage (V4)", () => {
     });
 
     // Attempt 1: submit with 0 slots -> rejected, 0 calls
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     expect(await screen.findByText("La composición debe incluir al menos un grupo.")).toBeVisible();
     expect(repository.createOffer).not.toHaveBeenCalled();
 
@@ -2106,7 +2118,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar grupo" }));
 
     // Attempt 2: submit slot with 0 options -> rejected, 0 calls
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     expect(await screen.findByText('El grupo "Entrada" debe incluir al menos una opción.')).toBeVisible();
     expect(repository.createOffer).not.toHaveBeenCalled();
 
@@ -2118,7 +2130,7 @@ describe("OfferFormPage (V4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar opción" }));
 
     // Attempt 3: submit valid offer -> exact 1 call
-    fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
     await waitFor(() => {
       expect(repository.createOffer).toHaveBeenCalledTimes(1);
     });

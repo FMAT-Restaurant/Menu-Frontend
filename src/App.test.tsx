@@ -56,8 +56,8 @@ describe("App routing and lazy loading (T15)", () => {
 
   afterEach(() => {
     cleanup();
-    window.history.replaceState({}, "", "/");
     localStorage.clear();
+    window.history.replaceState({}, "", "/");
   });
 
   test("StrictMode owns one live router and disposes its history listeners on unmount", async () => {

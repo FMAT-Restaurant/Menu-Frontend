@@ -1,6 +1,7 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
 import { Icon } from "../../shared/Icon";
 import { useTaskDialog } from "../../shared/useTaskDialog";
+import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import {
   analyzeIdempotentAttemptError,
@@ -496,6 +497,11 @@ export function CategoryFormDialog({
       onUpdated(updated);
     } catch (err) {
       if (!activeRef.current) return;
+      if (isGlobalAuthError(err)) {
+        setError("");
+        setExitUncertain(false);
+        return;
+      }
       const analysis = analyzeNonIdempotentWriteError(err);
       setExitUncertain(analysis.possibleWriteApplied);
       if (analysis.requiresResourceReload) {

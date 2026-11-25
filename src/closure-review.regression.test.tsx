@@ -62,23 +62,23 @@ test.each(["IDEMPOTENCY_KEY_REUSED", "INVALID_IDEMPOTENCY_KEY"] as const)("RC05:
     <Route path="/entries/:entryId/offers/:offerId/edit" element={<OfferFormPage repository={repository} storage={storageForTest()} />} />
     <Route path="/entries/entry-1/offers" element={<h1>Ofertas guardadas</h1>} />
   </Routes></MemoryRouter>);
-  const save = await screen.findByRole("button", { name: "Guardar Oferta" });
+  const save = await screen.findByRole("button", { name: "Guardar oferta" });
   await waitFor(() => expect(save).toBeEnabled());
   fireEvent.click(save);
   await screen.findByText("El envío fue rechazado. Conservamos tus cambios; pulsa Iniciar nueva operación antes de volver a guardar.");
   const oldKey = repository.updateOffer.mock.calls[0][3];
   fireEvent.change(screen.getByLabelText("Etiqueta de presentación"), { target: { value: "Cambios conservados" } });
   const prepare = screen.getByRole("button", { name: "Iniciar nueva operación" });
-  fireEvent.submit(screen.getByRole("button", { name: "Guardar Oferta" }).closest("form")!);
+  fireEvent.submit(screen.getByRole("button", { name: "Guardar oferta" }).closest("form")!);
   await act(async () => {});
   expect(repository.updateOffer).toHaveBeenCalledTimes(1);
   fireEvent.click(prepare);
-  await waitFor(() => expect(screen.getByRole("button", { name: "Guardar Oferta" })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Guardar oferta" })).toBeEnabled());
   expect(repository.updateOffer).toHaveBeenCalledTimes(1);
   expect(repository.getOffer).toHaveBeenCalledTimes(1);
   expect(screen.getByLabelText("Etiqueta de presentación")).toHaveValue("Cambios conservados");
   fireEvent.change(screen.getByLabelText("Precio base (MXN)"), { target: { value: "17" } });
-  fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
   await screen.findByRole("heading", { name: "Ofertas guardadas" });
   expect(repository.updateOffer).toHaveBeenCalledTimes(2);
   expect(repository.updateOffer.mock.calls[1][3]).not.toBe(oldKey);
@@ -107,10 +107,10 @@ test("RC05: a restored rejected creation preserves the confirmed image and prepa
   </Routes></MemoryRouter>);
   const prepare = await screen.findByRole("button", { name: "Iniciar nueva operación" });
   fireEvent.click(prepare);
-  await waitFor(() => expect(screen.getByRole("button", { name: "Guardar Oferta" })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Guardar oferta" })).toBeEnabled());
   expect(repository.createOffer).not.toHaveBeenCalled();
   expect(repository.uploadEntryImage).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Guardar Oferta" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar oferta" }));
   await screen.findByRole("heading", { name: "Oferta creada" });
   expect(repository.createOffer).toHaveBeenCalledTimes(1);
   expect(repository.createOffer.mock.calls[0][2]).toBe("confirmed-image");

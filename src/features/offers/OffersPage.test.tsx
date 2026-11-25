@@ -454,8 +454,20 @@ test("distinguishes a missing entry from a network failure", async () => {
   const repository = makeRepository();
   repository.getEntry.mockRejectedValueOnce({ response: { status: 404 } });
   renderPage(repository);
-  expect(await screen.findByRole("alert")).toHaveTextContent("La entrada solicitada ya no existe");
-  expect(await screen.findByRole("heading", { name: "Individual" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Entrada no encontrada" })).toBeVisible();
+  expect(screen.getByRole("alert", { name: "Entrada no encontrada" })).toHaveTextContent("La entrada solicitada ya no existe.");
+  expect(screen.queryByRole("button", { name: /Reintentar/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Nueva oferta/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Individual" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Volver al catálogo" })).toBeVisible();
+});
+
+test("a temporary entry load failure allows retrying the entry", async () => {
+  const repository = makeRepository();
+  repository.getEntry.mockRejectedValueOnce({ response: { status: 503 } });
+  renderPage(repository);
+  expect(await screen.findByRole("alert")).toHaveTextContent("El servicio está temporalmente indisponible.");
+  expect(screen.getByRole("button", { name: "Reintentar entrada" })).toBeVisible();
 });
 
 test("retains the delete dialog after a failed delete and permits retry via dialog recovery", async () => {

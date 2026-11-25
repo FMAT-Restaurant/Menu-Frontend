@@ -58,6 +58,8 @@ import {
   reconcileComposition,
   consumeConfirmedRecipeAssignments,
   cloneSlotsForDraft,
+  moveSlot,
+  moveSlotOption,
 } from "./compositionReconciliation";
 
 export function buildOfferCreateScope(entryId: string, tabId = getOrCreateTabId()): OperationFlowScope {
@@ -297,6 +299,13 @@ function buildUpdateDraft(
   };
 }
 
+function httpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object" || !("response" in error)) return undefined;
+  const response = (error as { response?: { status?: unknown } }).response;
+  if (!response || typeof response !== "object" || !("status" in response)) return undefined;
+  return typeof response.status === "number" ? response.status : undefined;
+}
+
 function extractStructuredErrorMessage(err: unknown): string {
   if (err && typeof err === "object") {
     const data =
@@ -311,6 +320,10 @@ function extractStructuredErrorMessage(err: unknown): string {
         return `${contract.message} ${violationMessages}`;
       }
       return contract.message;
+    }
+    const status = httpStatus(err);
+    if (status === 404) {
+      return "El recurso solicitado ya no existe.";
     }
     if ("message" in err && typeof (err as { message: unknown }).message === "string") {
       return (err as { message: string }).message;
@@ -559,6 +572,7 @@ function OfferFormPageContent({
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [entryNotFound, setEntryNotFound] = useState(false);
   const [formError, setFormError] = useState("");
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -858,9 +872,17 @@ function OfferFormPageContent({
     const controller = new AbortController();
     setLoading(true);
     setLoadError("");
+    setEntryNotFound(false);
+
+    const loadEntry = repository.getEntry(entryId, controller.signal).catch((err: unknown) => {
+      if (httpStatus(err) === 404) {
+        setEntryNotFound(true);
+      }
+      throw err;
+    });
 
     const promises: [Promise<MenuEntryDetail>, Promise<VersionedResource<MenuOfferDetail> | null>] = [
-      repository.getEntry(entryId, controller.signal),
+      loadEntry,
       offerId ? repository.getOffer(offerId, controller.signal) : Promise.resolve(null),
     ];
 
@@ -1050,6 +1072,14 @@ function OfferFormPageContent({
 
   function handleDeleteSlot(index: number) {
     setSlots((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  function handleMoveSlot(fromIndex: number, toIndex: number) {
+    setSlots((prev) => moveSlot(prev, fromIndex, toIndex));
+  }
+
+  function handleMoveOption(slotIndex: number, fromOptionIndex: number, toOptionIndex: number) {
+    setSlots((prev) => moveSlotOption(prev, slotIndex, fromOptionIndex, toOptionIndex));
   }
 
   // Option modal handlers
@@ -1376,7 +1406,7 @@ function OfferFormPageContent({
     setNewOperationAuthorized(true);
     setUncertainStage(null);
     setFormError("");
-    setSavedNotice("Nueva operación preparada. Pulsa Guardar Oferta para enviar tus cambios.");
+    setSavedNotice("Nueva operación preparada. Pulsa Guardar oferta para enviar tus cambios.");
   }
 
   const guard = useEditGuard({
@@ -1488,19 +1518,31 @@ function OfferFormPageContent({
       {guard.confirmation}
       <main className="menu-page offer-form-page">
         <header className="task-header offer-form-page__heading">
-          <Link to={returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
-            <Icon name="arrow-left" /> Volver a ofertas
+          <Link to={entryNotFound ? catalogReturnTo : returnTo} state={{ returnTo: catalogReturnTo }} className="back-link">
+            <Icon name="arrow-left" /> {entryNotFound ? "Volver al catálogo" : "Volver a ofertas"}
           </Link>
           <div className="task-header__content">
-            <p className="eyebrow">Ofertas</p>
-            <h1 data-route-heading tabIndex={-1}>{isEditing ? "Editar oferta" : "Nueva oferta"}</h1>
-            <p className="task-header__intro offer-form-page__subtitle">Entrada: <strong>{entry?.brandName || (loading ? <LoadingValue kind="line" /> : "No disponible")}</strong></p>
+            <p className="eyebrow">{entryNotFound ? "Entradas" : "Ofertas"}</p>
+            <h1 data-route-heading tabIndex={-1}>{entryNotFound ? "Entrada no encontrada" : (isEditing ? "Editar oferta" : "Nueva oferta")}</h1>
+            <p className="task-header__intro offer-form-page__subtitle">
+              {entryNotFound
+                ? "No pudimos abrir la entrada cuyas ofertas intentas consultar."
+                : <>Entrada: <strong>{entry?.brandName || (loading ? <LoadingValue kind="line" /> : "No disponible")}</strong></>}
+            </p>
           </div>
         </header>
 
-        <OfferLoadFeedback loading={loading} loadError={loadError} onRetry={() => setRetryCount((count) => count + 1)} />
+        {entryNotFound ? (
+          <section className="entry-missing" role="alert" aria-label="Entrada no encontrada">
+            <span className="entry-missing__icon"><Icon name="image" /></span>
+            <p>La entrada solicitada ya no existe.</p>
+            <p>Puede haber sido eliminada. Regresa al catálogo para consultar las entradas disponibles.</p>
+          </section>
+        ) : (
+          <>
+            <OfferLoadFeedback loading={loading} loadError={loadError} onRetry={() => setRetryCount((count) => count + 1)} />
 
-        {!loadError && (
+            {!loadError && (
           <form ref={formRef} data-actions-persistent={actionLayout.persistent} data-actions-height={actionLayout.height} data-form-height={actionLayout.formHeight} data-available-height={actionLayout.available} className="offer-form" onFocusCapture={(event) => { const control = event.target; requestAnimationFrame(() => { if (document.activeElement === control) revealFormControl(control, actionsRef.current); }); }} onSubmit={handleSaveOffer} aria-busy={loading || saving} noValidate>
             <OfferRecoveryFeedback
               requiresNewOperation={requiresNewOperation}
@@ -1560,10 +1602,12 @@ function OfferFormPageContent({
               onAddSlot={handleOpenAddSlot}
               onEditSlot={handleOpenEditSlot}
               onDeleteSlot={handleDeleteSlot}
+              onMoveSlot={handleMoveSlot}
               onAddOption={handleOpenAddOption}
               onEditOption={handleOpenEditOption}
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
+              onMoveOption={handleMoveOption}
               canChangeStatus={canChangeStatus}
               onCopyComposition={canCopyComposition ? () => setCopyOverlayOpen(true) : undefined}
               disabled={loading || saving || exitSucceeded.current}
@@ -1578,7 +1622,7 @@ function OfferFormPageContent({
                 className="button button--primary"
                 disabled={loading || exitSucceeded.current || !recoveryReady || saving || reviewLoading || requiresNewOperation || recoveryExpired || imageValidating || isSubmittingRef.current || Boolean(conflictNotice) || Boolean(ambiguousNotice)}
               >
-                {saving ? "Guardando…" : "Guardar Oferta"}
+                {saving ? "Guardando…" : "Guardar oferta"}
               </button>
             </footer>
           </form>
@@ -1648,6 +1692,8 @@ function OfferFormPageContent({
             }}
             onClose={() => setCopyOverlayOpen(false)}
           />
+        )}
+          </>
         )}
       </main>
     </div>

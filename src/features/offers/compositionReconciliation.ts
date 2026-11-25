@@ -16,6 +16,44 @@ export function generateLocalId(): string {
   });
 }
 
+export function moveItem<T>(items: readonly T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length
+  ) {
+    return [...items];
+  }
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
+export function moveSlot(slots: readonly SlotDraft[], fromIndex: number, toIndex: number): SlotDraft[] {
+  return moveItem(slots, fromIndex, toIndex);
+}
+
+export function moveSlotOption(
+  slots: readonly SlotDraft[],
+  slotIndex: number,
+  fromOptionIndex: number,
+  toOptionIndex: number,
+): SlotDraft[] {
+  if (slotIndex < 0 || slotIndex >= slots.length) {
+    return [...slots];
+  }
+  return slots.map((slot, index) => {
+    if (index !== slotIndex) return slot;
+    return {
+      ...slot,
+      options: moveItem(slot.options, fromOptionIndex, toOptionIndex),
+    };
+  });
+}
+
 export function ensureOptionLocalId(option: OptionDraft): OptionDraft {
   if (option.localId) {
     return option;
