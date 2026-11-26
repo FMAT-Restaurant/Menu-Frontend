@@ -739,8 +739,8 @@
   line-height: 20px;
 }
 
-:where(.menu-module[data-menu-module]) .slot-modal-dialog form,
-:where(.menu-module[data-menu-module]) .option-modal-dialog form,
+:where(.menu-module[data-menu-module]) .slot-modal-dialog > form,
+:where(.menu-module[data-menu-module]) .option-modal-dialog > .option-form,
 :where(.menu-module[data-menu-module]) .slot-modal-form,
 :where(.menu-module[data-menu-module]) .option-form {
   display: flex;
@@ -1056,7 +1056,7 @@
 }
 @container offers (width < 360px) {
   :where(.menu-module[data-menu-module]) .offer-card__summary { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  :where(.menu-module[data-menu-module]) .offer-card__price { text-align: left; }
+  :where(.menu-module[data-menu-module]) .offer-card__price { text-align: right; }
 }
 @container offers (768px <= width < 1200px) {
   :where(.menu-module[data-menu-module]) .offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

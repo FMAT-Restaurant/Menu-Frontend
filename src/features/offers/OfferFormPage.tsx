@@ -37,6 +37,8 @@ import {
   type SealedOperationAttempt,
 } from "../../application/operationAttempt";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
+import { usePermission } from "../../shared/permissions";
+import { AccessDeniedPage } from "../../shared/AccessDeniedPage";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeSelectionTask, type RecipeSelectionTaskHandle } from "../recipes/RecipeSelectionTask";
 import { buildRecipeCreateScope } from "../recipes/RecipeFormDialog";
@@ -506,10 +508,12 @@ function OfferSavedFeedback({
   </>;
 }
 
-export function OfferFormPage({
+function OfferFormPageContent({
   repository,
   storage: providedStorage,
 }: Readonly<OfferFormPageProps>) {
+  const canChangeStatus = usePermission("menu:offers:status");
+  const canUploadImage = usePermission("menu:images:write");
   const [fallbackStorage] = useState(createIndexedDbPendingOperationStorage);
   const storage = providedStorage ?? fallbackStorage;
   const { entryId = "", offerId } = useParams();
@@ -998,6 +1002,11 @@ export function OfferFormPage({
   }
 
   function handleSelectImage(e: ChangeEvent<HTMLInputElement>) {
+    if (!canUploadImage) {
+      setImageError("No tienes permiso para cargar imágenes de ofertas.");
+      e.target.value = "";
+      return;
+    }
     const file = e.target.files?.[0];
     if (file) {
       void processSelectedImage(file);
@@ -1005,6 +1014,10 @@ export function OfferFormPage({
   }
 
   function handleDropImage(file: File) {
+    if (!canUploadImage) {
+      setImageError("No tienes permiso para cargar imágenes de ofertas.");
+      return;
+    }
     void processSelectedImage(file);
   }
 
@@ -1103,6 +1116,7 @@ export function OfferFormPage({
   }
 
   function handleToggleOptionStatus(slotIndex: number, optionIndex: number) {
+    if (!canChangeStatus) return;
     setSlots((prev) =>
       prev.map((slot, sIdx) => {
         if (sIdx !== slotIndex) return slot;
@@ -1554,6 +1568,8 @@ export function OfferFormPage({
               onDropImage={handleDropImage}
               imageError={imageError}
               imageValidating={imageValidating}
+              canChangeStatus={canChangeStatus}
+              canUploadImage={canUploadImage}
               fieldErrors={commercialFieldErrors}
               disabled={loading || saving || exitSucceeded.current}
             />
@@ -1570,6 +1586,7 @@ export function OfferFormPage({
               onDeleteOption={handleDeleteOption}
               onToggleOptionStatus={handleToggleOptionStatus}
               onMoveOption={handleMoveOption}
+              canChangeStatus={canChangeStatus}
               onCopyComposition={canCopyComposition ? () => setCopyOverlayOpen(true) : undefined}
               disabled={loading || saving || exitSucceeded.current}
             />
@@ -1659,4 +1676,10 @@ export function OfferFormPage({
       </main>
     </div>
   );
+}
+
+
+export function OfferFormPage(props: Readonly<OfferFormPageProps>) {
+  const canWrite = usePermission("menu:offers:write");
+  return canWrite ? <OfferFormPageContent {...props} /> : <AccessDeniedPage />;
 }

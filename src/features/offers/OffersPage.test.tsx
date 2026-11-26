@@ -1,8 +1,10 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import type { MenuOffer, MenuOfferDetail, MenuRepository, Page } from "../../application/catalog";
 import { OffersPage } from "./OffersPage";
 
+import { renderWithMenuPermissions } from "../../shared/permissions.test-helper";
+const render = renderWithMenuPermissions;
 const offer: MenuOffer = {
   id: "offer-1", entryId: "entry-1", entryName: "Hamburguesa Hawaiana", presentationTag: "Individual",
   basePrice: 180, status: "ACTIVE", image: { id: "image-1", url: "https://images.example/offer.jpg" }, slotCount: 2,
@@ -42,6 +44,7 @@ function makeRepository(items = [offer, inactive]): jest.Mocked<Pick<MenuReposit
 function renderPage(repository: ReturnType<typeof makeRepository>, path = "/entries/entry-1/offers", state?: unknown) {
   render(<MemoryRouter initialEntries={[{ pathname: path.split("?")[0], search: path.includes("?") ? `?${path.split("?")[1]}` : "", state }]}><Routes>
     <Route path="/entries/:entryId/offers" element={<OffersPage repository={repository} />} />
+    <Route path="/offers" element={<OffersPage repository={repository} />} />
   </Routes></MemoryRouter>);
 }
 
@@ -564,4 +567,17 @@ test("closes delete dialog on Escape key without mutating and restores focus", a
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(repository.deleteInactiveOffer).not.toHaveBeenCalled();
   expect(trigger).toHaveFocus();
+});
+
+test("lists all offers globally at /offers without querying a single entry", async () => {
+  const repository = makeRepository();
+  renderPage(repository, "/offers");
+  expect(await screen.findByRole("heading", { name: "Ofertas del catálogo" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Individual" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Combo" })).toBeVisible();
+  expect(repository.getEntry).not.toHaveBeenCalled();
+  expect(repository.listOffers).toHaveBeenCalledWith(undefined, 1, 12, expect.any(AbortSignal));
+  expect(screen.queryByRole("link", { name: "Nueva oferta" })).not.toBeInTheDocument();
+  const editLink = screen.getByRole("link", { name: /Individual/i });
+  expect(editLink).toHaveAttribute("href", "/entries/entry-1/offers/offer-1/edit");
 });

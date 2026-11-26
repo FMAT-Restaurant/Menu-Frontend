@@ -1,5 +1,7 @@
 import type {
   CatalogImage,
+  CatalogViewCategories,
+  CatalogViewEntry,
   CompositionSlotDetail,
   EntryStatus,
   InventoryItem,
@@ -24,6 +26,7 @@ export type CatalogResponseFamily =
   | "offers"
   | "recipes"
   | "inventory"
+  | "catalog"
   | "images"
   | "error";
 
@@ -272,6 +275,44 @@ export function isRecipeSummary(value: unknown): value is RecipeSummary {
 
 export function isRecipeDetail(value: unknown): value is RecipeDetail {
   return record(value) && isRecipeSummary(value) && typeof value.instructions === "string";
+}
+
+function isCatalogViewOption(value: unknown): boolean {
+  return record(value) && nonEmptyString(value.optionId) && typeof value.displayName === "string" && typeof value.isAvailable === "boolean";
+}
+
+function isCatalogViewSlot(value: unknown): boolean {
+  return record(value) && nonEmptyString(value.slotId) && nonEmptyString(value.name) && positiveFiniteNumber(value.quantity) &&
+    typeof value.isAvailable === "boolean" && (value.course === undefined || value.course === null || isOfferCourse(value.course)) &&
+    Array.isArray(value.options) && value.options.every(isCatalogViewOption);
+}
+
+function isCatalogViewOffer(value: unknown): boolean {
+  return record(value) && nonEmptyString(value.id) && typeof value.presentationTag === "string" &&
+    nonNegativeFiniteNumber(value.basePrice) && (value.image === null || isCatalogImage(value.image)) &&
+    typeof value.isAvailable === "boolean" && record(value.composition) && Array.isArray(value.composition.slots) &&
+    value.composition.slots.every(isCatalogViewSlot);
+}
+
+function isCatalogViewEntry(value: unknown): value is CatalogViewEntry {
+  return record(value) && nonEmptyString(value.id) && typeof value.brandName === "string" && typeof value.description === "string" &&
+    (value.image === null || isCatalogImage(value.image)) && Array.isArray(value.categoryIds) && value.categoryIds.every(nonEmptyString) &&
+    typeof value.isAvailable === "boolean" && Array.isArray(value.offers) && value.offers.every(isCatalogViewOffer);
+}
+
+export function catalogViewPage(value: unknown): Page<CatalogViewEntry> {
+  if (!page(value, isCatalogViewEntry)) {
+    throw new CatalogResponseError("Respuesta del catálogo de consulta inválida.", "catalog");
+  }
+  return value;
+}
+
+export function catalogViewCategories(value: unknown): CatalogViewCategories {
+  if (!record(value) || !Array.isArray(value.data) || !value.data.every(item => isCategory(item) && nonNegativeSafeInteger(item.entryCount)) ||
+      !record(value.uncategorized) || !nonNegativeSafeInteger(value.uncategorized.entryCount)) {
+    throw new CatalogResponseError("Respuesta de categorías del catálogo de consulta inválida.", "catalog");
+  }
+  return value as unknown as CatalogViewCategories;
 }
 
 export function entryPage(value: unknown): Page<MenuEntry> {
