@@ -8,6 +8,7 @@ import type {
   AttemptFailureOutcome,
   IdempotentOperationKind,
 } from "../application/operationAttempt";
+import { toSpanishErrorMessage } from "../shared/errorMessage";
 
 export type RetryAfterParseResult =
   | {
@@ -262,9 +263,7 @@ function extractKnownFailureContext(
 }
 
 function getUnknownFailureMessage(error: unknown): string {
-  if (typeof error === "string" && error.trim().length > 0) return error;
-  if (error instanceof Error) return error.message;
-  return "Error de comunicación.";
+  return toSpanishErrorMessage(error, "Error de comunicación.");
 }
 
 export function extractHttpFailureContext(

@@ -1,4 +1,5 @@
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
+import { toSpanishErrorMessage } from "../../shared/errorMessage";
 import { formatSupplyUnit } from "../../shared/formatUnit";
 import { Icon } from "../../shared/Icon";
 import { NativeNumberInput } from "../../shared/NativeNumberInput";
@@ -196,7 +197,7 @@ function RecipeTextField({
   return <div className="recipe-form-dialog__field">
     <label htmlFor={id}>{label}</label>
     {rows ? <textarea {...commonProps} rows={rows} /> : <input {...commonProps} ref={inputRef} maxLength={maxLength} />}
-    {error && <p className="recipe-field-error" id={errorId}>{error}</p>}
+    <p className="recipe-field-error" id={errorId} aria-hidden={!error}>{error ?? ""}</p>
   </div>;
 }
 
@@ -589,7 +590,7 @@ export function RecipeFormContent({
       })
       .catch((err) => {
         if (!controller.signal.aborted) {
-          const message = err instanceof Error ? err.message : "Error desconocido";
+          const message = toSpanishErrorMessage(err, "Error desconocido");
           setInventoryError(`No se pudieron cargar los artículos de inventario. ${message}`);
         }
       })
@@ -1121,11 +1122,7 @@ export function RecipeFormContent({
       setError(error.message);
       return;
     }
-    const message =
-      error && typeof error === "object" && "message" in error && typeof error.message === "string"
-        ? error.message
-        : "Error inesperado al crear la receta.";
-    setError(message);
+    setError(toSpanishErrorMessage(error, "Error inesperado al crear la receta."));
   }
 
   async function executeCreationFlow(action: "submit" | "retry") {
@@ -1379,7 +1376,6 @@ export function RecipeFormContent({
 
       <form noValidate onSubmit={(e) => void save(e)} hidden={confirmBack}>
         <div className="recipe-form-dialog__fields">
-          <RecipeValidationSummary fieldErrors={fieldErrors} supplies={supplies} nameForItem={nameForItem} summaryRef={validationSummaryRef} />
           <RecipeTextField id="recipe-name" label="Nombre" value={name} disabled={busy}
             placeholder="Ej. Hamburguesa Hawaiana" maxLength={255} inputRef={nameRef}
             fieldErrors={fieldErrors} onChange={handleNameChange} />
@@ -1414,6 +1410,8 @@ export function RecipeFormContent({
             onStartNewOperation={() => { void handleStartNewOperation(); }}
             onReview={() => { void handleReviewRecipe(); }} onAdoptReview={handleAdoptReview} />
         </div>
+
+        <RecipeValidationSummary fieldErrors={fieldErrors} supplies={supplies} nameForItem={nameForItem} summaryRef={validationSummaryRef} />
 
         <div className="recipe-form-dialog__actions">
           <button

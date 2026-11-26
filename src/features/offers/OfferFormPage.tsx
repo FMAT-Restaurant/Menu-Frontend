@@ -1,4 +1,5 @@
 import { receiptState, saveReceiptMessage, type LocalSaveReceipt } from "../../shared/localSaveReceipt";
+import { toSpanishErrorMessage } from "../../shared/errorMessage";
 import { LoadingValue } from "../../shared/LoadingState";
 import { revealFormControl, useFormActionsLayout } from "../../shared/useFormActionsLayout";
 import { sameDraft, useEditGuard } from "../../shared/editGuard";
@@ -7,7 +8,6 @@ import { isStrongEtag } from "../../application/entryVersion";
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type SyntheticEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { contractErrorResponse } from "../../api/catalogResponse";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import type {
   InventoryItem,
@@ -307,29 +307,7 @@ function httpStatus(error: unknown): number | undefined {
 }
 
 function extractStructuredErrorMessage(err: unknown): string {
-  if (err && typeof err === "object") {
-    const data =
-      "response" in err && (err as { response?: { data?: unknown } }).response?.data
-        ? (err as { response?: { data?: unknown } }).response!.data
-        : err;
-    const contract = contractErrorResponse(data);
-    if (contract) {
-      const violations = contract.details?.violations ?? [];
-      const violationMessages = violations.map((item) => item.message).join(" ");
-      if (violationMessages.length > 0 && contract.message) {
-        return `${contract.message} ${violationMessages}`;
-      }
-      return contract.message;
-    }
-    const status = httpStatus(err);
-    if (status === 404) {
-      return "El recurso solicitado ya no existe.";
-    }
-    if ("message" in err && typeof (err as { message: unknown }).message === "string") {
-      return (err as { message: string }).message;
-    }
-  }
-  return "Ocurrió un error al guardar la oferta.";
+  return toSpanishErrorMessage(err, "Ocurrió un error al guardar la oferta.");
 }
 
 export type OfferFormRepository = Pick<

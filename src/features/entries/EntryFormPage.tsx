@@ -56,12 +56,18 @@ function EntryIdentity({ model, disabled }: Readonly<{ model: Model; disabled: b
   return <section className="entry-form__identity" aria-labelledby="entry-identity-title">
     <h2 id="entry-identity-title">Identidad de la entrada</h2>
     <div className="entry-form__field">
-      <label htmlFor="entry-brandName">Nombre comercial</label>
+      <div className="entry-form__label-row">
+        <label htmlFor="entry-brandName">Nombre comercial</label>
+        <span className="entry-form__required" aria-hidden="true">(obligatorio)</span>
+      </div>
       {model.entryLoading ? <LoadingValue /> : <input id="entry-brandName" value={model.draft.brandName} onChange={(event) => model.changeText("brandName", event.target.value)} maxLength={255} required autoComplete="off" disabled={disabled} aria-invalid={Boolean(model.failure?.fields.brandName)} aria-describedby="entry-brandName-error" />}
       <p id="entry-brandName-error" className="entry-form__error">{model.failure?.fields.brandName}</p>
     </div>
     <div className="entry-form__field">
-      <label htmlFor="entry-description">Descripción</label>
+      <div className="entry-form__label-row">
+        <label htmlFor="entry-description">Descripción</label>
+        <span className="entry-form__required" aria-hidden="true">(obligatoria)</span>
+      </div>
       {model.entryLoading ? <LoadingValue kind="multiline" /> : <textarea id="entry-description" value={model.draft.description} onChange={(event) => model.changeText("description", event.target.value)} rows={3} required disabled={disabled} aria-invalid={Boolean(model.failure?.fields.description)} aria-describedby="entry-description-error" />}
       <p id="entry-description-error" className="entry-form__error">{model.failure?.fields.description}</p>
     </div>
