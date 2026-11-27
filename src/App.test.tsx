@@ -41,6 +41,8 @@ function createRepository(overrides: Partial<MenuRepository> = {}): MenuReposito
     deleteInactiveOffer: unprepared("deleteInactiveOffer"),
     listRecipes: unprepared("listRecipes"),
     getRecipe: unprepared("getRecipe"),
+    listRecipeRevisions: unprepared("listRecipeRevisions"),
+    getRecipeRevision: unprepared("getRecipeRevision"),
     createRecipe: unprepared("createRecipe"),
     updateRecipe: unprepared("updateRecipe"),
     deleteRecipe: unprepared("deleteRecipe"),

@@ -461,6 +461,10 @@ function RecipeOperationFeedback({
     {editing && reviewedResource && <section className="recipe-form-dialog__review" aria-label="Datos actuales de la receta">
       <h3>Datos actuales de la receta</h3>
       <dl>
+        {reviewedResource.data.revision !== undefined && <>
+          <dt>Revisión</dt>
+          <dd>Revisión {reviewedResource.data.revision}</dd>
+        </>}
         <dt>Nombre</dt>
         <dd>{reviewedResource.data.name}</dd>
         <dt>Descripción</dt>
@@ -1360,7 +1364,12 @@ export function RecipeFormContent({
         <button type="button" className="button button--primary" onClick={() => { setConfirmBack(false); onBack?.(); }}>Conservar borrador y volver</button>
       </section>}
       <div className="recipe-form-dialog__header" hidden={confirmBack}>
-        <h2 id="recipe-form-title">{editing ? "Editar receta" : "Nueva receta"}</h2>
+        <div className="recipe-form-dialog__title-group">
+          <h2 id="recipe-form-title">{editing ? "Editar receta" : "Nueva receta"}</h2>
+          {editing && activeRecipe?.revision !== undefined && (
+            <span className="recipe-card__revision">Revisión {activeRecipe.revision}</span>
+          )}
+        </div>
         <button
           className="recipe-form-dialog__close"
           type="button"

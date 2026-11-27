@@ -15,6 +15,7 @@ import type {
   OfferStatus,
   Page,
   RecipeDetail,
+  RecipeRevision,
   RecipeSummary,
   RecipeSupply,
   SlotOptionDetail,
@@ -262,10 +263,15 @@ export function isRecipeSupply(value: unknown): value is RecipeSupply {
   );
 }
 
+function positiveSafeInteger(value: unknown): value is number {
+  return nonNegativeSafeInteger(value) && value >= 1;
+}
+
 export function isRecipeSummary(value: unknown): value is RecipeSummary {
   return (
     record(value) &&
     nonEmptyString(value.id) &&
+    (value.revision === undefined || positiveSafeInteger(value.revision)) &&
     typeof value.name === "string" &&
     typeof value.description === "string" &&
     Array.isArray(value.supplies) &&
@@ -275,6 +281,35 @@ export function isRecipeSummary(value: unknown): value is RecipeSummary {
 
 export function isRecipeDetail(value: unknown): value is RecipeDetail {
   return record(value) && isRecipeSummary(value) && typeof value.instructions === "string";
+}
+
+function parseRecipeRevisionItem(value: unknown): RecipeRevision | null {
+  if (
+    !record(value) ||
+    !nonEmptyString(value.recipeId) ||
+    !positiveSafeInteger(value.revision) ||
+    typeof value.name !== "string" ||
+    typeof value.description !== "string" ||
+    typeof value.instructions !== "string"
+  ) {
+    return null;
+  }
+  const rawLines = value.ingredients !== undefined ? value.ingredients : value.supplies;
+  if (!Array.isArray(rawLines) || !rawLines.every(isRecipeSupply)) {
+    return null;
+  }
+  return {
+    recipeId: value.recipeId,
+    revision: value.revision,
+    name: value.name,
+    description: value.description,
+    instructions: value.instructions,
+    supplies: rawLines.map((line) => ({
+      inventoryItemId: line.inventoryItemId,
+      quantity: line.quantity,
+      ...(line.inventoryItem !== undefined ? { inventoryItem: line.inventoryItem } : {}),
+    })),
+  };
 }
 
 function isCatalogViewOption(value: unknown): boolean {
@@ -390,6 +425,31 @@ export function recipeDetailResponse(value: unknown): RecipeDetail {
     throw new CatalogResponseError("Respuesta de receta inválida.", "recipes");
   }
   return value.data;
+}
+
+export function recipeRevisionPage(value: unknown): Page<RecipeRevision> {
+  if (!record(value) || !isPageMeta(value.meta) || !Array.isArray(value.data)) {
+    throw new CatalogResponseError("Respuesta de revisiones de receta inválida.", "recipes");
+  }
+  const data = value.data.map((item) => {
+    const parsed = parseRecipeRevisionItem(item);
+    if (!parsed) {
+      throw new CatalogResponseError("Respuesta de revisiones de receta inválida.", "recipes");
+    }
+    return parsed;
+  });
+  return { data, meta: value.meta };
+}
+
+export function recipeRevisionResponse(value: unknown): RecipeRevision {
+  if (!record(value)) {
+    throw new CatalogResponseError("Respuesta de revisión de receta inválida.", "recipes");
+  }
+  const parsed = parseRecipeRevisionItem(value.data);
+  if (!parsed) {
+    throw new CatalogResponseError("Respuesta de revisión de receta inválida.", "recipes");
+  }
+  return parsed;
 }
 
 /**

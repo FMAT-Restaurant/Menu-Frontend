@@ -10,6 +10,7 @@ import type {
   OfferUpdateDraft,
   Page,
   RecipeDetail,
+  RecipeRevision,
   SlotOptionDetail,
   SlotOptionUpdate,
 } from "../application/catalog";
@@ -95,6 +96,22 @@ export function createDemoRepository(): MenuRepository {
   const recipes = new Map(seed.recipes.map(item => [item.id, item]));
   const inventory = new Map(seed.inventoryItems.map(item => [item.id, item]));
   const images = new Map(seed.images.map(item => [item.id, item]));
+  const recipeHistory = new Map<string, RecipeRevision[]>(
+    seed.recipes.map(item => [
+      item.id,
+      [{
+        recipeId: item.id,
+        revision: item.revision ?? 1,
+        name: item.name,
+        description: item.description,
+        instructions: item.instructions,
+        supplies: item.supplies.map(supply => ({
+          ...supply,
+          inventoryItem: copy(seed.inventoryItems.find(inv => inv.id === supply.inventoryItemId)!),
+        })),
+      }],
+    ]),
+  );
   const versions = new Map<string, number>();
   const operations = new Map<string, { payload: string; result: Promise<unknown> }>();
 
@@ -132,8 +149,19 @@ export function createDemoRepository(): MenuRepository {
   }
 
   function recipeWithSupplies(recipe: RecipeDetail): RecipeDetail {
-    return snapshot({ ...recipe, supplies: recipe.supplies.map(supply => ({ ...supply,
+    return snapshot({ ...recipe, revision: recipe.revision ?? 1, supplies: recipe.supplies.map(supply => ({ ...supply,
       inventoryItem: required(inventory, supply.inventoryItemId, "El insumo") })) });
+  }
+
+  function revisionFromDetail(detail: RecipeDetail, revision: number): RecipeRevision {
+    return copy({
+      recipeId: detail.id,
+      revision,
+      name: detail.name,
+      description: detail.description,
+      instructions: detail.instructions,
+      supplies: detail.supplies,
+    });
   }
 
   function optionFrom(input: SlotOptionUpdate, previous?: SlotOptionDetail): SlotOptionDetail {
@@ -420,22 +448,63 @@ export function createDemoRepository(): MenuRepository {
         return { data: recipeWithSupplies(required(recipes, id, "La receta")), etag: version(id) };
       });
     },
+    listRecipeRevisions(recipeId, query, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        const history = required(recipeHistory, recipeId, "La receta");
+        const resolved = history.map(entry => ({
+          ...entry,
+          supplies: entry.supplies.map(supply => ({
+            ...supply,
+            inventoryItem: inventory.get(supply.inventoryItemId) ?? supply.inventoryItem,
+          })),
+        }));
+        return pageOf(resolved, query?.page ?? 1, query?.pageSize ?? 12);
+      });
+    },
+    getRecipeRevision(recipeId, revision, signal) {
+      return runDemoOperation(() => {
+        signal?.throwIfAborted();
+        const history = required(recipeHistory, recipeId, "La receta");
+        const found = history.find(entry => entry.revision === revision);
+        if (!found) fail(404, `La revisión ${revision} de la receta no existe en esta sesión demo.`);
+        return copy({
+          ...found,
+          supplies: found.supplies.map(supply => ({
+            ...supply,
+            inventoryItem: inventory.get(supply.inventoryItemId) ?? supply.inventoryItem,
+          })),
+        });
+      });
+    },
     async createRecipe(draft, key) {
       return once("recipe.create", key, draft, () => {
-        const recipe = { ...copy(draft), id: newId("recipe") };
+        const recipe = { ...copy(draft), id: newId("recipe"), revision: 1 };
         const result = recipeWithSupplies(recipe);
         recipes.set(recipe.id, recipe);
+        recipeHistory.set(recipe.id, [revisionFromDetail(result, 1)]);
         return result;
       });
     },
     updateRecipe(id, draft, etag) {
       return runDemoOperation(() => {
-        required(recipes, id, "La receta");
+        const current = required(recipes, id, "La receta");
         checkVersion(id, etag);
-        const recipe = { ...copy(draft), id };
-        recipeWithSupplies(recipe);
+        const unchanged =
+          current.name === draft.name &&
+          current.description === draft.description &&
+          current.instructions === draft.instructions &&
+          JSON.stringify(current.supplies.map(({ inventoryItemId, quantity }) => ({ inventoryItemId, quantity }))) ===
+            JSON.stringify(draft.supplies.map(({ inventoryItemId, quantity }) => ({ inventoryItemId, quantity })));
+        const nextRevision = unchanged ? (current.revision ?? 1) : (current.revision ?? 1) + 1;
+        const recipe = { ...copy(draft), id, revision: nextRevision };
+        const evaluated = recipeWithSupplies(recipe);
         recipes.set(id, recipe);
-        bump(id);
+        if (!unchanged) {
+          const history = recipeHistory.get(id) ?? [];
+          recipeHistory.set(id, [...history, revisionFromDetail(evaluated, nextRevision)]);
+          bump(id);
+        }
         return recipeWithSupplies(recipe);
       });
     },
@@ -445,6 +514,7 @@ export function createDemoRepository(): MenuRepository {
         if ([...offers.values()].some(offer => offerUsesRecipe(offer, id))) {
           fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
         }
+        // Only the active definition is removed; published revisions remain consultable.
         recipes.delete(id);
       });
     },
