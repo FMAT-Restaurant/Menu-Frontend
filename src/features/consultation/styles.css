@@ -5,28 +5,72 @@
 
 .consultation-filters {
   display: grid;
-  grid-template-columns: minmax(14rem, 2fr) minmax(12rem, 1fr);
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--color-border, #d7dce2);
-  border-radius: 1rem;
-  background: var(--color-surface, #fff);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  background: var(--surface, #fff);
 }
 
-.consultation-filters label {
-  display: grid;
-  gap: .45rem;
+.consultation-filters__header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.consultation-filters__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ink, #111827);
   font-weight: 600;
 }
 
-.consultation-filters input,
-.consultation-filters select {
-  min-height: 2.75rem;
-  padding: .55rem .75rem;
-  border: 1px solid var(--color-border, #aeb7c2);
-  border-radius: .5rem;
-  color: inherit;
-  background: var(--color-surface, #fff);
+.consultation-filters__count {
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--canvas, #f8fafc);
+  color: var(--muted, #6b7280);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.consultation-filters__clear {
+  align-self: end;
+}
+
+.consultation-filters .select-field select {
+  min-width: 0;
+  width: 100%;
+  min-height: var(--control-height, 40px);
+  padding: 0 12px;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: var(--radius-control, 8px);
+  color: var(--ink, #111827);
+  background: var(--surface, #fff);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.consultation-updating {
+  display: block;
+  color: var(--muted, #6b7280);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.consultation-results {
+  display: grid;
+  gap: 1.5rem;
 }
 
 .consultation-group {
@@ -37,7 +81,7 @@
 .consultation-group > h2 {
   margin: 0;
   padding-bottom: .5rem;
-  border-bottom: 1px solid var(--color-border, #d7dce2);
+  border-bottom: 1px solid var(--border, #d7dce2);
 }
 
 .consultation-grid {
@@ -48,9 +92,9 @@
 
 .consultation-entry {
   overflow: hidden;
-  border: 1px solid var(--color-border, #d7dce2);
+  border: 1px solid var(--border, #d7dce2);
   border-radius: 1rem;
-  background: var(--color-surface, #fff);
+  background: var(--surface, #fff);
 }
 
 .consultation-entry--unavailable,
@@ -93,7 +137,7 @@
 
 .consultation-offer {
   padding: .75rem 0;
-  border-top: 1px solid var(--color-border, #d7dce2);
+  border-top: 1px solid var(--border, #d7dce2);
 }
 
 .consultation-offer__heading img {
@@ -122,8 +166,14 @@
   font-weight: 700;
 }
 
+@container menu-module (width < 640px) {
+  .consultation-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   .consultation-filters {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
