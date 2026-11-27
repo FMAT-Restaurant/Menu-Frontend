@@ -167,6 +167,18 @@
   line-height: 20px;
 }
 
+:where(.menu-module[data-menu-module]) .offer-card__badges,
+:where(.menu-module[data-menu-module]) .offer-availability-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+:where(.menu-module[data-menu-module]) .offer-card--unavailable .offer-card__image img {
+  opacity: .72;
+}
+
 :where(.menu-module[data-menu-module]) .offer-card__details p {
   margin: 0;
 }
@@ -625,7 +637,8 @@
   gap: 12px;
 }
 
-:where(.menu-module[data-menu-module]) .slot-card__empty-notice {
+:where(.menu-module[data-menu-module]) .slot-card__empty-notice,
+:where(.menu-module[data-menu-module]) .slot-card__unavailable-notice {
   margin: 0;
   padding: 12px;
   border: 1px dashed #fcd34d;
@@ -634,6 +647,32 @@
   font-size: 12px;
   line-height: 16px;
   border-radius: 4px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-card--unavailable {
+  border-color: #fed7aa;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item--unavailable {
+  border-style: dashed;
+  border-color: #fdba74;
+  background: #fffaf5;
+  opacity: .84;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+:where(.menu-module[data-menu-module]) .slot-option-item__unavailable-reason {
+  margin: 4px 0 0;
+  color: #8a3215;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
 }
 
 :where(.menu-module[data-menu-module]) .slot-card__options-list {

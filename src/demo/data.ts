@@ -19,6 +19,8 @@ export interface DemoData {
     offers: Record<string, boolean>;
     slots: Record<string, boolean>;
     options: Record<string, boolean>;
+    recipes: Record<string, boolean>;
+    inventoryItems: Record<string, boolean>;
   };
 }
 
@@ -41,7 +43,16 @@ export function createDemoData(): DemoData {
       entries: { "demo-entry-burger": true, "demo-entry-lemonade": false },
       offers: { "demo-offer-burger": true, "demo-offer-lemonade": false },
       slots: { "demo-slot-main": true, "demo-slot-lemonade": false },
-      options: { "demo-option-burger": true, "demo-option-lemonade": false },
+      options: { "demo-option-burger": true, "demo-option-lemonade": false, "demo-option-water": true },
+      recipes: { "demo-recipe-burger": true, "demo-recipe-lemonade": false, "demo-recipe-brownie": true },
+      inventoryItems: {
+        "demo-inventory-beef": true,
+        "demo-inventory-bread": true,
+        "demo-inventory-cheese": true,
+        "demo-inventory-lemon": false,
+        "demo-inventory-water": true,
+        "demo-inventory-chocolate": true,
+      },
     },
     categories: [
       { id: "demo-category-main", name: "Platos fuertes", description: "Platillos preparados al momento." },

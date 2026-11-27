@@ -14,6 +14,53 @@ test("serves only active entries and offers through the public consultation cata
   expect(categories.uncategorized.entryCount).toBe(0);
 });
 
+test("propagates derived availability across demo options, slots, offers and entries without changing status", async () => {
+  const repository = createDemoRepository();
+
+  const entriesBefore = (await repository.listEntries({ page: 1, pageSize: 10 })).data;
+  expect(entriesBefore.find(item => item.id === "demo-entry-burger")?.isAvailable).toBe(true);
+  expect(entriesBefore.find(item => item.id === "demo-entry-lemonade")?.isAvailable).toBe(false);
+  expect((await repository.getEntry("demo-entry-burger")).isAvailable).toBe(true);
+
+  const burgerOffer = await repository.getOffer("demo-offer-burger");
+  expect(burgerOffer.data).toMatchObject({
+    status: "ACTIVE",
+    isAvailable: true,
+    composition: {
+      slots: [{ isAvailable: true, options: [{ status: "ACTIVE", isAvailable: true }] }],
+    },
+  });
+
+  // Switch the active offer's recipe to the unavailable lemonade recipe: status stays ACTIVE, availability propagates to false
+  const [slot] = burgerOffer.data.composition.slots;
+  const updated = await repository.updateOffer(
+    "demo-offer-burger",
+    {
+      presentationTag: burgerOffer.data.presentationTag,
+      composition: {
+        slots: [{
+          slotId: slot.slotId,
+          options: [{
+            optionId: slot.options[0].optionId,
+            sourceType: "RECIPE",
+            recipeId: "demo-recipe-lemonade",
+            status: "ACTIVE",
+          }],
+        }],
+      },
+    },
+    burgerOffer.etag!,
+    "make-burger-unavailable",
+  );
+
+  expect(updated.status).toBe("ACTIVE");
+  expect(updated.isAvailable).toBe(false);
+  expect(updated.composition.slots[0].isAvailable).toBe(false);
+  expect(updated.composition.slots[0].options[0]).toMatchObject({ status: "ACTIVE", isAvailable: false });
+  expect((await repository.getEntry("demo-entry-burger")).isAvailable).toBe(false);
+  expect((await repository.listOffers("demo-entry-burger", 1, 10)).data.find(o => o.id === "demo-offer-burger")?.isAvailable).toBe(false);
+});
+
 test("sorts public offers by presentation name", async () => {
   const repository = createDemoRepository();
   const combo = await repository.getOffer("demo-offer-combo");

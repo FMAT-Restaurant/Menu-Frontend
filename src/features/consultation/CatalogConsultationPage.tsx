@@ -22,32 +22,69 @@ function availabilityLabel(isAvailable: boolean) {
 }
 
 function EntryCard({ entry }: Readonly<{ entry: CatalogViewEntry }>) {
-  return <article className={`consultation-entry${entry.isAvailable ? "" : " consultation-entry--unavailable"}`}>
+  return <article
+    className={`consultation-entry${entry.isAvailable ? "" : " consultation-entry--unavailable"}`}
+    aria-disabled={!entry.isAvailable || undefined}
+  >
     {entry.image && <img className="consultation-entry__image" src={entry.image.url} alt={entry.brandName} loading="lazy" />}
     <div className="consultation-entry__body">
       <div className="consultation-entry__heading">
         <h3>{entry.brandName}</h3>
-        {!entry.isAvailable && <span className="availability-badge" aria-label={availabilityLabel(false)}>No disponible</span>}
+        {!entry.isAvailable && (
+          <>
+            <span className="availability-badge" aria-label={availabilityLabel(false)}>No disponible</span>
+            <span className="availability-badge availability-badge--not-orderable">No ordenable</span>
+          </>
+        )}
       </div>
       {entry.description && <p>{entry.description}</p>}
       {entry.offers.length === 0 ? <p className="consultation-entry__empty">Sin ofertas disponibles.</p> : <ul className="consultation-offers">
-        {entry.offers.map(offer => <li className={`consultation-offer${offer.isAvailable ? "" : " consultation-offer--unavailable"}`} key={offer.id}>
-          <div className="consultation-offer__heading">
-            {offer.image && <img src={offer.image.url} alt="" loading="lazy" />}
-            <h4>{offer.presentationTag}</h4>
-            <strong>{formatMoney(offer.basePrice)}</strong>
-            {!offer.isAvailable && <span className="availability-badge" aria-label={availabilityLabel(false)}>No disponible</span>}
-          </div>
-          <ul className="consultation-slots" aria-label={`Composición de ${offer.presentationTag}`}>
-            {offer.composition.slots.map(slot => <li className={!slot.isAvailable ? "consultation-slot--unavailable" : ""} key={slot.slotId}>
-              <span>{slot.name}{slot.course ? ` · ${courseLabel(slot.course)}` : ""}{slot.quantity > 1 ? ` × ${slot.quantity}` : ""}</span>
-              {!slot.isAvailable && <span className="availability-badge">No disponible</span>}
-              <ul>{slot.options.map(option => <li className={!option.isAvailable ? "consultation-option--unavailable" : ""} key={option.optionId}>
-                {option.displayName}{!option.isAvailable && <span className="availability-badge"> (No disponible)</span>}
-              </li>)}</ul>
-            </li>)}
-          </ul>
-        </li>)}
+        {entry.offers.map(offer => {
+          const offerOrderable = entry.isAvailable && offer.isAvailable;
+          return <li
+            className={`consultation-offer${offer.isAvailable ? "" : " consultation-offer--unavailable"}`}
+            aria-disabled={!offerOrderable || undefined}
+            key={offer.id}
+          >
+            <div className="consultation-offer__heading">
+              {offer.image && <img src={offer.image.url} alt="" loading="lazy" />}
+              <h4>{offer.presentationTag}</h4>
+              <strong>{formatMoney(offer.basePrice)}</strong>
+              {offerOrderable ? (
+                <span className="orderable-pill orderable-pill--yes">Ordenable</span>
+              ) : (
+                <>
+                  {!offer.isAvailable && <span className="availability-badge" aria-label={availabilityLabel(false)}>No disponible</span>}
+                  <span className="availability-badge availability-badge--not-orderable">No ordenable</span>
+                </>
+              )}
+            </div>
+            <ul className="consultation-slots" aria-label={`Composición de ${offer.presentationTag}`}>
+              {offer.composition.slots.map(slot => <li
+                className={!slot.isAvailable ? "consultation-slot--unavailable" : ""}
+                aria-disabled={!slot.isAvailable || undefined}
+                key={slot.slotId}
+              >
+                <span>{slot.name}{slot.course ? ` · ${courseLabel(slot.course)}` : ""}{slot.quantity > 1 ? ` × ${slot.quantity}` : ""}</span>
+                {!slot.isAvailable && <span className="availability-badge">No disponible</span>}
+                <ul>{slot.options.map(option => <li
+                  className={!option.isAvailable ? "consultation-option--unavailable" : ""}
+                  aria-disabled={!option.isAvailable || undefined}
+                  key={option.optionId}
+                >
+                  <span>{option.displayName}</span>
+                  {!option.isAvailable && (
+                    <>
+                      {" "}
+                      <span className="availability-badge">No disponible</span>
+                      <span className="consultation-option__reason"> · Sin existencias en Inventario</span>
+                    </>
+                  )}
+                </li>)}</ul>
+              </li>)}
+            </ul>
+          </li>;
+        })}
       </ul>}
     </div>
   </article>;

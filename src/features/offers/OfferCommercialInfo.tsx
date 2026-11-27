@@ -2,7 +2,8 @@ import { LoadingValue } from "../../shared/LoadingState";
 import { NativeNumberInput } from "../../shared/NativeNumberInput";
 import { Icon } from "../../shared/Icon";
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, type ReactNode, useRef } from "react";
-import type { MenuImage, OfferStatus } from "../../application/catalog";
+import type { EntryStatus, MenuImage, OfferStatus } from "../../application/catalog";
+import { evaluateOfferOrderability } from "../../application/availability";
 import { formatMoney } from "../../shared/formatMoney";
 
 export interface OfferCommercialInfoProps {
@@ -13,6 +14,9 @@ export interface OfferCommercialInfoProps {
   onBasePriceChange: (value: string) => void;
   onStatusChange: (value: OfferStatus) => void;
   desiredStatus: OfferStatus;
+  offerAvailable?: boolean;
+  entryStatus?: EntryStatus;
+  entryAvailable?: boolean;
   hasActiveSlot: boolean;
   isEditing: boolean;
   existingImage: MenuImage | null | undefined;
@@ -30,6 +34,9 @@ export interface OfferCommercialInfoProps {
 interface OfferStatusFieldProps {
   loading: boolean;
   desiredStatus: OfferStatus;
+  offerAvailable?: boolean;
+  entryStatus?: EntryStatus;
+  entryAvailable?: boolean;
   onStatusChange: (value: OfferStatus) => void;
   hasActiveSlot: boolean;
   isEditing: boolean;
@@ -40,12 +47,21 @@ interface OfferStatusFieldProps {
 function OfferStatusField({
   loading,
   desiredStatus,
+  offerAvailable,
+  entryStatus,
+  entryAvailable,
   onStatusChange,
   hasActiveSlot,
   isEditing,
   disabled,
   canChangeStatus,
 }: Readonly<OfferStatusFieldProps>) {
+  const orderability = evaluateOfferOrderability({
+    offerStatus: desiredStatus,
+    offerAvailable,
+    entryStatus,
+    entryAvailable,
+  });
   let statusContent: ReactNode;
   if (loading) {
     statusContent = <LoadingValue />;
@@ -84,6 +100,18 @@ function OfferStatusField({
   return <div className="form-field">
     <span className="field-label" id="offer-status-label">Estado de la oferta</span>
     {statusContent}
+    {!loading && isEditing && offerAvailable !== undefined && (
+      <div className="offer-availability-summary" aria-label="Disponibilidad derivada de la oferta">
+        <span className={`availability-pill ${offerAvailable ? "availability-pill--available" : "availability-pill--unavailable"}`}>
+          {offerAvailable ? "Disponible" : "No disponible"}
+        </span>
+        {orderability && (
+          <span className={`orderable-pill ${orderability.orderable ? "orderable-pill--yes" : "orderable-pill--no"}`}>
+            {orderability.label}{orderability.reason ? ` · ${orderability.reason}` : ""}
+          </span>
+        )}
+      </div>
+    )}
   </div>;
 }
 
@@ -99,6 +127,9 @@ export function OfferCommercialInfo({
   onBasePriceChange,
   onStatusChange,
   desiredStatus,
+  offerAvailable,
+  entryStatus,
+  entryAvailable,
   hasActiveSlot,
   isEditing,
   existingImage,
@@ -204,8 +235,18 @@ export function OfferCommercialInfo({
             </p>
           </div>
 
-          <OfferStatusField loading={loading} desiredStatus={desiredStatus} onStatusChange={onStatusChange}
-            hasActiveSlot={hasActiveSlot} isEditing={isEditing} canChangeStatus={canChangeStatus} disabled={disabled} />
+          <OfferStatusField
+            loading={loading}
+            desiredStatus={desiredStatus}
+            offerAvailable={offerAvailable}
+            entryStatus={entryStatus}
+            entryAvailable={entryAvailable}
+            onStatusChange={onStatusChange}
+            hasActiveSlot={hasActiveSlot}
+            isEditing={isEditing}
+            canChangeStatus={canChangeStatus}
+            disabled={disabled}
+          />
         </div>
 
         <div className="offer-commercial-info__image-column">

@@ -24,6 +24,7 @@ import type {
 } from "../../application/catalog";
 import { InventoryPage } from "../inventory/InventoryPage";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
+import { deriveOfferAvailability, deriveSlotAvailability } from "../../application/availability";
 import {
   createOperationAttemptController,
   isAttemptWindowExpired,
@@ -109,6 +110,7 @@ function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
   return offer.composition.slots.map((s) => ({
     localId: generateLocalId(),
     slotId: s.slotId,
+    ...(s.isAvailable !== undefined ? { isAvailable: s.isAvailable } : {}),
     name: s.name,
     quantity: s.quantity,
     course: s.course ?? null,
@@ -117,6 +119,7 @@ function mapOfferDetailToSlots(offer: MenuOfferDetail): SlotDraft[] {
       return {
         localId: generateLocalId(),
         optionId: o.optionId,
+        ...(o.isAvailable !== undefined ? { isAvailable: o.isAvailable } : {}),
         displayName: o.displayName,
         status: o.status ?? "ACTIVE",
         sourceType: o.sourceType,
@@ -540,6 +543,7 @@ function OfferFormPageContent({
   const [presentationTag, setPresentationTag] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [desiredStatus, setDesiredStatus] = useState<OfferStatus>("INACTIVE");
+  const [confirmedOfferAvailable, setConfirmedOfferAvailable] = useState<boolean | undefined>(undefined);
   const [slots, setSlots] = useState<SlotDraft[]>([]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -873,6 +877,9 @@ function OfferFormPageContent({
           setLoadError("La oferta no pertenece a la entrada seleccionada.");
           return;
         }
+        if (offerData) {
+          setConfirmedOfferAvailable(offerData.data.isAvailable);
+        }
         if (offerData && !restoredFromStorageRef.current) {
           openingEtagRef.current = offerData.etag;
           baseDraft.current = { presentationTag: offerData.data.presentationTag || "", basePrice: String(offerData.data.basePrice ?? ""), desiredStatus: offerData.data.status, slots: mapOfferDetailToSlots(offerData.data) };
@@ -1153,6 +1160,7 @@ function OfferFormPageContent({
       }
       return {
         ...prev,
+        isAvailable: prev.sourceType === "RECIPE" && prev.recipeId === recipe.id ? prev.isAvailable : undefined,
         sourceType: "RECIPE",
         recipeId: recipe.id,
         recipeName: recipe.name,
@@ -1184,6 +1192,9 @@ function OfferFormPageContent({
         localId: prev?.localId || generateLocalId(),
         optionId: prev?.optionId,
         originalSourceType: prev?.originalSourceType,
+        ...(prev?.sourceType === "INVENTORY_ITEM" && prev.inventoryItemId === item.id && prev.isAvailable !== undefined
+          ? { isAvailable: prev.isAvailable }
+          : {}),
         displayName,
         status: prev?.status ?? "ACTIVE",
         sourceType: "INVENTORY_ITEM",
@@ -1208,6 +1219,10 @@ function OfferFormPageContent({
   // Derived slot & offer status
   const hasActiveSlot = slots.some((slot) =>
     slot.options.some((opt) => opt.status === "ACTIVE"),
+  );
+  const derivedOfferAvailable = deriveOfferAvailability(
+    slots.map((slot) => ({ isAvailable: deriveSlotAvailability(slot.options, slot.isAvailable) })),
+    confirmedOfferAvailable,
   );
 
   function isCurrentController(controller: OperationAttemptController<OfferFormDraftState, MenuOfferDetail>) {
@@ -1287,6 +1302,7 @@ function OfferFormPageContent({
     const reconciliation = reconcileSubmittedOffer(current, sent, result);
     confirmedOfferIdRef.current = result.id;
     setConfirmedOfferId(result.id);
+    setConfirmedOfferAvailable(result.isAvailable);
     setUncertainStage(null);
     confirmedImageIdRef.current = attemptResult.record.confirmedImageId;
     invalidateCatalogEntries(repository);
@@ -1442,6 +1458,7 @@ function OfferFormPageContent({
     }
     openingEtagRef.current = reviewedOffer.etag;
     baseDraft.current = { ...baseDraft.current, slots: reviewedSlots };
+    setConfirmedOfferAvailable(reviewedOffer.data.isAvailable);
     setSlots(reviewedSlots);
 
     setConflictNotice("");
@@ -1560,6 +1577,9 @@ function OfferFormPageContent({
               onBasePriceChange={setBasePrice}
               onStatusChange={setDesiredStatus}
               desiredStatus={desiredStatus}
+              offerAvailable={isEditing ? derivedOfferAvailable : undefined}
+              entryStatus={entry?.status}
+              entryAvailable={entry?.isAvailable}
               hasActiveSlot={hasActiveSlot}
               isEditing={isEditing}
               existingImage={existingImage}

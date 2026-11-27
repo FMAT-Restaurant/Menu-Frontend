@@ -5,6 +5,7 @@ export interface OptionDraft {
   localId?: string;
   optionId?: string;
   originalSourceType?: "RECIPE" | "INVENTORY_ITEM";
+  isAvailable?: boolean;
   displayName: string;
   status: OfferStatus;
   sourceType: "RECIPE" | "INVENTORY_ITEM" | null;
@@ -18,7 +19,7 @@ export interface OptionDraft {
   unit?: string;
 }
 
-type OptionIdentity = Pick<OptionDraft, "localId" | "optionId" | "originalSourceType">;
+type OptionIdentity = Pick<OptionDraft, "localId" | "optionId" | "originalSourceType" | "isAvailable">;
 type RecipeMetadata = Pick<OptionDraft, "recipeName" | "hasRecipeAssignmentIntent" | "recipeAssignmentToken">;
 export type ValidatedOptionDraft = OptionIdentity & { displayName: string; status: OfferStatus } & (
   | ({ sourceType: "RECIPE"; recipeId: string; inventoryItemId?: never; quantity?: never; unit?: never } & RecipeMetadata)
@@ -114,9 +115,13 @@ export function validateOptionDraft(draft: OptionDraft, mode: "create" | "update
   if (draft.optionId !== undefined && !hasText(draft.optionId)) {
     return { valid: false, message: "La identidad de la opción existente no es válida." };
   }
-  const common = {
-    localId: draft.localId, optionId: draft.optionId, originalSourceType: draft.originalSourceType,
-    displayName: draft.displayName.trim(), status: mode === "create" ? "ACTIVE" as const : draft.status,
+  const common: CommonOptionFields = {
+    localId: draft.localId,
+    optionId: draft.optionId,
+    originalSourceType: draft.originalSourceType,
+    ...(draft.isAvailable !== undefined ? { isAvailable: draft.isAvailable } : {}),
+    displayName: draft.displayName.trim(),
+    status: mode === "create" ? "ACTIVE" as const : draft.status,
   };
   if (common.status !== "ACTIVE" && common.status !== "INACTIVE") {
     return { valid: false, message: "El estado de la opción no es válido." };

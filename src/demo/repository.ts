@@ -5,7 +5,9 @@ import type {
   CatalogViewEntry,
   CatalogImage,
   MenuEntry,
+  MenuEntryDetail,
   MenuOffer,
+  MenuOfferDetail,
   MenuRepository,
   OfferUpdateDraft,
   Page,
@@ -13,6 +15,11 @@ import type {
   SlotOptionDetail,
   SlotOptionUpdate,
 } from "../application/catalog";
+import {
+  deriveEntryAvailability,
+  deriveOfferAvailability,
+  deriveSlotAvailability,
+} from "../application/availability";
 import { createDemoData } from "./data";
 
 // Repository records contain JSON data only. Copies prevent callers from mutating
@@ -95,6 +102,9 @@ export function createDemoRepository(): MenuRepository {
   const recipes = new Map(seed.recipes.map(item => [item.id, item]));
   const inventory = new Map(seed.inventoryItems.map(item => [item.id, item]));
   const images = new Map(seed.images.map(item => [item.id, item]));
+  const recipeAvailability = new Map(Object.entries(seed.availability.recipes));
+  const inventoryAvailability = new Map(Object.entries(seed.availability.inventoryItems));
+  const optionAvailability = new Map(Object.entries(seed.availability.options));
   const versions = new Map<string, number>();
   const operations = new Map<string, { payload: string; result: Promise<unknown> }>();
 
@@ -107,6 +117,43 @@ export function createDemoRepository(): MenuRepository {
   const checkVersion = (id: string, etag: string) => {
     if (etag !== version(id)) fail(412, "Los datos cambiaron. Revisa la versión actual antes de guardar.");
   };
+
+  function isOptionSourceAvailable(option: SlotOptionDetail): boolean {
+    if (option.sourceType === "RECIPE") {
+      return recipeAvailability.get(option.recipeId) ?? false;
+    }
+    return optionAvailability.get(option.optionId) ?? inventoryAvailability.get(option.inventoryItemId) ?? false;
+  }
+
+  function offerWithAvailability(offer: MenuOfferDetail): MenuOfferDetail {
+    const slots = offer.composition.slots.map((slot): CompositionSlotDetail => {
+      const options = slot.options.map((option): SlotOptionDetail => ({
+        ...option,
+        isAvailable: isOptionSourceAvailable(option),
+      }));
+      return {
+        ...slot,
+        isAvailable: deriveSlotAvailability(options, false) ?? false,
+        options,
+      };
+    });
+    return {
+      ...offer,
+      isAvailable: deriveOfferAvailability(slots, false) ?? false,
+      composition: { slots },
+    };
+  }
+
+  function isEntryAvailable(entryId: string): boolean {
+    const entryOffers = [...offers.values()]
+      .filter((offer) => offer.entryId === entryId)
+      .map(offerWithAvailability);
+    return deriveEntryAvailability(entryOffers, false) ?? false;
+  }
+
+  function entryDetailSnapshot(entry: MenuEntryDetail): MenuEntryDetail {
+    return snapshot({ ...entry, isAvailable: isEntryAvailable(entry.id) });
+  }
 
   function once<T>(scope: string, key: string, payload: unknown, action: () => T | Promise<T>): Promise<T> {
     const operationKey = `${scope}:${key}`;
@@ -152,6 +199,9 @@ export function createDemoRepository(): MenuRepository {
     const unit = input.unit ?? old?.unit;
     if (!inventoryItemId || !quantity || quantity <= 0 || !unit) fail(422, "La opción requiere insumo, cantidad positiva y unidad.");
     required(inventory, inventoryItemId, "El insumo");
+    if (old?.inventoryItemId && old.inventoryItemId !== inventoryItemId) {
+      optionAvailability.delete(common.optionId);
+    }
     return { ...common, sourceType: "INVENTORY_ITEM", inventoryItemId, quantity, unit };
   }
 
@@ -191,7 +241,7 @@ export function createDemoRepository(): MenuRepository {
     }
     offers.set(id, copy(updated));
     bump(id);
-    return snapshot(updated);
+    return snapshot(offerWithAvailability(updated));
   }
 
   const uploadImage: MenuRepository["uploadImage"] = async (file, key) => {
@@ -210,35 +260,39 @@ export function createDemoRepository(): MenuRepository {
         const visibleEntries = [...entries.values()].filter(entry => entry.status === "ACTIVE" &&
           matches(`${entry.brandName} ${entry.description} ${entry.categoryIds.map(id => categories.get(id)?.name ?? "").join(" ")}`, query.q) &&
           (!query.categoryId || (query.categoryId === "__uncategorized__" ? entry.categoryIds.length === 0 : entry.categoryIds.includes(query.categoryId))));
-        const result: CatalogViewEntry[] = visibleEntries.map(entry => ({
-          id: entry.id,
-          brandName: entry.brandName,
-          description: entry.description,
-          image: catalogImage(entry.image),
-          categoryIds: [...entry.categoryIds],
-          isAvailable: seed.availability.entries[entry.id] ?? true,
-          offers: [...offers.values()].filter(offer => offer.entryId === entry.id && offer.status === "ACTIVE")
+        const result: CatalogViewEntry[] = visibleEntries.map(entry => {
+          const activeOffers = [...offers.values()]
+            .filter(offer => offer.entryId === entry.id && offer.status === "ACTIVE")
             .sort((a, b) => a.presentationTag.localeCompare(b.presentationTag, "es"))
-            .map(offer => ({
+            .map(offerWithAvailability);
+          return {
+            id: entry.id,
+            brandName: entry.brandName,
+            description: entry.description,
+            image: catalogImage(entry.image),
+            categoryIds: [...entry.categoryIds],
+            isAvailable: deriveEntryAvailability(activeOffers, false) ?? false,
+            offers: activeOffers.map(offer => ({
               id: offer.id,
               presentationTag: offer.presentationTag,
               basePrice: offer.basePrice,
               image: catalogImage(offer.image),
-              isAvailable: seed.availability.offers[offer.id] ?? true,
+              isAvailable: offer.isAvailable ?? false,
               composition: { slots: offer.composition.slots.map(slot => ({
                 slotId: slot.slotId,
                 name: slot.name,
                 quantity: slot.quantity,
                 ...(slot.course ? { course: slot.course } : {}),
-                isAvailable: seed.availability.slots[slot.slotId] ?? true,
+                isAvailable: slot.isAvailable ?? false,
                 options: slot.options.filter(option => option.status === "ACTIVE").map(option => ({
                   optionId: option.optionId,
                   displayName: option.displayName,
-                  isAvailable: seed.availability.options[option.optionId] ?? true,
+                  isAvailable: option.isAvailable ?? false,
                 })),
               })) },
             })),
-        }));
+          };
+        });
         return pageOf(result, query.page, query.pageSize);
       });
     },
@@ -264,7 +318,8 @@ export function createDemoRepository(): MenuRepository {
           (!query.categoryId || entry.categoryIds.includes(query.categoryId)),
         ).map((entry): MenuEntry => ({ ...entry, image: entry.image?.id ? required(images, entry.image.id, "La imagen") : null,
           categories: entry.categoryIds.map(id => categoryWithCount(id)),
-          offerCount: [...offers.values()].filter(offer => offer.entryId === entry.id).length }));
+          offerCount: [...offers.values()].filter(offer => offer.entryId === entry.id).length,
+          isAvailable: isEntryAvailable(entry.id) }));
         return pageOf(result, query.page, query.pageSize);
       });
     },
@@ -312,7 +367,7 @@ export function createDemoRepository(): MenuRepository {
     getEntry(id, signal) {
       return runDemoOperation(() => {
         signal?.throwIfAborted();
-        return snapshot(required(entries, id, "La entrada"));
+        return entryDetailSnapshot(required(entries, id, "La entrada"));
       });
     },
     uploadImage,
@@ -324,7 +379,7 @@ export function createDemoRepository(): MenuRepository {
         const entry = { id: newId("entry"), brandName: draft.brandName, description: draft.description,
           categoryIds: copy(draft.categoryIds), image, status: "INACTIVE" as const };
         entries.set(entry.id, entry);
-        return snapshot(entry);
+        return entryDetailSnapshot(entry);
       });
     },
     updateEntry(id, draft, etag) {
@@ -335,7 +390,7 @@ export function createDemoRepository(): MenuRepository {
         const entry = { ...current, ...copy(draft), image: draft.imageId ? required(images, draft.imageId, "La imagen") : current.image };
         entries.set(id, entry);
         bump(id);
-        return snapshot(entry);
+        return entryDetailSnapshot(entry);
       });
     },
     setEntryStatus(id, status) {
@@ -369,10 +424,12 @@ export function createDemoRepository(): MenuRepository {
         }
         const mapped = result.map((offer): MenuOffer => {
           const entry = entries.get(offer.entryId);
+          const evaluated = offerWithAvailability(offer);
           return {
             ...offer,
             entryName: entry?.brandName ?? "Entrada",
             slotCount: offer.composition.slots.length,
+            isAvailable: evaluated.isAvailable,
           };
         });
         return pageOf(mapped, page, pageSize);
@@ -381,7 +438,8 @@ export function createDemoRepository(): MenuRepository {
     getOffer(id, signal) {
       return runDemoOperation(() => {
         signal?.throwIfAborted();
-        return { data: snapshot(required(offers, id, "La oferta")), etag: version(id) };
+        const evaluated = offerWithAvailability(required(offers, id, "La oferta"));
+        return { data: snapshot(evaluated), etag: version(id) };
       });
     },
     async createOffer(entryId, draft, imageId, key) {
@@ -393,7 +451,7 @@ export function createDemoRepository(): MenuRepository {
         const offer = { id: newId("offer"), entryId, presentationTag: draft.presentationTag,
           basePrice: draft.basePrice, status: "INACTIVE" as const, image, composition: { slots } };
         offers.set(offer.id, offer);
-        return snapshot(offer);
+        return snapshot(offerWithAvailability(offer));
       });
     },
     async updateOffer(id, draft, etag, key, imageId) {
@@ -425,6 +483,10 @@ export function createDemoRepository(): MenuRepository {
         const recipe = { ...copy(draft), id: newId("recipe") };
         const result = recipeWithSupplies(recipe);
         recipes.set(recipe.id, recipe);
+        recipeAvailability.set(
+          recipe.id,
+          recipe.supplies.every((supply) => inventoryAvailability.get(supply.inventoryItemId) ?? true),
+        );
         return result;
       });
     },
@@ -435,6 +497,10 @@ export function createDemoRepository(): MenuRepository {
         const recipe = { ...copy(draft), id };
         recipeWithSupplies(recipe);
         recipes.set(id, recipe);
+        recipeAvailability.set(
+          id,
+          recipe.supplies.every((supply) => inventoryAvailability.get(supply.inventoryItemId) ?? true),
+        );
         bump(id);
         return recipeWithSupplies(recipe);
       });
@@ -446,6 +512,7 @@ export function createDemoRepository(): MenuRepository {
           fail(409, "La receta está asociada a una oferta. Retira la asociación antes de eliminarla.");
         }
         recipes.delete(id);
+        recipeAvailability.delete(id);
       });
     },
     listInventoryItems(query, signal) {

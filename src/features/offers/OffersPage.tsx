@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { analyzeIdempotentAttemptError } from "../../api/idempotencyResponse";
 import { isGlobalAuthError } from "../../api/globalAuthErrors";
-import type { MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
+import type { EntryStatus, MenuEntryDetail, MenuOffer, MenuRepository, OfferStatus, OfferStatusDraft, Page } from "../../application/catalog";
 import { invalidateCatalogEntries } from "../../application/catalogCache";
 import { applyAttemptFailure, applyAttemptSendStart, canManualRetryAttempt, createSealedAttempt, isAttemptWindowExpired, markAttemptExpired, sealJsonPayload, type SealedOperationAttempt } from "../../application/operationAttempt";
 import { useRetryEligibility } from "../../shared/useRetryEligibility";
@@ -171,6 +171,8 @@ interface OffersCollectionProps {
   isGlobal: boolean;
   isEmpty: boolean;
   offers: MenuOffer[];
+  entryStatus?: EntryStatus;
+  entryAvailable?: boolean;
   updatingOffers: boolean;
   busy: boolean;
   offerPath: string;
@@ -183,7 +185,7 @@ interface OffersCollectionProps {
   onReload(): void;
 }
 
-function OffersCollection({ isGlobal, isEmpty, offers, updatingOffers, busy, offerPath, canWrite, canChangeStatus, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
+function OffersCollection({ isGlobal, isEmpty, offers, entryStatus, entryAvailable, updatingOffers, busy, offerPath, canWrite, canChangeStatus, returnTo, catalogReturnTo, onStatusChange, onDelete, onReload }: Readonly<OffersCollectionProps>) {
   if (isEmpty) {
     return <section className="empty-state offers-empty">
       <h2>No hay ofertas configuradas.</h2>
@@ -199,7 +201,7 @@ function OffersCollection({ isGlobal, isEmpty, offers, updatingOffers, busy, off
   }
 
   return <section className={`offer-grid${updatingOffers ? " offer-grid--updating" : ""}`} aria-label={isGlobal ? "Ofertas del catálogo" : "Ofertas de la entrada"} aria-busy={updatingOffers}>
-    {offers.map((offer) => <OfferCard key={offer.id} offer={offer} busy={busy} canWrite={canWrite} canChangeStatus={canChangeStatus} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
+    {offers.map((offer) => <OfferCard key={offer.id} offer={offer} entryStatus={entryStatus} entryAvailable={entryAvailable} busy={busy} canWrite={canWrite} canChangeStatus={canChangeStatus} returnTo={returnTo} catalogReturnTo={catalogReturnTo} onStatusChange={onStatusChange} onDelete={onDelete} />)}
   </section>;
 }
 
@@ -748,7 +750,9 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
           <>
             {visibleEntry && (
               <p className="offers-page__context">
-                Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>. Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.
+                Estado administrativo de la entrada: <strong>{entryStatusLabel[visibleEntry.status]}</strong>.
+                {visibleEntry.isAvailable !== undefined && <> Disponibilidad: <strong>{visibleEntry.isAvailable ? "Disponible" : "No disponible"}</strong>.</>}{" "}
+                Una oferta activa solo se publica si la entrada está activa y cumple las reglas de publicación.
               </p>
             )}
             <ToastNotification notification={notification} onDismiss={clearNotification} />
@@ -773,6 +777,8 @@ function OffersPageContent({ repository }: Readonly<{ repository: Repository }>)
               last={last}
               isEmpty={isEmpty}
               offers={offers}
+              entryStatus={visibleEntry?.status}
+              entryAvailable={visibleEntry?.isAvailable}
               updatingOffers={updatingOffers}
               busy={isCardActionBlocked}
               offerPath={offerPath}
