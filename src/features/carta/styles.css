@@ -1,0 +1,266 @@
+/* =========================================================
+   Printable Menu (Carta Imprimible) Styles — FE-15
+   ========================================================= */
+
+:where(.menu-module[data-menu-module]) .carta-page {
+  display: grid;
+  gap: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-document {
+  display: grid;
+  gap: 28px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  box-shadow: 0 4px 16px rgb(17 24 39 / 6%);
+}
+
+@container menu-module (width < 640px) {
+  :where(.menu-module[data-menu-module]) .carta-document {
+    padding: 20px 16px;
+  }
+}
+
+:where(.menu-module[data-menu-module]) .carta-document__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--ink);
+}
+
+:where(.menu-module[data-menu-module]) .carta-document__brand h1 {
+  margin: 4px 0 0;
+}
+
+:where(.menu-module[data-menu-module]) .carta-document__eyebrow {
+  margin: 0;
+}
+
+:where(.menu-module[data-menu-module]) .carta-document__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin: 0;
+}
+
+:where(.menu-module[data-menu-module]) .carta-document__meta dt {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+:where(.menu-module[data-menu-module]) .carta-document__meta dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+:where(.menu-module[data-menu-module]) .carta-sections {
+  display: grid;
+  gap: 32px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-section {
+  display: grid;
+  gap: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-section__header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+:where(.menu-module[data-menu-module]) .carta-section__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-section__description {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+:where(.menu-module[data-menu-module]) .carta-entries {
+  display: grid;
+  gap: 20px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-entry {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+
+:where(.menu-module[data-menu-module]) .carta-entry__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-entry__image {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+:where(.menu-module[data-menu-module]) .carta-entry__info {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+:where(.menu-module[data-menu-module]) .carta-entry__name {
+  margin: 0;
+  font-size: 18px;
+  line-height: 26px;
+}
+
+:where(.menu-module[data-menu-module]) .carta-entry__description {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+
+:where(.menu-module[data-menu-module]) .carta-offers {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 0 0;
+  list-style: none;
+  border-top: 1px dashed var(--border);
+}
+
+:where(.menu-module[data-menu-module]) .carta-offer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+:where(.menu-module[data-menu-module]) .carta-offer__image {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+:where(.menu-module[data-menu-module]) .carta-offer__tag {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+:where(.menu-module[data-menu-module]) .carta-offer__leader {
+  flex: 1 1 16px;
+  border-bottom: 1px dotted var(--muted);
+  transform: translateY(-3px);
+}
+
+:where(.menu-module[data-menu-module]) .carta-offer__price {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+@media print {
+  @page {
+    size: auto;
+    margin: 14mm;
+  }
+
+  html,
+  body,
+  .menu-module,
+  [data-theme="dark"] .menu-module {
+    background: #fff !important;
+    color: #111827 !important;
+    min-height: 0 !important;
+    --surface: #fff;
+    --canvas: #fff;
+    --ink: #111827;
+    --text: #374151;
+    --muted: #4b5563;
+    --border: #d1d5db;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-toolbar,
+  .route-transition-bar,
+  .global-auth-notice {
+    display: none !important;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-shell,
+  :where(.menu-module[data-menu-module]) .carta-page {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-document {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-section__header {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-entry {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-color: #d1d5db !important;
+    background: #fff !important;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-entry__image {
+    width: 68px;
+    height: 68px;
+  }
+
+  :where(.menu-module[data-menu-module]) .carta-offer__image {
+    width: 28px;
+    height: 28px;
+  }
+}

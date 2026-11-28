@@ -285,4 +285,36 @@ describe("App routing and lazy loading (T15)", () => {
     expect(returnLink).toBeVisible();
     expect(returnLink).toHaveAttribute("href", "/");
   });
+
+  test("protects /carta route with menu:catalog:print and renders printable menu when authorized (FE-15)", async () => {
+    const repository = createRepository({
+      getMenuCatalog: jest.fn().mockResolvedValue({
+        data: [],
+        meta: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+      }),
+      listMenuCatalogCategories: jest.fn().mockResolvedValue({
+        data: [],
+        uncategorized: { entryCount: 0 },
+      }),
+    });
+
+    localStorage.setItem(
+      "fmat_restaurant_auth_session",
+      JSON.stringify({ accessToken: permissionToken(["menu:catalog:read"]) }),
+    );
+    window.history.pushState({}, "", "/carta");
+    const denied = render(<App repository={repository} />);
+    expect(await screen.findByRole("heading", { name: "Sin acceso", level: 1 })).toBeVisible();
+    expect(repository.getMenuCatalog).not.toHaveBeenCalled();
+    denied.unmount();
+
+    localStorage.setItem(
+      "fmat_restaurant_auth_session",
+      JSON.stringify({ accessToken: permissionToken(["menu:catalog:print"]) }),
+    );
+    window.history.pushState({}, "", "/carta");
+    render(<App repository={repository} />);
+    expect(await screen.findByRole("heading", { name: "Carta del menú", level: 1 })).toBeVisible();
+    expect(repository.getMenuCatalog).toHaveBeenCalled();
+  });
 });
