@@ -306,6 +306,37 @@ html[data-menu-standalone] body {
   background: #6b7280;
 }
 
+:where(.menu-module) .availability-pill,
+:where(.menu-module) .orderable-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+:where(.menu-module) .availability-pill--available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+:where(.menu-module) .availability-pill--unavailable {
+  background: #fff0e8;
+  color: #8a3215;
+}
+
+:where(.menu-module) .orderable-pill--yes {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+:where(.menu-module) .orderable-pill--no {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 /* =========================================================
    Shared Feedback & Alert Primitives
    ========================================================= */

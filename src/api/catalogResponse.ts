@@ -141,6 +141,10 @@ export function isOfferCourse(value: unknown): value is OfferCourse {
   );
 }
 
+function optionalBoolean(value: unknown): boolean {
+  return value === undefined || typeof value === "boolean";
+}
+
 export function isEntry(value: unknown): value is MenuEntry {
   return (
     record(value) &&
@@ -151,7 +155,8 @@ export function isEntry(value: unknown): value is MenuEntry {
     Array.isArray(value.categories) &&
     value.categories.every(isCategoryReference) &&
     nonNegativeSafeInteger(value.offerCount) &&
-    (value.image === null || isCatalogImage(value.image))
+    (value.image === null || isCatalogImage(value.image)) &&
+    optionalBoolean(value.isAvailable)
   );
 }
 
@@ -165,7 +170,8 @@ export function isEntryDetail(value: unknown): value is MenuEntryDetail {
     Array.isArray(value.categoryIds) &&
     value.categoryIds.every(nonEmptyString) &&
     (value.imageRef === undefined || typeof value.imageRef === "string") &&
-    (value.image === undefined || value.image === null || isCatalogImage(value.image))
+    (value.image === undefined || value.image === null || isCatalogImage(value.image)) &&
+    optionalBoolean(value.isAvailable)
   );
 }
 
@@ -174,7 +180,8 @@ export function isSlotOptionDetail(value: unknown): value is SlotOptionDetail {
     !record(value) ||
     !nonEmptyString(value.optionId) ||
     typeof value.displayName !== "string" ||
-    (value.status !== undefined && !isOfferStatus(value.status))
+    (value.status !== undefined && !isOfferStatus(value.status)) ||
+    !optionalBoolean(value.isAvailable)
   ) {
     return false;
   }
@@ -209,6 +216,7 @@ export function isCompositionSlotDetail(value: unknown): value is CompositionSlo
     nonEmptyString(value.name) &&
     positiveFiniteNumber(value.quantity) &&
     (value.status === undefined || isOfferStatus(value.status)) &&
+    optionalBoolean(value.isAvailable) &&
     (value.course === undefined || value.course === null || isOfferCourse(value.course)) &&
     Array.isArray(value.options) &&
     value.options.every(isSlotOptionDetail)
@@ -225,7 +233,8 @@ export function isOfferSummary(value: unknown): value is MenuOffer {
     nonNegativeFiniteNumber(value.basePrice) &&
     isOfferStatus(value.status) &&
     (value.image === null || isCatalogImage(value.image)) &&
-    nonNegativeSafeInteger(value.slotCount)
+    nonNegativeSafeInteger(value.slotCount) &&
+    optionalBoolean(value.isAvailable)
   );
 }
 
@@ -237,6 +246,7 @@ export function isOfferDetail(value: unknown): value is MenuOfferDetail {
     typeof value.presentationTag === "string" &&
     nonNegativeFiniteNumber(value.basePrice) &&
     isOfferStatus(value.status) &&
+    optionalBoolean(value.isAvailable) &&
     (value.image === null || isCatalogImage(value.image)) &&
     record(value.composition) &&
     Array.isArray(value.composition.slots) &&
@@ -335,6 +345,7 @@ export function entryDetailResponse(value: unknown, etag?: unknown): MenuEntryDe
     categoryIds: [...raw.categoryIds],
     ...(raw.imageRef !== undefined ? { imageRef: raw.imageRef } : {}),
     ...(raw.image !== undefined ? { image: raw.image } : {}),
+    ...(raw.isAvailable !== undefined ? { isAvailable: raw.isAvailable } : {}),
     ...(typeof etag === "string" ? { etag } : {}),
   };
   return detail;

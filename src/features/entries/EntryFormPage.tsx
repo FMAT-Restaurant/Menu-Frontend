@@ -39,6 +39,7 @@ type Model = ReturnType<typeof useEntryForm>;
 function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolean }>) {
   const archived = model.entry?.status === "ARCHIVED";
   const statuses: EntryStatus[] = archived ? ["ARCHIVED", "INACTIVE"] : ["ACTIVE", "INACTIVE", "ARCHIVED"];
+  const availability = model.entry?.isAvailable;
   let help = "Activar la entrada no cambia sus ofertas ni garantiza su publicación.";
   if (archived && model.draft.status === "INACTIVE") help = "Desarchivar deja la entrada inactiva; actívala después de forma expresa.";
   return <fieldset className="entry-status-selector">
@@ -47,6 +48,13 @@ function EntryStatusField({ model, busy }: Readonly<{ model: Model; busy: boolea
     {model.entryLoading ? <LoadingValue /> : <select id="entry-status" value={model.draft.status} disabled={busy || !model.editingReady} aria-invalid={Boolean(model.failure?.fields.status)} aria-describedby="entry-status-help entry-status-error" onChange={(event) => model.changeStatus(event.target.value as EntryStatus)}>
       {statuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
     </select>}
+    {!model.entryLoading && availability !== undefined && (
+      <p className="entry-form__muted">
+        Disponibilidad derivada: <strong>{availability ? "Disponible" : "No disponible"}</strong>
+        {" · "}
+        <strong>{model.entry?.status === "ACTIVE" && availability ? "Ordenable" : "No ordenable"}</strong>
+      </p>
+    )}
     <p id="entry-status-help" className="entry-form__muted">{help}</p>
     <p id="entry-status-error" className="entry-form__error">{model.failure?.fields.status}</p>
   </fieldset>;

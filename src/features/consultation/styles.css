@@ -122,6 +122,16 @@
   font-weight: 700;
 }
 
+.availability-badge--not-orderable {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.consultation-option__reason {
+  color: #8a3215;
+  font-size: .85rem;
+}
+
 @media (max-width: 640px) {
   .consultation-filters {
     grid-template-columns: 1fr;

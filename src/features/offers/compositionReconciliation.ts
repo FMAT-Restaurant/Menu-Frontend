@@ -260,6 +260,7 @@ function applyMatchedOption(currentOption: OptionDraft, matchedOptions: Map<stri
     ...currentOption,
     optionId: matchedOption ? matchedOption.optionId : currentOption.optionId,
     originalSourceType: matchedOption?.sourceType ?? currentOption.originalSourceType,
+    ...(matchedOption?.isAvailable !== undefined ? { isAvailable: matchedOption.isAvailable } : {}),
   };
 }
 
@@ -273,6 +274,7 @@ function applyMatchedIds(
     return {
       ...currentSlot,
       slotId: matchedSlot ? matchedSlot.slotId : currentSlot.slotId,
+      ...(matchedSlot?.isAvailable !== undefined ? { isAvailable: matchedSlot.isAvailable } : {}),
       options: currentSlot.options.map((option) => applyMatchedOption(option, matchedOptions)),
     };
   });

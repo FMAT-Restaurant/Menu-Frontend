@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import type { MenuEntry } from "../../application/catalog";
+import { evaluateEntryOrderability } from "../../application/availability";
 import { Icon } from "../../shared/Icon";
 
 const statusLabel = { ACTIVE: "Activa", INACTIVE: "Inactiva", ARCHIVED: "Archivada" };
@@ -20,8 +21,11 @@ export function EntryCard({ entry, busy, canWrite = true, returnTo, onDelete }: 
   const encodedId = encodeURIComponent(entry.id);
   const deleteHelpId = useId();
   const returnKey = `entry:${entry.id}`;
+  const orderability = evaluateEntryOrderability({ status: entry.status, isAvailable: entry.isAvailable });
+  const unavailableClass = entry.isAvailable === false ? " entry-card--unavailable" : "";
+
   return (
-    <article className="entry-card" data-return-key={returnKey} tabIndex={-1}>
+    <article className={`entry-card${unavailableClass}`} data-return-key={returnKey} tabIndex={-1}>
       <div className="entry-card__image">
         {source && !imageFailed ? (
           <img src={source} alt={`Imagen de ${entry.brandName}`} loading="lazy" onError={() => setImageFailed(true)} />
@@ -41,9 +45,21 @@ export function EntryCard({ entry, busy, canWrite = true, returnTo, onDelete }: 
           )) : <span className="category-chip">Sin categoría</span>}
         </div>
         <div className="entry-card__meta"><span>Estado: <strong>{statusLabel[entry.status]}</strong></span><span>Ofertas: <strong>{entry.offerCount}</strong></span></div>
+        {entry.isAvailable !== undefined && (
+          <div className="entry-card__availability" aria-label="Disponibilidad de la entrada">
+            <span className={`availability-pill ${entry.isAvailable ? "availability-pill--available" : "availability-pill--unavailable"}`}>
+              {entry.isAvailable ? "Disponible" : "No disponible"}
+            </span>
+            {orderability && (
+              <span className={`orderable-pill ${orderability.orderable ? "orderable-pill--yes" : "orderable-pill--no"}`}>
+                {orderability.label}{orderability.reason ? ` · ${orderability.reason}` : ""}
+              </span>
+            )}
+          </div>
+        )}
         <div className="entry-card__actions">
           <Link className="button button--primary" data-return-key={`${returnKey}:offers`} to={`/entries/${encodedId}/offers`} state={{ returnTo }} aria-label={`Ver ofertas de ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Ver ofertas</Link>
-          {canWrite && <Link className="button button--secondary" data-return-key={`${returnKey}:edit`} to={`/entries/${encodedId}/edit`} state={{ returnTo }} aria-label={`Editar ${entry.brandName}`} aria-disabled={busy} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>}
+          {canWrite && <Link className="button button--secondary" data-return-key={`${returnKey}:edit`} to={`/entries/${encodedId}/edit`} state={{ returnTo }} aria-disabled={busy} aria-label={`Editar ${entry.brandName}`} tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>Editar</Link>}
         </div>
         {canWrite && entry.status === "ARCHIVED" && <div className="entry-card__secondary-actions">
           <p className="entry-card__delete-help" id={deleteHelpId}>La eliminación es definitiva.</p>

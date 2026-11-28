@@ -266,6 +266,17 @@
   color: var(--text);
 }
 
+:where(.menu-module[data-menu-module]) .entry-card--unavailable .entry-card__image img {
+  opacity: .72;
+}
+
+:where(.menu-module[data-menu-module]) .entry-card__availability {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
 :where(.menu-module[data-menu-module]) .entry-card__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

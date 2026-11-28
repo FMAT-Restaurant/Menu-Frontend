@@ -320,4 +320,81 @@ describe("catalogResponse runtime validators", () => {
     expect(isPageMeta(null)).toBe(false);
     expect(isEntry({ ...entry, image: validImage })).toBe(true);
   });
+
+  test("validates and preserves derived isAvailable across entry and offer responses", () => {
+    expect(entryPage({ data: [{ ...entry, isAvailable: true }], meta }).data[0].isAvailable).toBe(true);
+    expect(() => entryPage({ data: [{ ...entry, isAvailable: "yes" }], meta })).toThrow(CatalogResponseError);
+
+    const detail = entryDetailResponse(
+      { data: { id: "entry-1", brandName: "Bowl", description: "Con arroz", status: "ACTIVE", categoryIds: [], image: null, isAvailable: false } },
+      '"rev-1-u"',
+    );
+    expect(detail).toMatchObject({ isAvailable: false, etag: '"rev-1-u"' });
+    expect(() =>
+      entryDetailResponse({ data: { id: "entry-1", brandName: "Bowl", description: "Con arroz", status: "ACTIVE", categoryIds: [], image: null, isAvailable: 1 } }),
+    ).toThrow(CatalogResponseError);
+
+    const offerSummary = {
+      id: "offer-1",
+      entryId: "entry-1",
+      entryName: "Bowl",
+      presentationTag: "Individual",
+      basePrice: 120,
+      status: "ACTIVE",
+      image: null,
+      slotCount: 1,
+      isAvailable: true,
+    };
+    expect(offerPage({ data: [offerSummary], meta }).data[0].isAvailable).toBe(true);
+    expect(() => offerPage({ data: [{ ...offerSummary, isAvailable: null }], meta })).toThrow(CatalogResponseError);
+
+    const offerDetail = {
+      id: "offer-1",
+      entryId: "entry-1",
+      presentationTag: "Individual",
+      basePrice: 120,
+      status: "ACTIVE",
+      isAvailable: false,
+      image: null,
+      composition: {
+        slots: [{
+          slotId: "slot-1",
+          name: "Base",
+          quantity: 1,
+          isAvailable: false,
+          options: [{
+            optionId: "opt-1",
+            sourceType: "RECIPE",
+            recipeId: "rec-1",
+            displayName: "Arroz",
+            status: "ACTIVE",
+            isAvailable: false,
+          }],
+        }],
+      },
+    };
+    expect(offerDetailResponse({ data: offerDetail }).composition.slots[0].options[0].isAvailable).toBe(false);
+    expect(() => offerDetailResponse({ data: { ...offerDetail, isAvailable: "no" } })).toThrow(CatalogResponseError);
+    expect(() =>
+      offerDetailResponse({
+        data: {
+          ...offerDetail,
+          composition: { slots: [{ ...offerDetail.composition.slots[0], isAvailable: "no" }] },
+        },
+      }),
+    ).toThrow(CatalogResponseError);
+    expect(() =>
+      offerDetailResponse({
+        data: {
+          ...offerDetail,
+          composition: {
+            slots: [{
+              ...offerDetail.composition.slots[0],
+              options: [{ ...offerDetail.composition.slots[0].options[0], isAvailable: "no" }],
+            }],
+          },
+        },
+      }),
+    ).toThrow(CatalogResponseError);
+  });
 });

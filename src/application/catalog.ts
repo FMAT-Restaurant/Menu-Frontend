@@ -24,6 +24,7 @@ export interface MenuEntry {
   image: CatalogImage | null;
   categories: MenuCategoryReference[];
   offerCount: number;
+  isAvailable?: boolean;
 }
 
 export interface MenuCategory {
@@ -47,6 +48,7 @@ export interface MenuEntryDetail {
   categoryIds: string[];
   imageRef?: string;
   image?: MenuImage | null;
+  isAvailable?: boolean;
   etag?: string;
 }
 
@@ -61,6 +63,7 @@ export interface MenuOffer {
   status: OfferStatus;
   image: MenuImage | null;
   slotCount: number;
+  isAvailable?: boolean;
 }
 
 export type OfferCourse = "entrada" | "plato fuerte" | "postre" | "bebida";
@@ -89,6 +92,7 @@ export interface RecipeSlotOptionDetail {
   optionId: string;
   displayName: string;
   status?: OfferStatus;
+  isAvailable?: boolean;
   sourceType: "RECIPE";
   recipeId: string;
 }
@@ -97,6 +101,7 @@ export interface InventorySlotOptionDetail {
   optionId: string;
   displayName: string;
   status?: OfferStatus;
+  isAvailable?: boolean;
   sourceType: "INVENTORY_ITEM";
   inventoryItemId: string;
   quantity: number;
@@ -116,6 +121,7 @@ export interface CompositionSlotDetail {
   slotId: string;
   name: string;
   status?: OfferStatus;
+  isAvailable?: boolean;
   quantity: number;
   course?: OfferCourse | null;
   options: SlotOptionDetail[];
@@ -132,6 +138,7 @@ export interface MenuOfferDetail {
   presentationTag: string;
   basePrice: number;
   status: OfferStatus;
+  isAvailable?: boolean;
   image: MenuImage | null;
   composition: CompositionDetail;
 }

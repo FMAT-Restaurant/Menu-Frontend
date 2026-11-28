@@ -1,3 +1,4 @@
+import { optionUnavailableReason } from "../../application/availability";
 import type { OptionDraft } from "./optionDraft";
 
 export interface SlotOptionItemProps {
@@ -31,11 +32,14 @@ export function SlotOptionItem({
     : option.inventoryItemName || "Insumo de inventario";
   const label = option.displayName || sourceName;
   const isActive = option.status === "ACTIVE";
+  const isUnavailable = option.isAvailable === false;
+  const unavailableClass = isUnavailable ? " slot-option-item--unavailable" : "";
 
   return (
     <div
-      className={`slot-option-item ${isActive ? "slot-option-item--active" : "slot-option-item--inactive"}`}
+      className={`slot-option-item ${isActive ? "slot-option-item--active" : "slot-option-item--inactive"}${unavailableClass}`}
       data-testid={`slot-option-${optionIndex}`}
+      data-option-available={option.isAvailable !== undefined ? String(option.isAvailable) : undefined}
     >
       <div className="slot-option-item__main">
         <div className="slot-option-item__header">
@@ -52,9 +56,21 @@ export function SlotOptionItem({
             {option.quantity} {option.unit ?? "u"}
           </p>
         )}
+        {isUnavailable && (
+          <p className="slot-option-item__unavailable-reason">
+            {optionUnavailableReason(option.sourceType)}
+          </p>
+        )}
       </div>
 
-      <span className={`offer-state ${isActive ? "offer-state--active" : "offer-state--inactive"}`}>{isActive ? "Activa" : "Inactiva"}</span>
+      <div className="slot-option-item__badges">
+        <span className={`offer-state ${isActive ? "offer-state--active" : "offer-state--inactive"}`}>{isActive ? "Activa" : "Inactiva"}</span>
+        {option.isAvailable !== undefined && (
+          <span className={`availability-pill ${option.isAvailable ? "availability-pill--available" : "availability-pill--unavailable"}`}>
+            {option.isAvailable ? "Disponible" : "No disponible"}
+          </span>
+        )}
+      </div>
       <div className="slot-option-item__actions">
         {onMoveUp && (
           <button

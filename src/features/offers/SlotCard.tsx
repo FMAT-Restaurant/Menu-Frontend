@@ -1,4 +1,5 @@
 import type { OfferCourse } from "../../application/catalog";
+import { deriveSlotAvailability } from "../../application/availability";
 import type { OptionDraft } from "./optionDraft";
 import { SlotOptionItem } from "./SlotOptionItem";
 import { Icon } from "../../shared/Icon";
@@ -6,6 +7,7 @@ import { Icon } from "../../shared/Icon";
 export interface SlotDraft {
   localId?: string;
   slotId?: string;
+  isAvailable?: boolean;
   name: string;
   quantity: number;
   course: OfferCourse | null;
@@ -47,6 +49,8 @@ export function SlotCard({
 }: Readonly<SlotCardProps>) {
   const hasActiveOption = slot.options.some((opt) => opt.status === "ACTIVE");
   const isSlotActive = slot.options.length > 0 && hasActiveOption;
+  const slotAvailable = deriveSlotAvailability(slot.options, slot.isAvailable);
+  const unavailableClass = slotAvailable === false ? " slot-card--unavailable" : "";
 
   const roundsLabel = slot.quantity === 1 ? "1 ronda de selección" : `${slot.quantity} rondas de selección`;
 
@@ -59,7 +63,7 @@ export function SlotCard({
 
   return (
     <article
-      className={`slot-card ${isSlotActive ? "slot-card--active" : "slot-card--inactive"}`}
+      className={`slot-card ${isSlotActive ? "slot-card--active" : "slot-card--inactive"}${unavailableClass}`}
       data-testid={`slot-card-${slotIndex}`}
       aria-label={`Grupo ${slot.name}`}
     >
@@ -80,6 +84,11 @@ export function SlotCard({
             >
               {isSlotActive ? "Activo" : "Inactivo"}
             </span>
+            {slotAvailable !== undefined && (
+              <span className={`availability-pill ${slotAvailable ? "availability-pill--available" : "availability-pill--unavailable"}`}>
+                {slotAvailable ? "Disponible" : "No disponible"}
+              </span>
+            )}
           </div>
         </div>
 
@@ -130,6 +139,11 @@ export function SlotCard({
 
       <div className="slot-card__body">
         <p id={`slot-draft-hint-${slotIndex}`} className="field-hint">Retirar grupos u opciones modifica este borrador. Se aplica al guardar la oferta.</p>
+        {slotAvailable === false && slot.options.length > 0 && (
+          <p className="slot-card__unavailable-notice">
+            Grupo no disponible: ninguna de sus opciones activas tiene disponibilidad en Inventario.
+          </p>
+        )}
         {slot.options.length === 0 ? (
           <p className="slot-card__empty-notice">
             Este grupo aún no tiene opciones. Debe incluir al menos una opción para ser válido.
