@@ -86,6 +86,7 @@ function CatalogPageContent({ repository }: Readonly<{ repository: CatalogReposi
   const canReadOffers = usePermission("menu:offers:read");
   const canReadRecipes = usePermission("menu:recipes:read");
   const canReadCategories = usePermission("menu:categories:read");
+  const canPrintCatalog = usePermission("menu:catalog:print");
   const location = useLocation();
   const saveMessage = useLocalSaveReceipt("entry");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -412,6 +413,7 @@ function CatalogPageContent({ repository }: Readonly<{ repository: CatalogReposi
             </div>
             <div className="task-header__actions catalog-header__actions">
               <nav className="catalog-header__navigation" aria-label="Administrar el menú">
+                {canPrintCatalog && <Link className="button button--secondary" to="/carta" state={{ returnTo: location.pathname + location.search }}>Imprimir carta</Link>}
                 {canReadOffers && <Link className="button button--secondary" to="/offers" state={{ returnTo: location.pathname + location.search }}>Ofertas</Link>}
                 {canReadRecipes && <Link className="button button--secondary" to="/recipes" state={{ returnTo: location.pathname + location.search }}>Biblioteca de recetas</Link>}
                 {canReadCategories && <Link className="button button--secondary" to="/categories" state={{ returnTo: location.pathname + location.search }}>Categorías</Link>}

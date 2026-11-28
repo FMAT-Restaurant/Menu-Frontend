@@ -37,6 +37,7 @@ function getStoredSession(): { accessToken?: string; token?: string; user?: Shel
 
 const CatalogPage = lazy(() => import("./features/catalog/CatalogPage").then(({ CatalogPage }) => ({ default: CatalogPage })));
 const CatalogConsultationPage = lazy(() => import("./features/consultation/CatalogConsultationPage").then(({ CatalogConsultationPage }) => ({ default: CatalogConsultationPage })));
+const PrintableMenuPage = lazy(() => import("./features/carta/PrintableMenuPage").then(({ PrintableMenuPage }) => ({ default: PrintableMenuPage })));
 const CategoryPage = lazy(() => import("./features/categories/CategoryPage").then(({ CategoryPage }) => ({ default: CategoryPage })));
 const EntryFormPage = lazy(() => import("./features/entries/EntryFormPage").then(({ EntryFormPage }) => ({ default: EntryFormPage })));
 const OffersPage = lazy(() => import("./features/offers/OffersPage").then(({ OffersPage }) => ({ default: OffersPage })));
@@ -139,6 +140,7 @@ export function createMenuRoutes(repository: MenuRepository = defaultRepository,
     <Route element={<MenuLayout transitions={transitions} />}>
       <Route path="/" element={<CatalogHome repository={repository} />} />
       <Route path="/menu" element={<Navigate to="/" replace />} />
+      <Route path="/carta" element={<RequirePermission permission="menu:catalog:print"><PrintableMenuPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/new" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/:entryId/edit" element={<RequirePermission permission="menu:entries:write"><EntryFormPage repository={repository} /></RequirePermission>} />
       <Route path="/entries/:entryId/offers" element={<RequirePermission permission="menu:offers:read"><OffersPage repository={repository} /></RequirePermission>} />

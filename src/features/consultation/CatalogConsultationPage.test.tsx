@@ -127,5 +127,13 @@ describe("CatalogConsultationPage", () => {
     expect(await screen.findByRole("heading", { name: "Sin categoría" })).toBeVisible();
     expect(screen.getByRole("img", { name: "Agua" })).toHaveAttribute("src", "/agua.png");
     expect(screen.getByText("Sin ofertas disponibles.")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Imprimir carta" })).not.toBeInTheDocument();
+  });
+
+  test("shows Imprimir carta action in consultation view only with menu:catalog:print (FE-15)", async () => {
+    renderPage(["menu:catalog:read", "menu:catalog:print"]);
+
+    expect(await screen.findByRole("heading", { name: "Tortas" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Imprimir carta" })).toHaveAttribute("href", "/carta");
   });
 });

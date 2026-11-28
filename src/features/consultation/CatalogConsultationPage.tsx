@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import type { CatalogViewCategories, CatalogViewEntry, MenuRepository, Page } from "../../application/catalog";
 import { formatMoney } from "../../shared/formatMoney";
 import { usePermission } from "../../shared/permissions";
@@ -55,6 +55,8 @@ function EntryCard({ entry }: Readonly<{ entry: CatalogViewEntry }>) {
 
 export function CatalogConsultationPage({ repository }: Readonly<{ repository: MenuRepository }>) {
   const canReadCatalog = usePermission("menu:catalog:read");
+  const canPrintCatalog = usePermission("menu:catalog:print");
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const categoryId = searchParams.get("categoryId") ?? "";
@@ -116,10 +118,23 @@ export function CatalogConsultationPage({ repository }: Readonly<{ repository: M
   return <div className="app-shell">
     <main className="menu-page consultation-page">
       <header className="task-header">
-        <div className="task-header__content">
-          <p className="eyebrow">FMAT Restaurant</p>
-          <h1 data-route-heading tabIndex={-1}>Menú</h1>
-          <p className="task-header__intro">Consulta las entradas, presentaciones y composición disponibles.</p>
+        <div className="task-header__row">
+          <div className="task-header__content">
+            <p className="eyebrow">FMAT Restaurant</p>
+            <h1 data-route-heading tabIndex={-1}>Menú</h1>
+            <p className="task-header__intro">Consulta las entradas, presentaciones y composición disponibles.</p>
+          </div>
+          {canPrintCatalog && (
+            <div className="task-header__actions">
+              <Link
+                className="button button--secondary"
+                to="/carta"
+                state={{ returnTo: location.pathname + location.search }}
+              >
+                Imprimir carta
+              </Link>
+            </div>
+          )}
         </div>
       </header>
       <section className="consultation-filters" aria-label="Filtros del catálogo">

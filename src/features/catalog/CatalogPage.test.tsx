@@ -334,5 +334,14 @@ test("hides category and recipe navigation links when their read permissions are
   expect(await screen.findByRole("heading", { name: "Entradas del menú" })).toBeVisible();
   expect(screen.queryByRole("link", { name: "Categorías" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: /Biblioteca de recetas/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Imprimir carta" })).not.toBeInTheDocument();
   expect(api.listCategories).not.toHaveBeenCalled();
+});
+
+test("shows the Imprimir carta link in administrative catalog only when menu:catalog:print is present (FE-15)", async () => {
+  const api = repository();
+  renderPage(api, "/?status=ACTIVE", ["menu:entries:read", "menu:catalog:print"]);
+
+  expect(await screen.findByRole("heading", { name: "Entradas del menú" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Imprimir carta" })).toHaveAttribute("href", "/carta");
 });
