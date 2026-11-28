@@ -40,7 +40,7 @@ function RowAction({ label }: Readonly<{ label: string }>) {
 function RowReservation({ variant }: Readonly<{ variant: "category-rows" | "recipe-rows" | "recipe-selection" }>) {
   const text = <div className="menu-loading__row-text"><span className="menu-loading__row-title" /><span className="menu-loading__row-description" />{variant === "category-rows" && <div className="menu-loading__row-meta"><span /></div>}</div>;
   if (variant === "category-rows") return <div className="category-row menu-loading__row">{text}<RowAction label="Editar" /></div>;
-  return <div className="recipe-card menu-loading__row"><div className="recipe-card__header">{text}<div className="recipe-card__actions">{variant === "recipe-selection" ? <RowAction label="Asignar" /> : <><RowAction label="Editar" /><RowAction label="Eliminar" /></>}</div></div><div className="recipe-card__supplies"><span className="menu-loading__supplies-line" /></div></div>;
+  return <div className="recipe-card menu-loading__row"><div className="recipe-card__header">{text}<div className="recipe-card__actions">{variant === "recipe-selection" ? <RowAction label="Asignar" /> : <><RowAction label="Historial" /><RowAction label="Editar" /><RowAction label="Eliminar" /></>}</div></div><div className="recipe-card__supplies"><span className="menu-loading__supplies-line" /></div></div>;
 }
 
 /** The surrounding page owns the real heading, filters and actions. */
