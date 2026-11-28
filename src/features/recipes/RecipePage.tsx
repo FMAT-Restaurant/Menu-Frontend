@@ -1,7 +1,7 @@
 import { LoadingState } from "../../shared/LoadingState";
 import { ToastNotification, useNotification } from "../../shared/ToastNotification";
 import { useTaskDialog } from "../../shared/useTaskDialog";
-import { useEffect, useRef, useState, type Ref } from "react";
+import { useEffect, useMemo, useRef, useState, type Ref } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type {
   MenuRepository,
@@ -23,12 +23,21 @@ import { isGlobalAuthError } from "../../api/globalAuthErrors";
 import { createIndexedDbPendingOperationStorage } from "../../shared/pendingOperationStorage";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFormDialog, buildRecipeCreateScope } from "./RecipeFormDialog";
+import { RecipeRevisionsDialog } from "./RecipeRevisionsDialog";
 import "./styles.css";
 
 export type RecipeRepository = Pick<
   MenuRepository,
   "listRecipes" | "getRecipe" | "createRecipe" | "updateRecipe" | "deleteRecipe" | "listInventoryItems"
->;
+> &
+  Partial<Pick<MenuRepository, "listRecipeRevisions" | "getRecipeRevision">>;
+
+interface RecipeHistoryTarget {
+  recipeId?: string;
+  recipeName?: string;
+  currentRevision?: number;
+  isDeleted?: boolean;
+}
 
 export interface RecipePageProps {
   repository: RecipeRepository;
@@ -58,6 +67,7 @@ interface RecipeResultsContentProps {
   onSelect(recipe: RecipeSummary): void;
   onEdit(recipe: RecipeSummary): void;
   onDelete(recipe: RecipeSummary): void;
+  onViewHistory?: (recipe: RecipeSummary) => void;
   recipesResult: Page<RecipeSummary> | null;
   currentPage: number;
   onPageChange(page: number): void;
@@ -66,7 +76,7 @@ interface RecipeResultsContentProps {
 function RecipeResultsContent({
   actionError, showActionError, error, onRetry, loading, hasResults, mode, canWrite,
   olderResults, displayedContext, recipes, confirmedQuery, onClearSearch, onCreate,
-  resultsBusy, onSelect, onEdit, onDelete, recipesResult, currentPage, onPageChange,
+  resultsBusy, onSelect, onEdit, onDelete, onViewHistory, recipesResult, currentPage, onPageChange,
 }: Readonly<RecipeResultsContentProps>) {
   return <>
     {showActionError && <div className="feedback feedback--error" role="alert">{actionError}</div>}
@@ -82,12 +92,52 @@ function RecipeResultsContent({
       onSelect={onSelect}
       onEdit={onEdit}
       onDelete={onDelete}
+      onViewHistory={onViewHistory}
       canWrite={canWrite}
       recipesResult={recipesResult}
       currentPage={currentPage}
       onPageChange={onPageChange}
     />}
   </>;
+}
+
+function DeletedRecipesHistoryBar({
+  deletedRecipes,
+  onViewDeletedHistory,
+}: Readonly<{
+  deletedRecipes: readonly RecipeSummary[];
+  onViewDeletedHistory(recipe: RecipeSummary): void;
+}>) {
+  if (deletedRecipes.length === 0) return null;
+  return (
+    <section className="deleted-recipes-history" aria-label="Recetas eliminadas recientemente">
+      <div className="deleted-recipes-history__header">
+        <h2>Recetas eliminadas recientemente</h2>
+        <p>El historial de revisiones se conserva para consulta.</p>
+      </div>
+      <ul className="deleted-recipes-history__list">
+        {deletedRecipes.map((recipe) => (
+          <li key={recipe.id} className="deleted-recipes-history__item">
+            <div className="deleted-recipes-history__info">
+              <strong>{recipe.name}</strong>
+              {recipe.revision !== undefined && (
+                <span className="recipe-card__revision">Revisión {recipe.revision}</span>
+              )}
+              <span className="deleted-recipes-history__id">ID: {recipe.id}</span>
+            </div>
+            <button
+              type="button"
+              className="button button--secondary"
+              aria-label={`Ver historial de ${recipe.name}`}
+              onClick={() => onViewDeletedHistory(recipe)}
+            >
+              Historial conservado
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 function RecipeEmptyState({ query, onClearSearch, onCreate, canCreate }: Readonly<{
@@ -109,7 +159,7 @@ function RecipeEmptyState({ query, onClearSearch, onCreate, canCreate }: Readonl
 }
 
 function RecipeResultList({
-  recipes, mode, resultsBusy, onSelect, onEdit, onDelete, canWrite, recipesResult, currentPage, onPageChange,
+  recipes, mode, resultsBusy, onSelect, onEdit, onDelete, onViewHistory, canWrite, recipesResult, currentPage, onPageChange,
 }: Readonly<{
   recipes: RecipeSummary[];
   mode: "management" | "selection";
@@ -117,6 +167,7 @@ function RecipeResultList({
   onSelect(recipe: RecipeSummary): void;
   onEdit(recipe: RecipeSummary): void;
   onDelete(recipe: RecipeSummary): void;
+  onViewHistory?: (recipe: RecipeSummary) => void;
   canWrite: boolean;
   recipesResult: Page<RecipeSummary> | null;
   currentPage: number;
@@ -127,7 +178,7 @@ function RecipeResultList({
       {recipes.map((recipe) => <li key={recipe.id} className="recipe-list__item">
         {mode === "selection"
           ? <RecipeCard recipe={recipe} mode="selection" onSelect={onSelect} isBusy={resultsBusy} />
-          : <RecipeCard recipe={recipe} mode="management" onEdit={onEdit} onDelete={onDelete} isBusy={resultsBusy} canWrite={canWrite} />}
+          : <RecipeCard recipe={recipe} mode="management" onEdit={onEdit} onDelete={onDelete} onViewHistory={onViewHistory} isBusy={resultsBusy} canWrite={canWrite} />}
       </li>)}
     </ul>
     {recipesResult && recipesResult.meta.totalPages > 1 && <nav className="pagination" aria-label="Páginas de recetas">
@@ -283,6 +334,11 @@ export function RecipePage({
   const [actionError, setActionError] = useState("");
   const [deleteFailure, setDeleteFailure] = useState<ReturnType<typeof recipeDeleteFailure> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletedRecipes, setDeletedRecipes] = useState<RecipeSummary[]>([]);
+  const [historyTarget, setHistoryTarget] = useState<RecipeHistoryTarget | null>(() => {
+    const initialHistoryId = !propMode ? searchParams.get("history")?.trim() : undefined;
+    return initialHistoryId ? { recipeId: initialHistoryId } : null;
+  });
 
   const openingRecipeIdRef = useRef<string | null>(null);
   const openingControllerRef = useRef<AbortController | null>(null);
@@ -484,8 +540,13 @@ export function RecipePage({
     setDeleteFailure(null);
 
     try {
-      await repository.deleteRecipe(recipeToDelete.id);
-      notify(`Receta "${recipeToDelete.name}" eliminada.`);
+      const deletedSnapshot = recipeToDelete;
+      await repository.deleteRecipe(deletedSnapshot.id);
+      setDeletedRecipes((previous) => [
+        deletedSnapshot,
+        ...previous.filter((item) => item.id !== deletedSnapshot.id),
+      ]);
+      notify(`Receta "${deletedSnapshot.name}" eliminada.`);
       setRecipeToDelete(null);
       setRetry((r) => r + 1);
       deleteTriggerRef.current?.focus();
@@ -538,6 +599,24 @@ export function RecipePage({
     void handleConfirmDelete();
   }
 
+  function handleCloseHistory() {
+    setHistoryTarget(null);
+    if (!propMode && searchParams.has("history")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("history");
+      setSearchParams(nextParams);
+    }
+  }
+
+  const revisionsRepository = useMemo(() => {
+    if (!repository.listRecipeRevisions) return null;
+    return {
+      listRecipeRevisions: repository.listRecipeRevisions.bind(repository),
+      getRecipeRevision: repository.getRecipeRevision?.bind(repository),
+    };
+  }, [repository]);
+  const canConsultHistory = canRead && mode === "management" && revisionsRepository !== null;
+
   const recipes = recipesResult?.data ?? [];
   const olderResults = Boolean(displayedContext && (displayedContext.query !== confirmedQuery || displayedContext.page !== currentPage));
   const resultsBusy = loading || olderResults;
@@ -565,7 +644,7 @@ export function RecipePage({
         <ToastNotification notification={notification} onDismiss={clearNotification} />
         <section className="category-panel" aria-labelledby="recipe-page-title" aria-busy={loading}>
           {!canRead && <div className="feedback feedback--error" role="alert">No tienes permisos para consultar las recetas.</div>}
-          {canRead && <div className="recipe-toolbar">
+          {canRead && <div className={canConsultHistory ? "recipe-toolbar recipe-toolbar--with-actions" : "recipe-toolbar"}>
             <SearchField
               id="recipe-search"
               label="Buscar recetas"
@@ -574,7 +653,34 @@ export function RecipePage({
               onChange={setDraftSearch}
               onSearch={handleSearchSubmit}
             />
+            {canConsultHistory && (
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={() => {
+                  clearNotification();
+                  setHistoryTarget({});
+                }}
+              >
+                Consultar historial por ID
+              </button>
+            )}
           </div>}
+
+          {canConsultHistory && (
+            <DeletedRecipesHistoryBar
+              deletedRecipes={deletedRecipes}
+              onViewDeletedHistory={(recipe) => {
+                clearNotification();
+                setHistoryTarget({
+                  recipeId: recipe.id,
+                  recipeName: recipe.name,
+                  currentRevision: recipe.revision,
+                  isDeleted: true,
+                });
+              }}
+            />
+          )}
 
           {canRead && <RecipeResultsContent
             actionError={actionError}
@@ -595,12 +701,36 @@ export function RecipePage({
             onSelect={handleSelect}
             onEdit={(recipe) => { clearNotification(); void handleOpenEdit(recipe); }}
             onDelete={(recipe) => { clearNotification(); handleDeleteRequest(recipe); }}
+            onViewHistory={
+              canConsultHistory
+                ? (recipe) => {
+                    clearNotification();
+                    setHistoryTarget({
+                      recipeId: recipe.id,
+                      recipeName: recipe.name,
+                      currentRevision: recipe.revision,
+                      isDeleted: false,
+                    });
+                  }
+                : undefined
+            }
             recipesResult={recipesResult}
             currentPage={currentPage}
             onPageChange={handlePageChange}
           />}
         </section>
       </main>
+
+      {canRead && historyTarget && revisionsRepository && (
+        <RecipeRevisionsDialog
+          repository={revisionsRepository}
+          initialRecipeId={historyTarget.recipeId}
+          recipeName={historyTarget.recipeName}
+          currentRevision={historyTarget.currentRevision}
+          isDeleted={historyTarget.isDeleted}
+          onClose={handleCloseHistory}
+        />
+      )}
 
       {canRead && canWrite && editingRecipe && (
         <RecipeFormDialog

@@ -309,6 +309,7 @@ export interface RecipeSupply {
 
 export interface RecipeSummary {
   id: string;
+  revision?: number;
   name: string;
   description: string;
   supplies: RecipeSupply[];
@@ -317,6 +318,20 @@ export interface RecipeSummary {
 export interface RecipeDetail extends RecipeSummary {
   etag?: string;
   instructions: string;
+}
+
+export interface RecipeRevision {
+  recipeId: string;
+  revision: number;
+  name: string;
+  description: string;
+  instructions: string;
+  supplies: RecipeSupply[];
+}
+
+export interface RecipeRevisionQuery {
+  page?: number;
+  pageSize?: number;
 }
 
 export interface RecipeSupplyInput {
@@ -367,6 +382,8 @@ export interface MenuRepository {
   deleteInactiveOffer(id: string): Promise<void>;
   listRecipes(query: RecipeQuery, signal?: AbortSignal): Promise<Page<RecipeSummary>>;
   getRecipe(id: string, signal?: AbortSignal): Promise<VersionedResource<RecipeDetail>>;
+  listRecipeRevisions(recipeId: string, query?: RecipeRevisionQuery, signal?: AbortSignal): Promise<Page<RecipeRevision>>;
+  getRecipeRevision(recipeId: string, revision: number, signal?: AbortSignal): Promise<RecipeRevision>;
   createRecipe(draft: RecipeDraft, idempotencyKey: string): Promise<RecipeDetail>;
   updateRecipe(id: string, draft: RecipeDraft, etag: string): Promise<RecipeDetail>;
   deleteRecipe(id: string): Promise<void>;

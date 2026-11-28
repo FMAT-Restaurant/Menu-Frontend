@@ -63,9 +63,9 @@ export function createDemoData(): DemoData {
       { id: "demo-entry-seasonal", brandName: "Especial de temporada", description: "Entrada archivada para explorar los cambios de estado.", status: "ARCHIVED", categoryIds: ["demo-category-main"], image: burger },
     ],
     recipes: [
-      { id: "demo-recipe-burger", name: "Hamburguesa de res", description: "Preparación base de la hamburguesa clásica.", instructions: "Formar la carne, cocinar a la plancha y montar sobre el pan con queso.", supplies: [{ inventoryItemId: "demo-inventory-beef", quantity: 180 }, { inventoryItemId: "demo-inventory-bread", quantity: 1 }, { inventoryItemId: "demo-inventory-cheese", quantity: 30 }] },
-      { id: "demo-recipe-lemonade", name: "Limonada de la casa", description: "Bebida preparada al momento.", instructions: "Mezclar el jugo de limón con el agua mineral y servir frío.", supplies: [{ inventoryItemId: "demo-inventory-lemon", quantity: 60 }, { inventoryItemId: "demo-inventory-water", quantity: 300 }] },
-      { id: "demo-recipe-brownie", name: "Brownie artesanal", description: "Base de chocolate para el postre.", instructions: "Integrar los ingredientes, hornear y dejar reposar antes de cortar.", supplies: [{ inventoryItemId: "demo-inventory-chocolate", quantity: 80 }] },
+      { id: "demo-recipe-burger", revision: 1, name: "Hamburguesa de res", description: "Preparación base de la hamburguesa clásica.", instructions: "Formar la carne, cocinar a la plancha y montar sobre el pan con queso.", supplies: [{ inventoryItemId: "demo-inventory-beef", quantity: 180 }, { inventoryItemId: "demo-inventory-bread", quantity: 1 }, { inventoryItemId: "demo-inventory-cheese", quantity: 30 }] },
+      { id: "demo-recipe-lemonade", revision: 1, name: "Limonada de la casa", description: "Bebida preparada al momento.", instructions: "Mezclar el jugo de limón con el agua mineral y servir frío.", supplies: [{ inventoryItemId: "demo-inventory-lemon", quantity: 60 }, { inventoryItemId: "demo-inventory-water", quantity: 300 }] },
+      { id: "demo-recipe-brownie", revision: 1, name: "Brownie artesanal", description: "Base de chocolate para el postre.", instructions: "Integrar los ingredientes, hornear y dejar reposar antes de cortar.", supplies: [{ inventoryItemId: "demo-inventory-chocolate", quantity: 80 }] },
     ],
     offers: [
       { id: "demo-offer-burger", entryId: "demo-entry-burger", presentationTag: "Individual", basePrice: 145, status: "ACTIVE", image: burger, composition: { slots: [

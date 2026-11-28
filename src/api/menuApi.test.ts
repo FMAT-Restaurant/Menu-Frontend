@@ -1292,3 +1292,68 @@ test("routes inventory queries to inventoryClient when parameterized independent
   expect(menuRequests).toHaveLength(1);
 });
 
+test("lists and retrieves recipe revisions via OpenAPI endpoints including deleted recipes (FE-14)", async () => {
+  const requests: string[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    requests.push(axios.getUri(config));
+    if (config.url?.endsWith("/revisions/2")) {
+      return {
+        config,
+        data: {
+          data: {
+            recipeId: "rec-deleted-1",
+            revision: 2,
+            name: "Sopa Azteca v2",
+            description: "Con aguacate",
+            instructions: "Servir caliente",
+            ingredients: [{ inventoryItemId: "inv-1", quantity: 1 }],
+          },
+        },
+        headers: {},
+        status: 200,
+        statusText: "OK",
+      };
+    }
+    return {
+      config,
+      data: {
+        data: [
+          {
+            recipeId: "rec-deleted-1",
+            revision: 1,
+            name: "Sopa Azteca",
+            description: "Tradicional",
+            instructions: "Calentar caldo",
+            ingredients: [],
+          },
+          {
+            recipeId: "rec-deleted-1",
+            revision: 2,
+            name: "Sopa Azteca v2",
+            description: "Con aguacate",
+            instructions: "Servir caliente",
+            ingredients: [{ inventoryItemId: "inv-1", quantity: 1 }],
+          },
+        ],
+        meta: { page: 1, pageSize: 12, total: 2, totalPages: 1 },
+      },
+      headers: {},
+      status: 200,
+      statusText: "OK",
+    };
+  };
+
+  const api = createMenuApi(axios.create({ baseURL: "/api/v1", adapter }));
+  const revisionsPage = await api.listRecipeRevisions?.("rec-deleted-1", { page: 1, pageSize: 12 });
+  expect(revisionsPage?.data).toHaveLength(2);
+  expect(revisionsPage?.data[1].supplies).toEqual([{ inventoryItemId: "inv-1", quantity: 1 }]);
+
+  const revisionDetail = await api.getRecipeRevision?.("rec-deleted-1", 2);
+  expect(revisionDetail?.name).toBe("Sopa Azteca v2");
+  expect(requests).toEqual([
+    "/api/v1/menu/recipes/rec-deleted-1/revisions?page=1&pageSize=12",
+    "/api/v1/menu/recipes/rec-deleted-1/revisions/2",
+  ]);
+});
+
+

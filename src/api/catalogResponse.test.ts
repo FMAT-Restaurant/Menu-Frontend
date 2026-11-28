@@ -24,6 +24,8 @@ import {
   offerPage,
   recipeDetailResponse,
   recipePage,
+  recipeRevisionPage,
+  recipeRevisionResponse,
   uploadedImageResponse,
 } from "./catalogResponse";
 
@@ -319,5 +321,79 @@ describe("catalogResponse runtime validators", () => {
     expect(isPageMeta(meta)).toBe(true);
     expect(isPageMeta(null)).toBe(false);
     expect(isEntry({ ...entry, image: validImage })).toBe(true);
+  });
+
+  test("validates recipe revision numbers, revision pages and revision detail responses (FE-14)", () => {
+    expect(
+      isRecipeSummary({
+        id: "rec-1",
+        name: "Caldo",
+        description: "Base",
+        revision: 2,
+        supplies: [],
+      }),
+    ).toBe(true);
+    expect(
+      isRecipeSummary({
+        id: "rec-1",
+        name: "Caldo",
+        description: "Base",
+        revision: 0,
+        supplies: [],
+      }),
+    ).toBe(false);
+
+    const openApiRevision = {
+      recipeId: "rec-1",
+      revision: 1,
+      name: "Caldo v1",
+      description: "Inicial",
+      instructions: "Hervir agua",
+      ingredients: [
+        {
+          inventoryItemId: "inv-1",
+          quantity: 2,
+          inventoryItem: { id: "inv-1", name: "Pollo", unit: "pieza" },
+        },
+      ],
+    };
+    const page = recipeRevisionPage({
+      data: [openApiRevision],
+      meta,
+    });
+    expect(page.data[0]).toEqual({
+      recipeId: "rec-1",
+      revision: 1,
+      name: "Caldo v1",
+      description: "Inicial",
+      instructions: "Hervir agua",
+      supplies: [
+        {
+          inventoryItemId: "inv-1",
+          quantity: 2,
+          inventoryItem: { id: "inv-1", name: "Pollo", unit: "pieza" },
+        },
+      ],
+    });
+
+    const single = recipeRevisionResponse({
+      data: {
+        recipeId: "rec-1",
+        revision: 2,
+        name: "Caldo v2",
+        description: "Mejorado",
+        instructions: "Hervir a fuego lento",
+        supplies: [],
+      },
+    });
+    expect(single.revision).toBe(2);
+    expect(single.supplies).toEqual([]);
+
+    expect(() => recipeRevisionPage({ data: [{ ...openApiRevision, revision: 0 }], meta })).toThrow(
+      "Respuesta de revisiones de receta inválida.",
+    );
+    expect(() => recipeRevisionResponse({ data: { recipeId: "rec-1", revision: 1 } })).toThrow(
+      "Respuesta de revisión de receta inválida.",
+    );
   });
 });

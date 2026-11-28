@@ -23,6 +23,8 @@ import type {
   RecipeDetail,
   RecipeDraft,
   RecipeQuery,
+  RecipeRevision,
+  RecipeRevisionQuery,
   RecipeSummary,
   VersionedResource,
 } from "../application/catalog";
@@ -38,6 +40,8 @@ import {
   offerPage,
   recipeDetailResponse,
   recipePage,
+  recipeRevisionPage,
+  recipeRevisionResponse,
   uploadedImageResponse,
 } from "./catalogResponse";
 import { validateWriteSuccessResponse } from "./idempotencyResponse";
@@ -71,6 +75,15 @@ function sanitizeIdentifier(id: string): string {
 
 function recipePath(recipeId: string): string {
   return `/menu/recipes/${sanitizeIdentifier(recipeId)}`;
+}
+
+function recipeRevisionsPath(recipeId: string, revision?: number): string {
+  const base = `${recipePath(recipeId)}/revisions`;
+  if (revision === undefined) return base;
+  if (!Number.isSafeInteger(revision) || revision < 1) {
+    throw new Error("Número de revisión inválido.");
+  }
+  return `${base}/${revision}`;
 }
 
 function entryPath(entryId?: string): string {
@@ -642,6 +655,34 @@ export function createMenuApi(
         data,
         ...(etag !== undefined ? { etag } : {}),
       });
+    },
+
+    async listRecipeRevisions(
+      recipeId: string,
+      query?: RecipeRevisionQuery,
+      signal?: AbortSignal,
+    ): Promise<Page<RecipeRevision>> {
+      const response = await client.get<unknown>(recipeRevisionsPath(recipeId), {
+        params: {
+          page: query?.page ?? 1,
+          pageSize: query?.pageSize ?? 12,
+        },
+        signal,
+        timeout: READ_REQUEST_TIMEOUT_MS,
+      });
+      return recipeRevisionPage(response.data);
+    },
+
+    async getRecipeRevision(
+      recipeId: string,
+      revision: number,
+      signal?: AbortSignal,
+    ): Promise<RecipeRevision> {
+      const response = await client.get<unknown>(recipeRevisionsPath(recipeId, revision), {
+        signal,
+        timeout: READ_REQUEST_TIMEOUT_MS,
+      });
+      return recipeRevisionResponse(response.data);
     },
 
     async createRecipe(

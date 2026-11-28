@@ -1,7 +1,8 @@
 import { act, fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import type { InventoryItem, Page, RecipeDetail, RecipeSummary } from "../../application/catalog";
+import type { InventoryItem, Page, RecipeDetail, RecipeRevision, RecipeSummary } from "../../application/catalog";
 import type { PendingOperationStorageAdapter } from "../../application/operationAttempt";
+import { createDemoRepository } from "../../demo/repository";
 import { RecipePage, type RecipeRepository } from "./RecipePage";
 import { RecipeFormDialog } from "./RecipeFormDialog";
 import { addSupply, supplySearch, waitForInventory } from "../../shared/recipeSupplies.test-helper";
@@ -1345,5 +1346,243 @@ describe("RecipePage permissions", () => {
     expect(screen.queryByRole("button", { name: "+ Nueva receta" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Editar Hamburguesa Clásica" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Eliminar Hamburguesa Clásica" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Recipe revisions and history (FE-14)", () => {
+  const revisionSnapshots: RecipeRevision[] = [
+    {
+      recipeId: "rec-1",
+      revision: 1,
+      name: "Hamburguesa Original",
+      description: "Versión inicial",
+      instructions: "Asar carne 4 minutos por lado.",
+      supplies: [{ inventoryItemId: "inv-1", quantity: 120, inventoryItem: inventoryItems[0] }],
+    },
+    {
+      recipeId: "rec-1",
+      revision: 2,
+      name: "Hamburguesa Clásica",
+      description: "Carne con queso en pan brioche",
+      instructions: "Cocinar la carne en plancha y armar con pan y queso.",
+      supplies: [
+        { inventoryItemId: "inv-1", quantity: 150, inventoryItem: inventoryItems[0] },
+        { inventoryItemId: "inv-2", quantity: 1, inventoryItem: inventoryItems[1] },
+      ],
+    },
+  ];
+
+  function createRepositoryWithRevisions(): jest.Mocked<Required<RecipeRepository>> {
+    const base = createMockRepository();
+    const versionedSummary: RecipeSummary = { ...recipes[0], revision: 2 };
+    const versionedDetail: RecipeDetail = { ...recipeDetail, revision: 2 };
+    base.listRecipes.mockResolvedValue({
+      data: [versionedSummary],
+      meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+    });
+    base.getRecipe.mockResolvedValue({
+      data: versionedDetail,
+      etag: '"rec-etag-2"',
+    });
+    return {
+      ...base,
+      listRecipeRevisions: jest.fn().mockResolvedValue({
+        data: revisionSnapshots,
+        meta: { page: 1, pageSize: 12, total: 2, totalPages: 1 },
+      }),
+      getRecipeRevision: jest.fn().mockImplementation((_recipeId: string, revision: number) => {
+        const match = revisionSnapshots.find((item) => item.revision === revision);
+        if (!match) {
+          return Promise.reject({ response: { status: 404 } });
+        }
+        return Promise.resolve(match);
+      }),
+    };
+  }
+
+  test("displays the revision number on cards (management and selection) and in recipe detail (RF-REC-05.CA1, CA2)", async () => {
+    const repository = createRepositoryWithRevisions();
+    const { unmount } = render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="selection" storage={createMemoryStorage()} />
+      </MemoryRouter>,
+    );
+
+    const selectionCard = await screen.findByRole("article", { name: "Hamburguesa Clásica" });
+    expect(within(selectionCard).getByText("Revisión 2")).toBeVisible();
+    unmount();
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={repository} mode="management" storage={createMemoryStorage()} />
+      </MemoryRouter>,
+    );
+
+    const managementCard = await screen.findByRole("article", { name: "Hamburguesa Clásica" });
+    expect(within(managementCard).getByText("Revisión 2")).toBeVisible();
+
+    fireEvent.click(within(managementCard).getByRole("button", { name: "Editar Hamburguesa Clásica" }));
+    const editDialog = await screen.findByRole("dialog", { name: "Editar receta" });
+    expect(within(editDialog).getByText("Revisión 2")).toBeVisible();
+  });
+
+  test("navigates across recipe revisions in the history dialog including read-only users (RF-REC-06.CA1…CA3)", async () => {
+    const repository = createRepositoryWithRevisions();
+    rtlRender(
+      <PermissionProvider token={permissionTestToken(["menu:recipes:read"])}>
+        <MemoryRouter>
+          <RecipePage repository={repository} mode="management" storage={createMemoryStorage()} />
+        </MemoryRouter>
+      </PermissionProvider>,
+    );
+
+    const historyTrigger = await screen.findByRole("button", { name: "Ver historial de Hamburguesa Clásica" });
+    fireEvent.click(historyTrigger);
+
+    const dialog = await screen.findByRole("dialog", { name: "Historial de Hamburguesa Clásica" });
+    const detailRev2 = await within(dialog).findByRole("article", { name: "Detalle de revisión 2" });
+    expect(within(detailRev2).getByText("Vigente")).toBeVisible();
+    expect(within(detailRev2).getByText("Hamburguesa Clásica")).toBeVisible();
+    expect(within(detailRev2).getByText("Cocinar la carne en plancha y armar con pan y queso.")).toBeVisible();
+    expect(within(detailRev2).getByRole("button", { name: "Revisión siguiente" })).toBeDisabled();
+
+    // Navigate to previous revision via step button
+    fireEvent.click(within(detailRev2).getByRole("button", { name: "Revisión anterior" }));
+    const detailRev1 = await within(dialog).findByRole("article", { name: "Detalle de revisión 1" });
+    await waitFor(() => expect(repository.getRecipeRevision).toHaveBeenCalledWith("rec-1", 1, expect.any(AbortSignal)));
+    expect(within(detailRev1).getByText("Hamburguesa Original")).toBeVisible();
+    expect(within(detailRev1).getByText("Versión inicial")).toBeVisible();
+    expect(within(detailRev1).getByText("Asar carne 4 minutos por lado.")).toBeVisible();
+    expect(within(detailRev1).getByText("Carne Molida Res 80/20 (120 g)")).toBeVisible();
+    expect(within(detailRev1).getByRole("button", { name: "Revisión anterior" })).toBeDisabled();
+
+    // Navigate forward via revision list item
+    const navList = within(dialog).getByRole("navigation", { name: "Lista de revisiones" });
+    fireEvent.click(within(navList).getByRole("button", { name: /Revisión 2/ }));
+    expect(await within(dialog).findByRole("article", { name: "Detalle de revisión 2" })).toBeVisible();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar historial" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  test("preserves consultable revision history after deleting a recipe (recent deleted bar and ID lookup)", async () => {
+    const demoRepository = createDemoRepository();
+    const created = await demoRepository.createRecipe(
+      {
+        name: "Salsa Taquera",
+        description: "Con chile de árbol",
+        instructions: "Licuar chiles y ajo.",
+        supplies: [{ inventoryItemId: "demo-inventory-lemon", quantity: 100 }],
+      },
+      "11111111-1111-4111-8111-111111111111",
+    );
+    const current = await demoRepository.getRecipe(created.id);
+    await demoRepository.updateRecipe(
+      created.id,
+      {
+        name: "Salsa Taquera Asada",
+        description: "Tatemada en comal",
+        instructions: "Tatemar jitomate y chiles antes de moler.",
+        supplies: [{ inventoryItemId: "demo-inventory-lemon", quantity: 150 }],
+      },
+      current.etag ?? '"1"',
+    );
+
+    render(
+      <MemoryRouter>
+        <RecipePage repository={demoRepository} mode="management" storage={createMemoryStorage()} />
+      </MemoryRouter>,
+    );
+
+    const card = await screen.findByRole("article", { name: "Salsa Taquera Asada" });
+    expect(within(card).getByText("Revisión 2")).toBeVisible();
+
+    // Delete recipe
+    fireEvent.click(within(card).getByRole("button", { name: "Eliminar Salsa Taquera Asada" }));
+    const confirmDialog = await screen.findByRole("dialog", { name: "¿Eliminar receta?" });
+    fireEvent.click(within(confirmDialog).getByRole("button", { name: "Eliminar receta" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("article", { name: "Salsa Taquera Asada" })).not.toBeInTheDocument();
+    });
+
+    // 1) Consult preserved history from "Recetas eliminadas recientemente"
+    const deletedSection = screen.getByRole("region", { name: "Recetas eliminadas recientemente" });
+    fireEvent.click(within(deletedSection).getByRole("button", { name: "Ver historial de Salsa Taquera Asada" }));
+
+    const deletedHistoryDialog = await screen.findByRole("dialog", { name: "Historial de Salsa Taquera Asada" });
+    expect(deletedHistoryDialog).toHaveTextContent("Receta eliminada · Historial conservado");
+    const rev2Detail = await within(deletedHistoryDialog).findByRole("article", { name: "Detalle de revisión 2" });
+    expect(within(rev2Detail).getByText("Receta eliminada")).toBeVisible();
+    expect(within(rev2Detail).getByText("Tatemar jitomate y chiles antes de moler.")).toBeVisible();
+
+    fireEvent.click(within(rev2Detail).getByRole("button", { name: "Revisión anterior" }));
+    const rev1Detail = await within(deletedHistoryDialog).findByRole("article", { name: "Detalle de revisión 1" });
+    expect(within(rev1Detail).getByText("Salsa Taquera")).toBeVisible();
+    expect(within(rev1Detail).getByText("Licuar chiles y ajo.")).toBeVisible();
+
+    fireEvent.keyDown(deletedHistoryDialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    // 2) Consult preserved history by recipe ID lookup (including 404 recovery)
+    fireEvent.click(screen.getByRole("button", { name: "Consultar historial por ID" }));
+    const lookupDialog = await screen.findByRole("dialog", { name: "Historial de revisiones" });
+    fireEvent.change(within(lookupDialog).getByLabelText("ID de la receta"), {
+      target: { value: "receta-inexistente" },
+    });
+    fireEvent.click(within(lookupDialog).getByRole("button", { name: "Consultar historial" }));
+    expect(await within(lookupDialog).findByRole("alert")).toHaveTextContent(
+      "No se encontró historial de revisiones para la receta indicada.",
+    );
+
+    fireEvent.change(within(lookupDialog).getByLabelText("ID de la receta"), {
+      target: { value: created.id },
+    });
+    fireEvent.click(within(lookupDialog).getByRole("button", { name: "Consultar historial" }));
+    expect(await within(lookupDialog).findByRole("article", { name: "Detalle de revisión 2" })).toHaveTextContent(
+      "Salsa Taquera Asada",
+    );
+  });
+
+  test("supports ?history URL parameter, pagination across revision pages, and retry on transient errors", async () => {
+    const repository = createRepositoryWithRevisions();
+    repository.listRecipeRevisions
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce({
+        data: [revisionSnapshots[0]],
+        meta: { page: 1, pageSize: 1, total: 2, totalPages: 2 },
+      })
+      .mockResolvedValueOnce({
+        data: [revisionSnapshots[1]],
+        meta: { page: 2, pageSize: 1, total: 2, totalPages: 2 },
+      });
+    repository.getRecipeRevision
+      .mockRejectedValueOnce(new Error("Detail timeout"))
+      .mockResolvedValue(revisionSnapshots[0]);
+
+    render(
+      <MemoryRouter initialEntries={["/recipes?history=rec-1"]}>
+        <RecipePage repository={repository} storage={createMemoryStorage()} />
+      </MemoryRouter>,
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "Historial de revisiones" });
+    const listAlert = await within(dialog).findByRole("alert");
+    expect(listAlert).toHaveTextContent("No se pudo cargar el historial de revisiones.");
+    fireEvent.click(within(listAlert).getByRole("button", { name: "Reintentar" }));
+
+    const rev1Article = await within(dialog).findByRole("article", { name: "Detalle de revisión 1" });
+    const detailAlert = await within(rev1Article).findByRole("alert");
+    expect(detailAlert).toHaveTextContent("No se pudo cargar el historial de revisiones.");
+    fireEvent.click(within(detailAlert).getByRole("button", { name: "Reintentar" }));
+    await waitFor(() => expect(within(rev1Article).queryByRole("alert")).not.toBeInTheDocument());
+
+    const pagination = within(dialog).getByRole("navigation", { name: "Páginas de revisiones" });
+    expect(within(pagination).getByText("Página 1 de 2")).toBeVisible();
+    fireEvent.click(within(pagination).getByRole("button", { name: "Siguiente página de revisiones" }));
+    await waitFor(() => expect(repository.listRecipeRevisions).toHaveBeenLastCalledWith("rec-1", { page: 2, pageSize: 12 }, expect.any(AbortSignal)));
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar historial" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

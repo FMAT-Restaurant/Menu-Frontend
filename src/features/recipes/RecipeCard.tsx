@@ -11,6 +11,7 @@ export interface ManagementRecipeCardProps extends BaseRecipeCardProps {
   mode: "management";
   onEdit: (recipe: RecipeSummary) => void;
   onDelete: (recipe: RecipeSummary) => void;
+  onViewHistory?: (recipe: RecipeSummary) => void;
   onSelect?: never;
 }
 
@@ -19,6 +20,7 @@ export interface SelectionRecipeCardProps extends BaseRecipeCardProps {
   onSelect: (recipe: RecipeSummary) => void;
   onEdit?: never;
   onDelete?: never;
+  onViewHistory?: never;
 }
 
 export type RecipeCardProps = ManagementRecipeCardProps | SelectionRecipeCardProps;
@@ -37,7 +39,12 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
     <article className="recipe-card" aria-labelledby={`recipe-title-${recipe.id}`}>
       <div className="recipe-card__header">
         <div>
-          <h3 id={`recipe-title-${recipe.id}`}>{recipe.name}</h3>
+          <div className="recipe-card__title-row">
+            <h3 id={`recipe-title-${recipe.id}`}>{recipe.name}</h3>
+            {recipe.revision !== undefined && (
+              <span className="recipe-card__revision">Revisión {recipe.revision}</span>
+            )}
+          </div>
           <p className="recipe-card__description">{recipe.description || "Sin descripción"}</p>
         </div>
         <div className="recipe-card__actions">
@@ -52,6 +59,17 @@ export function RecipeCard(props: Readonly<RecipeCardProps>) {
             </button>
           ) : (
             <>
+              {props.onViewHistory && (
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  onClick={() => props.onViewHistory?.(recipe)}
+                  disabled={isBusy}
+                  aria-label={`Ver historial de ${recipe.name}`}
+                >
+                  Historial
+                </button>
+              )}
               {(props.canWrite ?? true) && <button
                 type="button"
                 className="button button--secondary"
